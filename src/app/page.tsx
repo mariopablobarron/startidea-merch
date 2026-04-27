@@ -10,10 +10,13 @@ import { Faq } from "@/components/Faq";
 import { QuoteSection } from "@/components/QuoteSection";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { JsonLd } from "@/components/JsonLd";
+import { ORGANIZATION_JSONLD, WEBSITE_JSONLD, FAQ_JSONLD } from "@/lib/jsonld";
 
 export default function HomePage() {
   return (
     <>
+      <JsonLd data={[ORGANIZATION_JSONLD, WEBSITE_JSONLD, FAQ_JSONLD]} />
       <Nav />
       <main>
         <Hero />

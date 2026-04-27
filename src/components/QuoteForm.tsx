@@ -1,12 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
 export function QuoteForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const productRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function onPrefill(e: Event) {
+      const detail = (e as CustomEvent<string>).detail;
+      if (productRef.current && detail) {
+        productRef.current.value = detail;
+        productRef.current.focus({ preventScroll: true });
+      }
+    }
+    window.addEventListener("merch:prefill-product", onPrefill);
+    return () => window.removeEventListener("merch:prefill-product", onPrefill);
+  }, []);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -61,7 +74,16 @@ export function QuoteForm() {
         <Field name="phone" label="Teléfono" type="tel" />
       </div>
       <div className="grid gap-5 sm:grid-cols-3">
-        <Field name="productHint" label="¿Qué producto buscas?" placeholder="Ej. botella tritan" />
+        <label className="grid gap-2">
+          <span className="text-sm font-medium text-ink">¿Qué producto buscas?</span>
+          <input
+            ref={productRef}
+            name="productHint"
+            type="text"
+            placeholder="Ej. botella tritan"
+            className="rounded-2xl border border-ink/15 bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
+          />
+        </label>
         <Field name="quantity" label="Cantidad estimada" type="number" placeholder="Ej. 250" />
         <Field name="deadline" label="¿Para cuándo?" placeholder="Ej. 15 mayo" />
       </div>
