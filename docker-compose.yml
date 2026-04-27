@@ -9,11 +9,11 @@ services:
     volumes:
       - merch_pgdata_v2:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U merch -d merch"]
+      test: ["CMD-SHELL", "pg_isready"]
       interval: 5s
       timeout: 5s
-      retries: 30
-      start_period: 30s
+      retries: 60
+      start_period: 60s
 
   app:
     build:
