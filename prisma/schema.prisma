@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// F0 — captura de leads y solicitudes de cotización
+model QuoteRequest {
+  id           String         @id @default(cuid())
+  createdAt    DateTime       @default(now())
+
+  // contacto
+  name         String
+  company      String?
+  email        String
+  phone        String?
+
+  // brief
+  productHint  String?
+  quantity     Int?
+  deadline     String?
+  budget       String?
+  message      String
+
+  // estado
+  status       QuoteStatus    @default(NEW)
+  source       String?        // "landing", "ficha-producto", etc.
+  utm          Json?
+
+  notes        QuoteNote[]
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+}
+
+model QuoteNote {
+  id         String        @id @default(cuid())
+  createdAt  DateTime      @default(now())
+  body       String
+  author     String
+  request    QuoteRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId  String
+
+  @@index([requestId])
+}
+
+enum QuoteStatus {
+  NEW
+  IN_PROGRESS
+  SENT
+  WON
+  LOST
+  ARCHIVED
+}
+
+// F4 — Centro Especial de Empleo / colaborador local (placeholder F0)
+model Partner {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  kind        PartnerKind
+  city        String?
+  region      String?
+  description String
+  services    String[] // ["serigrafía", "bordado", ...]
+  logoUrl     String?
+  active      Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+enum PartnerKind {
+  CEE
+  LOCAL_BUSINESS
+  ARTISAN
+}

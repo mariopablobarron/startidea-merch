@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "General Sans", "Söhne", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: theme(colors.bone.DEFAULT);
+  color: theme(colors.ink.DEFAULT);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+::selection {
+  background: theme(colors.accent.DEFAULT);
+  color: theme(colors.bone.DEFAULT);
+}
+
+/* Marquee infinito reusable */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee 40s linear infinite;
+  width: max-content;
+}
