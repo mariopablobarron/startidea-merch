@@ -4,16 +4,17 @@ WORKDIR /app
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable
 
-# --- deps ---
+# --- deps --- (node-linker=hoisted = node_modules planos sin .pnpm symlinks)
 FROM base AS deps
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile || pnpm install
+COPY package.json pnpm-lock.yaml* .npmrc* ./
+RUN pnpm config set node-linker hoisted && \
+    (pnpm install --frozen-lockfile || pnpm install)
 
 # --- builder ---
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm prisma generate
+RUN pnpm config set node-linker hoisted && pnpm prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
