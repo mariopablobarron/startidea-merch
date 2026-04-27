@@ -1,3 +1,7 @@
+"use client";
+
+import { motion, fadeUp, stagger, viewportOnce } from "./motion";
+
 const STEPS = [
   {
     n: "01",
@@ -25,25 +29,40 @@ export function Process() {
   return (
     <section id="como" className="bg-ink py-24 text-bone lg:py-36">
       <div className="mx-auto max-w-8xl px-6 lg:px-10">
-        <div className="max-w-3xl">
-          <p className="mb-6 text-sm font-medium uppercase tracking-wider text-accent">
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={viewportOnce}
+          variants={stagger(0.05, 0.1)}
+          className="max-w-3xl"
+        >
+          <motion.p
+            variants={fadeUp}
+            className="mb-6 text-sm font-medium uppercase tracking-wider text-accent"
+          >
             Cómo trabajamos
-          </p>
-          <h2 className="font-display text-section font-semibold">
+          </motion.p>
+          <motion.h2 variants={fadeUp} className="font-display text-section font-semibold">
             Sin intermediarios opacos.<br />
             <span className="text-bone/50">Tú nos cuentas, nosotros lo hacemos.</span>
-          </h2>
-        </div>
+          </motion.h2>
+        </motion.div>
 
-        <ol className="mt-16 grid gap-px overflow-hidden rounded-3xl bg-bone/10 lg:grid-cols-4">
+        <motion.ol
+          initial="hidden"
+          whileInView="show"
+          viewport={viewportOnce}
+          variants={stagger(0.1, 0.1)}
+          className="mt-16 grid gap-px overflow-hidden rounded-3xl bg-bone/10 lg:grid-cols-4"
+        >
           {STEPS.map((s) => (
-            <li key={s.n} className="bg-ink p-8 lg:p-10">
+            <motion.li variants={fadeUp} key={s.n} className="bg-ink p-8 lg:p-10">
               <span className="font-display text-5xl font-semibold text-accent">{s.n}</span>
               <h3 className="mt-6 font-display text-xl font-semibold">{s.title}</h3>
               <p className="mt-3 text-[15px] text-bone/70">{s.body}</p>
-            </li>
+            </motion.li>
           ))}
-        </ol>
+        </motion.ol>
       </div>
     </section>
   );

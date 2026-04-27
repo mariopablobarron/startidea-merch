@@ -1,4 +1,7 @@
+"use client";
+
 import { Heart, Hammer, Sprout, Users } from "lucide-react";
+import { motion, fadeUp, stagger, viewportOnce } from "./motion";
 
 const PILLARS = [
   {
@@ -27,35 +30,51 @@ export function Impact() {
   return (
     <section id="impacto" className="bg-bone py-24 lg:py-36">
       <div className="mx-auto max-w-8xl px-6 lg:px-10">
-        <div className="grid gap-16 lg:grid-cols-[1fr,1.4fr]">
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={viewportOnce}
+          variants={stagger(0.05, 0.1)}
+          className="grid gap-16 lg:grid-cols-[1fr,1.4fr]"
+        >
           <div>
-            <p className="mb-6 text-sm font-medium uppercase tracking-wider text-accent">
+            <motion.p
+              variants={fadeUp}
+              className="mb-6 text-sm font-medium uppercase tracking-wider text-accent"
+            >
               Por qué existimos
-            </p>
-            <h2 className="font-display text-section font-semibold text-ink">
+            </motion.p>
+            <motion.h2
+              variants={fadeUp}
+              className="font-display text-section font-semibold text-ink"
+            >
               El merchandising no tiene que ser ruido.<br />
               <span className="text-ink/50">Puede ser propósito.</span>
-            </h2>
-            <p className="mt-8 text-lg text-ink/70">
+            </motion.h2>
+            <motion.p variants={fadeUp} className="mt-8 text-lg text-ink/70">
               Cada año se producen miles de millones de objetos promocionales sin alma.
               Nosotros canalizamos ese mismo presupuesto hacia quien más lo necesita —
               sin que pierdas calidad, plazo ni precio.
-            </p>
+            </motion.p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
+          <motion.div
+            variants={stagger(0.1, 0.1)}
+            className="grid gap-6 sm:grid-cols-2"
+          >
             {PILLARS.map(({ icon: Icon, title, body }) => (
-              <article
+              <motion.article
                 key={title}
+                variants={fadeUp}
                 className="rounded-3xl border border-ink/10 bg-bone-soft p-7 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
               >
                 <Icon className="h-7 w-7 text-accent" strokeWidth={1.5} />
                 <h3 className="mt-5 font-display text-xl font-semibold">{title}</h3>
                 <p className="mt-3 text-[15px] text-ink/70">{body}</p>
-              </article>
+              </motion.article>
             ))}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
