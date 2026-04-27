@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion, fadeUp, stagger, viewportOnce } from "./motion";
+import { Counter } from "./Counter";
 
 export function Hero() {
   return (
@@ -67,21 +68,29 @@ export function Hero() {
           variants={stagger(0.1, 0.1)}
           className="mt-20 grid grid-cols-2 gap-8 border-t border-ink/10 pt-10 lg:grid-cols-4"
         >
-          <Stat value="+10.000" label="Productos personalizables" />
-          <Stat value="2" label="Proveedores europeos integrados" />
-          <Stat value="100%" label="Producción con impacto social" />
-          <Stat value="24h" label="Cotización garantizada" />
+          <Stat label="Productos personalizables">
+            <Counter value={10000} prefix="+" />
+          </Stat>
+          <Stat label="Proveedores europeos integrados">
+            <Counter value={2} />
+          </Stat>
+          <Stat label="Producción con impacto social">
+            <Counter value={100} suffix="%" />
+          </Stat>
+          <Stat label="Cotización garantizada">
+            <Counter value={24} suffix="h" />
+          </Stat>
         </motion.dl>
       </motion.div>
     </section>
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <motion.div variants={fadeUp}>
       <dt className="font-display text-4xl font-semibold tracking-tight text-ink lg:text-5xl">
-        {value}
+        {children}
       </dt>
       <dd className="mt-2 text-sm text-ink/60">{label}</dd>
     </motion.div>

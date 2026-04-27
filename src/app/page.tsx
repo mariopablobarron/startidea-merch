@@ -5,6 +5,7 @@ import { Impact } from "@/components/Impact";
 import { Process } from "@/components/Process";
 import { Categories } from "@/components/Categories";
 import { Partners } from "@/components/Partners";
+import { Faq } from "@/components/Faq";
 import { QuoteSection } from "@/components/QuoteSection";
 import { Footer } from "@/components/Footer";
 
@@ -19,6 +20,7 @@ export default function HomePage() {
         <Process />
         <Partners />
         <Categories />
+        <Faq />
         <QuoteSection />
       </main>
       <Footer />
