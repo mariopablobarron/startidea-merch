@@ -12,10 +12,18 @@ export function Footer() {
               Una iniciativa de Startidea. Merchandising corporativo personalizado con
               impacto social real.
             </p>
+            <p className="mt-3 text-xs text-bone/40">
+              STARTIDEA MALAGA SL · CIF B19583632
+              <br />
+              C/ Conde Cifuentes, 33 — 18005 Granada
+            </p>
           </div>
           <FooterCol title="Contacto">
             <a href="mailto:hola@merchandising.startidea.es" className="hover:text-accent">
               hola@merchandising.startidea.es
+            </a>
+            <a href="tel:+34958045789" className="hover:text-accent">
+              +34 958 045 789
             </a>
             <p className="text-bone/60">L–V 9:00 – 18:00</p>
           </FooterCol>

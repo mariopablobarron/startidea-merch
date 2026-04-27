@@ -17,9 +17,12 @@ export default function PrivacidadPage() {
 
       <h2>1. Responsable del tratamiento</h2>
       <ul>
-        <li><strong>Responsable:</strong> [Razón social pendiente]</li>
-        <li><strong>NIF / CIF:</strong> [Pendiente]</li>
-        <li><strong>Email de contacto:</strong> hola@merchandising.startidea.es</li>
+        <li><strong>Responsable:</strong> STARTIDEA MALAGA SL</li>
+        <li><strong>CIF:</strong> B19583632</li>
+        <li><strong>Domicilio:</strong> C/ Conde Cifuentes, 33 — 18005 Granada, España</li>
+        <li><strong>Teléfono:</strong> +34 958 045 789</li>
+        <li><strong>Email general:</strong> <a href="mailto:info@startidea.es">info@startidea.es</a></li>
+        <li><strong>Email para esta web:</strong> <a href="mailto:hola@merchandising.startidea.es">hola@merchandising.startidea.es</a></li>
       </ul>
 
       <h2>2. Finalidad del tratamiento</h2>
@@ -67,7 +70,10 @@ export default function PrivacidadPage() {
         <li>Reclamación ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es" target="_blank" rel="noreferrer">aepd.es</a>).</li>
       </ul>
       <p>
-        Para ejercer estos derechos, puede escribirnos a <a href="mailto:hola@merchandising.startidea.es">hola@merchandising.startidea.es</a> indicando el derecho que desea ejercer.
+        Para ejercer estos derechos, puede escribirnos a{" "}
+        <a href="mailto:info@startidea.es">info@startidea.es</a> indicando el derecho que desea
+        ejercer y adjuntando una copia de su DNI o documento equivalente para la verificación
+        de identidad.
       </p>
 
       <h2>7. Seguridad</h2>
