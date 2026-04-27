@@ -2,15 +2,17 @@
 
 import { motion, fadeUp, stagger, viewportOnce } from "./motion";
 
+import Link from "next/link";
+
 const CATS = [
-  { name: "Textil corporativo", desc: "Camisetas, polos, sudaderas, softshell.", price: "Desde 2,13 €", hint: "textil corporativo (camisetas, polos, sudaderas)" },
-  { name: "Bolsas & mochilas", desc: "Tote bags, bolsas técnicas, mochilas viaje.", price: "Desde 0,75 €", hint: "bolsas y mochilas personalizadas" },
-  { name: "Drinkware", desc: "Botellas tritan, acero inox, tazas, termos.", price: "Desde 1,40 €", hint: "drinkware (botellas, tazas, termos)" },
-  { name: "Escritura", desc: "Bolígrafos eco, libretas, sets ejecutivos.", price: "Desde 0,25 €", hint: "escritura (bolígrafos, libretas)" },
-  { name: "Tecnología", desc: "Power banks, hubs, altavoces, cables.", price: "Desde 3,90 €", hint: "tecnología promocional" },
-  { name: "Eventos & ferias", desc: "Lanyards, acreditaciones, pulseras, banderines.", price: "Desde 0,18 €", hint: "eventos y ferias (lanyards, pulseras)" },
-  { name: "Hogar & lifestyle", desc: "Velas, plantas, cosmética, packs gourmet.", price: "Desde 4,50 €", hint: "hogar y lifestyle" },
-  { name: "Regalos eco", desc: "Bambú, RPET, algodón orgánico, semilla.", price: "Desde 0,40 €", hint: "regalos eco (bambú, RPET, orgánico)" },
+  { name: "Textil corporativo", desc: "Camisetas, polos, sudaderas, softshell.", price: "Desde 2,13 €", hint: "textil corporativo", searchQuery: "camiseta" },
+  { name: "Bolsas & mochilas", desc: "Tote bags, bolsas técnicas, mochilas viaje.", price: "Desde 0,75 €", hint: "bolsas y mochilas personalizadas", searchQuery: "mochila" },
+  { name: "Drinkware", desc: "Botellas tritan, acero inox, tazas, termos.", price: "Desde 1,40 €", hint: "drinkware", searchQuery: "botella" },
+  { name: "Escritura", desc: "Bolígrafos eco, libretas, sets ejecutivos.", price: "Desde 0,25 €", hint: "escritura", searchQuery: "boligrafo" },
+  { name: "Tecnología", desc: "Power banks, hubs, altavoces, cables.", price: "Desde 3,90 €", hint: "tecnología promocional", searchQuery: "power" },
+  { name: "Eventos & ferias", desc: "Lanyards, acreditaciones, pulseras, banderines.", price: "Desde 0,18 €", hint: "eventos y ferias", searchQuery: "lanyard" },
+  { name: "Hogar & lifestyle", desc: "Velas, plantas, cosmética, packs gourmet.", price: "Desde 4,50 €", hint: "hogar y lifestyle", searchQuery: "vela" },
+  { name: "Regalos eco", desc: "Bambú, RPET, algodón orgánico, semilla.", price: "Desde 0,40 €", hint: "regalos eco", searchQuery: "bambu" },
 ];
 
 export function Categories() {
@@ -40,8 +42,11 @@ export function Categories() {
             </motion.h2>
           </div>
           <motion.p variants={fadeUp} className="max-w-md text-ink/60">
-            Catálogo unificado de Makito y MidOcean — más de 10.000 referencias personalizables
-            con stock europeo. Próximamente navegable. Hoy, pídelo por brief.
+            Catálogo unificado de MidOcean (Makito en breve) — más de 2.000 referencias
+            personalizables con stock europeo.{" "}
+            <Link href="/catalogo" className="font-medium text-accent underline-offset-4 hover:underline">
+              Explorar catálogo →
+            </Link>
           </motion.p>
         </motion.div>
 
@@ -56,13 +61,7 @@ export function Categories() {
             <motion.a
               key={c.name}
               variants={fadeUp}
-              href={`#cotizar?product=${encodeURIComponent(c.hint)}`}
-              onClick={(e) => {
-                e.preventDefault();
-                const ev = new CustomEvent("merch:prefill-product", { detail: c.hint });
-                window.dispatchEvent(ev);
-                document.getElementById("cotizar")?.scrollIntoView({ behavior: "smooth" });
-              }}
+              href={`/catalogo?q=${encodeURIComponent(c.searchQuery)}`}
               className="group block bg-bone-soft p-7 text-left transition hover:bg-ink hover:text-bone"
             >
               <h3 className="font-display text-lg font-semibold">{c.name}</h3>

@@ -10,9 +10,9 @@ export function Nav() {
           <span>todo<span className="text-accent">merchandising</span></span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
+          <Link href="/catalogo" className="text-sm hover:text-accent">Catálogo</Link>
           <Link href="/#impacto" className="text-sm hover:text-accent">Impacto</Link>
           <Link href="/#hecho-con" className="text-sm hover:text-accent">Hecho con</Link>
-          <Link href="/#productos" className="text-sm hover:text-accent">Productos</Link>
           <Link href="/sobre" className="text-sm hover:text-accent">Sobre</Link>
           <a href="mailto:hola@merchandising.startidea.es" className="text-sm hover:text-accent">Contacto</a>
         </nav>

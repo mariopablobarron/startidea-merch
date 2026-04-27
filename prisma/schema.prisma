@@ -7,7 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================================
 // F0 — captura de leads y solicitudes de cotización
+// ============================================================================
+
 model QuoteRequest {
   id           String         @id @default(cuid())
   createdAt    DateTime       @default(now())
@@ -20,6 +23,7 @@ model QuoteRequest {
 
   // brief
   productHint  String?
+  productRef   String?        // ref MidOcean/Makito si vino de ficha
   quantity     Int?
   deadline     String?
   budget       String?
@@ -27,7 +31,7 @@ model QuoteRequest {
 
   // estado
   status       QuoteStatus    @default(NEW)
-  source       String?        // "landing", "ficha-producto", etc.
+  source       String?
   utm          Json?
 
   notes        QuoteNote[]
@@ -57,24 +61,162 @@ enum QuoteStatus {
   ARCHIVED
 }
 
-// F4 — Centro Especial de Empleo / colaborador local (placeholder F0)
+// ============================================================================
+// F4 — colaboradores (CEE / talleres locales)
+// ============================================================================
+
 model Partner {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String      @id @default(cuid())
+  slug        String      @unique
   name        String
   kind        PartnerKind
   city        String?
   region      String?
   description String
-  services    String[] // ["serigrafía", "bordado", ...]
+  services    String[]
   logoUrl     String?
-  active      Boolean  @default(true)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
+  active      Boolean     @default(true)
+  order       Int         @default(0)
+  createdAt   DateTime    @default(now())
 }
 
 enum PartnerKind {
   CEE
   LOCAL_BUSINESS
   ARTISAN
+}
+
+// ============================================================================
+// F1 — Catálogo unificado (MidOcean / Makito)
+// ============================================================================
+
+enum SupplierCode {
+  midocean
+  makito
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  slug      String     @unique
+  name      String
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  parentId  String?
+  children  Category[] @relation("CategoryTree")
+  level     Int        @default(1) // 1, 2, 3 según MidOcean category_levelN
+  products  Product[]
+
+  @@index([parentId])
+}
+
+model Product {
+  id              String              @id @default(cuid())
+  // identificación
+  supplier        SupplierCode
+  supplierRef     String              // master_code MidOcean
+  slug            String              @unique
+  name            String
+  brand           String?
+  shortDescription String?            @db.Text
+  longDescription  String?            @db.Text
+  material        String?
+
+  // categoría primaria
+  category        Category?           @relation(fields: [categoryId], references: [id])
+  categoryId      String?
+  supplierCategoryCode String?
+
+  // dimensiones / peso (en mm y g normalizados)
+  weightG         Int?
+  lengthMm        Int?
+  widthMm         Int?
+  heightMm        Int?
+
+  // imagen principal
+  primaryImageUrl String?
+
+  // metadatos
+  countryOfOrigin String?
+  ecoLabels       String[]            @default([])
+  tags            String[]            @default([])
+
+  // sincronización
+  fromPriceCents  Int?                // cents EUR — "Desde X€" calculado
+  active          Boolean             @default(true)
+  syncedAt        DateTime            @default(now())
+
+  variants        ProductVariant[]
+  positions       MarkingPosition[]
+
+  @@unique([supplier, supplierRef])
+  @@index([categoryId])
+  @@index([active])
+  @@index([syncedAt])
+}
+
+model ProductVariant {
+  id              String        @id @default(cuid())
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId       String
+  sku             String        @unique
+  variantId       String?       // variant_id MidOcean
+  colorName       String?
+  colorGroup      String?
+  colorHex        String?
+  gtin            String?
+  size            String?
+  // stock más reciente conocido (snapshot)
+  stockQty        Int           @default(0)
+  stockUpdatedAt  DateTime?
+  // imagen principal de esta variante
+  imageUrl        String?
+  images          String[]      @default([])
+
+  @@index([productId])
+  @@index([sku])
+}
+
+// Posiciones de marcaje (del printdata)
+model MarkingPosition {
+  id              String                @id @default(cuid())
+  product         Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId       String
+  positionId      String                // ej. "TOP COMPASS", "TOP BOX"
+  maxWidthMm      Float?
+  maxHeightMm     Float?
+  imageUrl        String?               // mockup de la zona
+  techniques      MarkingTechniqueOnPosition[]
+
+  @@index([productId])
+}
+
+// Técnicas de impresión disponibles globalmente
+model MarkingTechnique {
+  id          String                       @id @default(cuid())
+  code        String                       @unique // "B", "L3", "BP"...
+  name        String                       // legible en español
+  positions   MarkingTechniqueOnPosition[]
+}
+
+model MarkingTechniqueOnPosition {
+  position    MarkingPosition  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  positionId  String
+  technique   MarkingTechnique @relation(fields: [techniqueId], references: [id], onDelete: Cascade)
+  techniqueId String
+  isDefault   Boolean          @default(false)
+  maxColors   Int?
+
+  @@id([positionId, techniqueId])
+}
+
+// Snapshot del último sync por proveedor
+model SupplierSync {
+  id              String        @id @default(cuid())
+  supplier        SupplierCode  @unique
+  startedAt       DateTime
+  finishedAt      DateTime?
+  ok              Boolean       @default(false)
+  productsFetched Int           @default(0)
+  productsUpserted Int          @default(0)
+  errorsJson      Json?
+  notes           String?
 }

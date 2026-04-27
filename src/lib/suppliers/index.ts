@@ -1,14 +1,17 @@
-import { midoceanAdapter, syncMidocean } from "./midocean";
-import { makitoAdapter, syncMakito } from "./makito";
-import type { SupplierAdapter, SupplierCode, SyncResult } from "./types";
+import { midoceanClient } from "./midocean";
+import { makitoAdapter } from "./makito";
 
-export const suppliers: Record<SupplierCode, SupplierAdapter> = {
-  midocean: midoceanAdapter,
-  makito: makitoAdapter,
-};
+export type SupplierPing =
+  | { code: "midocean" | "makito"; name: string; ok: true }
+  | { code: "midocean" | "makito"; name: string; ok: false; reason: string };
 
-export async function syncAll(): Promise<SyncResult[]> {
-  return Promise.all([syncMidocean(), syncMakito()]);
+export async function pingAll(): Promise<SupplierPing[]> {
+  const [m, mk] = await Promise.all([
+    midoceanClient.ping(),
+    makitoAdapter.ping(),
+  ]);
+  return [
+    { code: "midocean", name: "MidOcean", ...m },
+    { code: "makito", name: "Makito", ...mk },
+  ];
 }
-
-export type { SupplierCode, SupplierAdapter, SyncResult } from "./types";

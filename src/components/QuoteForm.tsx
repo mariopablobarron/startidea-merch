@@ -18,6 +18,14 @@ export function QuoteForm() {
       }
     }
     window.addEventListener("merch:prefill-product", onPrefill);
+    // also pick up sessionStorage (cross-page prefill desde fichas)
+    try {
+      const fromSession = sessionStorage.getItem("merch:prefill");
+      if (fromSession && productRef.current) {
+        productRef.current.value = fromSession;
+        sessionStorage.removeItem("merch:prefill");
+      }
+    } catch {}
     return () => window.removeEventListener("merch:prefill-product", onPrefill);
   }, []);
 
@@ -27,7 +35,11 @@ export function QuoteForm() {
     setErrorMsg("");
 
     const form = e.currentTarget;
-    const data = Object.fromEntries(new FormData(form).entries());
+    const data: Record<string, FormDataEntryValue> = Object.fromEntries(new FormData(form).entries());
+    try {
+      const ref = sessionStorage.getItem("merch:prefill-ref");
+      if (ref) data.productRef = ref;
+    } catch {}
 
     try {
       const res = await fetch("/api/quote-request", {
