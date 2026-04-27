@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    container_name: merch-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -8,16 +9,19 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - merch_pgdata_v2:/var/lib/postgresql/data
+    networks:
+      - merch_net
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: merch-app
     restart: unless-stopped
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@merch-db:5432/${POSTGRES_DB}
       RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_FROM: ${RESEND_FROM}
       RESEND_TO_INTERNAL: ${RESEND_TO_INTERNAL}
@@ -29,6 +33,12 @@ services:
       PORT: "3000"
     expose:
       - "3000"
+    networks:
+      - merch_net
+
+networks:
+  merch_net:
+    driver: bridge
 
 volumes:
   merch_pgdata_v2:

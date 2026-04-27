@@ -2,11 +2,9 @@
 set -e
 
 echo "[entrypoint] DATABASE_URL host check: ${DATABASE_URL%%\?*}" | sed 's|://[^@]*@|://***@|'
-echo "[entrypoint] Resolviendo hostname db..."
-getent hosts db || echo "[entrypoint] db no resuelve via getent"
-echo "[entrypoint] Esperando a Postgres en host db..."
+echo "[entrypoint] Esperando a Postgres en host merch-db..."
 i=0
-until node -e "const net=require('net');const s=new net.Socket();s.setTimeout(2000);s.on('connect',()=>{s.destroy();process.exit(0)});s.on('error',()=>process.exit(1));s.on('timeout',()=>{s.destroy();process.exit(1)});s.connect(5432,'db');" 2>/dev/null; do
+until node -e "const net=require('net');const s=new net.Socket();s.setTimeout(2000);s.on('connect',()=>{s.destroy();process.exit(0)});s.on('error',()=>process.exit(1));s.on('timeout',()=>{s.destroy();process.exit(1)});s.connect(5432,'merch-db');" 2>/dev/null; do
   i=$((i+1))
   if [ $i -gt 60 ]; then
     echo "[entrypoint] Postgres no respondió en 120s. Abortando."
