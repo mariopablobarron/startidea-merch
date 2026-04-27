@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: merch_local_pwd
       POSTGRES_DB: merch
     volumes:
-      - merch_pgdata:/var/lib/postgresql/data
+      - merch_pgdata_v2:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U merch -d merch"]
       interval: 5s
@@ -38,4 +38,4 @@ services:
       - "3000"
 
 volumes:
-  merch_pgdata:
+  merch_pgdata_v2:
