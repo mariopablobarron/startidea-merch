@@ -1,27 +1,63 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { runMidoceanSync } from "@/lib/suppliers/midocean-sync";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 600; // 10 min — sync entero puede tardar 5–8 min
+export const maxDuration = 600;
 
 /**
- * Sync MidOcean. Disparado por cron-job.org cada noche.
- *   POST https://merchandising.startidea.es/api/cron/midocean-sync
- *   Header: X-Cron-Secret: <CRON_SECRET>
+ * Sync MidOcean — dispara en background y responde inmediatamente.
+ *
+ * Traefik (Coolify) corta conexiones HTTP a 60s. El sync completo tarda
+ * 80–120s, así que devolvemos 202 + dispatch en background. El estado
+ * queda en `SupplierSync` y se consulta con GET.
+ *
+ *   POST /api/cron/midocean-sync   X-Cron-Secret  → dispara
+ *   GET  /api/cron/midocean-sync   X-Cron-Secret  → consulta estado
  */
 export async function POST(req: Request) {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
-  try {
-    const result = await runMidoceanSync();
-    return NextResponse.json(result, { status: result.ok ? 200 : 207 });
-  } catch (err) {
+  // Detectar concurrencia: si hay un sync iniciado en últimos 10 min sin finalizar
+  const last = await prisma.supplierSync.findUnique({ where: { supplier: "midocean" } });
+  const inProgress =
+    last &&
+    !last.finishedAt &&
+    Date.now() - last.startedAt.getTime() < 10 * 60 * 1000;
+  if (inProgress) {
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : String(err) },
-      { status: 500 },
+      { ok: false, status: "in_progress", startedAt: last.startedAt },
+      { status: 409 },
     );
   }
+
+  // Fire-and-forget. El handler retorna inmediatamente.
+  // Captura errores para log; no propagamos para no afectar el ciclo de Node.
+  void runMidoceanSync().catch((e) => {
+    console.error("[midocean-sync] async failure", e);
+  });
+
+  return NextResponse.json(
+    { ok: true, status: "queued", message: "Sync iniciado en background. Consulta GET para el estado." },
+    { status: 202 },
+  );
+}
+
+export async function GET(req: Request) {
+  const auth = requireCronSecret(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
+
+  const last = await prisma.supplierSync.findUnique({ where: { supplier: "midocean" } });
+  const stats = await prisma.product.aggregate({
+    where: { supplier: "midocean" },
+    _count: { _all: true },
+  });
+  return NextResponse.json({
+    ok: true,
+    lastSync: last,
+    productsInDb: stats._count._all,
+  });
 }
