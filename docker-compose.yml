@@ -21,7 +21,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@merch-db:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
       RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_FROM: ${RESEND_FROM}
       RESEND_TO_INTERNAL: ${RESEND_TO_INTERNAL}
