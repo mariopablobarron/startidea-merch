@@ -1,11 +1,13 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Nav() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink/5 bg-bone/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-8xl items-center justify-between px-6 lg:px-10">
-        <Link href="/" className="font-display text-xl font-semibold tracking-tight text-ink">
-          todo<span className="text-accent">merchandising</span>
+        <Link href="/" className="flex items-center gap-2.5 font-display text-xl font-semibold tracking-tight text-ink">
+          <Image src="/logo-mark.svg" alt="" width={28} height={28} className="rounded-md" />
+          <span>todo<span className="text-accent">merchandising</span></span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
           <Link href="/#impacto" className="text-sm hover:text-accent">Impacto</Link>
