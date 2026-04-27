@@ -26,7 +26,7 @@ export default async function CatalogoPage({
   const perPage = 24;
 
   const category = catSlug
-    ? await prisma.category.findUnique({ where: { slug: catSlug } })
+    ? await prisma.category.findFirst({ where: { slug: catSlug, parentId: null } })
     : null;
 
   const where = {

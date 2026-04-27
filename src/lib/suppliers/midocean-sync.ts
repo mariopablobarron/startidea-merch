@@ -87,6 +87,8 @@ export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
 
   // 5. productos
   for (const raw of products) {
+    // Skipea productos sin nombre (e.g. catálogos físicos del propio MidOcean)
+    if (!raw.product_name || !raw.product_name.trim()) continue;
     try {
       await upsertProduct(raw, printByMaster.get(raw.master_code), {
         techniqueByCode,

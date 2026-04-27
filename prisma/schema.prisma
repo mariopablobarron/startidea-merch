@@ -97,7 +97,7 @@ enum SupplierCode {
 
 model Category {
   id        String     @id @default(cuid())
-  slug      String     @unique
+  slug      String     // único por padre (no global) — distintos parents pueden tener "Otros"
   name      String
   parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   parentId  String?
@@ -105,7 +105,10 @@ model Category {
   level     Int        @default(1) // 1, 2, 3 según MidOcean category_levelN
   products  Product[]
 
+  // unicidad por path: top-level (parentId NULL) + nested
+  @@unique([parentId, slug])
   @@index([parentId])
+  @@index([slug])
 }
 
 model Product {
