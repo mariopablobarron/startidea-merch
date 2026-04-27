@@ -4,6 +4,7 @@ import { Marquee } from "@/components/Marquee";
 import { Impact } from "@/components/Impact";
 import { Process } from "@/components/Process";
 import { Categories } from "@/components/Categories";
+import { Partners } from "@/components/Partners";
 import { QuoteSection } from "@/components/QuoteSection";
 import { Footer } from "@/components/Footer";
 
@@ -16,6 +17,7 @@ export default function HomePage() {
         <Marquee />
         <Impact />
         <Process />
+        <Partners />
         <Categories />
         <QuoteSection />
       </main>

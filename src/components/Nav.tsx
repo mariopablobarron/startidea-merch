@@ -10,6 +10,7 @@ export function Nav() {
         <nav className="hidden items-center gap-8 md:flex">
           <Link href="#impacto" className="text-sm hover:text-accent">Impacto</Link>
           <Link href="#como" className="text-sm hover:text-accent">Cómo trabajamos</Link>
+          <Link href="#hecho-con" className="text-sm hover:text-accent">Hecho con</Link>
           <Link href="#productos" className="text-sm hover:text-accent">Productos</Link>
           <Link href="#contacto" className="text-sm hover:text-accent">Contacto</Link>
         </nav>

@@ -80,6 +80,18 @@ export function QuoteForm() {
 
       <input type="hidden" name="source" value="landing-f0" />
 
+      <label className="flex items-start gap-3 text-sm text-ink/70">
+        <input
+          type="checkbox"
+          name="consent"
+          required
+          className="mt-1 h-4 w-4 shrink-0 accent-accent"
+        />
+        <span>
+          He leído y acepto la <a href="/privacidad" className="font-medium text-accent underline-offset-4 hover:underline">política de privacidad</a> y consiento el tratamiento de mis datos para esta cotización.
+        </span>
+      </label>
+
       <button
         type="submit"
         disabled={status === "submitting"}
@@ -93,8 +105,8 @@ export function QuoteForm() {
       )}
 
       <p className="text-xs text-ink/50">
-        Al enviar aceptas que te contactemos por email/teléfono únicamente para esta cotización.
-        No spam. No marketing. No cedemos datos a terceros.
+        No spam. No marketing. No cedemos datos a terceros. Únicamente te contactamos por email
+        o teléfono para esta cotización.
       </p>
     </form>
   );
