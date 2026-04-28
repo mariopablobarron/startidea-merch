@@ -97,12 +97,12 @@ export default async function CatalogoPage({
             orderBy: { name: "asc" },
           })
         : Promise.resolve([]),
-      // Color groups disponibles en el conjunto filtrado
+      // Color groups disponibles en el conjunto filtrado.
+      // Prisma groupBy con relación nested requiere `is:`
       prisma.productVariant.groupBy({
         by: ["colorGroup"],
-        where: { product: where, colorGroup: { not: null } },
+        where: { product: { is: where }, colorGroup: { not: null } },
         _count: { _all: true },
-        orderBy: { _count: { colorGroup: "desc" } },
         take: 12,
       }),
       // Materiales más comunes
@@ -110,7 +110,6 @@ export default async function CatalogoPage({
         by: ["material"],
         where: { ...where, material: { not: null } },
         _count: { _all: true },
-        orderBy: { _count: { material: "desc" } },
         take: 12,
       }),
     ]);
