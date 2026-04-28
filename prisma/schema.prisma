@@ -173,9 +173,33 @@ model ProductVariant {
   // imagen principal de esta variante
   imageUrl        String?
   images          String[]      @default([])
+  // tramos de precio escalado por cantidad (cuando llega pricelist proveedor)
+  priceTiers      PriceTier[]
 
   @@index([productId])
   @@index([sku])
+}
+
+// Tramo de precio escalado por cantidad (e.g. 10 uds → 4,89€/ud, 25 uds → 3,12€/ud).
+// Origen: pricelist MidOcean / Makito; en su ausencia, defaults internos por categoría.
+model PriceTier {
+  id              String          @id @default(cuid())
+  variant         ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId       String
+  minQty          Int             // tramo mínimo aplicable
+  unitPriceCents  Int             // precio unitario neto en céntimos EUR
+  source          PriceTierSource @default(DEFAULT_ESTIMATE)
+  updatedAt       DateTime        @default(now())
+
+  @@unique([variantId, minQty])
+  @@index([variantId])
+}
+
+enum PriceTierSource {
+  MIDOCEAN_PRICELIST
+  MAKITO_PRICELIST
+  DEFAULT_ESTIMATE
+  MANUAL_OVERRIDE
 }
 
 // Posiciones de marcaje (del printdata)

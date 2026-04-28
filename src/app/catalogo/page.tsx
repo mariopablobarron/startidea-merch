@@ -5,6 +5,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = {
   title: "Catálogo de merchandising personalizable",
@@ -12,51 +13,107 @@ export const metadata: Metadata = {
     "Más de 2.000 productos promocionales personalizables: textil, drinkware, escritura, tecnología, eventos. Producción con impacto social en Centros Especiales de Empleo y talleres locales.",
 };
 
-export const revalidate = 3600; // 1h ISR
+export const revalidate = 3600;
+
+type Sort = "name" | "stock" | "recent";
+const SORT_LABELS: Record<Sort, string> = {
+  name: "Nombre A–Z",
+  stock: "Más stock primero",
+  recent: "Sincronizados recientemente",
+};
 
 export default async function CatalogoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; cat?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; cat?: string; color?: string; mat?: string; page?: string; sort?: Sort }>;
 }) {
   const sp = await searchParams;
   const q = (sp.q || "").trim();
   const catSlug = (sp.cat || "").trim();
+  const colorGroup = (sp.color || "").trim();
+  const material = (sp.mat || "").trim();
+  const sort: Sort = (sp.sort as Sort) || "name";
   const page = Math.max(1, parseInt(sp.page || "1", 10) || 1);
   const perPage = 24;
 
+  // Resolve category — puede ser top-level o sub-categoría (level 2/3)
   const category = catSlug
-    ? await prisma.category.findFirst({ where: { slug: catSlug, parentId: null } })
+    ? await prisma.category.findFirst({ where: { slug: catSlug } })
     : null;
 
-  const where = {
+  // Construir lista de IDs descendientes para que filtrar por una categoría top
+  // incluya productos asignados a sus subcategorías.
+  let categoryIds: string[] | undefined;
+  if (category) {
+    const descendants = await collectDescendants(category.id);
+    categoryIds = [category.id, ...descendants];
+  }
+
+  const where: Prisma.ProductWhereInput = {
     active: true,
     ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
-    ...(category ? { categoryId: category.id } : {}),
+    ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
+    ...(colorGroup
+      ? { variants: { some: { colorGroup: { equals: colorGroup, mode: "insensitive" as const } } } }
+      : {}),
+    ...(material
+      ? { material: { contains: material, mode: "insensitive" as const } }
+      : {}),
   };
 
-  const [products, total, topCategories] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      orderBy: [{ name: "asc" }],
-      skip: (page - 1) * perPage,
-      take: perPage,
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        brand: true,
-        primaryImageUrl: true,
-        category: { select: { name: true } },
-      },
-    }),
-    prisma.product.count({ where }),
-    prisma.category.findMany({
-      where: { level: 1 },
-      orderBy: { name: "asc" },
-      select: { slug: true, name: true, _count: { select: { products: true } } },
-    }),
-  ]);
+  const orderBy: Prisma.ProductOrderByWithRelationInput =
+    sort === "stock"
+      ? { variants: { _count: "desc" } }
+      : sort === "recent"
+        ? { syncedAt: "desc" }
+        : { name: "asc" };
+
+  const [products, total, topCategories, subCategories, colorGroups, materials] =
+    await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * perPage,
+        take: perPage,
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          brand: true,
+          primaryImageUrl: true,
+          category: { select: { name: true } },
+          variants: { take: 1, select: { stockQty: true } },
+        },
+      }),
+      prisma.product.count({ where }),
+      prisma.category.findMany({
+        where: { level: 1 },
+        orderBy: { name: "asc" },
+      }),
+      // Subcategorías (level 2 y 3) del top-level activo
+      category
+        ? prisma.category.findMany({
+            where: { parentId: category.parentId === null ? category.id : category.parentId },
+            orderBy: { name: "asc" },
+          })
+        : Promise.resolve([]),
+      // Color groups disponibles en el conjunto filtrado
+      prisma.productVariant.groupBy({
+        by: ["colorGroup"],
+        where: { product: where, colorGroup: { not: null } },
+        _count: { _all: true },
+        orderBy: { _count: { colorGroup: "desc" } },
+        take: 12,
+      }),
+      // Materiales más comunes
+      prisma.product.groupBy({
+        by: ["material"],
+        where: { ...where, material: { not: null } },
+        _count: { _all: true },
+        orderBy: { _count: { material: "desc" } },
+        take: 12,
+      }),
+    ]);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
@@ -64,7 +121,7 @@ export default async function CatalogoPage({
     <>
       <Nav />
       <main className="bg-bone">
-        <section className="border-b border-ink/10 bg-bone py-16 lg:py-20">
+        <section className="border-b border-ink/10 bg-bone py-12 lg:py-16">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
             <p className="mb-4 text-sm font-medium uppercase tracking-wider text-accent">
               Catálogo
@@ -72,12 +129,12 @@ export default async function CatalogoPage({
             <h1 className="font-display text-section font-semibold text-ink">
               {category ? category.name : "Más de 2.000 productos personalizables"}
             </h1>
-            <p className="mt-4 max-w-3xl text-lg text-ink/70">
+            <p className="mt-4 max-w-3xl text-base text-ink/70 lg:text-lg">
               Cualquier producto se personaliza con tu logo y se produce en CEE o talleres
               locales. Pídelo por categoría o busca lo que necesites.
             </p>
 
-            <form className="mt-8 flex max-w-xl gap-2">
+            <form className="mt-6 flex max-w-xl gap-2">
               <input
                 type="search"
                 name="q"
@@ -96,96 +153,279 @@ export default async function CatalogoPage({
           </div>
         </section>
 
-        <section className="bg-bone py-10">
-          <div className="mx-auto max-w-8xl px-6 lg:px-10">
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/catalogo"
-                className={`rounded-full px-4 py-1.5 text-sm transition ${
-                  !catSlug
-                    ? "bg-ink text-bone"
-                    : "border border-ink/15 bg-bone-soft text-ink/70 hover:border-ink/40"
-                }`}
-              >
-                Todas
-              </Link>
-              {topCategories.map((c) => (
+        {/* Subcategorías chips dentro de una categoría seleccionada */}
+        {subCategories.length > 0 && (
+          <section className="border-b border-ink/10 bg-bone-soft py-5">
+            <div className="mx-auto max-w-8xl px-6 lg:px-10">
+              <div className="flex flex-wrap gap-2">
                 <Link
-                  key={c.slug}
-                  href={`/catalogo?cat=${c.slug}`}
-                  className={`rounded-full px-4 py-1.5 text-sm transition ${
-                    catSlug === c.slug
-                      ? "bg-ink text-bone"
-                      : "border border-ink/15 bg-bone-soft text-ink/70 hover:border-ink/40"
+                  href={`/catalogo?cat=${category?.parentId ? "" : catSlug}`}
+                  className={`rounded-full px-3 py-1 text-xs transition ${
+                    !category?.parentId ? "bg-ink text-bone" : "border border-ink/15 bg-bone text-ink/70 hover:border-ink/40"
                   }`}
                 >
-                  {c.name}{" "}
-                  <span className="text-xs opacity-60">({c._count.products})</span>
+                  Todas
                 </Link>
-              ))}
+                {subCategories.map((sc) => (
+                  <Link
+                    key={sc.id}
+                    href={`/catalogo?cat=${sc.slug}`}
+                    className={`rounded-full px-3 py-1 text-xs transition ${
+                      catSlug === sc.slug
+                        ? "bg-ink text-bone"
+                        : "border border-ink/15 bg-bone text-ink/70 hover:border-ink/40"
+                    }`}
+                  >
+                    {sc.name}
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        <section className="bg-bone pb-24 pt-4 lg:pb-36">
+        <section className="bg-bone py-10 lg:py-12">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
-            {total === 0 ? (
-              <EmptyState q={q} />
-            ) : (
-              <>
-                <p className="mb-8 text-sm text-ink/60">
-                  {total.toLocaleString("es-ES")} productos
-                  {q && (
-                    <>
-                      {" "}
-                      para «<strong>{q}</strong>»
-                    </>
-                  )}
-                </p>
-                <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {products.map((p) => (
-                    <Link
-                      key={p.id}
-                      href={`/catalogo/${p.slug}`}
-                      className="group flex flex-col rounded-3xl border border-ink/10 bg-bone-soft p-5 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
-                    >
-                      <div className="relative aspect-square overflow-hidden rounded-2xl bg-bone">
-                        {p.primaryImageUrl ? (
-                          <Image
-                            src={p.primaryImageUrl}
-                            alt={p.name}
-                            fill
-                            sizes="(max-width:768px) 50vw, 25vw"
-                            className="object-contain p-4 transition group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="grid h-full place-items-center text-ink/30">Sin imagen</div>
-                        )}
-                      </div>
-                      <h3 className="mt-5 font-display text-lg font-semibold text-ink line-clamp-2">
-                        {p.name}
-                      </h3>
-                      {p.category?.name && (
-                        <p className="mt-1 text-xs uppercase tracking-wider text-ink/50">
-                          {p.category.name}
-                        </p>
-                      )}
-                      <span className="mt-auto pt-4 text-xs font-medium text-accent">
-                        Ver y cotizar →
-                      </span>
-                    </Link>
+            <div className="grid gap-10 lg:grid-cols-[260px,1fr]">
+              {/* Sidebar filtros */}
+              <aside className="lg:sticky lg:top-24 lg:self-start">
+                <FilterBlock title="Categoría">
+                  <Chip href="/catalogo" active={!catSlug} label="Todas" />
+                  {topCategories.map((c) => (
+                    <Chip
+                      key={c.id}
+                      href={`/catalogo?cat=${c.slug}`}
+                      active={catSlug === c.slug}
+                      label={c.name}
+                    />
                   ))}
+                </FilterBlock>
+
+                {colorGroups.length > 0 && (
+                  <FilterBlock title="Color">
+                    <Chip
+                      href={buildHref({ q, cat: catSlug, mat: material, sort })}
+                      active={!colorGroup}
+                      label="Cualquiera"
+                    />
+                    {colorGroups
+                      .filter((c) => c.colorGroup)
+                      .map((c) => (
+                        <Chip
+                          key={c.colorGroup!}
+                          href={buildHref({
+                            q,
+                            cat: catSlug,
+                            mat: material,
+                            color: c.colorGroup!,
+                            sort,
+                          })}
+                          active={colorGroup.toLowerCase() === c.colorGroup!.toLowerCase()}
+                          label={`${c.colorGroup}`}
+                        />
+                      ))}
+                  </FilterBlock>
+                )}
+
+                {materials.length > 0 && (
+                  <FilterBlock title="Material">
+                    <Chip
+                      href={buildHref({ q, cat: catSlug, color: colorGroup, sort })}
+                      active={!material}
+                      label="Cualquiera"
+                    />
+                    {materials
+                      .filter((m) => m.material)
+                      .slice(0, 8)
+                      .map((m) => (
+                        <Chip
+                          key={m.material!}
+                          href={buildHref({
+                            q,
+                            cat: catSlug,
+                            color: colorGroup,
+                            mat: m.material!,
+                            sort,
+                          })}
+                          active={material.toLowerCase() === m.material!.toLowerCase()}
+                          label={m.material!}
+                        />
+                      ))}
+                  </FilterBlock>
+                )}
+
+                {(q || catSlug || colorGroup || material) && (
+                  <Link
+                    href="/catalogo"
+                    className="mt-6 inline-block text-xs text-ink/60 underline-offset-4 hover:text-accent hover:underline"
+                  >
+                    Limpiar filtros
+                  </Link>
+                )}
+              </aside>
+
+              {/* Grid de productos */}
+              <div>
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-sm">
+                  <p className="text-ink/60">
+                    {total.toLocaleString("es-ES")} {total === 1 ? "producto" : "productos"}
+                    {q && (
+                      <>
+                        {" "}
+                        para «<strong>{q}</strong>»
+                      </>
+                    )}
+                  </p>
+                  <SortSelect current={sort} q={q} cat={catSlug} color={colorGroup} mat={material} />
                 </div>
 
-                <Pagination page={page} totalPages={totalPages} q={q} cat={catSlug} />
-              </>
-            )}
+                {total === 0 ? (
+                  <EmptyState q={q} />
+                ) : (
+                  <>
+                    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                      {products.map((p) => {
+                        const stock = p.variants[0]?.stockQty ?? 0;
+                        return (
+                          <Link
+                            key={p.id}
+                            href={`/catalogo/${p.slug}`}
+                            className="group flex flex-col rounded-3xl border border-ink/10 bg-bone-soft p-5 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
+                          >
+                            <div className="relative aspect-square overflow-hidden rounded-2xl bg-bone">
+                              {p.primaryImageUrl ? (
+                                <Image
+                                  src={p.primaryImageUrl}
+                                  alt={p.name}
+                                  fill
+                                  sizes="(max-width:768px) 50vw, 25vw"
+                                  className="object-contain p-4 transition group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="grid h-full place-items-center text-ink/30">Sin imagen</div>
+                              )}
+                            </div>
+                            <h3 className="mt-5 line-clamp-2 font-display text-lg font-semibold text-ink">
+                              {p.name}
+                            </h3>
+                            {p.category?.name && (
+                              <p className="mt-1 text-[11px] uppercase tracking-wider text-ink/50">
+                                {p.category.name}
+                              </p>
+                            )}
+                            <div className="mt-4 flex items-center justify-between text-xs">
+                              {stock > 0 ? (
+                                <span className="inline-flex items-center gap-1.5 text-social">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-social" />
+                                  En stock
+                                </span>
+                              ) : (
+                                <span className="text-ink/40">Bajo pedido</span>
+                              )}
+                              <span className="font-medium text-accent">Ver →</span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+
+                    <Pagination page={page} totalPages={totalPages} q={q} cat={catSlug} color={colorGroup} mat={material} sort={sort} />
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </section>
       </main>
       <Footer />
       <WhatsAppFloat />
     </>
+  );
+}
+
+async function collectDescendants(rootId: string): Promise<string[]> {
+  const ids: string[] = [];
+  let frontier = [rootId];
+  for (let depth = 0; depth < 5 && frontier.length; depth++) {
+    const children = await prisma.category.findMany({
+      where: { parentId: { in: frontier } },
+      select: { id: true },
+    });
+    const childIds = children.map((c) => c.id);
+    if (!childIds.length) break;
+    ids.push(...childIds);
+    frontier = childIds;
+  }
+  return ids;
+}
+
+function buildHref(params: Record<string, string | undefined>): string {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v) sp.set(k, v);
+  }
+  const q = sp.toString();
+  return `/catalogo${q ? `?${q}` : ""}`;
+}
+
+function FilterBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="border-b border-ink/10 py-5 first:pt-0 last:border-b-0">
+      <p className="mb-3 text-xs font-medium uppercase tracking-wider text-ink/50">{title}</p>
+      <div className="flex flex-wrap gap-1.5">{children}</div>
+    </div>
+  );
+}
+
+function Chip({ href, active, label }: { href: string; active: boolean; label: string }) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center rounded-full px-3 py-1 text-xs transition ${
+        active
+          ? "bg-ink text-bone"
+          : "border border-ink/15 bg-bone-soft text-ink/70 hover:border-ink/40"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function SortSelect({
+  current,
+  q,
+  cat,
+  color,
+  mat,
+}: {
+  current: Sort;
+  q: string;
+  cat: string;
+  color: string;
+  mat: string;
+}) {
+  const opts: Sort[] = ["name", "stock", "recent"];
+  return (
+    <form className="flex items-center gap-2">
+      {q && <input type="hidden" name="q" value={q} />}
+      {cat && <input type="hidden" name="cat" value={cat} />}
+      {color && <input type="hidden" name="color" value={color} />}
+      {mat && <input type="hidden" name="mat" value={mat} />}
+      <label className="text-xs text-ink/50">Ordenar por</label>
+      <select
+        name="sort"
+        defaultValue={current}
+        onChange={(e) => e.currentTarget.form?.submit()}
+        className="rounded-full border border-ink/15 bg-bone-soft px-3 py-1.5 text-xs outline-none focus:border-accent"
+      >
+        {opts.map((o) => (
+          <option key={o} value={o}>
+            {SORT_LABELS[o]}
+          </option>
+        ))}
+      </select>
+    </form>
   );
 }
 
@@ -196,8 +436,7 @@ function EmptyState({ q }: { q: string }) {
         {q ? `Nada para «${q}» todavía.` : "Catálogo aún sincronizando."}
       </p>
       <p className="mx-auto mt-3 max-w-md text-ink/60">
-        El sync nocturno tarda en completarse la primera vez. Mientras tanto, cuéntanos
-        qué buscas y lo cotizamos directamente.
+        Cuéntanos qué buscas y lo cotizamos directamente en 24h.
       </p>
       <Link
         href="/#cotizar"
@@ -214,22 +453,24 @@ function Pagination({
   totalPages,
   q,
   cat,
+  color,
+  mat,
+  sort,
 }: {
   page: number;
   totalPages: number;
   q: string;
   cat: string;
+  color: string;
+  mat: string;
+  sort: Sort;
 }) {
   if (totalPages <= 1) return null;
   function url(p: number) {
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (cat) params.set("cat", cat);
-    params.set("page", String(p));
-    return `/catalogo?${params.toString()}`;
+    return buildHref({ q, cat, color, mat, sort, page: String(p) });
   }
   return (
-    <div className="mt-16 flex items-center justify-between gap-3 text-sm">
+    <div className="mt-12 flex items-center justify-between gap-3 text-sm">
       {page > 1 ? (
         <Link
           href={url(page - 1)}
