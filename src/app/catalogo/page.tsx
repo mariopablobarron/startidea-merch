@@ -103,6 +103,7 @@ export default async function CatalogoPage({
         by: ["colorGroup"],
         where: { product: { is: where }, colorGroup: { not: null } },
         _count: { _all: true },
+        orderBy: { colorGroup: "asc" },
         take: 12,
       }),
       // Materiales más comunes
@@ -110,6 +111,7 @@ export default async function CatalogoPage({
         by: ["material"],
         where: { ...where, material: { not: null } },
         _count: { _all: true },
+        orderBy: { material: "asc" },
         take: 12,
       }),
     ]);
