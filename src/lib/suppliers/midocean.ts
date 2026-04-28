@@ -181,18 +181,29 @@ export function slugify(s: string): string {
     .slice(0, 80);
 }
 
+/**
+ * Filtra assets que son IMAGENES reales. MidOcean mete en `digital_assets` también
+ * PDFs (declaration-of-conformity, manuals…), MP4 y otros. El campo `type` distingue.
+ */
+function imageAssets(assets?: MidoceanRawAsset[]): MidoceanRawAsset[] {
+  if (!assets || !assets.length) return [];
+  return assets.filter((a) => {
+    if (!a.url) return false;
+    if (a.type && a.type !== "image") return false;
+    // Doble check por extensión por si el feed olvida el tipo
+    return /\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(a.url);
+  });
+}
+
 export function pickPrimaryImage(assets?: MidoceanRawAsset[]): string | undefined {
-  if (!assets || !assets.length) return;
-  const front = assets.find((a) => a.subtype === "item_picture_front");
-  return (front || assets[0])?.url;
+  const imgs = imageAssets(assets);
+  if (!imgs.length) return;
+  const front = imgs.find((a) => a.subtype === "item_picture_front");
+  return (front || imgs[0]).url;
 }
 
 export function variantImages(assets?: MidoceanRawAsset[]): string[] {
-  if (!assets || !assets.length) return [];
-  return assets
-    .filter((a) => a.type === "image" && a.url)
-    .map((a) => a.url)
-    .slice(0, 8);
+  return imageAssets(assets).map((a) => a.url).slice(0, 8);
 }
 
 export function parseUnitToMm(value?: string, unit?: string): number | undefined {
