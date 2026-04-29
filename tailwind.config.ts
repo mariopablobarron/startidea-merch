@@ -4,21 +4,32 @@ const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // Paleta oficial Startidea — alineada con hub-startidea-web/app/globals.css
       colors: {
         ink: {
-          DEFAULT: "#0B0B0F",
-          soft: "#1A1A22",
+          DEFAULT: "#0a0a0b",
+          soft: "#1a1a1d",
+          mute: "#6b6b6b",
         },
         bone: {
-          DEFAULT: "#F5F1EA",
-          soft: "#FAF7F2",
+          DEFAULT: "#f1ede5", // paper-2
+          soft: "#faf8f4",    // paper
+        },
+        line: {
+          DEFAULT: "#e6e1d6",
+          dark: "#2a2a2e",
         },
         accent: {
-          DEFAULT: "#FF5A1F",
-          dark: "#D6440F",
+          DEFAULT: "#ff6b35", // coral-500 — naranja cálido oficial
+          dark: "#ed4f15",    // coral-600 (hover)
+          deep: "#c43c0d",    // coral-700
+          light: "#ffae84",   // coral-300
+          mist: "#ffe0d0",    // coral-100
+          wash: "#fff3ed",    // coral-50
         },
         social: {
-          DEFAULT: "#10B981",
+          DEFAULT: "#4a9d7f", // moss-500 — verde Startidea
+          dark: "#38826a",    // moss-600
         },
       },
       fontFamily: {
