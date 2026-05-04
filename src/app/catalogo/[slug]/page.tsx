@@ -177,7 +177,7 @@ export default async function ProductDetailPage({
                   {product.lengthMm ? (
                     <Spec
                       label="Dimensiones"
-                      value={`${product.lengthMm}×${product.widthMm ?? "?"}${product.heightMm ? `×${product.heightMm}` : ""} mm`}
+                      value={formatDimensions(product.lengthMm, product.widthMm, product.heightMm)}
                     />
                   ) : null}
                   <Spec label="Variantes" value={`${product.variants.length}`} />
@@ -191,33 +191,39 @@ export default async function ProductDetailPage({
 
               {/* Áreas y técnicas de marcaje */}
               {product.positions.length > 0 && (
-                <div className="mt-6 rounded-3xl border border-ink/10 bg-bone-soft p-6 lg:p-8">
+                <div className="mt-6 rounded-3xl border border-line bg-bone p-6 lg:p-8">
                   <h2 className="font-display text-xl font-semibold text-ink">
                     Áreas de marcaje
                   </h2>
                   <p className="mt-2 text-sm text-ink/60">
-                    {product.positions.length} {product.positions.length === 1 ? "zona disponible" : "zonas disponibles"} para personalizar.
+                    {product.positions.length} {product.positions.length === 1 ? "zona disponible" : "zonas disponibles"} para personalizar tu logo.
                   </p>
                   <ul className="mt-5 grid gap-3 sm:grid-cols-2">
                     {product.positions.map((pos) => (
-                      <li key={pos.id} className="rounded-2xl bg-bone p-4">
+                      <li key={pos.id} className="rounded-2xl border border-line bg-bone-soft p-5">
                         <p className="text-xs font-medium uppercase tracking-wider text-accent">
                           {pos.positionId}
                         </p>
                         {(pos.maxWidthMm || pos.maxHeightMm) && (
-                          <p className="mt-2 font-display text-lg font-semibold text-ink tabular-nums">
-                            {pos.maxWidthMm ?? "?"} × {pos.maxHeightMm ?? "?"} mm
+                          <p className="mt-3 font-display text-2xl font-semibold text-ink tabular-nums">
+                            {pos.maxWidthMm ?? "?"} × {pos.maxHeightMm ?? "?"}
+                            <span className="ml-1 text-xs font-normal text-ink/50">mm</span>
                           </p>
                         )}
-                        <p className="mt-2 text-xs text-ink/60">
-                          {pos.techniques
-                            .map(
-                              (t) =>
-                                `${t.technique.name}${
-                                  t.maxColors ? ` (${t.maxColors} col.)` : ""
-                                }`,
-                            )
-                            .join(" · ") || "—"}
+                        <p className="mt-3 flex flex-wrap gap-1.5">
+                          {pos.techniques.length > 0 ? (
+                            pos.techniques.map((t) => (
+                              <span
+                                key={t.techniqueId}
+                                className="rounded-full bg-accent-wash px-2.5 py-0.5 text-[11px] font-medium text-accent-deep"
+                              >
+                                {t.technique.name}
+                                {t.maxColors ? ` · ${t.maxColors} col.` : ""}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-ink/40">Sin técnicas asignadas</span>
+                          )}
                         </p>
                       </li>
                     ))}
@@ -266,6 +272,13 @@ export default async function ProductDetailPage({
       <WhatsAppFloat />
     </>
   );
+}
+
+function formatDimensions(lengthMm: number, widthMm: number | null, heightMm: number | null): string {
+  // Omite cualquier dimensión que sea 0 (e.g. toallas planas)
+  const parts = [lengthMm, widthMm, heightMm].filter((d): d is number => typeof d === "number" && d > 0);
+  if (parts.length === 0) return "—";
+  return `${parts.join("×")} mm`;
 }
 
 function Spec({ label, value }: { label: string; value: string }) {

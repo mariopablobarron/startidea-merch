@@ -11,6 +11,7 @@ import {
   type MidoceanRawProduct,
   type MidoceanRawPrintProduct,
 } from "./midocean";
+import { normalizeTechniqueName } from "@/lib/marking-techniques-es";
 
 export type MidoceanSyncResult = {
   startedAt: string;
@@ -55,7 +56,8 @@ export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
   // 2. técnicas globales
   const techniqueByCode = new Map<string, { id: string; name: string }>();
   for (const t of printData.printing_technique_descriptions) {
-    const name = spanishTechniqueName(t);
+    const rawName = spanishTechniqueName(t);
+    const name = normalizeTechniqueName(rawName);
     const upserted = await prisma.markingTechnique.upsert({
       where: { code: t.id },
       create: { code: t.id, name },
