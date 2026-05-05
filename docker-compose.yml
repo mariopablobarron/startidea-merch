@@ -43,10 +43,37 @@ services:
       start_period: 60s
     networks:
       - merch_net
+      - coolify
+    labels:
+      # Traefik routing — dominio nuevo principal: merchandising.hubstartidea.es
+      traefik.enable: "true"
+      traefik.docker.network: coolify
+      traefik.http.routers.startidea-merch.rule: "Host(`merchandising.hubstartidea.es`)"
+      traefik.http.routers.startidea-merch.entrypoints: websecure
+      traefik.http.routers.startidea-merch.tls: "true"
+      traefik.http.routers.startidea-merch.tls.certresolver: letsencrypt
+      traefik.http.routers.startidea-merch.service: startidea-merch
+      traefik.http.routers.startidea-merch-http.rule: "Host(`merchandising.hubstartidea.es`)"
+      traefik.http.routers.startidea-merch-http.entrypoints: web
+      traefik.http.routers.startidea-merch-http.middlewares: startidea-merch-redirect
+      # Router legacy para merchandising.startidea.es — quitar cuando se actualice DNS en IONOS
+      traefik.http.routers.startidea-merch-old.rule: "Host(`merchandising.startidea.es`)"
+      traefik.http.routers.startidea-merch-old.entrypoints: websecure
+      traefik.http.routers.startidea-merch-old.tls: "true"
+      traefik.http.routers.startidea-merch-old.tls.certresolver: letsencrypt
+      traefik.http.routers.startidea-merch-old.service: startidea-merch
+      traefik.http.routers.startidea-merch-old-http.rule: "Host(`merchandising.startidea.es`)"
+      traefik.http.routers.startidea-merch-old-http.entrypoints: web
+      traefik.http.routers.startidea-merch-old-http.middlewares: startidea-merch-redirect
+      traefik.http.middlewares.startidea-merch-redirect.redirectscheme.scheme: https
+      traefik.http.middlewares.startidea-merch-redirect.redirectscheme.permanent: "true"
+      traefik.http.services.startidea-merch.loadbalancer.server.port: "3000"
 
 networks:
   merch_net:
     driver: bridge
+  coolify:
+    external: true
 
 volumes:
   merch_pgdata_v2:
