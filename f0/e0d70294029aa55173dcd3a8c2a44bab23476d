@@ -1,0 +1,24 @@
+src/app/layout.tsx
+  ca8f2096758898f5 2,36-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "f0e0d70294029aa55173dcd3a8c2a44bab23476d",
+  "prompts": {
+    "ca8f2096758898f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "956685d7-12e3-4b4a-b2a4-3f5bb69747d0",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 0,
+      "accepted_lines": 8,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/26f2bd57644a70a3d33bcdb7549f31a8f43870aeefa98eebbfca152eb91de90f"
+    }
+  }
+}
