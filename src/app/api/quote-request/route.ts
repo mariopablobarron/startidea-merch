@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { autoresponseQuoteEmail, internalQuoteEmail, type QuoteEmailData } from "@/lib/email-templates";
+import { notifyAdmins } from "@/lib/notify-admin";
 
 export const runtime = "nodejs";
 
@@ -91,6 +92,13 @@ export async function POST(req: Request) {
   } else {
     console.warn("[quote-request] RESEND_API_KEY ausente — solo persistido en DB");
   }
+
+  void notifyAdmins({
+    title: `Nueva cotización · ${data.name}`,
+    body: `${data.message.slice(0, 100)}${data.company ? ` — ${data.company}` : ""}`,
+    url: `/admin/quotes/${created.id}`,
+    tag: `quote-${created.id}`,
+  }).catch((err) => console.error("[quote-request push]", err));
 
   return NextResponse.json({ ok: true, id: created.id });
 }

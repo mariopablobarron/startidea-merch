@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
+import { notifyAdmins } from "@/lib/notify-admin";
 
 export const runtime = "nodejs";
 
@@ -109,6 +110,15 @@ export async function POST(req: Request) {
       }),
     ]).catch((err) => console.error("[cart-quote] resend error", err));
   }
+
+  // Notificación push al equipo (fire-and-forget)
+  void notifyAdmins({
+    title: `Nuevo carrito · ${data.name}`,
+    body: `${cart.items.length} producto${cart.items.length === 1 ? "" : "s"} · ${EUR.format(total / 100)}${data.company ? ` · ${data.company}` : ""}`,
+    url: `/admin/cart-quotes/${cart.id}`,
+    tag: `cart-${cart.id}`,
+    requireInteraction: true,
+  }).catch((err) => console.error("[cart-quote push]", err));
 
   return NextResponse.json({ ok: true, id: cart.id, items: cart.items.length });
 }

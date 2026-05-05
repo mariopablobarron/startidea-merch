@@ -271,6 +271,39 @@ model PrintManipulation {
 }
 
 // ============================================================================
+// Notificaciones push para el equipo admin (Web Push API + VAPID)
+// ============================================================================
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  label     String?  // descripción opcional (ej. "Mario · iPhone 15")
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+}
+
+// ============================================================================
+// Eventos de analítica (custom, complementan a Umami)
+// ============================================================================
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String   // viewProduct, addToCart, recommend, payClick, payComplete…
+  path      String?
+  productSlug String?
+  payload   Json?
+  sessionId String?  // anónimo, generado client-side
+  userAgent String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([productSlug])
+  @@index([sessionId])
+}
+
+// ============================================================================
 // F2 — Cesta de cotización (multi-producto con marcaje calculado)
 // ============================================================================
 

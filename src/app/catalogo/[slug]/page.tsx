@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { QuantityConfigurator } from "@/components/QuantityConfigurator";
 import { CompareToggle } from "@/components/CompareToggle";
 import { MarkingCalculator } from "@/components/MarkingCalculator";
+import { MockupGenerator } from "@/components/MockupGenerator";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 
 export const revalidate = 3600;
@@ -317,6 +318,11 @@ export default async function ProductDetailPage({
               />
 
               <CompareToggle slug={product.slug} />
+
+              <MockupGenerator
+                productSlug={product.slug}
+                positions={product.positions.map((p) => ({ id: p.id, positionId: p.positionId }))}
+              />
 
               <MarkingCalculator
                 productSlug={product.slug}

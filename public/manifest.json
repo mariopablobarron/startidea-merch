@@ -1,0 +1,22 @@
+{
+  "name": "TodoMerchandising",
+  "short_name": "TodoMerch",
+  "description": "Merchandising corporativo con impacto social. Cotización en 24h.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#faf8f4",
+  "theme_color": "#0a0a0b",
+  "categories": ["business", "shopping"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Catálogo", "url": "/catalogo", "description": "Explorar 2.400+ productos" },
+    { "name": "Recomendador", "url": "/recomendador", "description": "Asistente IA para tu brief" },
+    { "name": "Carrito", "url": "/carrito", "description": "Ver cesta de cotización" },
+    { "name": "Admin", "url": "/admin", "description": "Panel general (sólo equipo)" }
+  ]
+}

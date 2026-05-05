@@ -7,6 +7,7 @@ import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { SortSelect } from "@/components/SortSelect";
+import { CompareBadge } from "@/components/CatalogCardActions";
 
 export const metadata: Metadata = {
   title: "Catálogo de merchandising personalizable",
@@ -306,6 +307,7 @@ export default async function CatalogoPage({
                               ) : (
                                 <div className="grid h-full place-items-center text-ink/30">Sin imagen</div>
                               )}
+                              <CompareBadge slug={p.slug} />
                             </div>
                             <h3 className="mt-5 line-clamp-2 font-display text-lg font-semibold text-ink">
                               {p.name}

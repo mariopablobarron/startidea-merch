@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { AdminPushPanel } from "@/components/AdminPushPanel";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -289,6 +290,10 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </section>
+
+            <div className="mt-6">
+              <AdminPushPanel secret={secret} />
+            </div>
 
             <p className="mt-8 text-center text-[11px] text-ink/40">
               Catálogo activo: {data.counts.products.toLocaleString("es-ES")} productos.

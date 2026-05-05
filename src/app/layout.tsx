@@ -3,6 +3,9 @@ import Script from "next/script";
 import "./globals.css";
 import { CompareBanner } from "@/components/CompareBanner";
 import { CartBanner } from "@/components/CartBanner";
+import { PWARegister } from "@/components/PWARegister";
+import { OnboardingTour } from "@/components/OnboardingTour";
+import { Analytics } from "@/components/Analytics";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
@@ -25,6 +28,13 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary_large_image" },
   robots: { index: true, follow: true },
+  manifest: "/manifest.json",
+  themeColor: "#0a0a0b",
+  appleWebApp: {
+    capable: true,
+    title: "TodoMerch",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -47,6 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <CartBanner />
         <CompareBanner />
+        <OnboardingTour />
+        <PWARegister />
+        <Analytics />
       </body>
     </html>
   );

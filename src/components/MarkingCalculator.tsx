@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { addItem } from "@/lib/cart-storage";
+import { trackEvent } from "@/lib/track";
 
 type Position = {
   id: string;
@@ -101,6 +102,11 @@ export function MarkingCalculator({ productSlug, productName, productRef, primar
     if (!technique || !position) return;
     const totalClientCents = parseTotalCents(calc);
     const unitClientCents = totalClientCents != null ? Math.round(totalClientCents / qty) : null;
+    trackEvent({
+      type: "addToCart",
+      productSlug,
+      payload: { qty, technique: technique.techniqueCode, totalCents: totalClientCents },
+    });
     addItem({
       productSlug,
       productRef,

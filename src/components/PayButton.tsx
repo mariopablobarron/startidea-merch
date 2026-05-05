@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent } from "@/lib/track";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -16,6 +17,7 @@ export function PayButton({ token, amountCents }: { token: string; amountCents: 
   async function startCheckout() {
     setLoading(true);
     setError(null);
+    trackEvent({ type: "payClick", payload: { token, amountCents } });
     try {
       const res = await fetch(`/api/pay/${token}/checkout`, { method: "POST" });
       const data = await res.json();
