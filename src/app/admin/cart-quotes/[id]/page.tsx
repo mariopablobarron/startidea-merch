@@ -197,7 +197,113 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
             {savingNotes ? "Guardando…" : "Guardar notas"}
           </button>
         </div>
+
+        {/* Acciones MidOcean */}
+        <OrderActions cartId={id} secret={secret} />
       </div>
     </main>
+  );
+}
+
+function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<unknown>(null);
+  const [proofUrl, setProofUrl] = useState("");
+
+  async function placeOrder() {
+    if (!confirm("¿Crear pedido en MidOcean? Si MIDOCEAN_LIVE_ORDERS=true se enviará de verdad.")) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/cart-quotes/${cartId}/place-order`, {
+        method: "POST",
+        headers: { "X-Admin-Secret": secret },
+      });
+      setResult(await res.json());
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function loadTracking() {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/cart-quotes/${cartId}/tracking`, {
+        headers: { "X-Admin-Secret": secret },
+      });
+      setResult(await res.json());
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createProof() {
+    if (!proofUrl) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/cart-quotes/${cartId}/proofs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        body: JSON.stringify({ artworkUrl: proofUrl }),
+      });
+      setResult(await res.json());
+      setProofUrl("");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="rounded-2xl border border-line bg-bone p-5">
+        <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Acciones MidOcean</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={placeOrder}
+            className="rounded-full bg-ink px-4 py-2 text-xs font-medium text-bone hover:bg-accent disabled:opacity-40"
+          >
+            Crear pedido (place order)
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={loadTracking}
+            className="rounded-full border border-line bg-bone-soft px-4 py-2 text-xs font-medium hover:border-accent disabled:opacity-40"
+          >
+            Consultar tracking
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-line bg-bone p-5">
+        <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Crear proof para el cliente</p>
+        <p className="mt-1 text-xs text-ink/60">
+          URL del mockup (Drive/S3/Dropbox público). Se enviará un email al cliente con un link único para aprobar/rechazar.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <input
+            value={proofUrl}
+            onChange={(e) => setProofUrl(e.target.value)}
+            placeholder="https://…/mockup.png"
+            className="flex-1 rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+          />
+          <button
+            type="button"
+            disabled={busy || !/^https?:\/\//.test(proofUrl)}
+            onClick={createProof}
+            className="rounded-full bg-ink px-4 py-2 text-xs font-medium text-bone hover:bg-accent disabled:opacity-40"
+          >
+            Enviar al cliente
+          </button>
+        </div>
+      </div>
+
+      {result != null && (
+        <pre className="overflow-x-auto rounded-2xl border border-line bg-ink p-4 text-[11px] text-bone/80">
+          {JSON.stringify(result, null, 2)}
+        </pre>
+      )}
+    </div>
   );
 }

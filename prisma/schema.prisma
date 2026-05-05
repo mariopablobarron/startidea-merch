@@ -284,6 +284,13 @@ model CartQuote {
   email       String
   phone       String?
 
+  // dirección de envío (opcional, se completa en admin)
+  shippingAddress    String?
+  shippingPostalCode String?
+  shippingCity       String?
+  shippingCountry    String?  @default("ES")
+  vatNumber          String?
+
   // brief libre para complementar
   message     String?
   deadline    String?
@@ -296,7 +303,18 @@ model CartQuote {
   internalNotes String?       @db.Text
   estimatedTotalCents Int?
 
+  // integración MidOcean
+  midoceanOrderId       String?  @unique
+  midoceanCustomerOrderRef String?
+  midoceanOrderStatus   String?
+  midoceanOrderPayload  Json?    // snapshot del payload enviado
+  midoceanOrderResponse Json?    // respuesta de MidOcean
+  confirmedAt           DateTime?
+  orderedAt             DateTime?
+
   items       CartQuoteItem[]
+  proofs      OrderProof[]
+  trackings   OrderTracking[]
 
   @@index([status])
   @@index([email])
@@ -340,6 +358,58 @@ model CartQuoteItem {
   totalClientCents     Int?
 
   notes           String?
+
+  @@index([cartId])
+}
+
+// ============================================================================
+// F2 — Pasarela de proofs (mockups de marcaje a aprobar por cliente)
+// ============================================================================
+
+model OrderProof {
+  id              String       @id @default(cuid())
+  cart            CartQuote    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId          String
+
+  // token único para link público de aprobación (sin login)
+  token           String       @unique @default(cuid())
+  status          ProofStatus  @default(PENDING)
+
+  // origen del proof
+  midoceanProofId String?      // si viene de MidOcean
+  productSlug     String?      // a qué producto/item del cart corresponde
+  artworkUrl      String?      // imagen/PDF del mockup
+  notes           String?      @db.Text
+
+  createdAt       DateTime     @default(now())
+  decidedAt       DateTime?
+  decidedBy       String?      // email del cliente que decidió
+  rejectionReason String?      @db.Text
+
+  @@index([cartId])
+  @@index([token])
+  @@index([status])
+}
+
+enum ProofStatus {
+  PENDING       // esperando decisión cliente
+  APPROVED      // cliente aprobó
+  REJECTED      // cliente rechazó
+  REVISION      // cliente subió artwork nuevo
+  EXPIRED       // pasó el plazo
+}
+
+// Snapshot del estado del pedido cada vez que consultamos tracking
+model OrderTracking {
+  id            String     @id @default(cuid())
+  cart          CartQuote  @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId        String
+  fetchedAt     DateTime   @default(now())
+  status        String?    // estado MidOcean
+  trackingCode  String?
+  carrier       String?
+  carrierUrl    String?
+  rawJson       Json?
 
   @@index([cartId])
 }
