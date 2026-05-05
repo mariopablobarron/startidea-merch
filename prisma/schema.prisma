@@ -219,12 +219,67 @@ model MarkingPosition {
   @@index([productId])
 }
 
-// Técnicas de impresión disponibles globalmente
+// Técnicas de impresión disponibles globalmente con tarifa MidOcean
 model MarkingTechnique {
   id          String                       @id @default(cuid())
   code        String                       @unique // "B", "L3", "BP"...
   name        String                       // legible en español
+  description String?                      // descripción original del proveedor (EN)
+  // Tarifa
+  pricingType PricingType?                 // NumberOfPositions, AreaRange, etc.
+  setupCents  Int?                         // setup fijo por pedido (cliché/film/láser)
+  setupRepeatCents Int?                    // setup reducido al repetir el mismo diseño
+  hasNextColour Boolean    @default(false) // true si añade coste por tinta extra
   positions   MarkingTechniqueOnPosition[]
+  scales      MarkingPriceScale[]
+}
+
+enum PricingType {
+  NumberOfPositions
+  AreaRange
+  Area
+  NumberOfColours
+  ColourAreaRange
+}
+
+// Escalado de precio por cantidad para una técnica + rango opcional de área.
+// Una técnica simple (NumberOfPositions) tiene scales con rangeId=null.
+// Una técnica AreaRange tiene varios rangeId (A, B, C…) con area_from/to.
+model MarkingPriceScale {
+  id              String           @id @default(cuid())
+  technique       MarkingTechnique @relation(fields: [techniqueCode], references: [code], onDelete: Cascade)
+  techniqueCode   String
+  rangeId         String?          // "A", "B", "C"… solo para AreaRange / ColourAreaRange
+  areaFromCm2     Float?           // área mínima del rango (cm²)
+  areaToCm2       Float?           // área máxima del rango (cm²)
+  minQty          Int              // tramo mínimo aplicable
+  unitCostCents   Int              // coste neto por unidad (céntimos EUR)
+  nextColourCostCents Int?         // coste por tinta extra (si la técnica tiene multicolor)
+  updatedAt       DateTime         @default(now())
+
+  @@unique([techniqueCode, rangeId, minQty])
+  @@index([techniqueCode])
+}
+
+// Manipulaciones del logo (Simple, Medium, Complex…) — coste extra por unidad
+// según complejidad del archivo de impresión que mande el cliente.
+model PrintManipulation {
+  code         String  @id // "A","B","C","D","E","Z"
+  description  String  // "Simple", "Medium"…
+  unitCostCents Int    // céntimos EUR por unidad
+  updatedAt    DateTime @default(now())
+}
+
+// Snapshot de la última versión de la tarifa de marcaje aplicada
+model MarkingPricelistSync {
+  id              String        @id @default(cuid())
+  supplier        SupplierCode  @unique
+  validFrom       DateTime
+  validUntil      DateTime?
+  currency        String        @default("EUR")
+  fetchedAt       DateTime      @default(now())
+  techniquesCount Int           @default(0)
+  scalesCount     Int           @default(0)
 }
 
 model MarkingTechniqueOnPosition {

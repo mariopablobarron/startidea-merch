@@ -163,6 +163,16 @@ export const midoceanClient = {
     if (!API_KEY) throw new Error("MIDOCEAN_API_KEY no configurada");
     return fetchJson<MidoceanPrintDataResponse>(`/gateway/printdata/1.0?language=${language}`);
   },
+
+  async fetchPrintPricelist(): Promise<unknown> {
+    if (!API_KEY) throw new Error("MIDOCEAN_API_KEY no configurada");
+    return fetchJson<unknown>(`/gateway/printpricelist/2.0`);
+  },
+
+  async fetchProductPricelist(): Promise<unknown> {
+    if (!API_KEY) throw new Error("MIDOCEAN_API_KEY no configurada");
+    return fetchJson<unknown>(`/gateway/pricelist/2.0`);
+  },
 };
 
 // ============================================================================

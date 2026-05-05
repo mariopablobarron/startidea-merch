@@ -8,6 +8,7 @@ import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { prisma } from "@/lib/prisma";
 import { QuantityConfigurator } from "@/components/QuantityConfigurator";
 import { CompareToggle } from "@/components/CompareToggle";
+import { MarkingCalculator } from "@/components/MarkingCalculator";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 
 export const revalidate = 3600;
@@ -316,6 +317,24 @@ export default async function ProductDetailPage({
               />
 
               <CompareToggle slug={product.slug} />
+
+              <MarkingCalculator
+                productSlug={product.slug}
+                productName={product.name}
+                productRef={product.supplierRef}
+                positions={product.positions.map((pos) => ({
+                  id: pos.id,
+                  positionId: pos.positionId,
+                  maxWidthMm: pos.maxWidthMm,
+                  maxHeightMm: pos.maxHeightMm,
+                  techniques: pos.techniques.map((t) => ({
+                    techniqueId: t.techniqueId,
+                    techniqueCode: t.technique.code,
+                    techniqueName: t.technique.name,
+                    maxColors: t.maxColors,
+                  })),
+                }))}
+              />
 
               <div className="mt-5 grid gap-2 text-sm text-ink/70">
                 <Trust>Producción en Centros Especiales de Empleo o talleres locales</Trust>
