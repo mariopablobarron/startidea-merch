@@ -25,6 +25,15 @@ export function Nav() {
           <Link href="/catalogo" className="text-sm font-medium hover:text-accent">
             Catálogo
           </Link>
+          <Link
+            href="/recomendador"
+            className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:text-accent-dark"
+          >
+            <span>Recomendador IA</span>
+            <span className="rounded-full bg-accent-wash px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-accent-deep">
+              Nuevo
+            </span>
+          </Link>
           <Link href="/#impacto" className="text-sm hover:text-accent">
             Impacto
           </Link>

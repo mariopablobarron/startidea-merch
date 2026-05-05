@@ -55,6 +55,11 @@ export default async function ProductDetailPage({
   const totalStock = product.variants.reduce((sum, v) => sum + v.stockQty, 0);
   const colorVariants = product.variants.filter((v) => v.colorName);
 
+  // Tabla de tallas — agrupar variantes únicas por size si existe
+  const sizes = Array.from(
+    new Set(product.variants.map((v) => v.size).filter((s): s is string => !!s)),
+  ).sort(naturalSizeOrder);
+
   // Tarifas: si alguna variant tiene priceTiers (del proveedor), las usamos.
   // Si no, generamos estimate desde el nombre.
   const variantWithTiers = product.variants.find((v) => v.priceTiers.length > 0);
@@ -189,6 +194,38 @@ export default async function ProductDetailPage({
                 </dl>
               </div>
 
+              {/* Tabla de tallas */}
+              {sizes.length > 0 && (
+                <div className="mt-6 rounded-3xl border border-line bg-bone p-6 lg:p-8">
+                  <h2 className="font-display text-xl font-semibold text-ink">
+                    Tallas disponibles
+                  </h2>
+                  <p className="mt-2 text-sm text-ink/60">
+                    {sizes.length} {sizes.length === 1 ? "talla" : "tallas"} en este producto.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {sizes.map((s) => {
+                      const stock = product.variants
+                        .filter((v) => v.size === s)
+                        .reduce((sum, v) => sum + v.stockQty, 0);
+                      return (
+                        <div
+                          key={s}
+                          className="rounded-2xl border border-line bg-bone-soft px-4 py-3 text-center"
+                        >
+                          <p className="font-display text-lg font-semibold text-ink tabular-nums">
+                            {s}
+                          </p>
+                          <p className="mt-0.5 text-[10px] uppercase tracking-wider text-ink/50">
+                            {stock > 0 ? `${stock.toLocaleString("es-ES")} uds` : "Bajo pedido"}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Áreas y técnicas de marcaje */}
               {product.positions.length > 0 && (
                 <div className="mt-6 rounded-3xl border border-line bg-bone p-6 lg:p-8">
@@ -198,33 +235,49 @@ export default async function ProductDetailPage({
                   <p className="mt-2 text-sm text-ink/60">
                     {product.positions.length} {product.positions.length === 1 ? "zona disponible" : "zonas disponibles"} para personalizar tu logo.
                   </p>
-                  <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <ul className="mt-5 grid gap-4 sm:grid-cols-2">
                     {product.positions.map((pos) => (
-                      <li key={pos.id} className="rounded-2xl border border-line bg-bone-soft p-5">
-                        <p className="text-xs font-medium uppercase tracking-wider text-accent">
-                          {pos.positionId}
-                        </p>
-                        {(pos.maxWidthMm || pos.maxHeightMm) && (
-                          <p className="mt-3 font-display text-2xl font-semibold text-ink tabular-nums">
-                            {pos.maxWidthMm ?? "?"} × {pos.maxHeightMm ?? "?"}
-                            <span className="ml-1 text-xs font-normal text-ink/50">mm</span>
-                          </p>
+                      <li
+                        key={pos.id}
+                        className="overflow-hidden rounded-2xl border border-line bg-bone-soft"
+                      >
+                        {pos.imageUrl && (
+                          <div className="relative aspect-[4/3] bg-bone">
+                            <Image
+                              src={pos.imageUrl}
+                              alt={`Zona ${pos.positionId}`}
+                              fill
+                              sizes="(max-width:640px) 100vw, 50vw"
+                              className="object-contain p-3"
+                            />
+                          </div>
                         )}
-                        <p className="mt-3 flex flex-wrap gap-1.5">
-                          {pos.techniques.length > 0 ? (
-                            pos.techniques.map((t) => (
-                              <span
-                                key={t.techniqueId}
-                                className="rounded-full bg-accent-wash px-2.5 py-0.5 text-[11px] font-medium text-accent-deep"
-                              >
-                                {t.technique.name}
-                                {t.maxColors ? ` · ${t.maxColors} col.` : ""}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-ink/40">Sin técnicas asignadas</span>
+                        <div className="p-5">
+                          <p className="text-xs font-medium uppercase tracking-wider text-accent">
+                            {pos.positionId}
+                          </p>
+                          {(pos.maxWidthMm || pos.maxHeightMm) && (
+                            <p className="mt-2 font-display text-xl font-semibold text-ink tabular-nums">
+                              {pos.maxWidthMm ?? "?"} × {pos.maxHeightMm ?? "?"}
+                              <span className="ml-1 text-xs font-normal text-ink/50">mm</span>
+                            </p>
                           )}
-                        </p>
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {pos.techniques.length > 0 ? (
+                              pos.techniques.map((t) => (
+                                <span
+                                  key={t.techniqueId}
+                                  className="rounded-full bg-accent-wash px-2.5 py-0.5 text-[11px] font-medium text-accent-deep"
+                                >
+                                  {t.technique.name}
+                                  {t.maxColors ? ` · ${t.maxColors} col.` : ""}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-ink/40">Sin técnicas asignadas</span>
+                            )}
+                          </div>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -272,6 +325,21 @@ export default async function ProductDetailPage({
       <WhatsAppFloat />
     </>
   );
+}
+
+// Orden natural de tallas: XXS, XS, S, M, L, XL, XXL, 3XL... + tallas numéricas
+const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "6XL"];
+function naturalSizeOrder(a: string, b: string): number {
+  const ai = SIZE_ORDER.indexOf(a.toUpperCase());
+  const bi = SIZE_ORDER.indexOf(b.toUpperCase());
+  if (ai >= 0 && bi >= 0) return ai - bi;
+  if (ai >= 0) return -1;
+  if (bi >= 0) return 1;
+  // Numéricas o textos arbitrarios: alfanumérico
+  const aNum = parseFloat(a);
+  const bNum = parseFloat(b);
+  if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+  return a.localeCompare(b);
 }
 
 function formatDimensions(lengthMm: number, widthMm: number | null, heightMm: number | null): string {
