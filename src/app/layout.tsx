@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
@@ -31,6 +32,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link
           rel="stylesheet"
           href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=inter@400,500,600&display=swap"
+        />
+        {/* Umami analytics (privacy-first, sin cookies) */}
+        <Script
+          defer
+          src="https://analytics.hubstartidea.es/script.js"
+          data-website-id="530b17d7-0550-4d76-8264-13078706b507"
+          strategy="afterInteractive"
         />
       </head>
       <body>{children}</body>
