@@ -121,6 +121,9 @@ model Product {
   brand           String?
   shortDescription String?            @db.Text
   longDescription  String?            @db.Text
+  // Descripción comercial mejorada por IA (sustituye a la del proveedor en UI cuando existe)
+  enhancedShortDescription String?    @db.Text
+  enhancedAt      DateTime?
   material        String?
 
   // categoría primaria

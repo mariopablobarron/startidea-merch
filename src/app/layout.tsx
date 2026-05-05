@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import { CompareBanner } from "@/components/CompareBanner";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
@@ -41,7 +42,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           strategy="afterInteractive"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <CompareBanner />
+      </body>
     </html>
   );
 }

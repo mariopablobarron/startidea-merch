@@ -77,6 +77,7 @@ export async function POST(req: Request) {
       name: true,
       brand: true,
       shortDescription: true,
+      enhancedShortDescription: true,
       material: true,
       category: { select: { name: true } },
       variants: { take: 1, select: { stockQty: true } },
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
   const catalogBlock = products
     .map(
       (p, i) =>
-        `[${i + 1}] ${p.name} · ref ${p.supplierRef} · ${p.category?.name || "—"} · ${p.material || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${p.shortDescription || ""}`,
+        `[${i + 1}] ${p.name} · ref ${p.supplierRef} · ${p.category?.name || "—"} · ${p.material || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${p.enhancedShortDescription || p.shortDescription || ""}`,
     )
     .join("\n");
 

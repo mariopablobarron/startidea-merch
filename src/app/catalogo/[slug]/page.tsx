@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { prisma } from "@/lib/prisma";
 import { QuantityConfigurator } from "@/components/QuantityConfigurator";
+import { CompareToggle } from "@/components/CompareToggle";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 
 export const revalidate = 3600;
@@ -300,8 +301,10 @@ export default async function ProductDetailPage({
                 <span className="tabular-nums">{totalStock.toLocaleString("es-ES")}</span>
               </p>
 
-              {product.shortDescription && (
-                <p className="mt-5 text-base text-ink/75">{product.shortDescription}</p>
+              {(product.enhancedShortDescription || product.shortDescription) && (
+                <p className="mt-5 text-base text-ink/75">
+                  {product.enhancedShortDescription || product.shortDescription}
+                </p>
               )}
 
               <QuantityConfigurator
@@ -311,6 +314,8 @@ export default async function ProductDetailPage({
                 tiers={tiers}
                 baseCentsForEstimate={baseCents}
               />
+
+              <CompareToggle slug={product.slug} />
 
               <div className="mt-5 grid gap-2 text-sm text-ink/70">
                 <Trust>Producción en Centros Especiales de Empleo o talleres locales</Trust>
