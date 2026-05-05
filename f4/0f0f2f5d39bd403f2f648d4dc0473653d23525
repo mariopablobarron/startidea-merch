@@ -1,0 +1,30 @@
+src/app/recomendador/page.tsx
+  65877aa637ec3453 1-83
+src/components/Recommender.tsx
+  65877aa637ec3453 1-265
+src/components/Nav.tsx
+  65877aa637ec3453 28-36
+src/app/catalogo/[slug]/page.tsx
+  65877aa637ec3453 58-62,197-228,238,240-253,255-263,265-280,330-344
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "f40f0f2f5d39bd403f2f648d4dc0473653d23525",
+  "prompts": {
+    "65877aa637ec3453": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron",
+      "messages": [],
+      "total_additions": 449,
+      "total_deletions": 24,
+      "accepted_lines": 449,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/4e44a107a600540a37e37b392d1804b6b630be8ddd1f608ef088cfa7ddc86607"
+    }
+  }
+}
