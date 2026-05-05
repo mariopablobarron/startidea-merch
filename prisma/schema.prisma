@@ -312,9 +312,16 @@ model CartQuote {
   confirmedAt           DateTime?
   orderedAt             DateTime?
 
+  // pago online (Sprint 8)
+  acceptedTotalCents Int?              // total final negociado por el admin
+  depositPercent     Int?              // % de depósito a cobrar (50, 100…)
+  paymentLinkToken   String?  @unique  // token público del enlace de pago
+  paymentLinkSentAt  DateTime?
+
   items       CartQuoteItem[]
   proofs      OrderProof[]
   trackings   OrderTracking[]
+  payments    Payment[]
 
   @@index([status])
   @@index([email])
@@ -397,6 +404,49 @@ enum ProofStatus {
   REJECTED      // cliente rechazó
   REVISION      // cliente subió artwork nuevo
   EXPIRED       // pasó el plazo
+}
+
+// ============================================================================
+// F2 — Pagos online vía Stripe (depósito o pago completo de cotización cerrada)
+// ============================================================================
+
+model Payment {
+  id                    String         @id @default(cuid())
+  cart                  CartQuote      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId                String
+
+  amountCents           Int            // importe en céntimos EUR
+  currency              String         @default("EUR")
+  status                PaymentStatus  @default(PENDING)
+  kind                  PaymentKind    @default(DEPOSIT)
+
+  // Stripe metadata
+  stripeMode            String?        // "test" | "live"
+  stripeSessionId       String?        @unique
+  stripePaymentIntentId String?        @unique
+  stripeReceiptUrl      String?
+
+  createdAt             DateTime       @default(now())
+  paidAt                DateTime?
+  refundedAt            DateTime?
+  failureReason         String?
+
+  @@index([cartId])
+  @@index([status])
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELED
+}
+
+enum PaymentKind {
+  DEPOSIT      // pago de depósito (típicamente 50%)
+  FULL         // pago total
+  BALANCE      // pago final (resto tras depósito)
 }
 
 // Snapshot del estado del pedido cada vez que consultamos tracking

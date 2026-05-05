@@ -36,6 +36,9 @@ services:
       MIDOCEAN_LIVE_ORDERS: ${MIDOCEAN_LIVE_ORDERS:-false}
       MIDOCEAN_CUSTOMER_NUMBER: ${MIDOCEAN_CUSTOMER_NUMBER}
       MARGIN_MULTIPLIER: ${MARGIN_MULTIPLIER:-1.6}
+      STRIPE_MODE: ${STRIPE_MODE:-test}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       NODE_ENV: production
       PORT: "3000"
       # Forzar bind a 0.0.0.0 — sin esto Next.js standalone escucha solo

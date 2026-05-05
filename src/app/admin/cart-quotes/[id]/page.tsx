@@ -33,6 +33,9 @@ type Cart = {
   status: string;
   internalNotes: string | null;
   estimatedTotalCents: number | null;
+  acceptedTotalCents?: number | null;
+  depositPercent?: number | null;
+  paymentLinkToken?: string | null;
   items: CartItem[];
 };
 
@@ -198,10 +201,126 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
           </button>
         </div>
 
+        {/* Pago Stripe */}
+        <PaymentLinkPanel cartId={id} secret={secret} cart={cart} onUpdate={(c) => setCart((prev) => (prev ? { ...prev, ...c } : null))} />
+
         {/* Acciones MidOcean */}
         <OrderActions cartId={id} secret={secret} />
       </div>
     </main>
+  );
+}
+
+function PaymentLinkPanel({
+  cartId,
+  secret,
+  cart,
+  onUpdate,
+}: {
+  cartId: string;
+  secret: string;
+  cart: Cart;
+  onUpdate: (next: Partial<Cart>) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [acceptedTotal, setAcceptedTotal] = useState(
+    cart.estimatedTotalCents != null ? Math.round(cart.estimatedTotalCents / 100) : 0,
+  );
+  const [depositPercent, setDepositPercent] = useState(50);
+  const [sendEmail, setSendEmail] = useState(true);
+  const [result, setResult] = useState<{ url?: string; depositCents?: number } | null>(null);
+
+  async function createLink() {
+    if (acceptedTotal < 1) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/cart-quotes/${cartId}/payment-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        body: JSON.stringify({
+          acceptedTotalCents: Math.round(acceptedTotal * 100),
+          depositPercent,
+          sendEmail,
+        }),
+      });
+      const data = await res.json();
+      setResult(data);
+      onUpdate({
+        acceptedTotalCents: Math.round(acceptedTotal * 100),
+        depositPercent,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border border-line bg-bone p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Pago online</p>
+          <p className="mt-1 font-display text-lg font-semibold text-ink">Crear enlace de pago Stripe</p>
+        </div>
+        {cart.acceptedTotalCents != null && (
+          <p className="text-right text-xs text-ink/60">
+            Aceptado: <strong>{EUR.format(cart.acceptedTotalCents / 100)}</strong>
+            <br />Depósito: {cart.depositPercent ?? 0}%
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <label className="block">
+          <span className="text-xs uppercase tracking-wider text-ink/50">Total aceptado (€)</span>
+          <input
+            type="number"
+            value={acceptedTotal}
+            onChange={(e) => setAcceptedTotal(parseFloat(e.target.value) || 0)}
+            min={1}
+            step={0.01}
+            className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm tabular-nums outline-none focus:border-accent"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs uppercase tracking-wider text-ink/50">Depósito (%)</span>
+          <select
+            value={depositPercent}
+            onChange={(e) => setDepositPercent(parseInt(e.target.value))}
+            className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+          >
+            {[25, 30, 50, 70, 100].map((p) => (
+              <option key={p} value={p}>{p}%</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-end gap-2 pb-2 text-xs text-ink/70">
+          <input
+            type="checkbox"
+            checked={sendEmail}
+            onChange={(e) => setSendEmail(e.target.checked)}
+            className="h-4 w-4 accent-accent"
+          />
+          Enviar email al cliente
+        </label>
+      </div>
+
+      <button
+        type="button"
+        disabled={busy || acceptedTotal < 1}
+        onClick={createLink}
+        className="mt-4 rounded-full bg-ink px-4 py-2 text-xs font-medium text-bone hover:bg-accent disabled:opacity-40"
+      >
+        {busy ? "Creando…" : cart.paymentLinkToken ? "Regenerar enlace" : "Crear enlace y enviar"}
+      </button>
+
+      {result?.url && (
+        <p className="mt-3 rounded-lg bg-bone-soft p-3 text-xs">
+          Link: <a href={result.url} target="_blank" rel="noreferrer" className="text-accent underline-offset-4 hover:underline">{result.url}</a>
+          <br />
+          Importe a cobrar: <strong>{EUR.format((result.depositCents || 0) / 100)}</strong>
+        </p>
+      )}
+    </div>
   );
 }
 
