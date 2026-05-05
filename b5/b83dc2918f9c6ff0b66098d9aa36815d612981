@@ -1,0 +1,46 @@
+src/lib/stripe.ts
+  65877aa637ec3453 1-27
+docker-compose.yml
+  65877aa637ec3453 39-41
+prisma/schema.prisma
+  65877aa637ec3453 315-320,324,409-451
+src/components/PayButton.tsx
+  65877aa637ec3453 1-64
+src/app/api/pay/[token]/checkout/route.ts
+  65877aa637ec3453 1-83
+src/app/api/admin/cart-quotes/[id]/payment-link/route.ts
+  65877aa637ec3453 1-97
+src/app/pay/[token]/success/page.tsx
+  65877aa637ec3453 1-19
+src/app/pay/[token]/page.tsx
+  65877aa637ec3453 1-147
+src/app/pay/[token]/cancel/page.tsx
+  65877aa637ec3453 1-33
+src/app/admin/cart-quotes/[id]/page.tsx
+  65877aa637ec3453 36-38,204-206,214-323
+.env.example
+  65877aa637ec3453 47-53
+src/app/api/webhooks/stripe/route.ts
+  65877aa637ec3453 1-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "b5b83dc2918f9c6ff0b66098d9aa36815d612981",
+  "prompts": {
+    "65877aa637ec3453": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron",
+      "messages": [],
+      "total_additions": 785,
+      "total_deletions": 2,
+      "accepted_lines": 783,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/39478b7c9e21f18de75918c93a8a7df7d274ddcdf589abd5de5b940deeef5a6f"
+    }
+  }
+}
