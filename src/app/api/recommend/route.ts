@@ -10,10 +10,10 @@ export const maxDuration = 30;
  * Recomendador IA — recibe brief libre + filtros opcionales y devuelve
  * 3-5 productos del catálogo con justificación.
  *
- * Uso de Anthropic Claude Sonnet 4.6 con prompt caching del catálogo
- * (90% descuento al repetir la misma "bola" de productos en múltiples
- * queries dentro de la ventana TTL de 5 min). Si no hay ANTHROPIC_API_KEY,
- * devuelve 503 con mensaje claro — no rompe la app.
+ * Usa OpenRouter como gateway hacia el modelo configurado (default Claude
+ * Sonnet 4.5 vía openrouter). Permite cambiar de proveedor sin tocar código.
+ *
+ * Si OPENROUTER_API_KEY no está configurada, devuelve 503 con mensaje claro.
  */
 
 const Schema = z.object({
@@ -24,15 +24,16 @@ const Schema = z.object({
   ecoOnly: z.boolean().optional(),
 });
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250929";
+const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
+const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4.5";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
 export async function POST(req: Request) {
-  if (!ANTHROPIC_KEY) {
+  if (!OPENROUTER_KEY) {
     return NextResponse.json(
       {
         error: "Recomendador IA no configurado",
-        hint: "Falta ANTHROPIC_API_KEY en envs de la app.",
+        hint: "Falta OPENROUTER_API_KEY en envs de la app.",
       },
       { status: 503 },
     );
@@ -46,22 +47,27 @@ export async function POST(req: Request) {
   }
   const parsed = Schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Datos inválidos", issues: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { error: "Datos inválidos", issues: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
   const { brief, budget, quantity, preferredCategories, ecoOnly } = parsed.data;
 
-  // 1) Snapshot ligero del catálogo. Cabe en contexto: top 250 productos
-  // con stock real, descripción corta y categoría. Suficiente para
-  // recomendar bien y no satura tokens.
+  // 1) Snapshot del catálogo: top 250 productos relevantes
   const products = await prisma.product.findMany({
     where: {
       active: true,
-      ...(ecoOnly ? { OR: [
-        { material: { contains: "bambú", mode: "insensitive" } },
-        { material: { contains: "rpet", mode: "insensitive" } },
-        { material: { contains: "orgán", mode: "insensitive" } },
-        { material: { contains: "recic", mode: "insensitive" } },
-      ] } : {}),
+      ...(ecoOnly
+        ? {
+            OR: [
+              { material: { contains: "bambú", mode: "insensitive" } },
+              { material: { contains: "rpet", mode: "insensitive" } },
+              { material: { contains: "orgán", mode: "insensitive" } },
+              { material: { contains: "recic", mode: "insensitive" } },
+            ],
+          }
+        : {}),
     },
     orderBy: [{ syncedAt: "desc" }],
     take: 250,
@@ -73,15 +79,10 @@ export async function POST(req: Request) {
       shortDescription: true,
       material: true,
       category: { select: { name: true } },
-      variants: {
-        take: 1,
-        select: { stockQty: true },
-      },
+      variants: { take: 1, select: { stockQty: true } },
     },
   });
 
-  // 2) Block "documents" cacheable. Cualquier brief que entre dentro de la
-  // ventana TTL (5 min) reusa este bloque sin pagar tokens de input.
   const catalogBlock = products
     .map(
       (p, i) =>
@@ -117,33 +118,38 @@ ${brief}
 
 Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devuelve SOLO el JSON descrito.`;
 
-  // 3) Llamada a Anthropic con prompt caching del catálogo
+  // 2) Llamada a OpenRouter (formato OpenAI-compatible)
   let response: Response;
   try {
-    response = await fetch("https://api.anthropic.com/v1/messages", {
+    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
+        Authorization: `Bearer ${OPENROUTER_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": SITE_URL,
+        "X-Title": "TodoMerchandising",
       },
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 1500,
-        system: [
-          { type: "text", text: systemPrompt },
+        temperature: 0.4,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
           {
-            type: "text",
-            text: `CATÁLOGO DISPONIBLE (${products.length} productos):\n\n${catalogBlock}`,
-            cache_control: { type: "ephemeral" },
+            role: "system",
+            content: `CATÁLOGO DISPONIBLE (${products.length} productos):\n\n${catalogBlock}`,
           },
+          { role: "user", content: userPrompt },
         ],
-        messages: [{ role: "user", content: userPrompt }],
       }),
     });
   } catch (err) {
     return NextResponse.json(
-      { error: "Fallo al llamar a Anthropic", detail: err instanceof Error ? err.message : String(err) },
+      {
+        error: "Fallo al llamar a OpenRouter",
+        detail: err instanceof Error ? err.message : String(err),
+      },
       { status: 502 },
     );
   }
@@ -151,16 +157,17 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
     return NextResponse.json(
-      { error: "Anthropic respondió con error", status: response.status, detail: detail.slice(0, 400) },
+      { error: "OpenRouter respondió con error", status: response.status, detail: detail.slice(0, 400) },
       { status: 502 },
     );
   }
 
   const json = (await response.json()) as {
-    content?: Array<{ type: string; text?: string }>;
+    choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
     usage?: Record<string, number>;
+    model?: string;
   };
-  const text = json.content?.find((c) => c.type === "text")?.text || "";
+  const text = json.choices?.[0]?.message?.content || "";
 
   let parsedRec: {
     needsClarification?: boolean;
@@ -177,7 +184,7 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
     );
   }
 
-  // 4) Enriquecer con datos reales del producto desde DB (slug → URL ficha)
+  // 3) Enriquecer con datos reales del producto desde DB
   const enriched = await Promise.all(
     (parsedRec.recommendations || []).map(async (r) => {
       const p = await prisma.product.findUnique({
@@ -209,6 +216,7 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
     clarificationQuestion: parsedRec.clarificationQuestion || null,
     recommendations: enriched.filter(Boolean),
     summary: parsedRec.summary || "",
+    model: json.model || MODEL,
     usage: json.usage,
   });
 }
