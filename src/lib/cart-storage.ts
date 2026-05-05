@@ -1,0 +1,73 @@
+/**
+ * Cesta de cotización con persistencia en localStorage.
+ * Comparte formato con /api/cart-quote para que el cliente sólo
+ * empuje los items al servidor cuando finalice.
+ */
+
+export type CartItem = {
+  productSlug: string;
+  productRef: string;
+  productName: string;
+  primaryImageUrl?: string | null;
+  quantity: number;
+  variantSku?: string | null;
+  colorName?: string | null;
+  markingTechniqueCode?: string | null;
+  markingTechniqueName?: string | null;
+  markingPositionId?: string | null;
+  markingColours?: number | null;
+  markingComplexity?: string | null;
+  unitPriceClientCents?: number | null;
+  totalClientCents?: number | null;
+  notes?: string | null;
+};
+
+const KEY = "merch:cart";
+
+export function readCart(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? (JSON.parse(raw) as CartItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeCart(items: CartItem[]) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent("merch:cart-change"));
+  } catch {}
+}
+
+export function addItem(item: CartItem) {
+  const items = readCart();
+  // mismo producto + misma técnica + misma cantidad → reemplazar
+  const idx = items.findIndex(
+    (it) => it.productSlug === item.productSlug && it.markingTechniqueCode === item.markingTechniqueCode,
+  );
+  if (idx >= 0) items.splice(idx, 1);
+  items.push(item);
+  writeCart(items);
+}
+
+export function removeItem(productSlug: string, markingTechniqueCode?: string | null) {
+  const items = readCart().filter(
+    (it) =>
+      !(it.productSlug === productSlug &&
+        (markingTechniqueCode == null || it.markingTechniqueCode === markingTechniqueCode)),
+  );
+  writeCart(items);
+}
+
+export function clearCart() {
+  try {
+    localStorage.removeItem(KEY);
+    window.dispatchEvent(new CustomEvent("merch:cart-change"));
+  } catch {}
+}
+
+export function cartTotalCents(items: CartItem[]): number {
+  return items.reduce((sum, it) => sum + (it.totalClientCents || 0), 0);
+}

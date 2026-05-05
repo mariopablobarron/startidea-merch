@@ -270,6 +270,80 @@ model PrintManipulation {
   updatedAt    DateTime @default(now())
 }
 
+// ============================================================================
+// F2 — Cesta de cotización (multi-producto con marcaje calculado)
+// ============================================================================
+
+model CartQuote {
+  id          String          @id @default(cuid())
+  createdAt   DateTime        @default(now())
+
+  // contacto
+  name        String
+  company     String?
+  email       String
+  phone       String?
+
+  // brief libre para complementar
+  message     String?
+  deadline    String?
+  source      String?         // landing, ficha-cotizar, etc
+  utm         Json?
+
+  // estado
+  status      CartQuoteStatus @default(NEW)
+  // notas internas y total estimado para que el admin no recalcule
+  internalNotes String?       @db.Text
+  estimatedTotalCents Int?
+
+  items       CartQuoteItem[]
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+}
+
+enum CartQuoteStatus {
+  NEW
+  IN_PROGRESS
+  SENT
+  CONFIRMED
+  ORDERED
+  ARCHIVED
+}
+
+model CartQuoteItem {
+  id              String     @id @default(cuid())
+  cart            CartQuote  @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId          String
+
+  // referencia al producto en el momento de añadir
+  productSlug     String
+  productRef      String
+  productName     String
+  primaryImageUrl String?
+
+  // configuración elegida por el cliente
+  quantity        Int
+  variantSku      String?    // si elige una variante específica
+  colorName       String?
+
+  // marcaje
+  markingTechniqueCode String?
+  markingTechniqueName String?
+  markingPositionId    String?
+  markingColours       Int?
+  markingComplexity    String?  // A,B,C,D,E,Z
+
+  // snapshot del precio cliente calculado en el momento (céntimos EUR)
+  unitPriceClientCents Int?
+  totalClientCents     Int?
+
+  notes           String?
+
+  @@index([cartId])
+}
+
 // Snapshot de la última versión de la tarifa de marcaje aplicada
 model MarkingPricelistSync {
   id              String        @id @default(cuid())

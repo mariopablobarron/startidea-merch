@@ -322,6 +322,7 @@ export default async function ProductDetailPage({
                 productSlug={product.slug}
                 productName={product.name}
                 productRef={product.supplierRef}
+                primaryImageUrl={product.primaryImageUrl}
                 positions={product.positions.map((pos) => ({
                   id: pos.id,
                   positionId: pos.positionId,

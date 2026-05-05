@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { addItem } from "@/lib/cart-storage";
 
 type Position = {
   id: string;
@@ -14,6 +15,7 @@ type Props = {
   productSlug: string;
   productName: string;
   productRef: string;
+  primaryImageUrl?: string | null;
   positions: Position[];
 };
 
@@ -35,7 +37,7 @@ const MANIPULATIONS = [
   { code: "C", label: "Complejo (degradados, fotografía)" },
 ];
 
-export function MarkingCalculator({ productSlug, productName, productRef, positions }: Props) {
+export function MarkingCalculator({ productSlug, productName, productRef, primaryImageUrl, positions }: Props) {
   const [open, setOpen] = useState(false);
   const positionsAvailable = positions.filter((p) => p.techniques.length > 0);
   const [positionIdx, setPositionIdx] = useState(0);
@@ -94,6 +96,36 @@ export function MarkingCalculator({ productSlug, productName, productRef, positi
     } catch {}
     window.location.href = "/#cotizar";
   }
+
+  function onAddToCart() {
+    if (!technique || !position) return;
+    const totalClientCents = parseTotalCents(calc);
+    const unitClientCents = totalClientCents != null ? Math.round(totalClientCents / qty) : null;
+    addItem({
+      productSlug,
+      productRef,
+      productName,
+      primaryImageUrl,
+      quantity: qty,
+      markingTechniqueCode: technique.techniqueCode,
+      markingTechniqueName: technique.techniqueName,
+      markingPositionId: position.positionId,
+      markingColours: Math.min(colours, maxColors),
+      markingComplexity: manipulation,
+      unitPriceClientCents: unitClientCents,
+      totalClientCents,
+    });
+    // feedback simple
+    setAddedAt(Date.now());
+  }
+
+  const [addedAt, setAddedAt] = useState<number | null>(null);
+  const recentlyAdded = addedAt != null && Date.now() - addedAt < 2500;
+  useEffect(() => {
+    if (!addedAt) return;
+    const t = setTimeout(() => setAddedAt(null), 2500);
+    return () => clearTimeout(t);
+  }, [addedAt]);
 
   if (positionsAvailable.length === 0) {
     return null;
@@ -252,15 +284,38 @@ export function MarkingCalculator({ productSlug, productName, productRef, positi
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={onCotizar}
-            className="inline-flex w-full items-center justify-center rounded-full bg-ink px-6 py-3 text-base font-medium text-bone transition hover:bg-accent"
-          >
-            Cotización cerrada en 24 h →
-          </button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={onAddToCart}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 text-sm font-medium transition ${
+                recentlyAdded
+                  ? "border-social bg-social/10 text-social"
+                  : "border-line bg-bone-soft text-ink hover:border-accent hover:text-accent"
+              }`}
+            >
+              {recentlyAdded ? "✓ Añadido al carrito" : "Añadir al carrito de cotización"}
+            </button>
+            <button
+              type="button"
+              onClick={onCotizar}
+              className="inline-flex w-full items-center justify-center rounded-full bg-ink px-6 py-3 text-sm font-medium text-bone transition hover:bg-accent"
+            >
+              Cotización cerrada en 24 h →
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
+}
+
+function parseTotalCents(calc: CalcResponse | null): number | null {
+  if (!calc || !("ok" in calc)) return null;
+  const formatted = calc.pricing.totalClient.formatted;
+  // "485,60 €" → 48560
+  const cleaned = formatted.replace(/[^0-9,]/g, "").replace(",", ".");
+  const n = parseFloat(cleaned);
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n * 100);
 }
