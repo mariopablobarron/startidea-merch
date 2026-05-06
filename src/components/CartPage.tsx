@@ -25,6 +25,11 @@ export function CartPage() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [deadline, setDeadline] = useState("");
+  // cupón
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState<{ code: string; label: string; discountCents: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
 
   useEffect(() => {
     function refresh() {
@@ -68,6 +73,7 @@ export function CartPage() {
           phone,
           message,
           deadline,
+          couponCode: couponDiscount ? couponDiscount.code : undefined,
           items,
         }),
       });
@@ -124,7 +130,31 @@ export function CartPage() {
     );
   }
 
-  const total = cartTotalCents(items);
+  const subtotal = cartTotalCents(items);
+  const discount = couponDiscount?.discountCents || 0;
+  const total = Math.max(0, subtotal - discount);
+
+  async function applyCouponCode() {
+    setCouponError(null);
+    if (!couponCode.trim()) return;
+    setCouponBusy(true);
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode, totalCents: subtotal }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setCouponError(data.reason || "Código no válido");
+        setCouponDiscount(null);
+      } else {
+        setCouponDiscount({ code: data.code, label: data.label, discountCents: data.discountCents });
+      }
+    } finally {
+      setCouponBusy(false);
+    }
+  }
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1.4fr,1fr]">
@@ -220,11 +250,65 @@ export function CartPage() {
           </article>
         ))}
 
-        <div className="flex items-center justify-between rounded-2xl border border-line bg-bone-soft p-5">
-          <p className="text-xs uppercase tracking-wider text-ink/50">Total estimado</p>
-          <p className="font-display text-2xl font-semibold tabular-nums text-ink">
-            {EUR.format(total / 100)}
-          </p>
+        {/* Cupón */}
+        <div className="rounded-2xl border border-line bg-bone p-4">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-ink/50">¿Tienes código de descuento?</p>
+          {couponDiscount ? (
+            <div className="mt-2 flex items-center justify-between rounded-xl bg-social/10 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium text-social">✓ {couponDiscount.code}</p>
+                <p className="text-[11px] text-ink/60">{couponDiscount.label}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCouponDiscount(null);
+                  setCouponCode("");
+                }}
+                className="text-xs text-ink/50 hover:text-accent"
+              >
+                Quitar
+              </button>
+            </div>
+          ) : (
+            <div className="mt-2 flex gap-2">
+              <input
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                placeholder="EJ. WELCOME10"
+                maxLength={40}
+                className="flex-1 rounded-lg border border-line bg-bone-soft px-3 py-1.5 text-sm uppercase outline-none focus:border-accent"
+              />
+              <button
+                type="button"
+                onClick={applyCouponCode}
+                disabled={couponBusy || !couponCode.trim()}
+                className="rounded-lg bg-ink px-3 py-1.5 text-xs font-medium text-bone hover:bg-accent disabled:opacity-40"
+              >
+                {couponBusy ? "…" : "Aplicar"}
+              </button>
+            </div>
+          )}
+          {couponError && <p className="mt-1 text-xs text-accent-deep">⚠ {couponError}</p>}
+        </div>
+
+        <div className="rounded-2xl border border-line bg-bone-soft p-5">
+          <div className="flex items-center justify-between text-sm text-ink/70">
+            <span>Subtotal</span>
+            <span className="tabular-nums">{EUR.format(subtotal / 100)}</span>
+          </div>
+          {discount > 0 && (
+            <div className="mt-1 flex items-center justify-between text-sm text-social">
+              <span>Descuento {couponDiscount?.code}</span>
+              <span className="tabular-nums">−{EUR.format(discount / 100)}</span>
+            </div>
+          )}
+          <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
+            <p className="text-xs uppercase tracking-wider text-ink/50">Total estimado</p>
+            <p className="font-display text-2xl font-semibold tabular-nums text-ink">
+              {EUR.format(total / 100)}
+            </p>
+          </div>
         </div>
       </div>
 

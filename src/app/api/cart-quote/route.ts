@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
+import { validateCoupon, applyCoupon } from "@/lib/coupons";
+import { notifyTelegram } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -32,6 +34,7 @@ const Schema = z.object({
   message: z.string().max(4000).optional().or(z.literal("")),
   deadline: z.string().max(120).optional().or(z.literal("")),
   source: z.string().max(80).optional(),
+  couponCode: z.string().max(40).optional().or(z.literal("")),
   items: z.array(ItemSchema).min(1).max(40),
 });
 
@@ -111,6 +114,20 @@ export async function POST(req: Request) {
     ]).catch((err) => console.error("[cart-quote] resend error", err));
   }
 
+  // Aplicar cupón si llegó (silencioso si falla — el admin puede decidir)
+  if (data.couponCode) {
+    const validation = await validateCoupon(data.couponCode, total);
+    if (validation.ok) {
+      await applyCoupon(cart.id, validation.coupon.id, validation.discountCents);
+      await prisma.cartQuote.update({
+        where: { id: cart.id },
+        data: {
+          internalNotes: `Cupón aplicado: ${validation.coupon.code} (${validation.coupon.label}) · descuento ${(validation.discountCents / 100).toFixed(2)} €`,
+        },
+      });
+    }
+  }
+
   // Notificación push al equipo (fire-and-forget)
   void notifyAdmins({
     title: `Nuevo carrito · ${data.name}`,
@@ -119,6 +136,10 @@ export async function POST(req: Request) {
     tag: `cart-${cart.id}`,
     requireInteraction: true,
   }).catch((err) => console.error("[cart-quote push]", err));
+
+  void notifyTelegram(
+    `🛒 <b>Nuevo carrito</b>\n${data.name}${data.company ? ` · ${data.company}` : ""}\n${cart.items.length} productos · <b>${EUR.format(total / 100)}</b>\n📧 ${data.email}`,
+  ).catch(() => {});
 
   return NextResponse.json({ ok: true, id: cart.id, items: cart.items.length });
 }

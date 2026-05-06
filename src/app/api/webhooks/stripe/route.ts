@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
+import { notifyTelegram } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -93,6 +94,11 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
     where: { id: payment.cartId },
     data: { status: "CONFIRMED", confirmedAt: new Date() },
   });
+
+  // Telegram al equipo
+  void notifyTelegram(
+    `💰 <b>Pago recibido</b>\n${payment.cart.name}${payment.cart.company ? ` · ${payment.cart.company}` : ""}\n<b>${(payment.amountCents / 100).toFixed(2)} €</b>\n📧 ${payment.cart.email}`,
+  ).catch(() => {});
 
   // Webhook a clientes API
   void emitWebhook("payment.completed", {
