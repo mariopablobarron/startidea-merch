@@ -1,0 +1,35 @@
+src/components/OrderTimeline.tsx
+  s_65877aa637ec34::t_81e951dcae57a7 1-75
+src/app/admin/page.tsx
+  s_65877aa637ec34::t_30c8534e15c744 126-128
+src/app/admin/cart-quotes/[id]/page.tsx
+  s_65877aa637ec34::t_2ce7361e50d355 5
+  s_65877aa637ec34::t_cb1bc032c54311 40-41,43-45
+  s_65877aa637ec34::t_cdd1ef85ab892a 210-212
+src/app/api/admin/orders/route.ts
+  s_65877aa637ec34::t_0096808d7d6d47 23,27-28
+  s_65877aa637ec34::t_c4b62abac8441a 2
+  s_65877aa637ec34::t_c41af6a00f1bf9 1,3-22,24-26,29-116
+src/app/admin/orders/page.tsx
+  s_65877aa637ec34::t_73a941e593213a 1-283
+src/app/api/cron/refresh-tracking/route.ts
+  s_65877aa637ec34::t_39bf5701d7f037 1-112
+src/app/api/admin/cart-quotes/[id]/route.ts
+  s_65877aa637ec34::t_f5a67e5cd4ad68 16-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "cf75106e85ed02ea778505bea29c04e2110aec2a",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
