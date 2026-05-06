@@ -152,6 +152,7 @@ model Product {
 
   variants        ProductVariant[]
   positions       MarkingPosition[]
+  embedding       ProductEmbedding?
 
   @@unique([supplier, supplierRef])
   @@index([categoryId])
@@ -337,6 +338,86 @@ enum DeliveryStatus {
   DELIVERED
   FAILED
   ABANDONED
+}
+
+// Newsletter privada — alta voluntaria + drip emails post-pedido
+model NewsletterSubscriber {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  company         String?
+  source          String?  // home-footer, blog, recommend-after, etc
+  locale          String   @default("es")
+  optedInAt       DateTime @default(now())
+  unsubscribedAt  DateTime?
+  unsubscribeToken String  @unique @default(cuid())
+  lastSentAt      DateTime?
+  totalSent       Int      @default(0)
+
+  @@index([unsubscribedAt])
+}
+
+model EmailDripSent {
+  id     String   @id @default(cuid())
+  cartId String
+  step   Int      // 0, 14, 45
+  sentAt DateTime @default(now())
+
+  @@unique([cartId, step])
+  @@index([cartId])
+}
+
+// Programa de afiliados (distinto de Partner = CEE definido al principio)
+model AffiliatePartner {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  name          String
+  email         String
+  company       String?
+  commissionPct Int       @default(10)
+  active        Boolean   @default(true)
+  totalEarnedCents Int    @default(0)
+  totalPaidOutCents Int   @default(0)
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  referrals     Referral[]
+
+  @@index([active])
+}
+
+model Referral {
+  id              String    @id @default(cuid())
+  partner         AffiliatePartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerId       String
+  cartId          String    @unique
+  status          ReferralStatus @default(LEAD)
+  baseAmountCents Int       @default(0)   // cuánto se cobró que computa para comisión
+  commissionCents Int       @default(0)
+  paidOutAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([partnerId])
+  @@index([status])
+}
+
+enum ReferralStatus {
+  LEAD       // cart creado, aún sin pagar
+  EARNED     // cart pagado, comisión devengada pero no liquidada
+  PAID_OUT   // pagada al partner
+  REFUSED    // partner cancelado / fraude
+}
+
+// Embeddings semánticos para búsqueda inteligente
+model ProductEmbedding {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String   @unique
+  vector    Float[]
+  model     String
+  createdAt DateTime @default(now())
+
+  @@index([productId])
 }
 
 // Cupones / descuentos comerciales

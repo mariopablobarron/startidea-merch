@@ -36,7 +36,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   const amountCents = Math.round((cart.acceptedTotalCents * cart.depositPercent) / 100);
   const isFull = cart.depositPercent >= 100;
 
-  // Stripe Checkout Session — modo "payment", pago único
+  // Stripe Checkout Session — con Stripe Tax si está habilitado
+  const taxEnabled = process.env.STRIPE_TAX_ENABLED === "true";
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
@@ -50,6 +52,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
               ? `Pago total cotización — ${cart.company || cart.name}`
               : `Depósito ${cart.depositPercent}% cotización — ${cart.company || cart.name}`,
             description: `Ref. interna: ${cart.id.slice(0, 8)} · ${cart.items.length} productos`,
+            tax_code: "txcd_99999999", // genérico — Stripe lo refina con la dirección
           },
         },
         quantity: 1,
@@ -64,6 +67,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       depositPercent: String(cart.depositPercent),
       kind: isFull ? "FULL" : "DEPOSIT",
     },
+    // Stripe Tax: cuando esté activado, Stripe calcula IVA por país y permite
+    // recoger NIF/VAT del cliente (B2B exempt si aplica)
+    ...(taxEnabled
+      ? {
+          automatic_tax: { enabled: true },
+          tax_id_collection: { enabled: true },
+          customer_update: undefined,
+          billing_address_collection: "required" as const,
+        }
+      : {}),
   });
 
   // Persistir Payment PENDING para luego matchear en webhook

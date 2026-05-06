@@ -43,6 +43,8 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:hola@merchandising.startidea.es}
+      STRIPE_TAX_ENABLED: ${STRIPE_TAX_ENABLED:-false}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-openai/text-embedding-3-small}
       NODE_ENV: production
       PORT: "3000"
       # Forzar bind a 0.0.0.0 — sin esto Next.js standalone escucha solo

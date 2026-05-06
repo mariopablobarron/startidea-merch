@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NewsletterForm } from "./NewsletterForm";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -57,6 +58,12 @@ export function Footer() {
               <br />
               C/ Conde Cifuentes, 33 — 18005 Granada
             </p>
+            <div className="mt-6">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-bone/40">
+                Newsletter mensual con casos reales
+              </p>
+              <NewsletterForm />
+            </div>
           </div>
           <FooterCol title="Contacto">
             <a href="mailto:hola@merchandising.startidea.es" className="hover:text-accent">

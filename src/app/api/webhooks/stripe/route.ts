@@ -5,6 +5,7 @@ import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
 import { notifyTelegram } from "@/lib/telegram";
+import { markReferralEarned } from "@/lib/referral";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -94,6 +95,9 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
     where: { id: payment.cartId },
     data: { status: "CONFIRMED", confirmedAt: new Date() },
   });
+
+  // Si el cart vino de un referral, devengar comisión
+  void markReferralEarned(payment.cartId, payment.amountCents).catch(() => {});
 
   // Telegram al equipo
   void notifyTelegram(

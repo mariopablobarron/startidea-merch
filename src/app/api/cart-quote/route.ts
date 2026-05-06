@@ -5,6 +5,7 @@ import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { validateCoupon, applyCoupon } from "@/lib/coupons";
 import { notifyTelegram } from "@/lib/telegram";
+import { readPartnerSlug, attachReferral } from "@/lib/referral";
 
 export const runtime = "nodejs";
 
@@ -112,6 +113,12 @@ export async function POST(req: Request) {
         html: clientCartHtml(cart),
       }),
     ]).catch((err) => console.error("[cart-quote] resend error", err));
+  }
+
+  // Si hay referral activo (cookie o querystring), asociar partner
+  const refSlug = readPartnerSlug(req);
+  if (refSlug) {
+    void attachReferral(cart.id, refSlug).catch(() => {});
   }
 
   // Aplicar cupón si llegó (silencioso si falla — el admin puede decidir)
