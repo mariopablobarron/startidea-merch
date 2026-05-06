@@ -129,6 +129,9 @@ export default function AdminDashboardPage() {
               <Link href="/admin/analytics" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
                 Analytics
               </Link>
+              <Link href="/admin/proposals/new" className="rounded-full bg-accent px-3 py-1.5 text-bone hover:bg-accent-dark">
+                ⚡ Nueva propuesta IA
+              </Link>
             </nav>
             <input
               type="password"

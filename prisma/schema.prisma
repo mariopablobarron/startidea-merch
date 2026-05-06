@@ -442,6 +442,9 @@ model CartQuote {
   paymentLinkToken   String?  @unique  // token público del enlace de pago
   paymentLinkSentAt  DateTime?
 
+  // Dashboard cliente: token público para ver SUS pedidos e impacto
+  customerToken      String?  @unique
+
   items       CartQuoteItem[]
   proofs      OrderProof[]
   trackings   OrderTracking[]
