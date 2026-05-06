@@ -201,6 +201,9 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
           </button>
         </div>
 
+        {/* PDF de propuesta */}
+        <ProposalPdfButton cartId={id} secret={secret} />
+
         {/* Pago Stripe */}
         <PaymentLinkPanel cartId={id} secret={secret} cart={cart} onUpdate={(c) => setCart((prev) => (prev ? { ...prev, ...c } : null))} />
 
@@ -208,6 +211,56 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
         <OrderActions cartId={id} secret={secret} />
       </div>
     </main>
+  );
+}
+
+function ProposalPdfButton({ cartId, secret }: { cartId: string; secret: string }) {
+  const [busy, setBusy] = useState(false);
+  async function open(forceDownload: boolean) {
+    setBusy(true);
+    try {
+      const res = await fetch(
+        `/api/admin/cart-quotes/${cartId}/proposal${forceDownload ? "?download=1" : ""}`,
+        { headers: { "X-Admin-Secret": secret } },
+      );
+      if (!res.ok) {
+        alert("Error generando PDF");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mt-6 rounded-2xl border border-line bg-bone p-5">
+      <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Propuesta comercial</p>
+      <p className="mt-1 font-display text-lg font-semibold text-ink">PDF de cotización con marca</p>
+      <p className="mt-1 text-xs text-ink/60">
+        Genera un PDF profesional con razón social, items, totales con IVA y términos.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => open(false)}
+          disabled={busy}
+          className="rounded-full bg-ink px-4 py-2 text-xs font-medium text-bone hover:bg-accent disabled:opacity-40"
+        >
+          {busy ? "Generando…" : "Ver PDF en navegador"}
+        </button>
+        <button
+          type="button"
+          onClick={() => open(true)}
+          disabled={busy}
+          className="rounded-full border border-line bg-bone-soft px-4 py-2 text-xs font-medium hover:border-accent disabled:opacity-40"
+        >
+          Descargar PDF
+        </button>
+      </div>
+    </div>
   );
 }
 

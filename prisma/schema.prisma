@@ -271,6 +271,28 @@ model PrintManipulation {
 }
 
 // ============================================================================
+// API pública para clientes corporativos (key + secret)
+// ============================================================================
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  label       String
+  email       String
+  company     String?
+  // hash del secret (no almaceno el plano)
+  keyPrefix   String   @unique // primeros 8 chars del secret para identificar
+  secretHash  String
+  active      Boolean  @default(true)
+  scopes      String[] @default([])  // ["read:catalog", "write:quote"]
+  rateLimit   Int      @default(100) // req/h
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime?
+  notes       String?  @db.Text
+
+  @@index([active])
+}
+
+// ============================================================================
 // Notificaciones push para el equipo admin (Web Push API + VAPID)
 // ============================================================================
 
