@@ -272,6 +272,48 @@ model PrintManipulation {
 }
 
 // ============================================================================
+// Usuarios admin con roles (sustituye al X-Admin-Secret único)
+// ============================================================================
+
+model AdminUser {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  name         String
+  passwordHash String
+  role         AdminRole   @default(COMERCIAL)
+  active       Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  lastLoginAt  DateTime?
+
+  @@index([active])
+}
+
+enum AdminRole {
+  CEO            // todo · gestión usuarios · facturación · análisis
+  COMERCIAL      // cotizaciones, propuestas IA, sin costes ni payments
+  FACTURACION    // payments, links pago, IVA, sin editar cotizaciones
+  OPERACIONES    // pedidos producción, tracking, proofs, sin precios cliente
+}
+
+// Usuarios cliente — portal /clientes con control completo
+model CustomerUser {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  company       String?
+  passwordHash  String?   // nullable: pueden entrar también con magic link
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  lastLoginAt   DateTime?
+
+  // Magic link login (sin contraseña)
+  magicLinkToken     String?   @unique
+  magicLinkExpiresAt DateTime?
+
+  @@index([active])
+}
+
+// ============================================================================
 // API pública para clientes corporativos (key + secret)
 // ============================================================================
 

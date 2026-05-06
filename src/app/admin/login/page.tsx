@@ -1,59 +1,77 @@
-import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { setAdminSession, isAdmin, checkAdminSecret } from "@/lib/admin-session";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Acceso admin",
-  robots: { index: false, follow: false },
-};
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-async function loginAction(formData: FormData) {
-  "use server";
-  const secret = String(formData.get("secret") || "");
-  if (!checkAdminSecret(secret)) {
-    redirect("/admin/login?error=1");
+export default function AdminLoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error");
+      } else {
+        router.push("/admin");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error de red");
+    } finally {
+      setBusy(false);
+    }
   }
-  await setAdminSession();
-  redirect("/admin/quotes");
-}
-
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  if (await isAdmin()) redirect("/admin/quotes");
-  const { error } = await searchParams;
 
   return (
-    <main className="grid min-h-screen place-items-center bg-bone px-6">
-      <form
-        action={loginAction}
-        className="w-full max-w-sm rounded-3xl border border-line bg-bone-soft p-8"
-      >
-        <h1 className="font-display text-2xl font-semibold text-ink">Acceso admin</h1>
+    <main className="grid min-h-screen place-items-center bg-bone-soft p-8">
+      <div className="w-full max-w-md rounded-3xl border border-line bg-bone p-8 lg:p-10">
+        <p className="text-xs font-medium uppercase tracking-wider text-accent">Acceso panel</p>
+        <h1 className="mt-2 font-display text-2xl font-semibold text-ink">Inicia sesión</h1>
         <p className="mt-2 text-sm text-ink/60">
-          Introduce el ADMIN_SECRET para gestionar cotizaciones.
+          Si es la primera vez y aún no hay usuarios en el sistema, usa tu email y el
+          ADMIN_SECRET del .env como contraseña — se creará automáticamente el usuario CEO.
         </p>
-        <label className="mt-6 grid gap-2">
-          <span className="text-sm font-medium">Secret</span>
+
+        <form onSubmit={submit} className="mt-6 space-y-3">
           <input
-            type="password"
-            name="secret"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="email@startidea.es"
             required
             autoFocus
-            autoComplete="current-password"
-            className="rounded-2xl border border-line bg-bone px-4 py-3 text-base outline-none transition focus:border-accent"
+            className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
-        </label>
-        {error && <p className="mt-3 text-sm text-accent-deep">⚠ Secret incorrecto</p>}
-        <button
-          type="submit"
-          className="mt-6 w-full rounded-full bg-ink py-3 text-sm font-medium text-bone transition hover:bg-accent"
-        >
-          Entrar
-        </button>
-      </form>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Contraseña"
+            required
+            minLength={6}
+            className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2.5 text-sm outline-none focus:border-accent"
+          />
+          {error && <p className="rounded-lg bg-accent-wash p-2.5 text-xs text-accent-deep">⚠ {error}</p>}
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-full rounded-full bg-ink px-5 py-3 text-sm font-medium text-bone hover:bg-accent disabled:opacity-40"
+          >
+            {busy ? "Entrando…" : "Entrar"}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }
