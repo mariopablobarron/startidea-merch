@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
+import { OrderTimeline, type TimelineEvent } from "@/components/OrderTimeline";
 
 type CartItem = {
   id: string;
@@ -36,7 +37,12 @@ type Cart = {
   acceptedTotalCents?: number | null;
   depositPercent?: number | null;
   paymentLinkToken?: string | null;
+  confirmedAt?: string | null;
+  orderedAt?: string | null;
   items: CartItem[];
+  proofs?: { status: string; decidedAt: string | null; createdAt: string }[];
+  payments?: { paidAt: string | null; amountCents: number }[];
+  trackings?: { status: string | null; fetchedAt: string; trackingCode: string | null; carrier: string | null }[];
 };
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -200,6 +206,9 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
             {savingNotes ? "Guardando…" : "Guardar notas"}
           </button>
         </div>
+
+        {/* Timeline */}
+        <CartTimeline cart={cart} />
 
         {/* PDF de propuesta */}
         <ProposalPdfButton cartId={id} secret={secret} />
@@ -476,6 +485,49 @@ function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
           {JSON.stringify(result, null, 2)}
         </pre>
       )}
+    </div>
+  );
+}
+
+function CartTimeline({ cart }: { cart: Cart }) {
+  const events: TimelineEvent[] = [];
+  events.push({ stage: "RECEIVED", at: cart.createdAt });
+  if (cart.status === "IN_PROGRESS" || cart.status === "SENT" || cart.status === "CONFIRMED" || cart.status === "ORDERED") {
+    events.push({ stage: "REVIEWING", at: cart.createdAt });
+  }
+  if (cart.status === "SENT" || cart.status === "CONFIRMED" || cart.status === "ORDERED") {
+    events.push({ stage: "QUOTE_SENT", at: cart.createdAt });
+  }
+  const firstPayment = cart.payments?.[cart.payments.length - 1];
+  if (firstPayment?.paidAt) {
+    events.push({
+      stage: "PAID",
+      at: firstPayment.paidAt,
+      details: `${(firstPayment.amountCents / 100).toFixed(2)} €`,
+    });
+  }
+  const approvedProof = cart.proofs?.find((p) => p.status === "APPROVED");
+  if (approvedProof?.decidedAt) {
+    events.push({ stage: "PROOF_APPROVED", at: approvedProof.decidedAt });
+  }
+  if (cart.orderedAt) {
+    events.push({ stage: "IN_PRODUCTION", at: cart.orderedAt });
+  }
+  const lastTracking = cart.trackings?.[0];
+  if (lastTracking?.status) {
+    if (lastTracking.status.match(/deliver|entreg/i)) {
+      events.push({ stage: "DELIVERED", at: lastTracking.fetchedAt, details: lastTracking.trackingCode || undefined });
+    } else if (lastTracking.status.match(/ship|env[ií]/i) || lastTracking.trackingCode) {
+      events.push({ stage: "SHIPPED", at: lastTracking.fetchedAt, details: lastTracking.trackingCode ? `${lastTracking.carrier || "Tracking"} ${lastTracking.trackingCode}` : undefined });
+    }
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border border-line bg-bone p-5">
+      <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Timeline del pedido</p>
+      <div className="mt-4">
+        <OrderTimeline events={events} />
+      </div>
     </div>
   );
 }

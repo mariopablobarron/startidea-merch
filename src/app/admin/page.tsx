@@ -123,6 +123,9 @@ export default function AdminDashboardPage() {
               <Link href="/admin/cart-quotes" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
                 Carritos
               </Link>
+              <Link href="/admin/orders" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
+                📦 Pedidos
+              </Link>
               <Link href="/admin/quotes" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
                 Cotizaciones
               </Link>

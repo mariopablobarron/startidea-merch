@@ -13,7 +13,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const cart = await prisma.cartQuote.findUnique({
     where: { id },
-    include: { items: true },
+    include: {
+      items: true,
+      proofs: {
+        select: { status: true, decidedAt: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      },
+      payments: {
+        where: { status: "PAID" },
+        select: { paidAt: true, amountCents: true },
+        orderBy: { paidAt: "desc" },
+      },
+      trackings: {
+        select: { status: true, fetchedAt: true, trackingCode: true, carrier: true },
+        orderBy: { fetchedAt: "desc" },
+      },
+    },
   });
   if (!cart) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(cart);
