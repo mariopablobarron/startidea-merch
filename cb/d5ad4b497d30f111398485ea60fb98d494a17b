@@ -1,0 +1,30 @@
+src/app/api/admin/analytics/route.ts
+  s_65877aa637ec34::t_0268f977143982 1-151
+src/app/admin/page.tsx
+  s_65877aa637ec34::t_f26ba5e4adb7eb 129-131
+src/app/admin/analytics/page.tsx
+  s_65877aa637ec34::t_8a0843f60fd1e3 1-290
+src/components/ImpactLive.tsx
+  s_65877aa637ec34::t_047330210b7524 1-128
+src/app/page.tsx
+  s_65877aa637ec34::t_412c570c120dfb 5
+  s_65877aa637ec34::t_686905eedc2eaa 27
+src/app/api/impact/route.ts
+  s_65877aa637ec34::t_0348d0b193ce8b 1-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "cbd5ad4b497d30f111398485ea60fb98d494a17b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
