@@ -2,6 +2,7 @@ import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
 import { Marquee } from "@/components/Marquee";
 import { Impact } from "@/components/Impact";
+import { ImpactLive } from "@/components/ImpactLive";
 import { Process } from "@/components/Process";
 import { Categories } from "@/components/Categories";
 import { Partners } from "@/components/Partners";
@@ -23,6 +24,7 @@ export default function HomePage() {
         <Hero />
         <Marquee />
         <Impact />
+        <ImpactLive />
         <Process />
         <Cases />
         <Partners />

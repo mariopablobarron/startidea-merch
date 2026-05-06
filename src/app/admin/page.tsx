@@ -126,6 +126,9 @@ export default function AdminDashboardPage() {
               <Link href="/admin/quotes" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
                 Cotizaciones
               </Link>
+              <Link href="/admin/analytics" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
+                Analytics
+              </Link>
             </nav>
             <input
               type="password"

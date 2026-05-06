@@ -8,11 +8,11 @@ function escapeHtml(s: string) {
 }
 
 const COLORS = {
-  ink: "#0B0B0F",
-  bone: "#F5F1EA",
-  boneSoft: "#FAF7F2",
-  accent: "#FF5A1F",
-  social: "#10B981",
+  ink: "#0a0a0b",
+  bone: "#f1ede5",
+  boneSoft: "#faf8f4",
+  accent: "#ff6b35",
+  social: "#4a9d7f",
 } as const;
 
 const BASE_STYLES = `
@@ -36,14 +36,14 @@ function wrap(content: string, preheader = "") {
 ${preheader ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">${escapeHtml(preheader)}</div>` : ""}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLORS.bone};padding:32px 16px">
   <tr><td align="center">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:${COLORS.boneSoft};border:1px solid #0B0B0F0d;border-radius:24px;overflow:hidden">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:${COLORS.boneSoft};border:1px solid #0a0a0b0d;border-radius:24px;overflow:hidden">
       <tr><td style="padding:32px 40px 0">
         <p style="margin:0;font-size:16px;font-weight:600;letter-spacing:-0.01em">
           todo<span style="color:${COLORS.accent}">merchandising</span>
         </p>
       </td></tr>
       ${content}
-      <tr><td style="padding:24px 40px 32px;border-top:1px solid #0B0B0F0d;font-size:12px;color:#0B0B0F80">
+      <tr><td style="padding:24px 40px 32px;border-top:1px solid #0a0a0b0d;font-size:12px;color:#0a0a0b80">
         Una iniciativa de Startidea · merchandising.startidea.es
       </td></tr>
     </table>
@@ -83,7 +83,7 @@ export function internalQuoteEmail(d: QuoteEmailData) {
     .map(
       ([k, v]) => `
         <tr>
-          <td style="padding:10px 0;color:#0B0B0F80;font-size:13px;width:120px;vertical-align:top">${k}</td>
+          <td style="padding:10px 0;color:#0a0a0b80;font-size:13px;width:120px;vertical-align:top">${k}</td>
           <td style="padding:10px 0;font-size:14px;font-weight:500">${escapeHtml(String(v))}</td>
         </tr>`,
     )
@@ -93,15 +93,15 @@ export function internalQuoteEmail(d: QuoteEmailData) {
     `
       <tr><td style="padding:24px 40px 8px">
         <p style="margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${COLORS.accent}">Nueva cotización</p>
-        <h1 style="margin:0;font-size:28px;line-height:1.15;letter-spacing:-0.02em;font-weight:700">${escapeHtml(d.name)}${d.company ? ` <span style="color:#0B0B0F50;font-weight:500">· ${escapeHtml(d.company)}</span>` : ""}</h1>
+        <h1 style="margin:0;font-size:28px;line-height:1.15;letter-spacing:-0.02em;font-weight:700">${escapeHtml(d.name)}${d.company ? ` <span style="color:#0a0a0b50;font-weight:500">· ${escapeHtml(d.company)}</span>` : ""}</h1>
       </td></tr>
       <tr><td style="padding:0 40px 24px">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #0B0B0F12">${rows}</table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #0a0a0b12">${rows}</table>
       </td></tr>
       <tr><td style="padding:0 40px 32px">
-        <p style="margin:0 0 12px;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#0B0B0F80">Mensaje</p>
+        <p style="margin:0 0 12px;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#0a0a0b80">Mensaje</p>
         <div style="padding:16px;background:${COLORS.bone};border-radius:12px;font-size:14px;white-space:pre-wrap">${escapeHtml(d.message)}</div>
-        <p style="margin:24px 0 0;font-size:11px;color:#0B0B0F50">ID: ${escapeHtml(d.id)}</p>
+        <p style="margin:24px 0 0;font-size:11px;color:#0a0a0b50">ID: ${escapeHtml(d.id)}</p>
       </td></tr>
     `,
     `Cotización de ${d.name}${d.company ? " · " + d.company : ""}`,
@@ -119,7 +119,7 @@ export function autoresponseQuoteEmail(d: QuoteEmailData) {
           Hola ${escapeHtml(firstName)},<br>tenemos tu brief.
         </h1>
       </td></tr>
-      <tr><td style="padding:8px 40px 0;font-size:16px;color:#0B0B0FB3">
+      <tr><td style="padding:8px 40px 0;font-size:16px;color:#0a0a0bB3">
         <p style="margin:24px 0 0">
           Recibimos tu solicitud y la estamos revisando. Te responderemos con
           <strong style="color:${COLORS.ink}">cotización cerrada en menos de 24 horas laborables</strong>:
@@ -140,9 +140,9 @@ export function autoresponseQuoteEmail(d: QuoteEmailData) {
         </table>
       </td></tr>
       <tr><td style="padding:0 40px 16px">
-        <div style="padding:20px;background:${COLORS.bone};border-radius:16px;border:1px solid #0B0B0F0d">
-          <p style="margin:0;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#0B0B0F80">Mientras tanto</p>
-          <p style="margin:12px 0 0;font-size:14px;color:#0B0B0FB3">
+        <div style="padding:20px;background:${COLORS.bone};border-radius:16px;border:1px solid #0a0a0b0d">
+          <p style="margin:0;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#0a0a0b80">Mientras tanto</p>
+          <p style="margin:12px 0 0;font-size:14px;color:#0a0a0bB3">
             Cada pedido tuyo genera trabajo digno en Centros Especiales de Empleo y talleres
             locales. Cuando entreguemos, te enviamos también un informe con
             <strong style="color:${COLORS.social}">las horas de trabajo digno generadas</strong>
