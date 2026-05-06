@@ -289,7 +289,76 @@ model ApiKey {
   lastUsedAt  DateTime?
   notes       String?  @db.Text
 
+  webhooks    WebhookEndpoint[]
+
   @@index([active])
+}
+
+// Webhooks salientes hacia clientes API
+model WebhookEndpoint {
+  id          String   @id @default(cuid())
+  apiKey      ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  apiKeyId    String?
+  url         String
+  secret      String                  // firma HMAC-SHA256 del payload
+  events      String[] @default([])   // quote.status.changed, payment.completed, proof.status.changed
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  lastDeliveredAt DateTime?
+  lastFailedAt    DateTime?
+
+  deliveries  WebhookDelivery[]
+
+  @@index([apiKeyId])
+  @@index([active])
+}
+
+model WebhookDelivery {
+  id            String          @id @default(cuid())
+  endpoint      WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  endpointId    String
+
+  event         String
+  payload       Json
+  status        DeliveryStatus  @default(PENDING)
+  attempts      Int             @default(0)
+  lastResponseStatus Int?
+  lastError     String?         @db.Text
+  createdAt     DateTime        @default(now())
+  deliveredAt   DateTime?
+  nextRetryAt   DateTime?
+
+  @@index([endpointId])
+  @@index([status, nextRetryAt])
+}
+
+enum DeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  ABANDONED
+}
+
+// Reviews post-pedido (NPS + comentario verificado)
+model Review {
+  id          String   @id @default(cuid())
+  cart        CartQuote @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId      String
+
+  token       String   @unique @default(cuid())
+  invitedAt   DateTime @default(now())
+  submittedAt DateTime?
+
+  npsScore    Int?     // 0-10
+  comment     String?  @db.Text
+  authorName  String?
+  authorCompany String?
+
+  approved    Boolean  @default(false)
+  isPublic    Boolean  @default(true)
+
+  @@index([cartId])
+  @@index([approved, submittedAt])
 }
 
 // ============================================================================
@@ -377,6 +446,7 @@ model CartQuote {
   proofs      OrderProof[]
   trackings   OrderTracking[]
   payments    Payment[]
+  reviews     Review[]
 
   @@index([status])
   @@index([email])

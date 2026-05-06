@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSecret } from "@/lib/auth";
+import { emitWebhook } from "@/lib/webhooks";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,9 +32,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const parsed = PatchSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
 
+  const before = await prisma.cartQuote.findUnique({
+    where: { id },
+    select: { status: true },
+  });
   const updated = await prisma.cartQuote.update({
     where: { id },
     data: parsed.data,
   });
+
+  // Webhook si cambió el estado
+  if (parsed.data.status && before && before.status !== parsed.data.status) {
+    void emitWebhook("quote.status.changed", {
+      cartId: id,
+      fromStatus: before.status,
+      toStatus: parsed.data.status,
+      at: new Date().toISOString(),
+    });
+  }
+
   return NextResponse.json({ ok: true, cart: updated });
 }

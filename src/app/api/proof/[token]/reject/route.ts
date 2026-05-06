@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { midoceanProofs } from "@/lib/suppliers/midocean-orders";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
+import { emitWebhook } from "@/lib/webhooks";
 
 export const runtime = "nodejs";
 
@@ -51,6 +52,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       })
       .catch((err) => console.error("[proof reject] resend", err));
   }
+
+  void emitWebhook("proof.status.changed", {
+    cartId: proof.cartId,
+    proofId: proof.id,
+    fromStatus: "PENDING",
+    toStatus: "REJECTED",
+    reason: parsed.data.reason,
+    at: new Date().toISOString(),
+  });
 
   return NextResponse.json({ ok: true, status: updated.status });
 }

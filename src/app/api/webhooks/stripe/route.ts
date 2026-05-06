@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
+import { emitWebhook } from "@/lib/webhooks";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -91,6 +92,15 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
   await prisma.cartQuote.update({
     where: { id: payment.cartId },
     data: { status: "CONFIRMED", confirmedAt: new Date() },
+  });
+
+  // Webhook a clientes API
+  void emitWebhook("payment.completed", {
+    cartId: payment.cartId,
+    paymentId: payment.id,
+    amountCents: payment.amountCents,
+    currency: payment.currency,
+    paidAt: new Date().toISOString(),
   });
 
   // Email al equipo + cliente

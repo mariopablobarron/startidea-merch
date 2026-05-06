@@ -7,6 +7,7 @@ import { Process } from "@/components/Process";
 import { Categories } from "@/components/Categories";
 import { Partners } from "@/components/Partners";
 import { Cases } from "@/components/Cases";
+import { PublicReviews } from "@/components/PublicReviews";
 import { Faq } from "@/components/Faq";
 import { QuoteSection } from "@/components/QuoteSection";
 import { Footer } from "@/components/Footer";
@@ -27,6 +28,7 @@ export default function HomePage() {
         <ImpactLive />
         <Process />
         <Cases />
+        <PublicReviews />
         <Partners />
         <Categories />
         <Faq />
