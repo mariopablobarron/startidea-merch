@@ -1,0 +1,31 @@
+src/app/api/admin/cart-quotes/[id]/customer-link/route.ts
+  s_65877aa637ec34::t_d932bde4c29ac6 1-59
+src/app/api/admin/proposals/generate/route.ts
+  s_65877aa637ec34::t_40ce6490b17f5a 1-294
+prisma/schema.prisma
+  s_65877aa637ec34::t_927d82cafe0249 445-447
+src/app/api/clientes/[token]/route.ts
+  s_65877aa637ec34::t_4a81bd66f39d3a 1-71
+src/app/admin/proposals/new/page.tsx
+  s_65877aa637ec34::t_5e87ad46e3642a 1-254
+src/app/admin/page.tsx
+  s_65877aa637ec34::t_6f8c2937ff39d6 132-134
+src/app/clientes/[token]/page.tsx
+  s_65877aa637ec34::t_0cd1b4da84e440 1-176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "cce308e35636419f5735ba6eb6893ad53f80c39c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
