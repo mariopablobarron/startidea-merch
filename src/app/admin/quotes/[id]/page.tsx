@@ -82,7 +82,7 @@ export default async function QuoteDetailPage({
             <select
               name="status"
               defaultValue={q.status}
-              className="rounded-full border border-ink/15 bg-bone-soft px-4 py-2 text-sm outline-none transition focus:border-accent"
+              className="rounded-full border border-line bg-bone-soft px-4 py-2 text-sm outline-none transition focus:border-accent"
             >
               {ALL_STATUS.map((s) => (
                 <option key={s} value={s}>
@@ -100,7 +100,7 @@ export default async function QuoteDetailPage({
         </div>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[1.4fr,1fr]">
-          <section className="rounded-2xl border border-ink/10 bg-bone-soft p-6">
+          <section className="rounded-2xl border border-line bg-bone-soft p-6">
             <h2 className="text-xs font-medium uppercase tracking-wider text-ink/50">Brief</h2>
             <dl className="mt-4 grid gap-3 text-sm">
               <Field label="Producto" value={q.productHint} />
@@ -109,13 +109,13 @@ export default async function QuoteDetailPage({
               <Field label="Presupuesto" value={q.budget} />
               <Field label="Origen" value={q.source} />
             </dl>
-            <div className="mt-6 border-t border-ink/10 pt-6">
+            <div className="mt-6 border-t border-line pt-6">
               <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Mensaje</p>
               <p className="mt-3 whitespace-pre-wrap text-[15px] text-ink/80">{q.message}</p>
             </div>
           </section>
 
-          <section className="rounded-2xl border border-ink/10 bg-bone-soft p-6">
+          <section className="rounded-2xl border border-line bg-bone-soft p-6">
             <h2 className="text-xs font-medium uppercase tracking-wider text-ink/50">Contacto</h2>
             <dl className="mt-4 grid gap-3 text-sm">
               <Field
@@ -156,7 +156,7 @@ export default async function QuoteDetailPage({
                   href={`https://wa.me/${q.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hola ${q.name.split(" ")[0]}, te escribimos desde todomerchandising sobre tu cotización.`)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-full border border-ink/15 px-4 py-2 text-xs font-medium text-ink transition hover:border-ink/40"
+                  className="rounded-full border border-line px-4 py-2 text-xs font-medium text-ink transition hover:border-accent"
                 >
                   WhatsApp
                 </a>
@@ -165,7 +165,7 @@ export default async function QuoteDetailPage({
           </section>
         </div>
 
-        <section className="mt-10 rounded-2xl border border-ink/10 bg-bone-soft p-6">
+        <section className="mt-10 rounded-2xl border border-line bg-bone-soft p-6">
           <h2 className="text-xs font-medium uppercase tracking-wider text-ink/50">
             Notas internas
           </h2>
@@ -177,13 +177,13 @@ export default async function QuoteDetailPage({
               required
               rows={3}
               placeholder="Añade una nota interna…"
-              className="rounded-xl border border-ink/15 bg-bone px-4 py-3 text-sm outline-none transition focus:border-accent"
+              className="rounded-xl border border-line bg-bone px-4 py-3 text-sm outline-none transition focus:border-accent"
             />
             <div className="flex flex-wrap items-center gap-3">
               <input
                 name="author"
                 defaultValue="admin"
-                className="rounded-full border border-ink/15 bg-bone px-3 py-1.5 text-xs outline-none transition focus:border-accent"
+                className="rounded-full border border-line bg-bone px-3 py-1.5 text-xs outline-none transition focus:border-accent"
               />
               <button
                 type="submit"

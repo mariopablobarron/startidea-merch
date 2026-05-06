@@ -93,7 +93,7 @@ export function QuoteForm() {
             name="productHint"
             type="text"
             placeholder="Ej. botella tritan"
-            className="rounded-2xl border border-ink/15 bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
+            className="rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
           />
         </label>
         <Field name="quantity" label="Cantidad estimada" type="number" placeholder="Ej. 250" />
@@ -108,7 +108,7 @@ export function QuoteForm() {
           required
           rows={5}
           placeholder="Logo, evento, claim, color, plazo, lo que sea relevante."
-          className="rounded-2xl border border-ink/15 bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
+          className="rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
         />
       </label>
 
@@ -135,7 +135,7 @@ export function QuoteForm() {
       </button>
 
       {status === "error" && (
-        <p className="text-sm text-red-600">⚠ {errorMsg || "Error al enviar"}</p>
+        <p className="text-sm text-accent-deep">⚠ {errorMsg || "Error al enviar"}</p>
       )}
 
       <p className="text-xs text-ink/50">
@@ -170,7 +170,7 @@ function Field({
         type={type}
         required={required}
         placeholder={placeholder}
-        className="rounded-2xl border border-ink/15 bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
+        className="rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
       />
     </label>
   );

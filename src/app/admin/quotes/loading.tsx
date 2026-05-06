@@ -11,9 +11,9 @@ export default function Loading() {
             <div key={i} className="h-9 w-24 animate-pulse rounded-full bg-ink/5" />
           ))}
         </div>
-        <div className="mt-8 overflow-hidden rounded-2xl border border-ink/10 bg-bone-soft">
+        <div className="mt-8 overflow-hidden rounded-2xl border border-line bg-bone-soft">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="flex gap-6 border-b border-ink/5 px-5 py-5 last:border-0">
+            <div key={i} className="flex gap-6 border-b border-line px-5 py-5 last:border-0">
               <div className="h-4 w-20 animate-pulse rounded bg-ink/10" />
               <div className="h-4 w-32 animate-pulse rounded bg-ink/10" />
               <div className="h-4 w-40 animate-pulse rounded bg-ink/10" />

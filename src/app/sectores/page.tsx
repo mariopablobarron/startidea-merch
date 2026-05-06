@@ -78,7 +78,7 @@ export default function SectoresPage() {
                     </Link>
                     <Link
                       href={`/#cotizar?sector=${s.slug}`}
-                      className="inline-flex items-center justify-center rounded-full border border-line bg-bone-soft px-5 py-2.5 text-sm font-medium text-ink transition hover:border-ink/40"
+                      className="inline-flex items-center justify-center rounded-full border border-line bg-bone-soft px-5 py-2.5 text-sm font-medium text-ink transition hover:border-accent"
                     >
                       {s.cta}
                     </Link>

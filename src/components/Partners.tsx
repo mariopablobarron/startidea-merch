@@ -54,7 +54,7 @@ export function Partners() {
             <motion.article
               key={p.slug}
               variants={fadeUp}
-              className="group flex flex-col rounded-3xl border border-ink/10 bg-bone p-7 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
+              className="group flex flex-col rounded-3xl border border-line bg-bone p-7 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
             >
               <span className="inline-flex w-fit items-center rounded-full bg-ink/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-ink/60">
                 {KIND_LABEL[p.kind]}
@@ -69,7 +69,7 @@ export function Partners() {
                 {p.services.map((s) => (
                   <li
                     key={s}
-                    className="rounded-full border border-ink/15 px-3 py-1 text-xs text-ink/70"
+                    className="rounded-full border border-line px-3 py-1 text-xs text-ink/70"
                   >
                     {s}
                   </li>

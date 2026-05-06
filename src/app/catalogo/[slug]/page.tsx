@@ -118,7 +118,7 @@ export default async function ProductDetailPage({
           <div className="mx-auto grid max-w-8xl gap-12 px-6 lg:grid-cols-[1.3fr,1fr] lg:px-10">
             {/* IZQUIERDA — galería + variantes + descripción */}
             <div>
-              <div className="relative aspect-square overflow-hidden rounded-3xl border border-ink/10 bg-bone-soft">
+              <div className="relative aspect-square overflow-hidden rounded-3xl border border-line bg-bone-soft">
                 {product.primaryImageUrl ? (
                   <Image
                     src={product.primaryImageUrl}
@@ -142,7 +142,7 @@ export default async function ProductDetailPage({
                     {colorVariants.slice(0, 14).map((v) => (
                       <div
                         key={v.id}
-                        className="relative h-16 w-16 overflow-hidden rounded-xl border border-ink/10 bg-bone"
+                        className="relative h-16 w-16 overflow-hidden rounded-xl border border-line bg-bone"
                         title={v.colorName ?? undefined}
                       >
                         {v.imageUrl && (
@@ -157,7 +157,7 @@ export default async function ProductDetailPage({
                       </div>
                     ))}
                     {colorVariants.length > 14 && (
-                      <div className="grid h-16 w-16 place-items-center rounded-xl border border-ink/10 text-xs text-ink/50">
+                      <div className="grid h-16 w-16 place-items-center rounded-xl border border-line text-xs text-ink/50">
                         +{colorVariants.length - 14}
                       </div>
                     )}
@@ -167,7 +167,7 @@ export default async function ProductDetailPage({
 
               {/* Descripción larga + ficha técnica */}
               {product.longDescription && (
-                <div className="mt-12 rounded-3xl border border-ink/10 bg-bone-soft p-6 lg:p-8">
+                <div className="mt-12 rounded-3xl border border-line bg-bone-soft p-6 lg:p-8">
                   <h2 className="font-display text-xl font-semibold text-ink">Descripción</h2>
                   <p className="mt-4 whitespace-pre-line text-[15px] text-ink/80">
                     {product.longDescription}
@@ -176,7 +176,7 @@ export default async function ProductDetailPage({
               )}
 
               {/* Ficha técnica */}
-              <div className="mt-6 rounded-3xl border border-ink/10 bg-bone-soft p-6 lg:p-8">
+              <div className="mt-6 rounded-3xl border border-line bg-bone-soft p-6 lg:p-8">
                 <h2 className="font-display text-xl font-semibold text-ink">Especificaciones técnicas</h2>
                 <dl className="mt-5 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                   {product.brand && <Spec label="Marca" value={product.brand} />}

@@ -21,7 +21,7 @@ export function QuoteSection() {
             </ul>
           </div>
 
-          <div className="rounded-3xl border border-ink/10 bg-bone-soft p-8 lg:p-12">
+          <div className="rounded-3xl border border-line bg-bone-soft p-8 lg:p-12">
             <QuoteForm />
           </div>
         </div>

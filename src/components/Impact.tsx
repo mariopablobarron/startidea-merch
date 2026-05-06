@@ -66,7 +66,7 @@ export function Impact() {
               <motion.article
                 key={title}
                 variants={fadeUp}
-                className="rounded-3xl border border-ink/10 bg-bone-soft p-7 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
+                className="rounded-3xl border border-line bg-bone-soft p-7 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
               >
                 <Icon className="h-7 w-7 text-accent" strokeWidth={1.5} />
                 <h3 className="mt-5 font-display text-xl font-semibold">{title}</h3>

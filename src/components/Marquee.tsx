@@ -17,7 +17,7 @@ const ITEMS = [
 
 export function Marquee() {
   return (
-    <section className="overflow-hidden border-y border-ink/10 bg-ink py-6 text-bone">
+    <section className="overflow-hidden border-y border-line bg-ink py-6 text-bone">
       <div className="marquee-track flex gap-12 whitespace-nowrap">
         {[...ITEMS, ...ITEMS, ...ITEMS].map((item, i) => (
           <span key={i} className="flex items-center gap-12 font-display text-2xl">

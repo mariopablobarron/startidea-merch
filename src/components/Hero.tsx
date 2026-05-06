@@ -24,7 +24,7 @@ export function Hero() {
       >
         <motion.p
           variants={fadeUp}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-ink/10 bg-bone-soft px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-ink/70"
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-line bg-bone-soft px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-ink/70"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-social" />
           Merchandising con impacto social real
@@ -55,7 +55,7 @@ export function Hero() {
           </Link>
           <Link
             href="#impacto"
-            className="rounded-full border border-ink/15 bg-bone-soft px-8 py-4 text-base font-medium text-ink transition hover:border-ink/40"
+            className="rounded-full border border-line bg-bone-soft px-8 py-4 text-base font-medium text-ink transition hover:border-accent"
           >
             Cómo lo hacemos
           </Link>
@@ -66,7 +66,7 @@ export function Hero() {
           whileInView="show"
           viewport={viewportOnce}
           variants={stagger(0.1, 0.1)}
-          className="mt-20 grid grid-cols-2 gap-8 border-t border-ink/10 pt-10 lg:grid-cols-4"
+          className="mt-20 grid grid-cols-2 gap-8 border-t border-line pt-10 lg:grid-cols-4"
         >
           <Stat label="Productos personalizables">
             <Counter value={10000} prefix="+" />

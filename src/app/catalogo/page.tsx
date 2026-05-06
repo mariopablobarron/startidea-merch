@@ -124,7 +124,7 @@ export default async function CatalogoPage({
     <>
       <Nav />
       <main className="bg-bone">
-        <section className="border-b border-ink/10 bg-bone py-12 lg:py-16">
+        <section className="border-b border-line bg-bone py-12 lg:py-16">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
             <p className="mb-4 text-sm font-medium uppercase tracking-wider text-accent">
               Catálogo
@@ -143,7 +143,7 @@ export default async function CatalogoPage({
                 name="q"
                 defaultValue={q}
                 placeholder="Buscar productos…"
-                className="flex-1 rounded-full border border-ink/15 bg-bone-soft px-5 py-3 text-base outline-none transition focus:border-accent"
+                className="flex-1 rounded-full border border-line bg-bone-soft px-5 py-3 text-base outline-none transition focus:border-accent"
               />
               {catSlug && <input type="hidden" name="cat" value={catSlug} />}
               <button
@@ -158,13 +158,13 @@ export default async function CatalogoPage({
 
         {/* Subcategorías chips dentro de una categoría seleccionada */}
         {subCategories.length > 0 && (
-          <section className="border-b border-ink/10 bg-bone-soft py-5">
+          <section className="border-b border-line bg-bone-soft py-5">
             <div className="mx-auto max-w-8xl px-6 lg:px-10">
               <div className="flex flex-wrap gap-2">
                 <Link
                   href={`/catalogo?cat=${category?.parentId ? "" : catSlug}`}
                   className={`rounded-full px-3 py-1 text-xs transition ${
-                    !category?.parentId ? "bg-ink text-bone" : "border border-ink/15 bg-bone text-ink/70 hover:border-ink/40"
+                    !category?.parentId ? "bg-ink text-bone" : "border border-line bg-bone text-ink/70 hover:border-accent"
                   }`}
                 >
                   Todas
@@ -176,7 +176,7 @@ export default async function CatalogoPage({
                     className={`rounded-full px-3 py-1 text-xs transition ${
                       catSlug === sc.slug
                         ? "bg-ink text-bone"
-                        : "border border-ink/15 bg-bone text-ink/70 hover:border-ink/40"
+                        : "border border-line bg-bone text-ink/70 hover:border-accent"
                     }`}
                   >
                     {sc.name}
@@ -293,7 +293,7 @@ export default async function CatalogoPage({
                           <Link
                             key={p.id}
                             href={`/catalogo/${p.slug}`}
-                            className="group flex flex-col rounded-3xl border border-ink/10 bg-bone-soft p-5 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
+                            className="group flex flex-col rounded-3xl border border-line bg-bone-soft p-5 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
                           >
                             <div className="relative aspect-square overflow-hidden rounded-2xl bg-bone">
                               {p.primaryImageUrl ? (
@@ -374,7 +374,7 @@ function buildHref(params: Record<string, string | undefined>): string {
 
 function FilterBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border-b border-ink/10 py-5 first:pt-0 last:border-b-0">
+    <div className="border-b border-line py-5 first:pt-0 last:border-b-0">
       <p className="mb-3 text-xs font-medium uppercase tracking-wider text-ink/50">{title}</p>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </div>
@@ -388,7 +388,7 @@ function Chip({ href, active, label }: { href: string; active: boolean; label: s
       className={`inline-flex items-center rounded-full px-3 py-1 text-xs transition ${
         active
           ? "bg-ink text-bone"
-          : "border border-ink/15 bg-bone-soft text-ink/70 hover:border-ink/40"
+          : "border border-line bg-bone-soft text-ink/70 hover:border-accent"
       }`}
     >
       {label}
@@ -398,7 +398,7 @@ function Chip({ href, active, label }: { href: string; active: boolean; label: s
 
 function EmptyState({ q }: { q: string }) {
   return (
-    <div className="rounded-3xl border border-dashed border-ink/15 bg-bone-soft p-16 text-center">
+    <div className="rounded-3xl border border-dashed border-line bg-bone-soft p-16 text-center">
       <p className="font-display text-2xl font-semibold text-ink">
         {q ? `Nada para «${q}» todavía.` : "Catálogo aún sincronizando."}
       </p>
@@ -441,7 +441,7 @@ function Pagination({
       {page > 1 ? (
         <Link
           href={url(page - 1)}
-          className="rounded-full border border-ink/15 px-5 py-2 hover:border-ink/40"
+          className="rounded-full border border-line px-5 py-2 hover:border-accent"
         >
           ← Anterior
         </Link>
@@ -454,7 +454,7 @@ function Pagination({
       {page < totalPages ? (
         <Link
           href={url(page + 1)}
-          className="rounded-full border border-ink/15 px-5 py-2 hover:border-ink/40"
+          className="rounded-full border border-line px-5 py-2 hover:border-accent"
         >
           Siguiente →
         </Link>

@@ -62,7 +62,7 @@ export function Faq() {
           whileInView="show"
           viewport={viewportOnce}
           variants={stagger(0.05, 0.06)}
-          className="mt-14 divide-y divide-ink/10 border-y border-ink/10"
+          className="mt-14 divide-y divide-ink/10 border-y border-line"
         >
           {FAQS.map((f, i) => (
             <motion.li variants={fadeUp} key={i}>
@@ -86,7 +86,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
     >
       <span
         className={cn(
-          "mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-ink/15 transition",
+          "mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line transition",
           open && "rotate-45 border-accent bg-accent text-bone",
         )}
       >

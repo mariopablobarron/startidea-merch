@@ -27,7 +27,7 @@ export default function NotFound() {
             </Link>
             <Link
               href="/#cotizar"
-              className="rounded-full border border-ink/15 bg-bone-soft px-7 py-3.5 text-sm font-medium text-ink transition hover:border-ink/40"
+              className="rounded-full border border-line bg-bone-soft px-7 py-3.5 text-sm font-medium text-ink transition hover:border-accent"
             >
               Pedir cotización
             </Link>

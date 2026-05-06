@@ -3,7 +3,7 @@ import Link from "next/link";
 export function Footer() {
   const year = new Date().getFullYear();
   return (
-    <footer id="contacto" className="border-t border-ink/10 bg-ink text-bone">
+    <footer id="contacto" className="border-t border-line bg-ink text-bone">
       {/* Strip de confianza — tres bloques de propuesta de valor */}
       <div className="border-b border-bone/10">
         <div className="mx-auto grid max-w-8xl gap-px bg-bone/5 px-6 lg:grid-cols-3 lg:px-10">

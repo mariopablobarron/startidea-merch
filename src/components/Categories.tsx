@@ -55,7 +55,7 @@ export function Categories() {
           whileInView="show"
           viewport={viewportOnce}
           variants={stagger(0.05, 0.06)}
-          className="mt-16 grid gap-px overflow-hidden rounded-3xl border border-ink/10 bg-ink/10 sm:grid-cols-2 lg:grid-cols-4"
+          className="mt-16 grid gap-px overflow-hidden rounded-3xl border border-line bg-ink/10 sm:grid-cols-2 lg:grid-cols-4"
         >
           {CATS.map((c) => (
             <motion.a

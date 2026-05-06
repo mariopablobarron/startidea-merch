@@ -50,7 +50,7 @@ export default function SobrePage() {
           </div>
         </section>
 
-        <section className="border-y border-ink/10 bg-bone-soft py-20 lg:py-28">
+        <section className="border-y border-line bg-bone-soft py-20 lg:py-28">
           <div className="mx-auto max-w-4xl px-6 lg:px-10">
             <h2 className="font-display text-section font-semibold text-ink">Cómo nos posicionamos</h2>
             <div className="mt-12 space-y-10 text-lg text-ink/80">
@@ -80,7 +80,7 @@ export default function SobrePage() {
               {VALUES.map(({ icon: Icon, title, body }) => (
                 <article
                   key={title}
-                  className="rounded-3xl border border-ink/10 bg-bone-soft p-8 transition hover:border-accent/40"
+                  className="rounded-3xl border border-line bg-bone-soft p-8 transition hover:border-accent/40"
                 >
                   <Icon className="h-7 w-7 text-accent" strokeWidth={1.5} />
                   <h3 className="mt-5 font-display text-xl font-semibold">{title}</h3>

@@ -24,10 +24,10 @@ const STATUS_LABEL: Record<QuoteStatus, string> = {
 
 const STATUS_COLOR: Record<QuoteStatus, string> = {
   NEW: "bg-accent/15 text-accent",
-  IN_PROGRESS: "bg-blue-100 text-blue-700",
+  IN_PROGRESS: "bg-accent-mist text-accent-deep",
   SENT: "bg-purple-100 text-purple-700",
   WON: "bg-social/15 text-social",
-  LOST: "bg-red-100 text-red-700",
+  LOST: "bg-accent-wash text-accent-deep",
   ARCHIVED: "bg-ink/5 text-ink/50",
 };
 
@@ -87,14 +87,14 @@ export default async function QuotesListPage({
           ))}
         </div>
 
-        <div className="mt-8 overflow-hidden rounded-2xl border border-ink/10 bg-bone-soft">
+        <div className="mt-8 overflow-hidden rounded-2xl border border-line bg-bone-soft">
           {items.length === 0 ? (
             <p className="p-10 text-center text-sm text-ink/60">
               No hay cotizaciones {filter ? "con este estado" : "todavía"}.
             </p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="border-b border-ink/10 bg-bone text-left text-xs uppercase tracking-wider text-ink/50">
+              <thead className="border-b border-line bg-bone text-left text-xs uppercase tracking-wider text-ink/50">
                 <tr>
                   <th className="px-5 py-3 font-medium">Fecha</th>
                   <th className="px-5 py-3 font-medium">Contacto</th>
@@ -108,7 +108,7 @@ export default async function QuotesListPage({
                 {items.map((q) => (
                   <tr
                     key={q.id}
-                    className="border-b border-ink/5 last:border-0 hover:bg-bone"
+                    className="border-b border-line last:border-0 hover:bg-bone"
                   >
                     <td className="px-5 py-4 text-ink/70">
                       <Link href={`/admin/quotes/${q.id}`} className="block">
@@ -169,7 +169,7 @@ function FilterChip({
       className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm transition ${
         active
           ? "bg-ink text-bone"
-          : "border border-ink/15 bg-bone-soft text-ink/70 hover:border-ink/40"
+          : "border border-line bg-bone-soft text-ink/70 hover:border-accent"
       }`}
     >
       {label}

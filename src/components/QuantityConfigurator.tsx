@@ -66,7 +66,7 @@ export function QuantityConfigurator({
   }
 
   return (
-    <div className="mt-8 rounded-3xl border border-ink/10 bg-bone-soft p-6">
+    <div className="mt-8 rounded-3xl border border-line bg-bone-soft p-6">
       <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
         Selecciona cantidad
       </p>
@@ -87,13 +87,13 @@ export function QuantityConfigurator({
                 className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                   checked
                     ? "border-accent bg-accent/5"
-                    : "border-ink/10 bg-bone hover:border-ink/30"
+                    : "border-line bg-bone hover:border-accent"
                 }`}
               >
                 <span className="flex items-center gap-3">
                   <span
                     className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border ${
-                      checked ? "border-accent" : "border-ink/30"
+                      checked ? "border-accent" : "border-line-dark"
                     }`}
                   >
                     {checked && <span className="h-2 w-2 rounded-full bg-accent" />}
@@ -122,11 +122,11 @@ export function QuantityConfigurator({
         <li>
           <label
             className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm transition ${
-              usingCustom ? "border-accent bg-accent/5" : "border-ink/10 bg-bone hover:border-ink/30"
+              usingCustom ? "border-accent bg-accent/5" : "border-line bg-bone hover:border-accent"
             }`}
           >
             <span className="flex items-center gap-3">
-              <span className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border ${usingCustom ? "border-accent" : "border-ink/30"}`}>
+              <span className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border ${usingCustom ? "border-accent" : "border-line-dark"}`}>
                 {usingCustom && <span className="h-2 w-2 rounded-full bg-accent" />}
               </span>
               <span className="font-medium text-ink">Otra cantidad</span>
@@ -138,14 +138,14 @@ export function QuantityConfigurator({
               placeholder="ej. 175"
               value={customQty}
               onChange={(e) => setCustomQty(e.target.value)}
-              className="w-28 rounded-xl border border-ink/15 bg-bone px-3 py-1.5 text-right tabular-nums outline-none focus:border-accent"
+              className="w-28 rounded-xl border border-line bg-bone px-3 py-1.5 text-right tabular-nums outline-none focus:border-accent"
             />
           </label>
         </li>
       </ul>
 
       {tier && (
-        <div className="mt-6 flex items-end justify-between border-t border-ink/10 pt-5">
+        <div className="mt-6 flex items-end justify-between border-t border-line pt-5">
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
               Total estimado · {qty.toLocaleString("es-ES")} uds

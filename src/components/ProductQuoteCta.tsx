@@ -34,7 +34,7 @@ export function ProductQuoteCta({
       </Link>
       <a
         href={`mailto:hola@merchandising.startidea.es?subject=${encodeURIComponent(`Cotización ${productName} (${productRef})`)}`}
-        className="rounded-full border border-ink/15 bg-bone-soft px-8 py-4 text-base font-medium text-ink transition hover:border-ink/40"
+        className="rounded-full border border-line bg-bone-soft px-8 py-4 text-base font-medium text-ink transition hover:border-accent"
       >
         Email directo
       </a>

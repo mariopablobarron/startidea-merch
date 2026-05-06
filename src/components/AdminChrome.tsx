@@ -11,7 +11,7 @@ async function logoutAction() {
 export function AdminChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-bone">
-      <header className="border-b border-ink/10 bg-bone-soft">
+      <header className="border-b border-line bg-bone-soft">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-6">
             <Link href="/" className="font-display text-base font-semibold">
