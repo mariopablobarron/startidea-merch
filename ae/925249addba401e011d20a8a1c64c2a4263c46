@@ -1,0 +1,30 @@
+tailwind.config.ts
+  s_65877aa637ec34::t_4441a3beb0b578 2
+  s_65877aa637ec34::t_e395f7d64aa082 49
+src/lib/client-logos.ts
+  s_65877aa637ec34::t_7a24674d8964a2 1-25
+src/components/SeoContent.tsx
+  s_65877aa637ec34::t_a5eb1c95361417 1-241
+src/app/page.tsx
+  s_65877aa637ec34::t_e646f4a65257ed 55
+  s_65877aa637ec34::t_dc1f1891c8ff3f 64
+  s_65877aa637ec34::t_c85fa703694318 3,12
+src/components/ClientLogos.tsx
+  s_65877aa637ec34::t_037c2fd2a0b8e2 1-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "ae925249addba401e011d20a8a1c64c2a4263c46",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
