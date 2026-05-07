@@ -25,9 +25,12 @@ const EUR = new Intl.NumberFormat("es-ES", {
 export default function AdminCartQuotesPage() {
   const [items, setItems] = useState<CartQuoteListItem[]>([]);
   const [secret, setSecret] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usingCookie, setUsingCookie] = useState(true);
 
+  // Cookie-first: si ya hay sesión nueva (Sprint 23) la API responde sin
+  // X-Admin-Secret. El input legacy solo aparece si la cookie no autentica.
   useEffect(() => {
     try {
       const s = sessionStorage.getItem("merch:admin");
@@ -35,18 +38,26 @@ export default function AdminCartQuotesPage() {
     } catch {}
   }, []);
 
-  async function load(s: string) {
+  async function load() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/cart-quotes", { headers: { "X-Admin-Secret": s } });
+      const headers: Record<string, string> = {};
+      if (secret) headers["X-Admin-Secret"] = secret;
+      const res = await fetch("/api/admin/cart-quotes", {
+        headers,
+        credentials: "include",
+      });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Error");
-        return;
+        setUsingCookie(false);
+        setError(secret ? data.error || "Error" : null);
+        setItems([]);
+      } else {
+        setItems(data.items || []);
+        if (secret) sessionStorage.setItem("merch:admin", secret);
+        setUsingCookie(true);
       }
-      setItems(data.items || []);
-      sessionStorage.setItem("merch:admin", s);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error de red");
     } finally {
@@ -55,7 +66,8 @@ export default function AdminCartQuotesPage() {
   }
 
   useEffect(() => {
-    if (secret) load(secret);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secret]);
 
   return (
@@ -68,13 +80,15 @@ export default function AdminCartQuotesPage() {
               Carritos de cotización
             </h1>
           </div>
-          <input
-            type="password"
-            placeholder="X-Admin-Secret"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            className="w-72 rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
-          />
+          {!usingCookie && (
+            <input
+              type="password"
+              placeholder="X-Admin-Secret (legacy)"
+              value={secret}
+              onChange={(e) => setSecret(e.target.value)}
+              className="w-72 rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+          )}
         </header>
 
         {error && <p className="mb-4 rounded-lg bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}

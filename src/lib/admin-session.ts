@@ -1,9 +1,20 @@
 /**
- * Sesión admin minimalista — cookie HttpOnly firmada con HMAC sobre el ADMIN_SECRET.
- * Sin librería externa: vence en 8 h y se invalida si cambia el secret.
+ * Compat shim — antes este módulo era el sistema de auth admin (HMAC simple).
+ * Sprint 23 introdujo admin-auth.ts con JWT firmado HS256 y roles RBAC,
+ * usando la MISMA cookie 'merch_admin'. Si dos verificadores comprueban
+ * la misma cookie con formatos distintos, uno fallaba siempre y rompía
+ * páginas como /admin/quotes.
+ *
+ * Solución: este módulo ahora delega en getAdminSession() para que las
+ * páginas legacy que llaman isAdmin() acepten también la cookie JWT nueva.
+ *
+ * setAdminSession() y clearAdminSession() siguen exportados para no
+ * romper el endpoint legacy de login (si aún existe), pero los nuevos
+ * flujos usan signSession() de admin-auth.ts directamente.
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { getAdminSession } from "@/lib/admin-auth";
 
 const COOKIE = "merch_admin";
 const TTL_SECONDS = 8 * 60 * 60;
@@ -18,30 +29,16 @@ function sign(payload: string) {
   return createHmac("sha256", secret()).update(payload).digest("base64url");
 }
 
-function build(expEpoch: number) {
+function buildLegacy(expEpoch: number) {
   const payload = `v1.${expEpoch}`;
   return `${payload}.${sign(payload)}`;
 }
 
-function verify(token: string): { ok: true } | { ok: false } {
-  const parts = token.split(".");
-  if (parts.length !== 3) return { ok: false };
-  const [v, expStr, sig] = parts;
-  if (v !== "v1") return { ok: false };
-  const exp = Number(expStr);
-  if (!Number.isFinite(exp) || Date.now() / 1000 > exp) return { ok: false };
-  const expected = sign(`${v}.${expStr}`);
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return { ok: false };
-  if (!timingSafeEqual(a, b)) return { ok: false };
-  return { ok: true };
-}
-
+/** @deprecated set sesión legacy HMAC; usar signSession() de admin-auth */
 export async function setAdminSession() {
   const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
   const c = await cookies();
-  c.set(COOKIE, build(exp), {
+  c.set(COOKIE, buildLegacy(exp), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -55,11 +52,35 @@ export async function clearAdminSession() {
   c.delete(COOKIE);
 }
 
+/**
+ * Comprueba si hay sesión admin activa, aceptando tanto el formato JWT nuevo
+ * como el HMAC legacy. Esto permite que páginas como /admin/quotes funcionen
+ * tras el login con email+password (que devuelve JWT).
+ */
 export async function isAdmin(): Promise<boolean> {
+  // 1. Sesión JWT nueva (Sprint 23) — el caso normal
+  const session = await getAdminSession();
+  if (session) return true;
+
+  // 2. Fallback a HMAC legacy por si quedan cookies antiguas
   const c = await cookies();
   const token = c.get(COOKIE)?.value;
   if (!token) return false;
-  return verify(token).ok;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  const [v, expStr, sig] = parts;
+  if (v !== "v1") return false;
+  const exp = Number(expStr);
+  if (!Number.isFinite(exp) || Date.now() / 1000 > exp) return false;
+  try {
+    const expected = sign(`${v}.${expStr}`);
+    const a = Buffer.from(sig);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 export async function requireAdminPage(): Promise<boolean> {
