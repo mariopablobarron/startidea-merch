@@ -1,0 +1,21 @@
+src/app/admin/page.tsx
+  s_65877aa637ec34::t_ca6f8a70d95c4c 166-167
+  s_65877aa637ec34::t_68cbb30fa3a40c 152-160
+  s_65877aa637ec34::t_7d1785ce79c821 72-76,89-91,94-98,100,102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "c94f5130f209d1d5b3dfaad375ad8b31687cb927",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
