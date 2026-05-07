@@ -1,0 +1,29 @@
+src/components/Hero.tsx
+  s_65877aa637ec34::t_d5344aae73135c 7-32,48,50,56,59,64-65,68,71,73-74,77-78,80-81,83,86-87,89,93,99,102,104-105,107,110-111
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_f2faefa8e471fd 86
+  s_65877aa637ec34::t_ea2a62b5778385 313,321-341,350
+src/app/page.tsx
+  s_65877aa637ec34::t_3bb10dcf3fd2ea 18-30,37-40
+src/components/PriceTierTable.tsx
+  s_65877aa637ec34::t_9b9e8d51090483 1-133
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_fbee1c6a0dc751 313-317
+  s_65877aa637ec34::t_ffad7406e74933 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "ef9adfc5425cd39e21ad24e0f4f38d706b26bef9",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
