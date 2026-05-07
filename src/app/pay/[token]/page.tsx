@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { PayButton } from "@/components/PayButton";
+import { ExpressCheckoutPay } from "@/components/ExpressCheckoutPay";
 
 export const metadata: Metadata = {
   title: "Pago seguro · TodoMerchandising",
@@ -129,7 +129,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
                 )}
               </div>
             ) : (
-              <PayButton token={token} amountCents={depositCents} />
+              <ExpressCheckoutPay token={token} amountCents={depositCents} />
             )}
           </div>
 

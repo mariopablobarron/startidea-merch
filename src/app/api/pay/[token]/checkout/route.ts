@@ -41,7 +41,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card"],
+    // Sin payment_method_types: Stripe muestra automáticamente todos los métodos
+    // activos en Dashboard (card, Apple Pay, Google Pay, Link, SEPA, etc.) según
+    // el dispositivo y región del cliente. Más conversión que limitar a card.
     line_items: [
       {
         price_data: {
