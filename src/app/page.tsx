@@ -17,27 +17,39 @@ import { JsonLd } from "@/components/JsonLd";
 import { ORGANIZATION_JSONLD, WEBSITE_JSONLD, FAQ_JSONLD } from "@/lib/jsonld";
 import { prisma } from "@/lib/prisma";
 
-export const revalidate = 3600; // home cachea 1h — el "desde X €/ud" cambia poco
+// Dynamic: la home lee DB para hero (precio mínimo + count). Build time no
+// tiene DATABASE_URL (se inyecta solo en runtime), así que no intentar
+// pre-renderizar. La query es muy barata (aggregate sin filtros + count).
+export const dynamic = "force-dynamic";
+
+async function getHeroData() {
+  try {
+    const [minPrice, productCount] = await Promise.all([
+      prisma.product.aggregate({
+        where: { active: true, fromPriceCents: { gt: 0 } },
+        _min: { fromPriceCents: true },
+      }),
+      prisma.product.count({ where: { active: true } }),
+    ]);
+    return {
+      priceFromCents: minPrice._min.fromPriceCents ?? undefined,
+      productCount,
+    };
+  } catch {
+    // Fallback si DB no disponible (build time o downtime)
+    return { priceFromCents: undefined, productCount: 2400 };
+  }
+}
 
 export default async function HomePage() {
-  // Hero usa datos reales: precio mínimo de catálogo y nº productos activos
-  const [minPrice, productCount] = await Promise.all([
-    prisma.product.aggregate({
-      where: { active: true, fromPriceCents: { gt: 0 } },
-      _min: { fromPriceCents: true },
-    }),
-    prisma.product.count({ where: { active: true } }),
-  ]);
+  const hero = await getHeroData();
 
   return (
     <>
       <JsonLd data={[ORGANIZATION_JSONLD, WEBSITE_JSONLD, FAQ_JSONLD]} />
       <Nav />
       <main>
-        <Hero
-          priceFromCents={minPrice._min.fromPriceCents ?? undefined}
-          productCount={productCount}
-        />
+        <Hero priceFromCents={hero.priceFromCents} productCount={hero.productCount} />
         <Marquee />
         <Impact />
         <ImpactLive />
