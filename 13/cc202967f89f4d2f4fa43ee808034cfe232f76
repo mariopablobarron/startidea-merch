@@ -1,0 +1,23 @@
+src/app/api/admin/auth/change-password/route.ts
+  s_65877aa637ec34::t_8e64bacc626268 1-82
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_b65a1620f91c2e 73-75,78-84
+src/app/admin/cuenta/page.tsx
+  s_65877aa637ec34::t_e9a2929284cfc0 1-234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "13cc202967f89f4d2f4fa43ee808034cfe232f76",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
