@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { QuantityConfigurator } from "@/components/QuantityConfigurator";
 import { CompareToggle } from "@/components/CompareToggle";
 import { MarkingCalculator } from "@/components/MarkingCalculator";
+import { PriceTierTable } from "@/components/PriceTierTable";
 import { MockupGenerator } from "@/components/MockupGenerator";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 
@@ -308,6 +309,11 @@ export default async function ProductDetailPage({
                   {product.enhancedShortDescription || product.shortDescription}
                 </p>
               )}
+
+              {/* Tabla escalonada estática — visible antes de la calculadora.
+                  Reduce fricción: el visitante ve precio por cantidad sin
+                  configurar nada. Inspirado en garrampa.es. */}
+              <PriceTierTable tiers={tiers} baseCentsForEstimate={baseCents} />
 
               <QuantityConfigurator
                 productSlug={product.slug}

@@ -4,7 +4,32 @@ import Link from "next/link";
 import { motion, fadeUp, stagger, viewportOnce } from "./motion";
 import { Counter } from "./Counter";
 
-export function Hero() {
+const EUR_DECIMAL = new Intl.NumberFormat("es-ES", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/**
+ * Hero comercial: precio "desde €/ud" arriba para que un visitante con
+ * intención de compra sepa en 3 segundos en qué rango está, sin perder
+ * el alma social del proyecto (CEE = Centros Especiales de Empleo).
+ *
+ * Si llega `priceFromCents` (servidor lee mínimo real de productos), se
+ * muestra el dato real. Si no, fallback "desde 0,30€/ud".
+ */
+export function Hero({
+  priceFromCents,
+  productCount,
+}: {
+  priceFromCents?: number;
+  productCount?: number;
+}) {
+  const fromEur =
+    typeof priceFromCents === "number" && priceFromCents > 0
+      ? priceFromCents / 100
+      : 0.3;
+  const products = typeof productCount === "number" && productCount > 0 ? productCount : 2000;
+
   return (
     <section className="relative overflow-hidden bg-bone">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -20,65 +45,70 @@ export function Hero() {
         initial="hidden"
         animate="show"
         variants={stagger(0.1, 0.12)}
-        className="mx-auto max-w-8xl px-6 pb-24 pt-20 lg:px-10 lg:pb-36 lg:pt-28"
+        className="mx-auto max-w-8xl px-6 pb-20 pt-20 lg:px-10 lg:pb-28 lg:pt-28"
       >
+        {/* Badge social pequeño arriba — diferenciador, no headline */}
         <motion.p
           variants={fadeUp}
           className="mb-8 inline-flex items-center gap-2 rounded-full border border-line bg-bone-soft px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-ink/70"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-social" />
-          Merchandising con impacto social real
+          Producción en Centros Especiales de Empleo
         </motion.p>
 
+        {/* H1 comercial: qué + para quién + precio */}
         <motion.h1
           variants={fadeUp}
           className="max-w-5xl font-display text-hero font-semibold text-ink"
         >
-          Tu marca, en manos<br />
-          que <span className="text-accent">cambian vidas</span>.
+          Merchandising corporativo personalizado{" "}
+          <span className="text-accent">desde {EUR_DECIMAL.format(fromEur)} €/ud</span>.
         </motion.h1>
 
+        {/* Subhead con beneficios concretos en una línea */}
         <motion.p
           variants={fadeUp}
-          className="mt-8 max-w-2xl text-lg text-ink/75 lg:text-xl"
+          className="mt-6 max-w-3xl text-lg text-ink/75 lg:text-xl"
         >
-          Producimos merchandising corporativo personalizado en Centros Especiales de Empleo
-          y talleres locales. Mismo precio que cualquier proveedor — con impacto que sí se mide.
+          Camisetas, sudaderas, bolígrafos, mochilas, termos y +{products.toLocaleString("es-ES")} productos
+          más, con tu logo. Cotización en 24h. Producción que cambia vidas.
         </motion.p>
 
-        <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center gap-4">
+        {/* CTA único primario + secundario discreto */}
+        <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center gap-3">
           <Link
-            href="#cotizar"
-            className="rounded-full bg-ink px-8 py-4 text-base font-medium text-bone transition hover:bg-accent"
+            href="/catalogo"
+            className="rounded-full bg-accent px-8 py-4 text-base font-semibold text-bone shadow-lg shadow-accent/20 transition hover:bg-accent-dark"
           >
-            Pedir cotización en 24h
+            Ver catálogo →
           </Link>
           <Link
-            href="#impacto"
-            className="rounded-full border border-line bg-bone-soft px-8 py-4 text-base font-medium text-ink transition hover:border-accent"
+            href="#cotizar"
+            className="rounded-full border border-line bg-bone-soft px-6 py-4 text-sm font-medium text-ink/70 transition hover:border-accent hover:text-ink"
           >
-            Cómo lo hacemos
+            Pedir cotización
           </Link>
         </motion.div>
 
+        {/* Trust signals: 4 stats que reducen incertidumbre */}
         <motion.dl
           initial="hidden"
           whileInView="show"
           viewport={viewportOnce}
           variants={stagger(0.1, 0.1)}
-          className="mt-20 grid grid-cols-2 gap-8 border-t border-line pt-10 lg:grid-cols-4"
+          className="mt-16 grid grid-cols-2 gap-8 border-t border-line pt-10 lg:grid-cols-4"
         >
           <Stat label="Productos personalizables">
-            <Counter value={10000} prefix="+" />
-          </Stat>
-          <Stat label="Proveedores europeos integrados">
-            <Counter value={2} />
-          </Stat>
-          <Stat label="Producción con impacto social">
-            <Counter value={100} suffix="%" />
+            <Counter value={products} prefix="+" />
           </Stat>
           <Stat label="Cotización garantizada">
             <Counter value={24} suffix="h" />
+          </Stat>
+          <Stat label="Producción con impacto">
+            <Counter value={100} suffix="%" />
+          </Stat>
+          <Stat label="Datos fiscales en factura">
+            <span className="text-ink">B2B</span>
           </Stat>
         </motion.dl>
       </motion.div>

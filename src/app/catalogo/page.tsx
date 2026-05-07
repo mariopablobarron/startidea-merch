@@ -83,6 +83,7 @@ export default async function CatalogoPage({
           name: true,
           brand: true,
           primaryImageUrl: true,
+          fromPriceCents: true,
           category: { select: { name: true } },
           variants: { take: 1, select: { stockQty: true } },
         },
@@ -309,7 +310,7 @@ export default async function CatalogoPage({
                               )}
                               <CompareBadge slug={p.slug} />
                             </div>
-                            <h3 className="mt-5 line-clamp-2 font-display text-lg font-semibold text-ink">
+                            <h3 className="mt-5 line-clamp-2 font-display text-base font-semibold text-ink lg:text-lg">
                               {p.name}
                             </h3>
                             {p.category?.name && (
@@ -317,7 +318,27 @@ export default async function CatalogoPage({
                                 {p.category.name}
                               </p>
                             )}
-                            <div className="mt-4 flex items-center justify-between text-xs">
+                            {/* Precio "desde" — calculado en sync de pricelist proveedor.
+                                Se muestra prominente para que el visitante decida en
+                                3s si está en su rango (criterio garrampa.es). */}
+                            {p.fromPriceCents && p.fromPriceCents > 0 ? (
+                              <p className="mt-3 flex items-baseline gap-1 text-ink">
+                                <span className="text-[11px] uppercase tracking-wider text-ink/50">
+                                  Desde
+                                </span>
+                                <span className="font-display text-xl font-semibold text-accent tabular-nums">
+                                  {(p.fromPriceCents / 100).toLocaleString("es-ES", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}{" "}
+                                  €
+                                </span>
+                                <span className="text-[11px] text-ink/50">/ud</span>
+                              </p>
+                            ) : (
+                              <p className="mt-3 text-xs text-ink/50">Precio bajo cotización</p>
+                            )}
+                            <div className="mt-3 flex items-center justify-between text-xs">
                               {stock > 0 ? (
                                 <span className="inline-flex items-center gap-1.5 text-social">
                                   <span className="h-1.5 w-1.5 rounded-full bg-social" />
@@ -326,7 +347,7 @@ export default async function CatalogoPage({
                               ) : (
                                 <span className="text-ink/40">Bajo pedido</span>
                               )}
-                              <span className="font-medium text-accent">Ver →</span>
+                              <span className="font-medium text-accent">Personalizar →</span>
                             </div>
                           </Link>
                         );
