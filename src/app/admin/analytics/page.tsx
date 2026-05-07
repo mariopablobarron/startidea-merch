@@ -72,6 +72,17 @@ export default function AdminAnalyticsPage() {
                 Últimos {data.range.days} días — desde {new Date(data.range.since).toLocaleDateString("es-ES")}
               </p>
             )}
+            <nav className="mt-3 flex gap-1.5 text-xs">
+              <span className="rounded-full bg-accent px-3 py-1.5 font-semibold text-bone">
+                Web (tráfico)
+              </span>
+              <Link
+                href="/admin/analytics/business"
+                className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent"
+              >
+                Negocio
+              </Link>
+            </nav>
           </div>
           <div className="flex items-center gap-3">
             <select
