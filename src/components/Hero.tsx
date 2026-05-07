@@ -3,32 +3,51 @@
 import Link from "next/link";
 import { motion, fadeUp, stagger, viewportOnce } from "./motion";
 import { Counter } from "./Counter";
+import type { CtaLink } from "@/lib/site-settings";
 
 const EUR_DECIMAL = new Intl.NumberFormat("es-ES", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
+export type HeroProps = {
+  priceFromCents?: number;
+  productCount?: number;
+  // Copy editable desde /admin/marketing/site (con fallback hardcoded)
+  badge?: string;
+  h1Prefix?: string;
+  h1Accent?: string; // soporta {price}
+  subhead?: string; // soporta {count}
+  ctaPrimary?: CtaLink;
+  ctaSecondary?: CtaLink;
+};
+
 /**
- * Hero comercial: precio "desde €/ud" arriba para que un visitante con
- * intención de compra sepa en 3 segundos en qué rango está, sin perder
- * el alma social del proyecto (CEE = Centros Especiales de Empleo).
- *
- * Si llega `priceFromCents` (servidor lee mínimo real de productos), se
- * muestra el dato real. Si no, fallback "desde 0,30€/ud".
+ * Hero comercial con copy editable desde admin.
+ * Si no llega prop de copy, usa fallbacks razonables.
  */
 export function Hero({
   priceFromCents,
   productCount,
-}: {
-  priceFromCents?: number;
-  productCount?: number;
-}) {
+  badge = "Producción en Centros Especiales de Empleo",
+  h1Prefix = "Merchandising corporativo personalizado",
+  h1Accent = "desde {price} €/ud",
+  subhead = "Camisetas, sudaderas, bolígrafos, mochilas, termos y +{count} productos más, con tu logo. Cotización en 24h. Producción que cambia vidas.",
+  ctaPrimary = { label: "Ver catálogo →", href: "/catalogo" },
+  ctaSecondary = { label: "Pedir cotización", href: "#cotizar" },
+}: HeroProps) {
   const fromEur =
     typeof priceFromCents === "number" && priceFromCents > 0
       ? priceFromCents / 100
       : 0.3;
   const products = typeof productCount === "number" && productCount > 0 ? productCount : 2000;
+
+  const priceStr = EUR_DECIMAL.format(fromEur);
+  const countStr = products.toLocaleString("es-ES");
+
+  // Interpolación de variables {price} y {count}
+  const accent = h1Accent.replace("{price}", priceStr).replace("{count}", countStr);
+  const sub = subhead.replace("{price}", priceStr).replace("{count}", countStr);
 
   return (
     <section className="relative overflow-hidden bg-bone">
@@ -47,50 +66,43 @@ export function Hero({
         variants={stagger(0.1, 0.12)}
         className="mx-auto max-w-8xl px-6 pb-20 pt-20 lg:px-10 lg:pb-28 lg:pt-28"
       >
-        {/* Badge social pequeño arriba — diferenciador, no headline */}
         <motion.p
           variants={fadeUp}
           className="mb-8 inline-flex items-center gap-2 rounded-full border border-line bg-bone-soft px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-ink/70"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-social" />
-          Producción en Centros Especiales de Empleo
+          {badge}
         </motion.p>
 
-        {/* H1 comercial: qué + para quién + precio */}
         <motion.h1
           variants={fadeUp}
           className="max-w-5xl font-display text-hero font-semibold text-ink"
         >
-          Merchandising corporativo personalizado{" "}
-          <span className="text-accent">desde {EUR_DECIMAL.format(fromEur)} €/ud</span>.
+          {h1Prefix} <span className="text-accent">{accent}</span>.
         </motion.h1>
 
-        {/* Subhead con beneficios concretos en una línea */}
         <motion.p
           variants={fadeUp}
           className="mt-6 max-w-3xl text-lg text-ink/75 lg:text-xl"
         >
-          Camisetas, sudaderas, bolígrafos, mochilas, termos y +{products.toLocaleString("es-ES")} productos
-          más, con tu logo. Cotización en 24h. Producción que cambia vidas.
+          {sub}
         </motion.p>
 
-        {/* CTA único primario + secundario discreto */}
         <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center gap-3">
           <Link
-            href="/catalogo"
+            href={ctaPrimary.href}
             className="rounded-full bg-accent px-8 py-4 text-base font-semibold text-bone shadow-lg shadow-accent/20 transition hover:bg-accent-dark"
           >
-            Ver catálogo →
+            {ctaPrimary.label}
           </Link>
           <Link
-            href="#cotizar"
+            href={ctaSecondary.href}
             className="rounded-full border border-line bg-bone-soft px-6 py-4 text-sm font-medium text-ink/70 transition hover:border-accent hover:text-ink"
           >
-            Pedir cotización
+            {ctaSecondary.label}
           </Link>
         </motion.div>
 
-        {/* Trust signals: 4 stats que reducen incertidumbre */}
         <motion.dl
           initial="hidden"
           whileInView="show"

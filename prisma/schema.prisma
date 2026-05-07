@@ -622,6 +622,7 @@ model CartQuote {
   reminderCount  Int       @default(0) // total de recordatorios enviados
   recoveredAt    DateTime? // cuándo el cliente volvió tras recordatorio
 
+
   @@index([status])
   @@index([email])
   @@index([createdAt])
@@ -785,6 +786,24 @@ model MarkingTechniqueOnPosition {
   maxColors   Int?
 
   @@id([positionId, techniqueId])
+}
+
+// CMS de marketing — copy editable desde /admin/marketing/site
+// Cada setting es un par key/value JSON. Las páginas server-side leen
+// los settings al renderizar y caen al fallback hardcoded si no hay valor.
+//
+// Keys reservadas (convención: dominio.campo):
+//   hero.badge       string — texto del pill superior del Hero
+//   hero.h1Prefix    string — texto del H1 antes del énfasis coral
+//   hero.h1Accent    string — texto en color accent dentro del H1
+//   hero.subhead     string — párrafo bajo el H1
+//   hero.ctaPrimary  { label, href }
+//   hero.ctaSecondary { label, href }
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?  // email del admin que lo cambió
 }
 
 // Snapshot del último sync por proveedor

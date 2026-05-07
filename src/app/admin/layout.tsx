@@ -64,9 +64,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 </>
               )}
               {(session.role === "CEO" || session.role === "COMERCIAL") && (
-                <Link href="/admin/proposals/new" className="text-accent hover:text-accent-dark">
-                  ⚡ Nueva propuesta IA
-                </Link>
+                <>
+                  <Link
+                    href="/admin/marketing/site"
+                    className="text-ink/60 hover:text-accent"
+                    title="CMS · editar copy de la home"
+                  >
+                    Marketing
+                  </Link>
+                  <Link href="/admin/proposals/new" className="text-accent hover:text-accent-dark">
+                    ⚡ Nueva propuesta IA
+                  </Link>
+                </>
               )}
             </nav>
             <div className="flex items-center gap-2">
