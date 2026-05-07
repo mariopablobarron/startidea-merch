@@ -1,0 +1,38 @@
+src/app/api/admin/banners/route.ts
+  s_65877aa637ec34::t_2901e8e3317e19 1-101
+src/app/api/admin/banners/[id]/route.ts
+  s_65877aa637ec34::t_c60b4cab786b4b 1-99
+src/app/page.tsx
+  s_65877aa637ec34::t_12f465a274e7c2 72
+  s_65877aa637ec34::t_8b3c5f901defe3 66
+  s_65877aa637ec34::t_1f44abfb59abe7 3
+src/app/admin/marketing/banners/page.tsx
+  s_65877aa637ec34::t_0a1ea5ea01657d 1-609
+src/components/BannerSlot.tsx
+  s_65877aa637ec34::t_604bf589628688 1-62
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_d572c88ddf49a3 80-87
+prisma/schema.prisma
+  s_65877aa637ec34::t_2307ee784a5c63 826-860
+src/lib/banners.ts
+  s_65877aa637ec34::t_e9bb8ec8886991 1-52
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_b9b39d0214f35b 7
+  s_65877aa637ec34::t_e5535efd8384af 143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "48d5d287ccae95cc2998525a49b22f02357d2111",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
