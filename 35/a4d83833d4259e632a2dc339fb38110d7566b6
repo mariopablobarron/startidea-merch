@@ -1,0 +1,27 @@
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_f067cacf5d648b 41-47
+src/app/admin/cart-quotes/abandoned/page.tsx
+  s_65877aa637ec34::t_7ff5c431e544a3 1-265
+src/app/api/admin/cart-quotes/abandoned/route.ts
+  s_65877aa637ec34::t_1f92d256556266 1-78
+prisma/schema.prisma
+  s_65877aa637ec34::t_02b968344daec5 620-624,628
+src/app/api/admin/cart-quotes/[id]/remind/route.ts
+  s_65877aa637ec34::t_73bce04d1e8353 1-154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "35a4d83833d4259e632a2dc339fb38110d7566b6",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
