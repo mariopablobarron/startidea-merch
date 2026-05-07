@@ -1,0 +1,46 @@
+src/app/admin/products/page.tsx
+  s_65877aa637ec34::t_5ab490ad4b91f0 1-336
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_05c54364aed134 69-74
+src/app/api/admin/products/[id]/toggle/route.ts
+  s_65877aa637ec34::t_5ed03a52931b13 1-46
+src/app/admin/products/[id]/page.tsx
+  s_65877aa637ec34::t_a3d5a1e4024b2b 1-527
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_f4784b81d8abb5 26-32,35-40,42-44
+  s_65877aa637ec34::t_e31941d0ae8987 357,359-370
+  s_65877aa637ec34::t_caa85bb0ce5930 376-377
+  s_65877aa637ec34::t_fd2f3cabf21441 65,69-85
+  s_65877aa637ec34::t_61c1e1f47da172 162
+  s_65877aa637ec34::t_b18cf040bd26bd 97-103,111-113
+  s_65877aa637ec34::t_41164709c698ed 131
+  s_65877aa637ec34::t_ce2ddb26330bfa 206,210,215-232
+src/app/api/admin/products/[id]/route.ts
+  s_65877aa637ec34::t_55315fc294d49d 1-94
+src/app/api/admin/products/route.ts
+  s_65877aa637ec34::t_4fe4cef8864947 1-83
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_2f459601c1aa7a 308-319,324,326-343,348,359
+  s_65877aa637ec34::t_f1f42881df087b 366-369,375
+  s_65877aa637ec34::t_4825de317adcf4 95-103
+  s_65877aa637ec34::t_7627e7f0c83157 68-71,76-77
+  s_65877aa637ec34::t_de710d5f2e5cf2 56-57
+prisma/schema.prisma
+  s_65877aa637ec34::t_fef23c4e25c416 156,164-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "013d7f6365f704ed927a5503e28e745bbbb5ab1e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
