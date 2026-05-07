@@ -4,26 +4,26 @@ WORKDIR /app
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable
 
+# node-linker=hoisted está fijado en .npmrc del proyecto (necesario para
+# Next standalone con sharp). En pnpm 11 `pnpm config set node-linker`
+# global no acepta esa key, así que NO se ejecuta aquí — basta con .npmrc.
+
 # --- deps (full, para builder) ---
 FROM base AS deps
 COPY package.json pnpm-lock.yaml* .npmrc* ./
-RUN pnpm config set node-linker hoisted && \
-    (pnpm install --frozen-lockfile || pnpm install)
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # --- builder ---
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm config set node-linker hoisted && \
-    pnpm prisma generate && \
-    pnpm build
+RUN pnpm prisma generate && pnpm build
 
 # --- prod-deps (solo producción, hoisted) ---
 FROM base AS proddeps
 COPY package.json pnpm-lock.yaml* .npmrc* ./
-RUN pnpm config set node-linker hoisted && \
-    pnpm install --frozen-lockfile --prod --ignore-scripts
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # Re-generar prisma client con sólo prod deps disponibles
 COPY --from=builder /app/prisma ./prisma
