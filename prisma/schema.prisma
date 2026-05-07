@@ -823,6 +823,29 @@ model MarkingTechniqueOnPosition {
   @@id([positionId, techniqueId])
 }
 
+/// CRM enrichment por email único. Persiste tags, notas y segmentación
+/// independiente de si el cliente tiene CustomerUser (login) o solo
+/// CartQuote (lead). Email como PK = clave natural unificada.
+model CustomerProfile {
+  email     String   @id
+  notes     String?  @db.Text
+  tags      String[] @default([])
+  segment   CustomerSegment?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@index([segment])
+}
+
+enum CustomerSegment {
+  ENTERPRISE   // empresa grande, ticket > 5k habitual
+  MIDMARKET    // PYME estable
+  STARTUP      // tiraje pequeño pero recurrente
+  ONE_OFF      // cliente puntual
+  PARTNER      // affiliate, embajador
+  CHURNED      // dejó de comprar (>1 año sin pedido)
+}
+
 /// Broadcast email manual — envía a NewsletterSubscriber active. Editor
 /// HTML libre o plantilla. Tracking básico (sentCount, failedCount).
 /// Programación opcional con scheduledAt — un cron diario procesará los

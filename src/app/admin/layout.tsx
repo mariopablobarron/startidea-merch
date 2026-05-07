@@ -48,6 +48,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/orders" className="text-ink/60 hover:text-accent">
                 Pedidos
               </Link>
+              <Link
+                href="/admin/clientes"
+                className="text-ink/60 hover:text-accent"
+                title="CRM clientes — LTV, segmentos, notas"
+              >
+                Clientes
+              </Link>
               {(session.role === "CEO" || session.role === "FACTURACION") && (
                 <Link href="/admin/analytics" className="text-ink/60 hover:text-accent">
                   Analytics
