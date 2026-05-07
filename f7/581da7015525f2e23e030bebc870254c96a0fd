@@ -1,0 +1,45 @@
+docs/deploy-vps.md
+  s_aeed4b7170fe43::t_573b4b75421adc 1-154
+prisma/schema.prisma
+  s_65877aa637ec34::t_1e7f87c991685c 791-808
+  s_65877aa637ec34::t_01fbac84628f72 625
+docs/stripe-activation.md
+  s_aeed4b7170fe43::t_0e7ba6d5ee237d 1-129
+src/app/admin/marketing/site/page.tsx
+  s_65877aa637ec34::t_1e8fe8808a30d8 1-338
+src/app/api/admin/marketing/site/route.ts
+  s_65877aa637ec34::t_10b5117b83bfc9 1-107
+src/lib/site-settings.ts
+  s_65877aa637ec34::t_2d8a3d00368b47 1-58
+src/app/page.tsx
+  s_65877aa637ec34::t_f1ebfe0fe6004b 21
+  s_65877aa637ec34::t_84598e4f9fdecd 48,55-64
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_7f2156dfb6c9a6 67-78
+src/components/Hero.tsx
+  s_65877aa637ec34::t_fbe9529a352491 6,13-24,26-27,32-38,45-51,74,81,88,93,96,99,102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "f7581da7015525f2e23e030bebc870254c96a0fd",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_aeed4b7170fe43": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "50687ef9-c3b5-4a79-a6b9-0dc5ba37a6ea",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
