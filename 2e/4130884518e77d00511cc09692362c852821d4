@@ -1,0 +1,21 @@
+docs/DIEGO_QA_BRIEFING.md
+  s_65877aa637ec34::t_e32855eedffa31 1-235
+docs/AUDITORIA_2026-05-07.md
+  s_65877aa637ec34::t_448937f7a14223 1-342
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "2e4130884518e77d00511cc09692362c852821d4",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
