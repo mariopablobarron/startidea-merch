@@ -38,6 +38,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/cart-quotes" className="text-ink/60 hover:text-accent">
                 Carritos
               </Link>
+              <Link
+                href="/admin/cart-quotes/abandoned"
+                className="text-ink/60 hover:text-accent"
+                title="Carritos abandonados — enviar recordatorios"
+              >
+                Abandonados
+              </Link>
               <Link href="/admin/orders" className="text-ink/60 hover:text-accent">
                 Pedidos
               </Link>

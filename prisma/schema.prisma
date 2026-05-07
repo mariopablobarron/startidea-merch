@@ -617,9 +617,15 @@ model CartQuote {
   reviews     Review[]
   redemption  CouponRedemption?
 
+  // Carritos abandonados — sistema de recuperación con recordatorios
+  reminderSentAt DateTime? // última vez que se envió recordatorio (manual o auto)
+  reminderCount  Int       @default(0) // total de recordatorios enviados
+  recoveredAt    DateTime? // cuándo el cliente volvió tras recordatorio
+
   @@index([status])
   @@index([email])
   @@index([createdAt])
+  @@index([reminderSentAt])
 }
 
 enum CartQuoteStatus {
