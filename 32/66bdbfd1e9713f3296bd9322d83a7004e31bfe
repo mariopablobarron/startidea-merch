@@ -1,0 +1,29 @@
+src/app/api/pay/[token]/intent/route.ts
+  s_65877aa637ec34::t_aaee582cc3d94a 1-97
+src/app/pay/[token]/page.tsx
+  s_65877aa637ec34::t_1512096db48604 132
+  s_65877aa637ec34::t_73afe2da2e242a 6
+src/components/ExpressCheckoutPay.tsx
+  s_65877aa637ec34::t_67678f99080026 1-166
+src/app/api/pay/[token]/checkout/route.ts
+  s_65877aa637ec34::t_f3493b26c24e83 44-46
+src/app/api/webhooks/stripe/route.ts
+  s_65877aa637ec34::t_df6bbd53d3306c 45-54
+  s_65877aa637ec34::t_be4e03825bb305 151-231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "3266bdbfd1e9713f3296bd9322d83a7004e31bfe",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
