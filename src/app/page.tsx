@@ -1,5 +1,6 @@
 import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
+import { BannerSlot } from "@/components/BannerSlot";
 import { ClientLogos } from "@/components/ClientLogos";
 import { Marquee } from "@/components/Marquee";
 import { Impact } from "@/components/Impact";
@@ -62,11 +63,13 @@ export default async function HomePage() {
           ctaPrimary={settings["hero.ctaPrimary"]}
           ctaSecondary={settings["hero.ctaSecondary"]}
         />
+        <BannerSlot slot="HOME_TOP" />
         <ClientLogos />
         <Marquee />
         <Impact />
         <ImpactLive />
         <Process />
+        <BannerSlot slot="HOME_MID" />
         <Cases />
         <PublicReviews />
         <Partners />

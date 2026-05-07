@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { BannerSlot } from "@/components/BannerSlot";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { SortSelect } from "@/components/SortSelect";
@@ -139,6 +140,7 @@ export default async function CatalogoPage({
   return (
     <>
       <Nav />
+      <BannerSlot slot="CATALOGO_TOP" />
       <main className="bg-bone">
         <section className="border-b border-line bg-bone py-12 lg:py-16">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">

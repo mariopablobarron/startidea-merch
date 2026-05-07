@@ -823,6 +823,41 @@ model MarkingTechniqueOnPosition {
   @@id([positionId, techniqueId])
 }
 
+/// Banners promocionales por slot, editables desde admin con ventana de
+/// fechas opcional. Solo se muestran al público los que están active=true,
+/// dentro de ventana startsAt..endsAt. Si hay varios en el mismo slot,
+/// ordenan por priority desc, luego createdAt desc.
+model MarketingBanner {
+  id          String       @id @default(cuid())
+  slot        BannerSlot
+  title       String       // texto principal grande
+  subtitle    String?      @db.Text // texto secundario
+  ctaLabel    String?      // texto del botón
+  ctaUrl      String?      // /catalogo, /pay/..., https://..., #ancla
+  imageUrl    String?      // imagen lateral o de fondo (opcional)
+  bgColor     String?      // hex ej "#ff6b35" (default = coral del tema)
+  textColor   String?      // hex ej "#faf8f4" (default = bone)
+  active      Boolean      @default(true)
+  startsAt    DateTime?    // null = sin restricción inicio
+  endsAt      DateTime?    // null = sin restricción fin
+  priority    Int          @default(0) // orden dentro del slot (mayor = arriba)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  updatedBy   String?
+
+  @@index([slot, active])
+  @@index([startsAt])
+  @@index([endsAt])
+}
+
+enum BannerSlot {
+  HOME_TOP        // bajo el hero, arriba del marquee
+  HOME_MID        // entre secciones de la home
+  CATALOGO_TOP    // dentro del catálogo, arriba de los filtros
+  FICHA_PRODUCTO  // en la ficha individual de producto
+  FOOTER          // banda promocional de footer
+}
+
 // CMS de marketing — copy editable desde /admin/marketing/site
 // Cada setting es un par key/value JSON. Las páginas server-side leen
 // los settings al renderizar y caen al fallback hardcoded si no hay valor.

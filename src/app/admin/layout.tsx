@@ -77,7 +77,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     className="text-ink/60 hover:text-accent"
                     title="CMS · editar copy de la home"
                   >
-                    Marketing
+                    Copy
+                  </Link>
+                  <Link
+                    href="/admin/marketing/banners"
+                    className="text-ink/60 hover:text-accent"
+                    title="Banners promocionales"
+                  >
+                    Banners
                   </Link>
                   <Link href="/admin/proposals/new" className="text-accent hover:text-accent-dark">
                     ⚡ Nueva propuesta IA
