@@ -23,15 +23,25 @@ export async function generateMetadata({
   const { slug } = await params;
   const p = await prisma.product.findUnique({
     where: { slug },
-    select: { name: true, brand: true, shortDescription: true, primaryImageUrl: true },
+    select: {
+      name: true,
+      brand: true,
+      shortDescription: true,
+      primaryImageUrl: true,
+      override: { select: { customName: true, metaTitle: true, metaDescription: true } },
+    },
   });
   if (!p) return { title: "Producto no encontrado" };
+  const name = p.override?.customName || p.name;
+  const title = p.override?.metaTitle || `${name}${p.brand ? ` · ${p.brand}` : ""}`;
+  const description =
+    p.override?.metaDescription ||
+    p.shortDescription?.slice(0, 160) ||
+    `${name} personalizable con tu logo.`;
   return {
-    title: `${p.name}${p.brand ? ` · ${p.brand}` : ""}`,
-    description: p.shortDescription?.slice(0, 160) || `${p.name} personalizable con tu logo.`,
-    openGraph: {
-      images: p.primaryImageUrl ? [{ url: p.primaryImageUrl }] : [],
-    },
+    title,
+    description,
+    openGraph: { images: p.primaryImageUrl ? [{ url: p.primaryImageUrl }] : [] },
   };
 }
 
@@ -52,9 +62,27 @@ export default async function ProductDetailPage({
       positions: {
         include: { techniques: { include: { technique: true } } },
       },
+      override: true,
     },
   });
   if (!product) notFound();
+  // Si admin lo marcó hidden, no se muestra al público
+  if (product.override?.hidden) notFound();
+
+  // Aplicar overrides admin (si existen) sobre los datos base
+  const ov = product.override;
+  const displayName = ov?.customName || product.name;
+  const displayDescription = ov?.customDescription || product.longDescription;
+  const displayShortDescription =
+    ov?.customDescription || product.enhancedShortDescription || product.shortDescription;
+  const displayFromPriceCents =
+    ov?.customFromPriceCents != null
+      ? ov.customFromPriceCents
+      : ov?.marginPct != null && product.fromPriceCents
+        ? Math.round((product.fromPriceCents * (100 + ov.marginPct)) / 100)
+        : product.fromPriceCents;
+  const extraImages = ov?.extraImages ?? [];
+  const marketingTags = ov?.marketingTags ?? [];
 
   const totalStock = product.variants.reduce((sum, v) => sum + v.stockQty, 0);
   const colorVariants = product.variants.filter((v) => v.colorName);
@@ -66,7 +94,13 @@ export default async function ProductDetailPage({
 
   // Tarifas: si alguna variant tiene priceTiers (del proveedor), las usamos.
   // Si no, generamos estimate desde el nombre.
-  const variantWithTiers = product.variants.find((v) => v.priceTiers.length > 0);
+  // Si admin override define un precio explícito, descartamos tiers del proveedor
+  // y reconstruimos con ese precio como base. Admin gana sobre proveedor.
+  const adminOverridesPrice =
+    ov?.customFromPriceCents != null || ov?.marginPct != null;
+  const variantWithTiers = adminOverridesPrice
+    ? null
+    : product.variants.find((v) => v.priceTiers.length > 0);
   const tiers: PriceTier[] | undefined = variantWithTiers
     ? variantWithTiers.priceTiers.map((t) => ({
         minQty: t.minQty,
@@ -74,7 +108,9 @@ export default async function ProductDetailPage({
         source: "PROVIDER" as const,
       }))
     : undefined;
-  const baseCents = tiers ? undefined : estimateBaseCentsFromName(product.name, product.category?.name);
+  const baseCents = tiers
+    ? undefined
+    : displayFromPriceCents ?? estimateBaseCentsFromName(product.name, product.category?.name);
 
   const breadcrumbs: Array<{ name: string; href?: string }> = [{ name: "Catálogo", href: "/catalogo" }];
   if (product.category?.parent?.parent) {
@@ -92,7 +128,7 @@ export default async function ProductDetailPage({
   if (product.category) {
     breadcrumbs.push({ name: product.category.name });
   }
-  breadcrumbs.push({ name: product.name });
+  breadcrumbs.push({ name: displayName });
 
   return (
     <>
@@ -123,7 +159,7 @@ export default async function ProductDetailPage({
                 {product.primaryImageUrl ? (
                   <Image
                     src={product.primaryImageUrl}
-                    alt={product.name}
+                    alt={displayName}
                     fill
                     sizes="(max-width:1024px) 100vw, 60vw"
                     className="object-contain p-8"
@@ -167,12 +203,33 @@ export default async function ProductDetailPage({
               )}
 
               {/* Descripción larga + ficha técnica */}
-              {product.longDescription && (
+              {displayDescription && (
                 <div className="mt-12 rounded-3xl border border-line bg-bone-soft p-6 lg:p-8">
                   <h2 className="font-display text-xl font-semibold text-ink">Descripción</h2>
                   <p className="mt-4 whitespace-pre-line text-[15px] text-ink/80">
-                    {product.longDescription}
+                    {displayDescription}
                   </p>
+                </div>
+              )}
+
+              {/* Galería de imágenes extra (override admin) */}
+              {extraImages.length > 0 && (
+                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {extraImages.map((src, i) => (
+                    <div
+                      key={i}
+                      className="relative aspect-square overflow-hidden rounded-2xl border border-line bg-bone-soft"
+                    >
+                      <Image
+                        src={src}
+                        alt={`${displayName} — ${i + 2}`}
+                        fill
+                        sizes="(max-width:640px) 50vw, 33vw"
+                        className="object-contain p-3"
+                        unoptimized
+                      />
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -297,17 +354,27 @@ export default async function ProductDetailPage({
                 </p>
               )}
               <h1 className="mt-3 font-display text-3xl font-semibold text-ink lg:text-4xl">
-                {product.name}
+                {displayName}
               </h1>
+              {marketingTags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {marketingTags.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full bg-social/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-social"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
               <p className="mt-2 text-sm text-ink/50">
                 Ref. <span className="font-mono">{product.supplierRef}</span> · Stock total:{" "}
                 <span className="tabular-nums">{totalStock.toLocaleString("es-ES")}</span>
               </p>
 
-              {(product.enhancedShortDescription || product.shortDescription) && (
-                <p className="mt-5 text-base text-ink/75">
-                  {product.enhancedShortDescription || product.shortDescription}
-                </p>
+              {displayShortDescription && (
+                <p className="mt-5 text-base text-ink/75">{displayShortDescription}</p>
               )}
 
               {/* Tabla escalonada estática — visible antes de la calculadora.
@@ -318,7 +385,7 @@ export default async function ProductDetailPage({
               <QuantityConfigurator
                 productSlug={product.slug}
                 productRef={product.supplierRef}
-                productName={product.name}
+                productName={displayName}
                 tiers={tiers}
                 baseCentsForEstimate={baseCents}
               />
@@ -332,7 +399,7 @@ export default async function ProductDetailPage({
 
               <MarkingCalculator
                 productSlug={product.slug}
-                productName={product.name}
+                productName={displayName}
                 productRef={product.supplierRef}
                 primaryImageUrl={product.primaryImageUrl}
                 positions={product.positions.map((pos) => ({

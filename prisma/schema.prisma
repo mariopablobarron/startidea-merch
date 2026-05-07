@@ -153,11 +153,46 @@ model Product {
   variants        ProductVariant[]
   positions       MarkingPosition[]
   embedding       ProductEmbedding?
+  override        ProductOverride?
 
   @@unique([supplier, supplierRef])
   @@index([categoryId])
   @@index([active])
   @@index([syncedAt])
+}
+
+/// Override editable desde admin por producto.
+/// 1:1 con Product. Si existe row, los campos no-null reemplazan al base.
+/// El sync de proveedores NUNCA toca esta tabla.
+model ProductOverride {
+  id                   String   @id @default(cuid())
+  product              Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId            String   @unique
+
+  // Overrides del producto base
+  customName           String?  // sustituye a name
+  customDescription    String?  @db.Text // sustituye a longDescription/shortDescription en UI
+  customFromPriceCents Int?     // sustituye a fromPriceCents (override de margen)
+  marginPct            Int?     // alternativa: aplicar margen % sobre fromPriceCents base
+  extraImages          String[] @default([]) // URLs de imágenes custom (CDN externo o /uploads)
+
+  // Estado de marketing
+  featured             Boolean  @default(false) // destacar en home / lista
+  hidden               Boolean  @default(false) // ocultar del catálogo público
+  marketingTags        String[] @default([]) // ej. ["best-seller", "eco", "novedad"]
+
+  // SEO override
+  metaTitle            String?
+  metaDescription      String?  @db.Text
+
+  // Notas internas para el equipo
+  internalNotes        String?  @db.Text
+
+  updatedAt            DateTime @updatedAt
+  updatedBy            String?  // email del admin
+
+  @@index([featured])
+  @@index([hidden])
 }
 
 model ProductVariant {

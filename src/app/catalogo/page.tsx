@@ -53,6 +53,8 @@ export default async function CatalogoPage({
 
   const where: Prisma.ProductWhereInput = {
     active: true,
+    // Excluir productos marcados hidden por override admin
+    NOT: { override: { is: { hidden: true } } },
     ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
     ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
     ...(colorGroup
@@ -63,12 +65,16 @@ export default async function CatalogoPage({
       : {}),
   };
 
-  const orderBy: Prisma.ProductOrderByWithRelationInput =
+  // Productos destacados (override.featured = true) siempre primero,
+  // luego el sort elegido por el usuario.
+  const orderBy: Prisma.ProductOrderByWithRelationInput[] = [
+    { override: { featured: "desc" } },
     sort === "stock"
       ? { variants: { _count: "desc" } }
       : sort === "recent"
         ? { syncedAt: "desc" }
-        : { name: "asc" };
+        : { name: "asc" },
+  ];
 
   const [products, total, topCategories, subCategories, colorGroups, materials] =
     await Promise.all([
@@ -86,6 +92,15 @@ export default async function CatalogoPage({
           fromPriceCents: true,
           category: { select: { name: true } },
           variants: { take: 1, select: { stockQty: true } },
+          override: {
+            select: {
+              customName: true,
+              customFromPriceCents: true,
+              marginPct: true,
+              featured: true,
+              marketingTags: true,
+            },
+          },
         },
       }),
       prisma.product.count({ where }),
@@ -290,17 +305,47 @@ export default async function CatalogoPage({
                     <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                       {products.map((p) => {
                         const stock = p.variants[0]?.stockQty ?? 0;
+                        // Aplicar overrides admin si existen
+                        const ov = p.override;
+                        const displayName = ov?.customName || p.name;
+                        const displayPriceCents =
+                          ov?.customFromPriceCents != null
+                            ? ov.customFromPriceCents
+                            : ov?.marginPct != null && p.fromPriceCents
+                              ? Math.round((p.fromPriceCents * (100 + ov.marginPct)) / 100)
+                              : p.fromPriceCents;
+                        const isFeatured = ov?.featured ?? false;
+                        const tags = ov?.marketingTags ?? [];
+
                         return (
                           <Link
                             key={p.id}
                             href={`/catalogo/${p.slug}`}
-                            className="group flex flex-col rounded-3xl border border-line bg-bone-soft p-5 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
+                            className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-5 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
                           >
+                            {/* Badges de marketing arriba a la izquierda */}
+                            {(isFeatured || tags.length > 0) && (
+                              <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1">
+                                {isFeatured && (
+                                  <span className="rounded-full bg-accent px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-bone shadow">
+                                    ★ Destacado
+                                  </span>
+                                )}
+                                {tags.slice(0, 2).map((t) => (
+                                  <span
+                                    key={t}
+                                    className="rounded-full bg-social/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-bone shadow"
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             <div className="relative aspect-square overflow-hidden rounded-2xl bg-bone">
                               {p.primaryImageUrl ? (
                                 <Image
                                   src={p.primaryImageUrl}
-                                  alt={p.name}
+                                  alt={displayName}
                                   fill
                                   sizes="(max-width:768px) 50vw, 25vw"
                                   className="object-contain p-4 transition group-hover:scale-105"
@@ -311,23 +356,23 @@ export default async function CatalogoPage({
                               <CompareBadge slug={p.slug} />
                             </div>
                             <h3 className="mt-5 line-clamp-2 font-display text-base font-semibold text-ink lg:text-lg">
-                              {p.name}
+                              {displayName}
                             </h3>
                             {p.category?.name && (
                               <p className="mt-1 text-[11px] uppercase tracking-wider text-ink/50">
                                 {p.category.name}
                               </p>
                             )}
-                            {/* Precio "desde" — calculado en sync de pricelist proveedor.
-                                Se muestra prominente para que el visitante decida en
-                                3s si está en su rango (criterio garrampa.es). */}
-                            {p.fromPriceCents && p.fromPriceCents > 0 ? (
+                            {/* Precio "desde" — usa override si existe, si no del proveedor.
+                                Se muestra prominente para que el visitante decida en 3s
+                                si está en su rango (criterio garrampa.es). */}
+                            {displayPriceCents && displayPriceCents > 0 ? (
                               <p className="mt-3 flex items-baseline gap-1 text-ink">
                                 <span className="text-[11px] uppercase tracking-wider text-ink/50">
                                   Desde
                                 </span>
                                 <span className="font-display text-xl font-semibold text-accent tabular-nums">
-                                  {(p.fromPriceCents / 100).toLocaleString("es-ES", {
+                                  {(displayPriceCents / 100).toLocaleString("es-ES", {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                   })}{" "}
