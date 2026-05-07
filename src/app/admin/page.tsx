@@ -69,6 +69,11 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Cookie-first: la sesión nueva (Sprint 23) viaja en la cookie merch_admin HttpOnly.
+  // Si está, /api/admin/dashboard responde sin necesidad de X-Admin-Secret.
+  // Caemos a sessionStorage solo como fallback legacy.
+  const [usingCookie, setUsingCookie] = useState(true);
+
   useEffect(() => {
     try {
       const s = sessionStorage.getItem("merch:admin");
@@ -77,19 +82,24 @@ export default function AdminDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!secret) return;
     let alive = true;
     async function load() {
       setLoading(true);
       try {
-        const res = await fetch("/api/admin/dashboard", { headers: { "X-Admin-Secret": secret } });
+        const headers: Record<string, string> = {};
+        if (secret) headers["X-Admin-Secret"] = secret;
+        const res = await fetch("/api/admin/dashboard", { headers, credentials: "include" });
         const json = await res.json();
         if (!alive) return;
-        if (!res.ok) setError(json.error || "Error");
-        else {
+        if (!res.ok) {
+          setUsingCookie(false);
+          setError(secret ? json.error || "Error" : null);
+          setData(null);
+        } else {
           setData(json);
-          sessionStorage.setItem("merch:admin", secret);
+          if (secret) sessionStorage.setItem("merch:admin", secret);
           setError(null);
+          setUsingCookie(true);
         }
       } catch (e) {
         if (alive) setError(e instanceof Error ? e.message : "Error de red");
@@ -139,20 +149,22 @@ export default function AdminDashboardPage() {
                 ⚡ Nueva propuesta IA
               </Link>
             </nav>
-            <input
-              type="password"
-              placeholder="X-Admin-Secret"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              className="w-72 rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
-            />
+            {!usingCookie && (
+              <input
+                type="password"
+                placeholder="X-Admin-Secret (legacy)"
+                value={secret}
+                onChange={(e) => setSecret(e.target.value)}
+                className="w-72 rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            )}
           </div>
         </header>
 
         {error && <p className="mb-4 rounded-lg bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}
         {!data && loading && <p className="text-sm text-ink/60">Cargando KPIs…</p>}
-        {!data && !secret && (
-          <p className="text-sm text-ink/60">Pega tu X-Admin-Secret arriba para ver el dashboard.</p>
+        {!data && !secret && !loading && !usingCookie && (
+          <p className="text-sm text-ink/60">Pega tu X-Admin-Secret arriba o inicia sesión en <Link href="/admin/login" className="text-accent hover:underline">/admin/login</Link>.</p>
         )}
 
         {data && (
