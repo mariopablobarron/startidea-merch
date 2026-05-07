@@ -70,10 +70,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               )}
             </nav>
             <div className="flex items-center gap-2">
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${ROLE_COLOR[session.role] || ""}`}>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${ROLE_COLOR[session.role] || ""}`}
+              >
                 {ROLE_LABELS[session.role] || session.role}
               </span>
-              <span className="text-ink/70">{session.name}</span>
+              <Link
+                href="/admin/cuenta"
+                className="text-ink/70 hover:text-accent"
+                title="Mi cuenta · cambiar contraseña"
+              >
+                {session.name}
+              </Link>
               <LogoutButton />
             </div>
           </div>
