@@ -1,5 +1,6 @@
 import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
+import { ClientLogos } from "@/components/ClientLogos";
 import { Marquee } from "@/components/Marquee";
 import { Impact } from "@/components/Impact";
 import { ImpactLive } from "@/components/ImpactLive";
@@ -8,6 +9,7 @@ import { Categories } from "@/components/Categories";
 import { Partners } from "@/components/Partners";
 import { Cases } from "@/components/Cases";
 import { PublicReviews } from "@/components/PublicReviews";
+import { SeoContent } from "@/components/SeoContent";
 import { Faq } from "@/components/Faq";
 import { QuoteSection } from "@/components/QuoteSection";
 import { Footer } from "@/components/Footer";
@@ -50,6 +52,7 @@ export default async function HomePage() {
       <Nav />
       <main>
         <Hero priceFromCents={hero.priceFromCents} productCount={hero.productCount} />
+        <ClientLogos />
         <Marquee />
         <Impact />
         <ImpactLive />
@@ -58,6 +61,7 @@ export default async function HomePage() {
         <PublicReviews />
         <Partners />
         <Categories />
+        <SeoContent />
         <Faq />
         <QuoteSection />
       </main>
