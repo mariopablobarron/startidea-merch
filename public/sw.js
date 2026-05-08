@@ -1,14 +1,17 @@
 /* TodoMerchandising — Service Worker
  *
- * - Cache-first para assets estáticos (build-id revvable)
- * - Stale-while-revalidate para /catalogo y fichas (mejor UX offline)
- * - Network-first para /api/* (datos siempre frescos cuando hay conexión)
- * - Web Push: muestra notificación al recibir mensaje del backend admin
+ * Estrategias por tipo:
+ * - Network-first con fallback cache para HTML de páginas dinámicas
+ *   (home, catálogo, sectores). Versión SWR anterior provocó que los
+ *   cambios de marketing del admin no se vieran hasta el 2º reload.
+ * - Network-first para /api/* (datos siempre frescos online).
+ * - Web Push: muestra notificación al recibir mensaje del backend admin.
  *
- * Versionado mediante CACHE_VERSION; bumpear al cambiar la estrategia.
+ * Versionado mediante CACHE_VERSION; bumpear al cambiar estrategia para
+ * forzar `activate` que limpia caches antiguos en clientes existentes.
  */
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
@@ -74,21 +77,30 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // stale-while-revalidate para catálogo y fichas
+  // Network-first con fallback a cache para HTML dinámico.
+  // Estrategia anterior (SWR) provocaba que cambios de admin no se vieran
+  // hasta el 2º reload. Ahora siempre se intenta network primero;
+  // si falla (offline), servimos cache para que la web siga viva.
   if (url.pathname.startsWith("/catalogo") || url.pathname === "/" || url.pathname.startsWith("/sectores")) {
     event.respondWith(
-      caches.match(req).then((cached) => {
-        const networkPromise = fetch(req)
-          .then((res) => {
-            if (res.ok) {
-              const clone = res.clone();
-              caches.open(RUNTIME_CACHE).then((c) => c.put(req, clone));
-            }
-            return res;
-          })
-          .catch(() => cached);
-        return cached || networkPromise;
-      }),
+      fetch(req)
+        .then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(req, clone));
+          }
+          return res;
+        })
+        .catch(() =>
+          caches.match(req).then(
+            (cached) =>
+              cached ||
+              new Response(
+                "<h1>Sin conexión</h1><p>No hemos podido conectar y no tenemos esta página guardada offline. Inténtalo en unos segundos.</p>",
+                { headers: { "content-type": "text/html; charset=utf-8" }, status: 503 },
+              ),
+          ),
+        ),
     );
     return;
   }

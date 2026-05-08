@@ -45,13 +45,17 @@ export function OnboardingTour() {
     if (typeof window === "undefined") return;
     // Solo en home y solo primera vez
     if (pathname !== "/") return;
+    // Skip en móvil: el tour tapa el hero y rompe la primera impresión.
+    // En desktop hay espacio para mostrarlo; en móvil mejor no.
+    if (window.matchMedia && window.matchMedia("(max-width: 767px)").matches) return;
     try {
       const seen = localStorage.getItem(STORAGE_KEY);
       if (seen) return;
     } catch {
       return;
     }
-    const t = setTimeout(() => setOpen(true), 1800);
+    // Damos tiempo a que el visitante vea el hero antes (5s en desktop)
+    const t = setTimeout(() => setOpen(true), 5000);
     return () => clearTimeout(t);
   }, [pathname]);
 
