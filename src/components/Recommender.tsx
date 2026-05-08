@@ -22,6 +22,13 @@ type ApiResponse =
       recommendations: Recommendation[];
       summary: string;
     }
+  | {
+      ok: true;
+      fallback: true;
+      summary: string;
+      redirectUrl: string;
+      recommendations: never[];
+    }
   | { error: string; hint?: string };
 
 export function Recommender() {
@@ -51,6 +58,12 @@ export function Recommender() {
         }),
       });
       const data: ApiResponse = await res.json();
+      // Si el modelo devolvió algo no parseable, el endpoint envía fallback
+      // con redirectUrl al catálogo filtrado. Llevamos al cliente directamente.
+      if ("ok" in data && "fallback" in data && data.fallback && data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+        return;
+      }
       setResult(data);
     } catch (err) {
       setResult({ error: err instanceof Error ? err.message : "Error desconocido" });
@@ -190,7 +203,7 @@ export function Recommender() {
           </div>
         )}
 
-        {result && "ok" in result && result.needsClarification && result.clarificationQuestion && (
+        {result && "ok" in result && "needsClarification" in result && result.needsClarification && result.clarificationQuestion && (
           <div className="rounded-3xl border border-accent bg-accent-wash p-7">
             <p className="text-xs font-medium uppercase tracking-wider text-accent-deep">
               Necesito un detalle más
@@ -204,7 +217,7 @@ export function Recommender() {
           </div>
         )}
 
-        {result && "ok" in result && !result.needsClarification && result.recommendations.length > 0 && (
+        {result && "ok" in result && (!("needsClarification" in result) || !result.needsClarification) && result.recommendations.length > 0 && (
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-accent">
               {result.recommendations.length} recomendaciones para ti

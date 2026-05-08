@@ -5,6 +5,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { BannerSlot } from "@/components/BannerSlot";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { SortSelect } from "@/components/SortSelect";
@@ -31,7 +32,8 @@ export default async function CatalogoPage({
   searchParams: Promise<{ q?: string; cat?: string; color?: string; mat?: string; page?: string; sort?: Sort }>;
 }) {
   const sp = await searchParams;
-  const q = (sp.q || "").trim();
+  const qRaw = (sp.q || "").trim();
+  const q = normalizeSearch(qRaw);
   const catSlug = (sp.cat || "").trim();
   const colorGroup = (sp.color || "").trim();
   const material = (sp.mat || "").trim();
@@ -52,11 +54,30 @@ export default async function CatalogoPage({
     categoryIds = [category.id, ...descendants];
   }
 
+  // Búsqueda multi-campo: nombre + descripción corta + material + tags array.
+  // Para "camisetas" típicamente el match aparece en shortDescription/longDescription
+  // o en categoría (lo gestionamos por separado abajo con fallback).
+  const searchTerms = q ? q.split(/\s+/).filter((w) => w.length > 2) : [];
+  const searchClause: Prisma.ProductWhereInput | undefined =
+    searchTerms.length > 0
+      ? {
+          AND: searchTerms.map((term) => ({
+            OR: [
+              { name: { contains: term, mode: "insensitive" as const } },
+              { shortDescription: { contains: term, mode: "insensitive" as const } },
+              { longDescription: { contains: term, mode: "insensitive" as const } },
+              { material: { contains: term, mode: "insensitive" as const } },
+              { tags: { has: term.toLowerCase() } },
+              { category: { name: { contains: term, mode: "insensitive" as const } } },
+            ],
+          })),
+        }
+      : undefined;
+
   const where: Prisma.ProductWhereInput = {
     active: true,
-    // Excluir productos marcados hidden por override admin
     NOT: { override: { is: { hidden: true } } },
-    ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+    ...(searchClause ? searchClause : {}),
     ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
     ...(colorGroup
       ? { variants: { some: { colorGroup: { equals: colorGroup, mode: "insensitive" as const } } } }
@@ -134,6 +155,30 @@ export default async function CatalogoPage({
         take: 12,
       }),
     ]);
+
+  // Fallback inteligente: si el usuario buscó algo (q) y NO hay resultados,
+  // intentamos llevarle a una categoría que matchee. Ej: busca "camisetas",
+  // 0 productos en name → redirige a /catalogo?cat=camisetas-personalizadas.
+  if (total === 0 && searchTerms.length > 0 && !catSlug && page === 1) {
+    const matchedCategory = await prisma.category.findFirst({
+      where: {
+        OR: searchTerms.map((term) => ({
+          OR: [
+            { name: { contains: term, mode: "insensitive" as const } },
+            { slug: { contains: term, mode: "insensitive" as const } },
+          ],
+        })),
+      },
+      orderBy: { level: "asc" }, // preferir top-level
+      select: { slug: true, name: true },
+    });
+    if (matchedCategory) {
+      const params = new URLSearchParams({ cat: matchedCategory.slug });
+      // Conservamos el q original como hint visual, pero el filtro real es por categoría
+      if (qRaw) params.set("q", qRaw);
+      redirect(`/catalogo?${params.toString()}`);
+    }
+  }
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
@@ -413,6 +458,38 @@ export default async function CatalogoPage({
       <WhatsAppFloat />
     </>
   );
+}
+
+/**
+ * Normaliza el texto de búsqueda: minúsculas, sin acentos, plurales españoles
+ * básicos (camisetas → camiseta), quita stopwords. Permite que un usuario
+ * que escribe "Quiero camisetas para mi equipo" busque por "camiseta equipo".
+ */
+function normalizeSearch(raw: string): string {
+  if (!raw) return "";
+  const stop = new Set([
+    "el","la","los","las","un","una","unos","unas","de","del","para","por","con","en","y","o","u",
+    "mi","tu","su","es","son","sea","ser","que","como","necesito","quiero","busco","tenemos",
+    "tenéis","más","mas","menos","muy","todo","toda","algo","alguna","algun","algún","cualquier",
+    "tipo","modelo","marca","producto","productos","empresa","evento","tener","hacer","sobre",
+    "este","esta","esto","estos","estas","ese","esa","aquel","aquella","cada","todas","todos",
+  ]);
+  return raw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // quitar acentos
+    .replace(/[^\p{L}\d\s]/gu, " ") // quitar puntuación
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stop.has(w))
+    .map((w) => {
+      // Plural español muy básico: -es / -s → singular
+      if (w.length > 4 && (w.endsWith("ses") || w.endsWith("ces"))) return w.slice(0, -2);
+      if (w.length > 3 && w.endsWith("es")) return w.slice(0, -2);
+      if (w.length > 3 && w.endsWith("s")) return w.slice(0, -1);
+      return w;
+    })
+    .slice(0, 6) // máximo 6 términos
+    .join(" ");
 }
 
 async function collectDescendants(rootId: string): Promise<string[]> {
