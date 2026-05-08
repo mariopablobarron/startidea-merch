@@ -8,6 +8,7 @@ import { BannerSlot } from "@/components/BannerSlot";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { publicRef } from "@/lib/internal-ref";
 import { SortSelect } from "@/components/SortSelect";
 import { CompareBadge } from "@/components/CatalogCardActions";
 
@@ -116,6 +117,7 @@ export default async function CatalogoPage({
           slug: true,
           name: true,
           brand: true,
+          internalRef: true,
           primaryImageUrl: true,
           fromPriceCents: true,
           category: { select: { name: true } },
@@ -411,11 +413,12 @@ export default async function CatalogoPage({
                             <h3 className="mt-5 line-clamp-2 font-display text-base font-semibold text-ink lg:text-lg">
                               {displayName}
                             </h3>
-                            {p.category?.name && (
-                              <p className="mt-1 text-[11px] uppercase tracking-wider text-ink/50">
-                                {p.category.name}
-                              </p>
-                            )}
+                            <p className="mt-1 flex flex-wrap items-baseline gap-2 text-[11px] uppercase tracking-wider text-ink/50">
+                              {p.category?.name && <span>{p.category.name}</span>}
+                              <span className="font-mono text-[10px] text-ink/40">
+                                {publicRef({ id: p.id, internalRef: p.internalRef })}
+                              </span>
+                            </p>
                             {/* Precio "desde" — usa override si existe, si no del proveedor.
                                 Se muestra prominente para que el visitante decida en 3s
                                 si está en su rango (criterio garrampa.es). */}

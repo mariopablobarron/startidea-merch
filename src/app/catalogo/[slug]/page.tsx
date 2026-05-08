@@ -13,6 +13,7 @@ import { PriceTierTable } from "@/components/PriceTierTable";
 import { MockupGenerator } from "@/components/MockupGenerator";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 import { publicRef } from "@/lib/internal-ref";
+import { publicBrand } from "@/lib/brand-filter";
 
 export const revalidate = 3600;
 
@@ -34,7 +35,8 @@ export async function generateMetadata({
   });
   if (!p) return { title: "Producto no encontrado" };
   const name = p.override?.customName || p.name;
-  const title = p.override?.metaTitle || `${name}${p.brand ? ` · ${p.brand}` : ""}`;
+  const visibleBrand = publicBrand(p.brand);
+  const title = p.override?.metaTitle || `${name}${visibleBrand ? ` · ${visibleBrand}` : ""}`;
   const description =
     p.override?.metaDescription ||
     p.shortDescription?.slice(0, 160) ||
@@ -240,7 +242,9 @@ export default async function ProductDetailPage({
               <div className="mt-6 rounded-3xl border border-line bg-bone-soft p-6 lg:p-8">
                 <h2 className="font-display text-xl font-semibold text-ink">Especificaciones técnicas</h2>
                 <dl className="mt-5 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                  {product.brand && <Spec label="Marca" value={product.brand} />}
+                  {publicBrand(product.brand) && (
+                    <Spec label="Marca" value={publicBrand(product.brand)!} />
+                  )}
                   {product.material && <Spec label="Material" value={product.material} />}
                   {product.weightG && <Spec label="Peso" value={`${product.weightG} g`} />}
                   {product.lengthMm ? (
@@ -351,9 +355,9 @@ export default async function ProductDetailPage({
 
             {/* DERECHA — sticky con info + configurador */}
             <aside className="lg:sticky lg:top-24 lg:self-start">
-              {product.brand && (
+              {publicBrand(product.brand) && (
                 <p className="text-xs font-medium uppercase tracking-wider text-accent">
-                  {product.brand}
+                  {publicBrand(product.brand)}
                 </p>
               )}
               <h1 className="mt-3 font-display text-3xl font-semibold text-ink lg:text-4xl">
