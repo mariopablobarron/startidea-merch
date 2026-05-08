@@ -217,6 +217,13 @@ async function upsertProduct(
     });
   }
 
+  // Proxy de imágenes: registrar primaryImageUrl en MediaAsset para que
+  // el endpoint /api/m/[hash] pueda resolverla sin exponer el CDN proveedor.
+  const { ensureMediaAsset } = await import("@/lib/proxy-image");
+  if (productData.primaryImageUrl) {
+    await ensureMediaAsset(productData.primaryImageUrl, "product-primary").catch(() => {});
+  }
+
   // variantes
   for (const v of raw.variants ?? []) {
     const data = {
@@ -234,6 +241,9 @@ async function upsertProduct(
       create: data,
       update: data,
     });
+    if (data.imageUrl) {
+      await ensureMediaAsset(data.imageUrl, "product-variant").catch(() => {});
+    }
   }
 
   // marcaje
@@ -242,15 +252,19 @@ async function upsertProduct(
     await prisma.markingPosition.deleteMany({ where: { productId: product.id } });
     for (const pos of printProduct.printing_positions) {
       const sample = pos.images?.[0];
+      const posImage = sample?.print_position_image_with_area || sample?.print_position_image_blank || null;
       const created = await prisma.markingPosition.create({
         data: {
           productId: product.id,
           positionId: pos.position_id,
           maxWidthMm: pos.max_print_size_width ?? null,
           maxHeightMm: pos.max_print_size_height ?? null,
-          imageUrl: sample?.print_position_image_with_area || sample?.print_position_image_blank || null,
+          imageUrl: posImage,
         },
       });
+      if (posImage) {
+        await ensureMediaAsset(posImage, "marking-position").catch(() => {});
+      }
       // técnicas asignadas a esta posición
       for (const t of pos.printing_techniques ?? []) {
         const tech = ctx.techniqueByCode.get(t.id);

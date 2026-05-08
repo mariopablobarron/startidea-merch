@@ -1,14 +1,16 @@
-import { createHmac } from "node:crypto";
+import { createHash } from "node:crypto";
+import { prisma } from "@/lib/prisma";
 
 /**
- * Helpers server-side para reescribir URLs de imágenes que vienen de CDN
- * de proveedores hacia nuestro proxy /api/media. Esto oculta cdn1.midocean.com,
- * printposition-img-api-v2.cdn.midocean.com y otros del HTML público.
+ * Mapeo opaco URL ↔ hash para ocultar totalmente el CDN del proveedor.
  *
- * Las funciones devuelven null/string limpio según el caso. Si la URL no
- * matchea ningún host de proveedor (ej. ya es interna /uploads/...,
- * extraImage de admin, o URL externa pública como Cloudinary), se devuelve
- * tal cual sin proxy.
+ * El cliente público solo ve URLs como `/api/m/Q2X9F7K3M2P5R8N4` — sin
+ * indicio del proveedor real. El endpoint busca el hash en la tabla
+ * MediaAsset, hace fetch a originalUrl y devuelve la imagen.
+ *
+ * Hash: SHA-1(originalUrl) → 16 chars base32 sin ambigüedad (no 0/O,1/I/L).
+ * Determinístico — la misma URL siempre produce el mismo hash, así no se
+ * generan duplicados.
  */
 
 const PROVIDER_HOSTS = new Set([
@@ -19,41 +21,73 @@ const PROVIDER_HOSTS = new Set([
   "assets.xindao.com",
 ]);
 
-const SECRET = process.env.MEDIA_PROXY_SECRET || process.env.ADMIN_SECRET || "fallback";
+const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // 31 chars sin ambiguos
 
-function sign(url: string): string {
-  return createHmac("sha256", SECRET).update(url).digest("base64url");
+/**
+ * Calcula el hash determinístico para una URL. No requiere DB.
+ * 16 chars base32 = 80 bits. Para 100k assets: probabilidad colisión <1e-12.
+ */
+export function mediaHash(originalUrl: string): string {
+  const sha = createHash("sha1").update(originalUrl).digest();
+  let bits = 0n;
+  for (let i = 0; i < 10; i++) bits = (bits << 8n) | BigInt(sha[i]);
+  let s = "";
+  const len = BigInt(ALPHABET.length);
+  for (let i = 0; i < 16; i++) {
+    const idx = Number((bits & 31n) % len);
+    s = ALPHABET[idx] + s;
+    bits >>= 5n;
+  }
+  return s;
+}
+
+function isProviderHost(url: string): boolean {
+  try {
+    return PROVIDER_HOSTS.has(new URL(url).host);
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Reescribe una URL de imagen para que pase por nuestro proxy si es de
- * un proveedor conocido. Devuelve null si la entrada es null/empty/inválida.
+ * Versión SÍNCRONA — calcula el hash sin tocar BD. Asume que MediaAsset
+ * ya existe (creado por sync de MidOcean o backfill). Si no existe,
+ * el endpoint /api/m/[hash] devolverá 404.
  *
- * Llamar SIEMPRE desde server components o server actions — NO desde client.
+ * Si la URL no es de proveedor, devuelve la URL tal cual (CDN propio,
+ * Cloudinary, etc. publica directa).
+ *
+ * Llamar SIEMPRE desde server components — necesita Node crypto.
  */
 export function proxyImageUrl(original: string | null | undefined): string | null {
   if (!original || typeof original !== "string") return null;
   const trimmed = original.trim();
   if (!trimmed) return null;
-
-  // Si ya es URL relativa propia, devolver tal cual
   if (trimmed.startsWith("/")) return trimmed;
+  if (!isProviderHost(trimmed)) return trimmed;
+  return `/api/m/${mediaHash(trimmed)}`;
+}
 
-  let parsed: URL;
-  try {
-    parsed = new URL(trimmed);
-  } catch {
-    return trimmed; // texto malformado → devolver para que el browser intente
-  }
-
-  // Si NO es un host de proveedor, no proxiar (puede ser CDN propio o
-  // imagen externa que el admin pegó)
-  if (!PROVIDER_HOSTS.has(parsed.host)) {
-    return trimmed;
-  }
-
-  // URL de proveedor → proxiar
-  return `/api/media?u=${encodeURIComponent(trimmed)}&s=${sign(trimmed)}`;
+/**
+ * Versión ASYNC — además del cálculo, hace upsert en MediaAsset para que
+ * el endpoint pueda resolver el hash. Usar en sync de proveedores y al
+ * guardar overrides admin (extraImages).
+ */
+export async function ensureMediaAsset(
+  originalUrl: string | null | undefined,
+  kind?: string,
+): Promise<string | null> {
+  if (!originalUrl) return null;
+  if (!isProviderHost(originalUrl)) return originalUrl.trim() || null;
+  const hash = mediaHash(originalUrl);
+  await prisma.mediaAsset
+    .upsert({
+      where: { hash },
+      update: {}, // no-op si ya existe (originalUrl no cambia)
+      create: { hash, originalUrl, kind },
+    })
+    .catch(() => {});
+  return `/api/m/${hash}`;
 }
 
 /**

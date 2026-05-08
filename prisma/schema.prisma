@@ -824,6 +824,24 @@ model MarkingTechniqueOnPosition {
   @@id([positionId, techniqueId])
 }
 
+/// MediaAsset — mapeo opaco hash→originalUrl para que el HTML público
+/// no exponga el host del CDN proveedor en URLs ni en query strings.
+///
+/// hash = SHA1(originalUrl) truncado a 16 chars base32 (sin caracteres
+/// ambiguos). Determinístico → mismas URLs siempre el mismo hash.
+///
+/// Endpoint /api/m/[hash] busca aquí, hace fetch a originalUrl y devuelve
+/// la imagen. El cliente solo ve /api/m/Q2X9F7K3M2P5R8N4 — sin pista
+/// del proveedor.
+model MediaAsset {
+  hash        String   @id          // 16 chars base32 (no 0/O/1/I/L)
+  originalUrl String   @unique
+  kind        String?               // "product-primary" | "product-variant" | "marking-position" | "override-extra"
+  createdAt   DateTime @default(now())
+
+  @@index([originalUrl])
+}
+
 /// SEO override por página, editable desde admin sin tocar código.
 /// Path como id ("/" para home, "/catalogo" para listado, "/sobre", etc.).
 /// Si no hay row para un path, las páginas usan sus defaults hardcoded.
