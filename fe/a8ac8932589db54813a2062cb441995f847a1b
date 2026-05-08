@@ -1,0 +1,23 @@
+src/lib/internal-ref.ts
+  s_65877aa637ec34::t_f6cace563a9fb2 24-28,30-31
+src/app/api/recommend/route.ts
+  s_65877aa637ec34::t_e4f7f08007647f 181-183,185,191,198
+  s_65877aa637ec34::t_7ac20a0f353d4b 236-285
+  s_65877aa637ec34::t_38441126b78235 179-180,184,187-190,192-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "fea8ac8932589db54813a2062cb441995f847a1b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
