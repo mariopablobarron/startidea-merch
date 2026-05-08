@@ -1,0 +1,20 @@
+src/components/QuoteForm.tsx
+  s_65877aa637ec34::t_cf081398df2909 163,173
+  s_65877aa637ec34::t_5ff99675cf8c54 89,96,111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "3cd6b7ea9d6534f1a94a32175624988af3f65b65",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
