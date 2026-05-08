@@ -316,14 +316,15 @@ export default async function ProductDetailPage({
                         key={pos.id}
                         className="overflow-hidden rounded-2xl border border-line bg-bone-soft"
                       >
-                        {pos.imageUrl && (
+                        {proxyImageUrl(pos.imageUrl) && (
                           <div className="relative aspect-[4/3] bg-bone">
                             <Image
-                              src={pos.imageUrl}
+                              src={proxyImageUrl(pos.imageUrl)!}
                               alt={`Zona ${pos.positionId}`}
                               fill
                               sizes="(max-width:640px) 100vw, 50vw"
                               className="object-contain p-3"
+                              unoptimized
                             />
                           </div>
                         )}
