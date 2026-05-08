@@ -6,12 +6,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { NavSearch } from "./NavSearch";
+import { TopBar } from "./TopBar";
 
 type NavLink = { href: string; label: string; badge?: string };
 
 const NAV_LINKS: NavLink[] = [
   { href: "/catalogo", label: "Catálogo" },
   { href: "/recomendador", label: "Recomendador IA", badge: "Nuevo" },
+  { href: "/trabajos", label: "Trabajos" },
   { href: "/#impacto", label: "Impacto" },
   { href: "/sobre", label: "Sobre" },
   { href: "/ayuda", label: "Ayuda" },
@@ -42,6 +44,7 @@ export function Nav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bone-soft/85 backdrop-blur">
+      <TopBar />
       <div className="mx-auto flex h-16 max-w-8xl items-center gap-4 px-4 sm:gap-6 sm:px-6 lg:gap-10 lg:px-10">
         <Link
           href="/"

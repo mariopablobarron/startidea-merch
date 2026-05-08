@@ -2,6 +2,7 @@ import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
 import { BannerSlot } from "@/components/BannerSlot";
 import { ClientLogos } from "@/components/ClientLogos";
+import { PortfolioGrid } from "@/components/PortfolioGrid";
 import { Marquee } from "@/components/Marquee";
 import { Impact } from "@/components/Impact";
 import { ImpactLive } from "@/components/ImpactLive";
@@ -77,6 +78,7 @@ export default async function HomePage() {
         <ImpactLive />
         <Process />
         <BannerSlot slot="HOME_MID" />
+        <PortfolioGrid variant="home" />
         <Cases />
         <PublicReviews />
         <Partners />

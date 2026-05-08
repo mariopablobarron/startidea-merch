@@ -101,6 +101,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     Banners
                   </Link>
                   <Link
+                    href="/admin/marketing/portfolio"
+                    className="text-ink/60 hover:text-accent"
+                    title="Trabajos realizados (portfolio público)"
+                  >
+                    Portfolio
+                  </Link>
+                  <Link
                     href="/admin/marketing/broadcasts"
                     className="text-ink/60 hover:text-accent"
                     title="Email broadcasts"

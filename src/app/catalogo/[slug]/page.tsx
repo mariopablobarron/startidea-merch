@@ -11,6 +11,7 @@ import { CompareToggle } from "@/components/CompareToggle";
 import { MarkingCalculator } from "@/components/MarkingCalculator";
 import { PriceTierTable } from "@/components/PriceTierTable";
 import { MockupGenerator } from "@/components/MockupGenerator";
+import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
@@ -396,6 +397,21 @@ export default async function ProductDetailPage({
                   Reduce fricción: el visitante ve precio por cantidad sin
                   configurar nada. Inspirado en garrampa.es. */}
               <PriceTierTable tiers={tiers} baseCentsForEstimate={baseCents} />
+
+              {/* CTA WhatsApp con producto pre-rellenado.
+                  Inspirado en todomerch.com — para B2B en España la mayoría
+                  de leads grandes prefieren preguntar por WhatsApp antes
+                  de configurar el carrito. Reducir esa fricción a 1 click. */}
+              <div className="mt-6">
+                <WhatsAppCta
+                  productName={displayName}
+                  internalRef={product.internalRef}
+                  productUrl={`https://merchandising.hubstartidea.es/catalogo/${product.slug}`}
+                />
+                <p className="mt-2 text-center text-[11px] text-ink/40">
+                  Te respondemos en menos de 1 hora laborable
+                </p>
+              </div>
 
               <QuantityConfigurator
                 productSlug={product.slug}

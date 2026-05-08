@@ -883,6 +883,29 @@ model PageSeo {
   updatedBy   String?
 }
 
+/// Galería "Trabajos realizados" — fotos de pedidos reales con logo aplicado.
+/// Trust signal B2B fundamental (todomerch.com lo destaca con su propia
+/// página y un grid en home). Editable desde admin con orden manual y
+/// link al cliente / al producto.
+model PortfolioItem {
+  id          String   @id @default(cuid())
+  imageUrl    String              // URL absoluta o /uploads/
+  title       String              // ej "200 sudaderas para Acme Corp"
+  description String?  @db.Text   // detalle opcional (técnica, cantidad, sector)
+  clientName  String?             // nombre del cliente público
+  productSlug String?             // link a /catalogo/[slug] si aplica
+  sector      String?             // tag: "eventos", "rrhh", "marketing", etc.
+  featured    Boolean  @default(false)  // aparece en home
+  active      Boolean  @default(true)
+  order       Int      @default(0)      // ASC para ordenar
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+
+  @@index([active, featured])
+  @@index([order])
+}
+
 /// CRM enrichment por email único. Persiste tags, notas y segmentación
 /// independiente de si el cliente tiene CustomerUser (login) o solo
 /// CartQuote (lead). Email como PK = clave natural unificada.

@@ -1,0 +1,44 @@
+import type { Metadata } from "next";
+import { Nav } from "@/components/Nav";
+import { Footer } from "@/components/Footer";
+import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { PortfolioGrid } from "@/components/PortfolioGrid";
+import { mergeMetadata, getPageSeo } from "@/lib/page-seo";
+
+const BASE_METADATA: Metadata = {
+  title: "Trabajos realizados · TodoMerchandising",
+  description:
+    "Galería de pedidos reales: empresas, eventos y campañas que han producido merchandising personalizado con impacto en TodoMerchandising.",
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("/trabajos");
+  return mergeMetadata(BASE_METADATA, seo);
+}
+
+export const dynamic = "force-dynamic";
+
+export default function TrabajosPage() {
+  return (
+    <>
+      <Nav />
+      <main>
+        <section className="border-b border-line bg-bone py-12 lg:py-16">
+          <div className="mx-auto max-w-8xl px-6 lg:px-10">
+            <p className="text-sm font-medium uppercase tracking-wider text-accent">Portfolio</p>
+            <h1 className="mt-3 font-display text-section font-semibold text-ink">
+              Trabajos realizados
+            </h1>
+            <p className="mt-4 max-w-3xl text-base text-ink/65 lg:text-lg">
+              Cada imagen es un pedido real producido en Centros Especiales de Empleo o talleres
+              locales. Filtros disponibles por sector y técnica próximamente.
+            </p>
+          </div>
+        </section>
+        <PortfolioGrid variant="full" />
+      </main>
+      <Footer />
+      <WhatsAppFloat />
+    </>
+  );
+}
