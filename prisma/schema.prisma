@@ -115,7 +115,8 @@ model Product {
   id              String              @id @default(cuid())
   // identificación
   supplier        SupplierCode
-  supplierRef     String              // master_code MidOcean
+  supplierRef     String              // master_code MidOcean (NUNCA exponer al cliente)
+  internalRef     String?  @unique    // referencia propia Startidea ("STM-XXXXXX") visible al cliente
   slug            String              @unique
   name            String
   brand           String?

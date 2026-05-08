@@ -51,6 +51,7 @@ export async function GET(req: Request) {
         slug: true,
         name: true,
         supplierRef: true,
+        internalRef: true,
         primaryImageUrl: true,
         fromPriceCents: true,
         active: true,

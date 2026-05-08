@@ -57,34 +57,96 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Producto sin imagen base disponible" }, { status: 422 });
   }
 
-  // Descargar imagen base
-  const baseRes = await fetch(baseUrl);
-  if (!baseRes.ok) {
-    return NextResponse.json({ error: `No se pudo descargar imagen base: ${baseRes.status}` }, { status: 502 });
+  // Descargar imagen base con UA real (algunos CDN bloquean fetch sin UA)
+  let baseBuffer: Buffer;
+  try {
+    const baseRes = await fetch(baseUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; TodoMerchandising/1.0)",
+        Accept: "image/jpeg,image/png,image/*,*/*;q=0.8",
+      },
+    });
+    if (!baseRes.ok) {
+      return NextResponse.json(
+        { error: `No se pudo descargar imagen base del producto (HTTP ${baseRes.status})` },
+        { status: 502 },
+      );
+    }
+    const ct = baseRes.headers.get("content-type") || "";
+    if (!ct.startsWith("image/") && ct !== "application/octet-stream") {
+      return NextResponse.json(
+        { error: `Imagen base inválida (content-type ${ct})` },
+        { status: 502 },
+      );
+    }
+    baseBuffer = Buffer.from(await baseRes.arrayBuffer());
+  } catch (e) {
+    return NextResponse.json(
+      { error: `Error descargando imagen base: ${e instanceof Error ? e.message : "network"}` },
+      { status: 502 },
+    );
   }
-  const baseBuffer = Buffer.from(await baseRes.arrayBuffer());
+
   const logoBuffer = Buffer.from(await file.arrayBuffer());
 
-  // Procesar
-  const baseImg = sharp(baseBuffer).rotate();
-  const baseMeta = await baseImg.metadata();
-  const baseW = baseMeta.width || 800;
-  const baseH = baseMeta.height || 800;
+  // Procesar imagen base (separado del logo para distinguir errores)
+  let baseImg: ReturnType<typeof sharp>;
+  let baseW: number;
+  let baseH: number;
+  try {
+    baseImg = sharp(baseBuffer, { failOn: "none" }).rotate();
+    const baseMeta = await baseImg.metadata();
+    baseW = baseMeta.width || 800;
+    baseH = baseMeta.height || 800;
+  } catch (e) {
+    console.error("[mockup] base sharp error:", e instanceof Error ? e.message : e);
+    return NextResponse.json(
+      {
+        error:
+          "La imagen base de este producto no se puede procesar. Pídenos cotización con tu logo y lo aplicamos a mano.",
+      },
+      { status: 502 },
+    );
+  }
 
   // Tamaño del logo: ~30% del ancho de la imagen base
   const targetLogoW = Math.round(baseW * 0.3);
-  const logoResized = await sharp(logoBuffer)
-    .resize({ width: targetLogoW, fit: "inside", withoutEnlargement: true })
-    .png()
-    .toBuffer({ resolveWithObject: true });
+  let logoResized: { data: Buffer; info: { width: number; height: number } };
+  try {
+    logoResized = await sharp(logoBuffer, { failOn: "none" })
+      .resize({ width: targetLogoW, fit: "inside", withoutEnlargement: true })
+      .png()
+      .toBuffer({ resolveWithObject: true });
+  } catch (e) {
+    console.error("[mockup] logo sharp error:", e instanceof Error ? e.message : e);
+    return NextResponse.json(
+      {
+        error:
+          "Tu logo no se ha podido procesar. Súbelo en PNG, JPG, WEBP o SVG (no PDF, ZIP, ni archivos vacíos).",
+      },
+      { status: 422 },
+    );
+  }
 
   const left = Math.round((baseW - logoResized.info.width) / 2);
   const top = Math.round((baseH - logoResized.info.height) / 2);
 
-  const out = await baseImg
-    .composite([{ input: logoResized.data, left, top, blend: "over" }])
-    .png()
-    .toBuffer();
+  let out: Buffer;
+  try {
+    out = await baseImg
+      .composite([{ input: logoResized.data, left, top, blend: "over" }])
+      .png()
+      .toBuffer();
+  } catch (e) {
+    console.error("[mockup] composite error:", e instanceof Error ? e.message : e);
+    return NextResponse.json(
+      {
+        error:
+          "No se pudo generar el mockup. Inténtalo con un logo distinto o pídenos cotización.",
+      },
+      { status: 500 },
+    );
+  }
 
   return new NextResponse(new Uint8Array(out), {
     status: 200,

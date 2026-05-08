@@ -207,6 +207,16 @@ async function upsertProduct(
     update: productData,
   });
 
+  // Asignar referencia propia Startidea (determinística desde id) si falta.
+  // No se sobrescribe nunca para mantener estabilidad de URLs/refs ya conocidas.
+  if (!product.internalRef) {
+    const { generateInternalRef } = await import("@/lib/internal-ref");
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { internalRef: generateInternalRef(product.id) },
+    });
+  }
+
   // variantes
   for (const v of raw.variants ?? []) {
     const data = {

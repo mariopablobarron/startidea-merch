@@ -11,7 +11,8 @@ export function MockupGenerator({
   productSlug: string;
   positions: Position[];
 }) {
-  const [open, setOpen] = useState(false);
+  // Abierto por defecto — el visitante debe poder subir logo sin pasos extra
+  const [open, setOpen] = useState(true);
   const [positionId, setPositionId] = useState(positions[0]?.positionId || "");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

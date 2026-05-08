@@ -39,7 +39,9 @@ const MANIPULATIONS = [
 ];
 
 export function MarkingCalculator({ productSlug, productName, productRef, primaryImageUrl, positions }: Props) {
-  const [open, setOpen] = useState(false);
+  // Abierta por defecto: el cliente debe ver precio orientativo al instante
+  // sin tener que pulsar nada. Sigue colapsable manualmente.
+  const [open, setOpen] = useState(true);
   const positionsAvailable = positions.filter((p) => p.techniques.length > 0);
   const [positionIdx, setPositionIdx] = useState(0);
   const [techIdx, setTechIdx] = useState(0);

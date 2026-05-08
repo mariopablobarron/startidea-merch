@@ -25,6 +25,7 @@ type ProductRow = {
   slug: string;
   name: string;
   supplierRef: string;
+  internalRef: string | null;
   primaryImageUrl: string | null;
   fromPriceCents: number | null;
   active: boolean;
@@ -219,7 +220,13 @@ export default function AdminProductsPage() {
                         <td className="p-3">
                           <div className="font-medium text-ink">{displayName}</div>
                           <div className="text-[11px] text-ink/50">
-                            <span className="font-mono">{p.supplierRef}</span>
+                            <span className="font-mono text-accent" title="Referencia pública Startidea (la que ven los clientes)">
+                              {p.internalRef || "—"}
+                            </span>
+                            <span className="mx-1.5 text-ink/30">·</span>
+                            <span className="font-mono" title="Referencia proveedor (interna, NUNCA mostrar al cliente)">
+                              {p.supplierRef}
+                            </span>
                             {isOverridden && (
                               <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-accent-deep">
                                 Editado

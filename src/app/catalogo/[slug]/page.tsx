@@ -12,6 +12,7 @@ import { MarkingCalculator } from "@/components/MarkingCalculator";
 import { PriceTierTable } from "@/components/PriceTierTable";
 import { MockupGenerator } from "@/components/MockupGenerator";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
+import { publicRef } from "@/lib/internal-ref";
 
 export const revalidate = 3600;
 
@@ -83,6 +84,8 @@ export default async function ProductDetailPage({
         : product.fromPriceCents;
   const extraImages = ov?.extraImages ?? [];
   const marketingTags = ov?.marketingTags ?? [];
+  // Referencia pública Startidea — nunca exponer supplierRef al cliente
+  const displayRef = publicRef(product);
 
   const totalStock = product.variants.reduce((sum, v) => sum + v.stockQty, 0);
   const colorVariants = product.variants.filter((v) => v.colorName);
@@ -251,7 +254,7 @@ export default async function ProductDetailPage({
                   {product.countryOfOrigin && (
                     <Spec label="Origen" value={product.countryOfOrigin} />
                   )}
-                  {product.supplierRef && <Spec label="Referencia" value={product.supplierRef} />}
+                  <Spec label="Referencia" value={displayRef} />
                 </dl>
               </div>
 
@@ -369,7 +372,7 @@ export default async function ProductDetailPage({
                 </div>
               )}
               <p className="mt-2 text-sm text-ink/50">
-                Ref. <span className="font-mono">{product.supplierRef}</span> · Stock total:{" "}
+                Ref. <span className="font-mono">{displayRef}</span> · Stock total:{" "}
                 <span className="tabular-nums">{totalStock.toLocaleString("es-ES")}</span>
               </p>
 
@@ -384,7 +387,7 @@ export default async function ProductDetailPage({
 
               <QuantityConfigurator
                 productSlug={product.slug}
-                productRef={product.supplierRef}
+                productRef={displayRef}
                 productName={displayName}
                 tiers={tiers}
                 baseCentsForEstimate={baseCents}
@@ -400,7 +403,7 @@ export default async function ProductDetailPage({
               <MarkingCalculator
                 productSlug={product.slug}
                 productName={displayName}
-                productRef={product.supplierRef}
+                productRef={displayRef}
                 primaryImageUrl={product.primaryImageUrl}
                 positions={product.positions.map((pos) => ({
                   id: pos.id,

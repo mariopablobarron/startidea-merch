@@ -31,6 +31,7 @@ type Product = {
   name: string;
   brand: string | null;
   supplierRef: string;
+  internalRef: string | null;
   shortDescription: string | null;
   longDescription: string | null;
   enhancedShortDescription: string | null;
@@ -197,7 +198,14 @@ export default function AdminProductDetailPage({
               {customName || product.name}
             </h1>
             <p className="mt-1 text-xs text-ink/50">
-              <span className="font-mono">{product.supplierRef}</span> ·{" "}
+              <span className="font-mono text-accent" title="Referencia pública Startidea">
+                {product.internalRef || "—"}
+              </span>
+              <span className="mx-1 text-ink/30">·</span>
+              <span className="font-mono text-ink/40" title="Ref proveedor (no exponer al cliente)">
+                prov: {product.supplierRef}
+              </span>{" "}
+              ·{" "}
               {product.category?.name || "Sin categoría"}
               {product.brand ? ` · ${product.brand}` : ""}
             </p>
