@@ -11,7 +11,13 @@ import type { Prisma } from "@prisma/client";
 import { SortSelect } from "@/components/SortSelect";
 import { CompareBadge } from "@/components/CatalogCardActions";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  const { getPageSeo, mergeMetadata } = await import("@/lib/page-seo");
+  const seo = await getPageSeo("/catalogo");
+  return mergeMetadata(BASE_METADATA, seo);
+}
+
+const BASE_METADATA: Metadata = {
   title: "Catálogo de merchandising personalizable",
   description:
     "Más de 2.000 productos promocionales personalizables: textil, drinkware, escritura, tecnología, eventos. Producción con impacto social en Centros Especiales de Empleo y talleres locales.",

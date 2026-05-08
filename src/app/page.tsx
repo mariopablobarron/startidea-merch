@@ -20,11 +20,18 @@ import { JsonLd } from "@/components/JsonLd";
 import { ORGANIZATION_JSONLD, WEBSITE_JSONLD, FAQ_JSONLD } from "@/lib/jsonld";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getPageSeo, mergeMetadata } from "@/lib/page-seo";
+import type { Metadata } from "next";
 
 // Dynamic: la home lee DB para hero (precio mínimo + count). Build time no
 // tiene DATABASE_URL (se inyecta solo en runtime), así que no intentar
 // pre-renderizar. La query es muy barata (aggregate sin filtros + count).
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("/");
+  return mergeMetadata({}, seo);
+}
 
 async function getHeroData() {
   try {

@@ -824,6 +824,23 @@ model MarkingTechniqueOnPosition {
   @@id([positionId, techniqueId])
 }
 
+/// SEO override por página, editable desde admin sin tocar código.
+/// Path como id ("/" para home, "/catalogo" para listado, "/sobre", etc.).
+/// Si no hay row para un path, las páginas usan sus defaults hardcoded.
+///
+/// Para fichas de producto NO usar este modelo — usar ProductOverride.metaTitle
+/// y ProductOverride.metaDescription que ya existen.
+model PageSeo {
+  path        String   @id           // "/", "/catalogo", "/sobre", "/recomendador"
+  title       String?                // <title> y og:title
+  description String?  @db.Text      // <meta description> y og:description
+  ogImage     String?                // URL absoluta o /public path
+  robots      String?                // ej "noindex,follow" si quieres
+  schemaJson  Json?                  // schema.org adicional libre (Organization, Service…)
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+}
+
 /// CRM enrichment por email único. Persiste tags, notas y segmentación
 /// independiente de si el cliente tiene CustomerUser (login) o solo
 /// CartQuote (lead). Email como PK = clave natural unificada.
