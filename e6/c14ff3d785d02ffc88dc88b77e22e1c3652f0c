@@ -1,0 +1,27 @@
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_365c8d4f770cb3 11
+  s_65877aa637ec34::t_049eeb2427be80 416-421
+src/lib/brand-filter.ts
+  s_65877aa637ec34::t_c26086235b4333 1-16
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_e29c26ef1fb06b 38-39
+  s_65877aa637ec34::t_b36a8940407e80 358,360
+  s_65877aa637ec34::t_1c6e2b10a129b2 16
+  s_65877aa637ec34::t_6f672c85717dc3 245-247
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "e6c14ff3d785d02ffc88dc88b77e22e1c3652f0c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
