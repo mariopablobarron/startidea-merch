@@ -1,0 +1,22 @@
+src/components/OnboardingTour.tsx
+  s_65877aa637ec34::t_8a0c09430fe144 48-50,57-58
+public/sw.js
+  s_65877aa637ec34::t_46f52f8fd79a59 80-83,86-103
+  s_65877aa637ec34::t_506dcc3ac9d814 3-8,10-11,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "d4d6673c56978cb4ae65d5ad2993940890f70f94",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
