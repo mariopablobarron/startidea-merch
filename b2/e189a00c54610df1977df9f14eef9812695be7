@@ -1,0 +1,45 @@
+src/app/trabajos/page.tsx
+  s_65877aa637ec34::t_3a1983c6bfadac 1-44
+prisma/schema.prisma
+  s_65877aa637ec34::t_0474347ef2d03b 886-908
+src/components/WhatsAppCta.tsx
+  s_65877aa637ec34::t_24ad9bc667041e 1-64
+src/app/api/admin/portfolio/route.ts
+  s_65877aa637ec34::t_1ff9aa3cbb5427 1-45
+src/app/page.tsx
+  s_65877aa637ec34::t_c9a02e2cdf4bed 5
+  s_65877aa637ec34::t_9d665882435a11 81
+src/app/api/admin/portfolio/[id]/route.ts
+  s_65877aa637ec34::t_c4e8ff74bb13ab 1-47
+src/app/admin/marketing/portfolio/page.tsx
+  s_65877aa637ec34::t_cfc7a84972e401 1-427
+src/components/PortfolioGrid.tsx
+  s_65877aa637ec34::t_9eea60aa26b07b 1-120
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_33217ffc301a26 104-109
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_6462c9a9724f0e 14
+  s_65877aa637ec34::t_cfc221d97058a9 401-415
+src/components/Nav.tsx
+  s_65877aa637ec34::t_6d9b9ae11eb05f 16
+  s_65877aa637ec34::t_316f64ffdfe4ae 47
+  s_65877aa637ec34::t_057bec65708ea4 9
+src/components/TopBar.tsx
+  s_65877aa637ec34::t_1fa28d456c9340 1-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "b2e189a00c54610df1977df9f14eef9812695be7",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
