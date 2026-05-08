@@ -223,6 +223,27 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
     }),
   );
 
+  // Logging: guardar la consulta para análisis admin
+  void prisma.recommenderQuery
+    .create({
+      data: {
+        brief,
+        budget: budget ?? null,
+        quantity: quantity ?? null,
+        ecoOnly: !!ecoOnly,
+        needsClarification: !!parsedRec.needsClarification,
+        fallback: false,
+        recommendedSlugs: enriched.filter(Boolean).map((r) => r!.slug),
+        summary: parsedRec.summary || null,
+        modelUsed: json.model || MODEL,
+        promptTokens: json.usage?.prompt_tokens ?? null,
+        completionTokens: json.usage?.completion_tokens ?? null,
+        ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+        ua: req.headers.get("user-agent")?.slice(0, 500) || null,
+      },
+    })
+    .catch(() => {});
+
   return NextResponse.json({
     ok: true,
     needsClarification: !!parsedRec.needsClarification,

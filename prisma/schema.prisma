@@ -824,6 +824,30 @@ model MarkingTechniqueOnPosition {
   @@id([positionId, techniqueId])
 }
 
+/// Consultas al recomendador IA — registramos cada brief para entender
+/// qué pide la gente, descubrir gaps de catálogo y mejorar el prompt.
+model RecommenderQuery {
+  id                String    @id @default(cuid())
+  brief             String    @db.Text
+  budget            Int?      // €/total declarado por el cliente
+  quantity          Int?      // unidades declaradas
+  ecoOnly           Boolean   @default(false)
+  needsClarification Boolean? // pidió aclaración o devolvió recomendación directa
+  fallback          Boolean   @default(false) // true si hubo error parseando JSON
+  recommendedSlugs  String[]  @default([]) // slugs devueltos al cliente
+  summary           String?   @db.Text // resumen del modelo
+  modelUsed         String?   // ej anthropic/claude-sonnet-4.5
+  promptTokens      Int?
+  completionTokens  Int?
+  ip                String?   // primera IP (proxy headers)
+  ua                String?   @db.Text // user agent
+  createdAt         DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([fallback])
+  @@index([needsClarification])
+}
+
 /// MediaAsset — mapeo opaco hash→originalUrl para que el HTML público
 /// no exponga el host del CDN proveedor en URLs ni en query strings.
 ///

@@ -114,6 +114,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   >
                     SEO
                   </Link>
+                  <Link
+                    href="/admin/recomendador"
+                    className="text-ink/60 hover:text-accent"
+                    title="Consultas al recomendador IA"
+                  >
+                    IA queries
+                  </Link>
                   <Link href="/admin/proposals/new" className="text-accent hover:text-accent-dark">
                     ⚡ Nueva propuesta IA
                   </Link>
