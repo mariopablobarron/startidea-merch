@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -18,7 +19,11 @@ const NAV_LINKS: NavLink[] = [
 
 export function Nav() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  // Portal solo tras hidratación
+  useEffect(() => setMounted(true), []);
 
   // Cerrar menú al cambiar de ruta
   useEffect(() => {
@@ -96,15 +101,18 @@ export function Nav() {
         </button>
       </div>
 
-      {/* Drawer móvil */}
-      {open && (
-        <div
-          id="mobile-drawer"
-          className="fixed inset-0 z-50 md:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menú principal"
-        >
+      {/* Drawer móvil — Portal a body para escapar del backdrop-filter del
+          header (que crea containing block para position:fixed) */}
+      {open &&
+        mounted &&
+        createPortal(
+          <div
+            id="mobile-drawer"
+            className="fixed inset-0 z-[60] md:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menú principal"
+          >
           {/* Backdrop */}
           <button
             type="button"
@@ -181,8 +189,9 @@ export function Nav() {
               </Link>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </header>
   );
 }
