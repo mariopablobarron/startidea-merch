@@ -1,0 +1,29 @@
+src/app/api/cron/stock-alert/route.ts
+  s_65877aa637ec34::t_575abc57aa6a7a 1-105
+src/app/api/admin/stock/[id]/route.ts
+  s_65877aa637ec34::t_89a3b206773d07 1-85
+src/app/admin/stock/[id]/page.tsx
+  s_65877aa637ec34::t_ae1d83140d7786 1-270
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_ae92fc1fade9a7 58-64
+src/app/admin/stock/page.tsx
+  s_65877aa637ec34::t_91248682fc1afb 1-241
+src/app/api/admin/stock/route.ts
+  s_65877aa637ec34::t_43296bcb45d127 1-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "7e5cb852166ef84c1649e5b1885b7468a3e99da0",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
