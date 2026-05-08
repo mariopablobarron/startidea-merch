@@ -14,6 +14,7 @@ import { MockupGenerator } from "@/components/MockupGenerator";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
+import { proxyImageUrl } from "@/lib/proxy-image";
 
 export const revalidate = 3600;
 
@@ -44,7 +45,11 @@ export async function generateMetadata({
   return {
     title,
     description,
-    openGraph: { images: p.primaryImageUrl ? [{ url: p.primaryImageUrl }] : [] },
+    openGraph: {
+      images: proxyImageUrl(p.primaryImageUrl)
+        ? [{ url: proxyImageUrl(p.primaryImageUrl)! }]
+        : [],
+    },
   };
 }
 
@@ -161,12 +166,13 @@ export default async function ProductDetailPage({
             {/* IZQUIERDA — galería + variantes + descripción */}
             <div>
               <div className="relative aspect-square overflow-hidden rounded-3xl border border-line bg-bone-soft">
-                {product.primaryImageUrl ? (
+                {proxyImageUrl(product.primaryImageUrl) ? (
                   <Image
-                    src={product.primaryImageUrl}
+                    src={proxyImageUrl(product.primaryImageUrl)!}
                     alt={displayName}
                     fill
                     sizes="(max-width:1024px) 100vw, 60vw"
+                    unoptimized
                     className="object-contain p-8"
                     priority
                   />
@@ -187,13 +193,14 @@ export default async function ProductDetailPage({
                         className="relative h-16 w-16 overflow-hidden rounded-xl border border-line bg-bone"
                         title={v.colorName ?? undefined}
                       >
-                        {v.imageUrl && (
+                        {proxyImageUrl(v.imageUrl) && (
                           <Image
-                            src={v.imageUrl}
+                            src={proxyImageUrl(v.imageUrl)!}
                             alt={v.colorName ?? v.sku}
                             fill
                             sizes="64px"
                             className="object-contain p-1"
+                            unoptimized
                           />
                         )}
                       </div>
@@ -408,7 +415,7 @@ export default async function ProductDetailPage({
                 productSlug={product.slug}
                 productName={displayName}
                 productRef={displayRef}
-                primaryImageUrl={product.primaryImageUrl}
+                primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
                 positions={product.positions.map((pos) => ({
                   id: pos.id,
                   positionId: pos.positionId,

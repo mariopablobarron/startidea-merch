@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { publicRef } from "@/lib/internal-ref";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { SortSelect } from "@/components/SortSelect";
 import { CompareBadge } from "@/components/CatalogCardActions";
 
@@ -397,13 +398,14 @@ export default async function CatalogoPage({
                               </div>
                             )}
                             <div className="relative aspect-square overflow-hidden rounded-2xl bg-bone">
-                              {p.primaryImageUrl ? (
+                              {proxyImageUrl(p.primaryImageUrl) ? (
                                 <Image
-                                  src={p.primaryImageUrl}
+                                  src={proxyImageUrl(p.primaryImageUrl)!}
                                   alt={displayName}
                                   fill
                                   sizes="(max-width:768px) 50vw, 25vw"
                                   className="object-contain p-4 transition group-hover:scale-105"
+                                  unoptimized
                                 />
                               ) : (
                                 <div className="grid h-full place-items-center text-ink/30">Sin imagen</div>
