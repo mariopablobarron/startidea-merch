@@ -176,14 +176,26 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
     recommendations?: Array<{ slug: string; ref?: string; name?: string; rationale?: string }>;
     summary?: string;
   };
-  try {
-    parsedRec = JSON.parse(text);
-  } catch {
+  // Parser tolerante: algunos modelos devuelven el JSON envuelto en
+  // ```json ... ```, con texto antes/después, o con caracteres de control.
+  const tryParsed = tryParseJson(text);
+  if (!tryParsed) {
+    // Fallback: redirige al catálogo filtrado con palabras clave del brief
+    // del usuario en lugar de mostrar error técnico al cliente.
+    const keywords = extractKeywords(brief);
     return NextResponse.json(
-      { error: "Respuesta del modelo no es JSON válido", raw: text.slice(0, 500) },
-      { status: 502 },
+      {
+        ok: true,
+        fallback: true,
+        summary:
+          "Te llevo al catálogo filtrado por lo que has descrito para que sigas explorando ahí.",
+        redirectUrl: keywords ? `/catalogo?q=${encodeURIComponent(keywords)}` : "/catalogo",
+        recommendations: [],
+      },
+      { status: 200 },
     );
   }
+  parsedRec = tryParsed;
 
   // 3) Enriquecer con datos reales del producto desde DB
   const enriched = await Promise.all(
@@ -220,4 +232,54 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
     model: json.model || MODEL,
     usage: json.usage,
   });
+}
+
+/**
+ * Intenta parsear un string como JSON con tolerancia. Maneja:
+ *  - Bloques ```json ... ``` o ``` ... ```
+ *  - Texto antes/después del JSON (busca primer { o [ y último } o ])
+ *  - Caracteres de control y BOM
+ * Devuelve null si no consigue parsear.
+ */
+function tryParseJson<T = unknown>(raw: string): T | null {
+  if (!raw) return null;
+  // Quitar BOM y normalizar
+  let s = raw.replace(/^﻿/, "").trim();
+  // Quitar fences markdown
+  s = s.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  // Intentar parse directo
+  try {
+    return JSON.parse(s) as T;
+  } catch {}
+  // Buscar el primer { o [ y el último } o ]
+  const first = Math.min(
+    ...["{", "["].map((c) => {
+      const i = s.indexOf(c);
+      return i === -1 ? Infinity : i;
+    }),
+  );
+  const last = Math.max(s.lastIndexOf("}"), s.lastIndexOf("]"));
+  if (first === Infinity || last === -1 || last <= first) return null;
+  try {
+    return JSON.parse(s.slice(first, last + 1)) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extrae palabras clave del brief del usuario para usar como query del
+ * catálogo cuando la IA falla. Quita stopwords y conecta lo relevante.
+ */
+function extractKeywords(brief: string): string {
+  const stop = new Set([
+    "el","la","los","las","un","una","unos","unas","de","del","para","por","con","en","y","o","u","mi","tu","su","es","son","sea","ser","que","como","cómo","necesito","quiero","busco","tenemos","tenéis","muchas","unos","poco","poca","más","mas","menos","muy","todo","toda","algo","alguna","algún","cualquier","posible","tipo","modelo","marca","producto","productos","empresa","evento","tener","hacer","¿","?","¡","!",",",".",";",":"
+  ]);
+  return brief
+    .toLowerCase()
+    .replace(/[^\p{L}\d\s]/gu, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stop.has(w))
+    .slice(0, 5)
+    .join(" ");
 }

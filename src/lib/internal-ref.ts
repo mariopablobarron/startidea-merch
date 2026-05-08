@@ -21,8 +21,14 @@ export function generateInternalRef(productId: string): string {
   let bits = 0n;
   for (let i = 0; i < 4; i++) bits = (bits << 8n) | BigInt(hash[i]);
   let s = "";
+  // Bug histórico: ALPHABET tiene 31 chars y el mask 31n permite valor 31
+  // (out of bounds) → ALPHABET[31] devuelve undefined y la string se
+  // concatenaba como "STM-XYZundefinedABC". El módulo asegura índice válido
+  // sin perder distribución sensible (1/32 de los chars caen sobre el primero).
+  const len = BigInt(ALPHABET.length);
   for (let i = 0; i < 6; i++) {
-    s = ALPHABET[Number(bits & 31n)] + s;
+    const idx = Number((bits & 31n) % len);
+    s = ALPHABET[idx] + s;
     bits >>= 5n;
   }
   return `STM-${s}`;
