@@ -6,13 +6,15 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { NavSearch } from "./NavSearch";
 
-const NAV_LINKS = [
+type NavLink = { href: string; label: string; badge?: string };
+
+const NAV_LINKS: NavLink[] = [
   { href: "/catalogo", label: "Catálogo" },
   { href: "/recomendador", label: "Recomendador IA", badge: "Nuevo" },
   { href: "/#impacto", label: "Impacto" },
   { href: "/sobre", label: "Sobre" },
   { href: "/ayuda", label: "Ayuda" },
-] as const;
+];
 
 export function Nav() {
   const [open, setOpen] = useState(false);
