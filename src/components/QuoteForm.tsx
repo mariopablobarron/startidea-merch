@@ -86,14 +86,14 @@ export function QuoteForm() {
         <Field name="phone" label="Teléfono" type="tel" />
       </div>
       <div className="grid gap-5 sm:grid-cols-3">
-        <label className="grid gap-2">
+        <label className="grid min-w-0 gap-2">
           <span className="text-sm font-medium text-ink">¿Qué producto buscas?</span>
           <input
             ref={productRef}
             name="productHint"
             type="text"
             placeholder="Ej. botella tritan"
-            className="rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
+            className="block w-full min-w-0 rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
           />
         </label>
         <Field name="quantity" label="Cantidad estimada" type="number" placeholder="Ej. 250" />
@@ -108,7 +108,7 @@ export function QuoteForm() {
           required
           rows={5}
           placeholder="Logo, evento, claim, color, plazo, lo que sea relevante."
-          className="rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
+          className="block w-full min-w-0 rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
         />
       </label>
 
@@ -160,7 +160,7 @@ function Field({
   required?: boolean;
 }) {
   return (
-    <label className="grid gap-2">
+    <label className="grid min-w-0 gap-2">
       <span className="text-sm font-medium text-ink">
         {label}
         {required && <span className="text-accent"> *</span>}
@@ -170,7 +170,7 @@ function Field({
         type={type}
         required={required}
         placeholder={placeholder}
-        className="rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
+        className="block w-full min-w-0 rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
       />
     </label>
   );
