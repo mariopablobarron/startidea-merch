@@ -1,0 +1,44 @@
+src/app/api/mockup/generate/route.ts
+  s_65877aa637ec34::t_85db98c0112b5b 60-87,89,92-110,114-129,134-149
+src/lib/suppliers/midocean-sync.ts
+  s_65877aa637ec34::t_877a2a31aaf330 210-219
+src/components/MarkingCalculator.tsx
+  s_65877aa637ec34::t_faadaf13887df2 42-44
+prisma/schema.prisma
+  s_65877aa637ec34::t_451addce2d0954 118-119
+src/app/api/admin/products/backfill-internal-refs/route.ts
+  s_65877aa637ec34::t_16378b7195e322 1-53
+src/app/api/admin/products/route.ts
+  s_65877aa637ec34::t_e183924ba3b1d5 54
+src/app/admin/products/[id]/page.tsx
+  s_65877aa637ec34::t_05a908a3d96194 201-208
+  s_65877aa637ec34::t_eaa7887d60bd31 34
+src/app/admin/products/page.tsx
+  s_65877aa637ec34::t_c9dc39801a2b3f 28
+  s_65877aa637ec34::t_fec6fe74ecdb5a 223-229
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_188cf8b28b5b6a 257
+  s_65877aa637ec34::t_63e38eb218e012 15
+  s_65877aa637ec34::t_b21f5c92fa50c2 87-88
+  s_65877aa637ec34::t_3773776a385410 375
+src/components/MockupGenerator.tsx
+  s_65877aa637ec34::t_190fdb5adb62b6 14-15
+src/lib/internal-ref.ts
+  s_65877aa637ec34::t_6b68fbfc681aad 1-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "03fc4b829d9c548afbf065aabff01bde0cb25bb2",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
