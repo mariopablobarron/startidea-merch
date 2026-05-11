@@ -7,12 +7,14 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { NavSearch } from "./NavSearch";
 import { TopBar } from "./TopBar";
+import { NavCartBadge } from "./NavCartBadge";
 
 type NavLink = { href: string; label: string; badge?: string };
 
 const NAV_LINKS: NavLink[] = [
   { href: "/catalogo", label: "Catálogo" },
-  { href: "/recomendador", label: "Recomendador IA", badge: "Nuevo" },
+  { href: "/promociones", label: "Promos", badge: "★" },
+  { href: "/recomendador", label: "Recomendador IA" },
   { href: "/trabajos", label: "Trabajos" },
   { href: "/#impacto", label: "Impacto" },
   { href: "/sobre", label: "Sobre" },
@@ -79,19 +81,34 @@ export function Nav() {
           ))}
         </nav>
 
-        {/* CTA desktop */}
-        <Link
-          href="/#cotizar"
-          className="ml-auto hidden rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-bone transition hover:bg-accent sm:inline-flex md:ml-0"
-        >
-          Pedir cotización
-        </Link>
+        {/* Acciones desktop: cesta + login + CTA */}
+        <div className="ml-auto hidden items-center gap-2 sm:flex md:ml-0">
+          <NavCartBadge />
+          <Link
+            href="/clientes"
+            className="hidden rounded-full border border-line bg-bone-soft px-3 py-1.5 text-xs font-medium text-ink/70 transition hover:border-accent hover:text-ink lg:inline-flex"
+            title="Acceder al portal de cliente"
+          >
+            Mi cuenta
+          </Link>
+          <Link
+            href="/#cotizar"
+            className="rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-bone transition hover:bg-accent"
+          >
+            Pedir cotización
+          </Link>
+        </div>
+
+        {/* Cart badge móvil (siempre visible) */}
+        <div className="ml-auto sm:hidden">
+          <NavCartBadge />
+        </div>
 
         {/* Botón hamburguesa móvil — solo <md */}
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bone text-ink hover:border-accent md:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bone text-ink hover:border-accent md:hidden"
           aria-label="Abrir menú"
           aria-expanded={open}
           aria-controls="mobile-drawer"

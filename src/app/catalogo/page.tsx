@@ -135,9 +135,11 @@ export default async function CatalogoPage({
         },
       }),
       prisma.product.count({ where }),
+      // Top-level categories con count de productos activos por cada una
       prisma.category.findMany({
         where: { level: 1 },
         orderBy: { name: "asc" },
+        include: { _count: { select: { products: { where: { active: true } } } } },
       }),
       // Subcategorías (level 2 y 3) del top-level activo
       category
@@ -265,15 +267,26 @@ export default async function CatalogoPage({
               {/* Sidebar filtros */}
               <aside className="lg:sticky lg:top-24 lg:self-start">
                 <FilterBlock title="Categoría">
-                  <Chip href="/catalogo" active={!catSlug} label="Todas" />
+                  <Chip
+                    href="/catalogo"
+                    active={!catSlug}
+                    label={`Todas (${total.toLocaleString("es-ES")})`}
+                  />
                   {topCategories.map((c) => (
                     <Chip
                       key={c.id}
                       href={`/catalogo?cat=${c.slug}`}
                       active={catSlug === c.slug}
-                      label={c.name}
+                      label={`${c.name}${c._count?.products ? ` (${c._count.products})` : ""}`}
                     />
                   ))}
+                  <div className="mt-2 border-t border-line pt-2">
+                    <Chip
+                      href="/promociones"
+                      active={false}
+                      label="★ Promociones y novedades"
+                    />
+                  </div>
                 </FilterBlock>
 
                 {colorGroups.length > 0 && (

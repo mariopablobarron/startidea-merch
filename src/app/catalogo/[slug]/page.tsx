@@ -6,10 +6,10 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { prisma } from "@/lib/prisma";
-import { QuantityConfigurator } from "@/components/QuantityConfigurator";
+import { ProductOrderForm } from "@/components/ProductOrderForm";
 import { CompareToggle } from "@/components/CompareToggle";
-import { MarkingCalculator } from "@/components/MarkingCalculator";
-import { PriceTierTable } from "@/components/PriceTierTable";
+// ProductOrderForm fusiona PriceTierTable + QuantityConfigurator + MarkingCalculator
+// en un único flujo: cantidad → toggle marcaje → opciones → total + CTAs.
 import { MockupGenerator } from "@/components/MockupGenerator";
 import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
@@ -393,46 +393,19 @@ export default async function ProductDetailPage({
                 <p className="mt-5 text-base text-ink/75">{displayShortDescription}</p>
               )}
 
-              {/* Tabla escalonada estática — visible antes de la calculadora.
-                  Reduce fricción: el visitante ve precio por cantidad sin
-                  configurar nada. Inspirado en garrampa.es. */}
-              <PriceTierTable tiers={tiers} baseCentsForEstimate={baseCents} />
-
-              {/* CTA WhatsApp con producto pre-rellenado.
-                  Inspirado en todomerch.com — para B2B en España la mayoría
-                  de leads grandes prefieren preguntar por WhatsApp antes
-                  de configurar el carrito. Reducir esa fricción a 1 click. */}
-              <div className="mt-6">
-                <WhatsAppCta
-                  productName={displayName}
-                  internalRef={product.internalRef}
-                  productUrl={`https://merchandising.hubstartidea.es/catalogo/${product.slug}`}
-                />
-                <p className="mt-2 text-center text-[11px] text-ink/40">
-                  Te respondemos en menos de 1 hora laborable
-                </p>
-              </div>
-
-              <QuantityConfigurator
+              {/* Formulario unificado:
+                    cantidad → toggle marcaje SI/NO → opciones marcaje
+                    (si SÍ) → total + CTAs.
+                  Reemplaza la antigua trilogía PriceTierTable +
+                  QuantityConfigurator + MarkingCalculator que mostraban
+                  precios contradictorios y duplicaban lógica de cantidad. */}
+              <ProductOrderForm
                 productSlug={product.slug}
                 productRef={displayRef}
                 productName={displayName}
+                primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
                 tiers={tiers}
                 baseCentsForEstimate={baseCents}
-              />
-
-              <CompareToggle slug={product.slug} />
-
-              <MockupGenerator
-                productSlug={product.slug}
-                positions={product.positions.map((p) => ({ id: p.id, positionId: p.positionId }))}
-              />
-
-              <MarkingCalculator
-                productSlug={product.slug}
-                productName={displayName}
-                productRef={displayRef}
-                primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
                 positions={product.positions.map((pos) => ({
                   id: pos.id,
                   positionId: pos.positionId,
@@ -445,6 +418,24 @@ export default async function ProductDetailPage({
                     maxColors: t.maxColors,
                   })),
                 }))}
+              />
+
+              {/* CTA WhatsApp alternativo — para quien prefiera preguntar
+                  por chat antes de configurar. Mensaje pre-rellenado. */}
+              <div className="mt-4">
+                <WhatsAppCta
+                  productName={displayName}
+                  internalRef={product.internalRef}
+                  productUrl={`https://merchandising.hubstartidea.es/catalogo/${product.slug}`}
+                  variant="secondary"
+                />
+              </div>
+
+              <CompareToggle slug={product.slug} />
+
+              <MockupGenerator
+                productSlug={product.slug}
+                positions={product.positions.map((p) => ({ id: p.id, positionId: p.positionId }))}
               />
 
               <div className="mt-5 grid gap-2 text-sm text-ink/70">
