@@ -1,0 +1,36 @@
+src/components/NavCartBadge.tsx
+  s_65877aa637ec34::t_849ae459625ff2 1-40,42-44,46-96
+  s_65877aa637ec34::t_21785ef35c881c 41,45
+src/components/Nav.tsx
+  s_65877aa637ec34::t_3c81ae69490485 10
+  s_65877aa637ec34::t_cf0af05fca36bf 16-17
+  s_65877aa637ec34::t_4a57082fd225b0 84-105
+  s_65877aa637ec34::t_23d97a6be731c0 111
+src/app/promociones/page.tsx
+  s_65877aa637ec34::t_923612cae61150 1-191
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_0ee26ea36f0c48 9
+  s_65877aa637ec34::t_a7d4d052b12f15 396-402,406,423-438
+  s_65877aa637ec34::t_8ff81da8873a19 11-12
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_ea50a81f3b244c 138,142
+  s_65877aa637ec34::t_be4ad377ec3d8a 270-274,280,283-289
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_9f536103bf7358 1-505
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "d692474721e562bc2a896646221a25f0fc6d5505",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
