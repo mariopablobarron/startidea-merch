@@ -5,7 +5,9 @@ import "./globals.css";
 import { CompareBanner } from "@/components/CompareBanner";
 import { CartBanner } from "@/components/CartBanner";
 import { PWARegister } from "@/components/PWARegister";
-import { OnboardingTour } from "@/components/OnboardingTour";
+// OnboardingTour automático sustituido por Tour on-demand vía TourLauncher
+// en navbar. El antiguo tour interrumpía en móvil y se eliminó por UX.
+import { Tour } from "@/components/Tour";
 import { Analytics } from "@/components/Analytics";
 
 // Tipografía oficial Manual de identidad Startidea v1.0
@@ -69,7 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <CartBanner />
         <CompareBanner />
-        <OnboardingTour />
+        <Tour />
         <PWARegister />
         <Analytics />
       </body>

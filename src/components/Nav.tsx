@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { NavSearch } from "./NavSearch";
 import { TopBar } from "./TopBar";
 import { NavCartBadge } from "./NavCartBadge";
+import { TourLauncher } from "./TourLauncher";
 
 type NavLink = { href: string; label: string; badge?: string };
 
@@ -67,7 +68,7 @@ export function Nav() {
         </Link>
 
         {/* Buscador desktop */}
-        <div className="hidden flex-1 lg:flex lg:max-w-xl">
+        <div data-tour="search" className="hidden flex-1 lg:flex lg:max-w-xl">
           <NavSearch />
         </div>
 
@@ -77,6 +78,17 @@ export function Nav() {
             <Link
               key={l.href}
               href={l.href}
+              data-tour={
+                l.href === "/catalogo"
+                  ? "nav-catalog"
+                  : l.href === "/recomendador"
+                    ? "nav-recommender"
+                    : l.href === "/promociones"
+                      ? "nav-promos"
+                      : l.href === "/trabajos"
+                        ? "nav-trabajos"
+                        : undefined
+              }
               className={`inline-flex items-center gap-1 text-sm hover:text-accent ${l.badge ? "font-medium text-accent" : "font-medium"}`}
             >
               <span>{l.label}</span>
@@ -89,11 +101,15 @@ export function Nav() {
           ))}
         </nav>
 
-        {/* Acciones desktop: cesta + login + CTA */}
+        {/* Acciones desktop: tour + cesta + login + CTA */}
         <div className="ml-auto hidden items-center gap-2 sm:flex md:ml-0">
-          <NavCartBadge />
+          <TourLauncher variant="navbar" />
+          <span data-tour="cart-badge">
+            <NavCartBadge />
+          </span>
           <Link
             href="/clientes"
+            data-tour="nav-account"
             className="hidden rounded-full border border-line bg-bone-soft px-3 py-1.5 text-xs font-medium text-ink/70 transition hover:border-accent hover:text-ink lg:inline-flex"
             title="Acceder al portal de cliente"
           >
