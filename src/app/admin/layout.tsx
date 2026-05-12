@@ -87,6 +87,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     Productos
                   </Link>
                   <Link
+                    href="/admin/marketing/content"
+                    className="text-ink/60 hover:text-accent"
+                    title="Content Studio — IA copy + workflow aprobación"
+                  >
+                    Content ✨
+                  </Link>
+                  <Link
                     href="/admin/marketing/site"
                     className="text-ink/60 hover:text-accent"
                     title="CMS · editar copy de la home"

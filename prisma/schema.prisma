@@ -883,6 +883,147 @@ model PageSeo {
   updatedBy   String?
 }
 
+/// Campaña de marketing — agrupa piezas de contenido + ads bajo un objetivo
+/// común. Una campaña típica: "Black Friday 2026 — 25% sobre textil",
+/// "Lanzamiento línea eco", "Captación RRHH". UTM auto único por campaña.
+model Campaign {
+  id            String          @id @default(cuid())
+  name          String
+  objective     CampaignObjective @default(LEADS)
+  channels      String[]        // ["meta", "google", "linkedin", "ig", "email"]
+  budgetCents   Int?
+  startsAt      DateTime
+  endsAt        DateTime?
+  status        CampaignStatus  @default(PLANNED)
+  utmCampaign   String          @unique  // slug auto: "black-friday-2026"
+  adAccountIds  Json?           // {meta: "act_xxx", google: "123-456-7890"}
+  pieces        ContentPiece[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  createdBy     String?
+
+  @@index([status])
+  @@index([startsAt])
+}
+
+enum CampaignObjective {
+  LEADS         // captar formularios / cotizaciones
+  CONVERSIONS   // pago directo
+  TRAFFIC       // tráfico a landing
+  AWARENESS     // alcance / branding
+  RETENTION     // upsell / cross-sell a clientes actuales
+}
+
+enum CampaignStatus {
+  PLANNED
+  ACTIVE
+  PAUSED
+  ENDED
+  ARCHIVED
+}
+
+/// Pieza individual de contenido. Una campaña tiene N piezas.
+/// Workflow: DRAFT (admin redacta) → REVIEW (espera aprobación) →
+/// APPROVED (lista para schedule) → SCHEDULED (con fecha futura) →
+/// PUBLISHED (enviada al canal externo) | FAILED (error al publicar).
+model ContentPiece {
+  id              String         @id @default(cuid())
+  type            ContentType
+  channel         ContentChannel
+  status          ContentStatus  @default(DRAFT)
+
+  // Contenido editable
+  title           String?        // título interno para identificar la pieza
+  copy            String         @db.Text
+  copyVariations  Json?          // alternativas IA: [{ id, text, score }]
+  hashtags        String[]       @default([])
+  mentions        String[]       @default([])
+
+  // Creatividad
+  creativeUrl     String?        // URL PNG/MP4 final renderizado
+  creativeBrief   String?        @db.Text  // brief para regenerar
+
+  // Vinculación con producto / campaña
+  productSlug     String?
+  campaign        Campaign?      @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  campaignId      String?
+
+  // Programación
+  scheduledAt     DateTime?
+  publishedAt     DateTime?
+  channelResponse Json?          // {externalId, externalUrl, postedAt}
+
+  // Tracking
+  utmContent      String?        // identificador único para atribución
+  metrics         ContentMetric[]
+
+  // Auditoría
+  createdBy       String?
+  approvedBy      String?
+  approvedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([status])
+  @@index([channel])
+  @@index([scheduledAt])
+  @@index([campaignId])
+}
+
+enum ContentType {
+  POST            // post estático (IG feed, FB, LinkedIn)
+  STORY           // 9:16 vertical (IG/FB stories)
+  REEL            // video corto vertical (IG Reels, TikTok, YT Shorts)
+  CARRUSEL        // carrusel multi-imagen
+  EMAIL           // pieza de email broadcast
+  AD              // creatividad de anuncio pagado
+  BLOG            // artículo SEO largo
+  LANDING         // landing page de campaña
+}
+
+enum ContentChannel {
+  IG              // Instagram
+  FB              // Facebook
+  LINKEDIN
+  X               // Twitter/X
+  TIKTOK
+  YOUTUBE
+  PINTEREST
+  EMAIL
+  WEB             // landing propia
+  GOOGLE_ADS
+  META_ADS
+  LINKEDIN_ADS
+}
+
+enum ContentStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  SCHEDULED
+  PUBLISHED
+  FAILED
+  ARCHIVED
+}
+
+model ContentMetric {
+  id            String       @id @default(cuid())
+  piece         ContentPiece @relation(fields: [pieceId], references: [id], onDelete: Cascade)
+  pieceId       String
+  day           DateTime     @db.Date
+  impressions   Int          @default(0)
+  reach         Int          @default(0)
+  engagements   Int          @default(0)
+  clicks        Int          @default(0)
+  conversions   Int          @default(0)
+  spendCents    Int          @default(0)
+  source        String       // "metricool", "meta", "google", "linkedin", "internal"
+  raw           Json?
+
+  @@unique([pieceId, day, source])
+  @@index([day])
+}
+
 /// Galería "Trabajos realizados" — fotos de pedidos reales con logo aplicado.
 /// Trust signal B2B fundamental (todomerch.com lo destaca con su propia
 /// página y un grid en home). Editable desde admin con orden manual y
