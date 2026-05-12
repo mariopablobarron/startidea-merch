@@ -1,0 +1,41 @@
+name: Deploy a producción (merchandising.hubstartidea.es)
+
+# Cada push a main dispara un deploy. La SSH key dedicada que vive en el
+# secret `VPS_SSH_KEY` solo puede ejecutar /root/deploy-startidea-merch.sh
+# del VPS — está restringida con command="..." en authorized_keys.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - '.gitignore'
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-startidea-merch
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: SSH + build + recreate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Deploy via OpenSSH directo
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519,rsa,ecdsa 72.61.195.108 2>/dev/null > ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/id_ed25519 \
+              -o ConnectTimeout=30 \
+              -o ServerAliveInterval=30 \
+              -o ServerAliveCountMax=10 \
+              -o BatchMode=yes \
+              root@72.61.195.108 \
+              ":"
