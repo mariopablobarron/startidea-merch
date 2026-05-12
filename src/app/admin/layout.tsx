@@ -75,6 +75,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   <Link href="/admin/coupons" className="text-ink/60 hover:text-accent">
                     Cupones
                   </Link>
+                  <Link
+                    href="/admin/integrations"
+                    className="text-ink/60 hover:text-accent"
+                    title="Conectar Metricool, Meta Ads, Google Ads, LinkedIn Ads"
+                  >
+                    Integraciones
+                  </Link>
                 </>
               )}
               {(session.role === "CEO" || session.role === "COMERCIAL") && (

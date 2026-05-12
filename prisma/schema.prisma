@@ -883,6 +883,29 @@ model PageSeo {
   updatedBy   String?
 }
 
+/// Configuración de integraciones externas (Metricool, Meta, Google, LinkedIn).
+/// Guardamos tokens y account IDs aquí en lugar de .env para que el admin
+/// pueda editarlos sin redeploy y rotarlos sin tocar infra. Solo CEO accede.
+model IntegrationConfig {
+  provider    IntegrationProvider @id  // un único registro por provider
+  enabled     Boolean             @default(false)
+  config      Json                // {apiKey, blogId, accounts: {IG: "123", LINKEDIN: "456"}}
+  lastTestAt  DateTime?           // último test de conexión
+  lastTestOk  Boolean?            // resultado test
+  lastError   String?             @db.Text
+  updatedAt   DateTime            @updatedAt
+  updatedBy   String?
+}
+
+enum IntegrationProvider {
+  METRICOOL
+  META_ADS
+  GOOGLE_ADS
+  LINKEDIN_ADS
+  RESEND        // ya usado para emails (placeholder por unificación)
+  STRIPE        // ya usado (placeholder)
+}
+
 /// Campaña de marketing — agrupa piezas de contenido + ads bajo un objetivo
 /// común. Una campaña típica: "Black Friday 2026 — 25% sobre textil",
 /// "Lanzamiento línea eco", "Captación RRHH". UTM auto único por campaña.
