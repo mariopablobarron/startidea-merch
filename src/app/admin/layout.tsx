@@ -150,6 +150,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     SEO
                   </Link>
                   <Link
+                    href="/admin/marketing/cotizador"
+                    className="text-ink/60 hover:text-accent"
+                    title="Configurar formulario de cotización"
+                  >
+                    Cotizador
+                  </Link>
+                  <Link
                     href="/admin/recomendador"
                     className="text-ink/60 hover:text-accent"
                     title="Consultas al recomendador IA"

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { autoresponseQuoteEmail, internalQuoteEmail, type QuoteEmailData } from "@/lib/email-templates";
 import { notifyAdmins } from "@/lib/notify-admin";
+import { getQuoteSettings } from "@/lib/quote-settings";
 
 export const runtime = "nodejs";
 
@@ -55,6 +56,8 @@ export async function POST(req: Request) {
     },
   });
 
+  const settings = await getQuoteSettings();
+
   if (resend) {
     const emailData: QuoteEmailData = {
       id: created.id,
@@ -70,22 +73,44 @@ export async function POST(req: Request) {
       source: data.source || null,
     };
 
+    // Destinatarios internos: settings.internalNotifyEmails sobreescribe el default
+    const internalTo =
+      settings.internalNotifyEmails.length > 0
+        ? settings.internalNotifyEmails
+        : [RESEND_TO_INTERNAL];
+
+    // Auto-reply: usar HTML custom si está; si no, plantilla por defecto
+    const autoReplyHtml = settings.autoReplyHtml
+      ? settings.autoReplyHtml
+          .replace(/\{name\}/g, data.name)
+          .replace(/\{firstName\}/g, data.name.split(" ")[0])
+          .replace(/\{hours\}/g, String(settings.responseHours))
+          .replace(/\{company\}/g, data.company || "")
+      : autoresponseQuoteEmail(emailData);
+
+    const autoReplySubject = settings.autoReplySubject || `${data.name.split(" ")[0]}, recibimos tu solicitud — respuesta en ${settings.responseHours}h`;
+
     try {
-      await Promise.all([
+      const sends = [
         resend.emails.send({
           from: RESEND_FROM,
-          to: RESEND_TO_INTERNAL,
+          to: internalTo,
           replyTo: data.email,
           subject: `[Cotización] ${data.name}${data.company ? " · " + data.company : ""}`,
           html: internalQuoteEmail(emailData),
         }),
-        resend.emails.send({
-          from: RESEND_FROM,
-          to: data.email,
-          subject: `${data.name.split(" ")[0]}, recibimos tu solicitud — respuesta en 24h`,
-          html: autoresponseQuoteEmail(emailData),
-        }),
-      ]);
+      ];
+      if (settings.autoReplyEnabled) {
+        sends.push(
+          resend.emails.send({
+            from: RESEND_FROM,
+            to: data.email,
+            subject: autoReplySubject,
+            html: autoReplyHtml,
+          }),
+        );
+      }
+      await Promise.all(sends);
     } catch (err) {
       console.error("[quote-request] resend error", err);
     }

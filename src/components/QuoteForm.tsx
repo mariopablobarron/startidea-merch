@@ -4,7 +4,27 @@ import { useEffect, useRef, useState } from "react";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-export function QuoteForm() {
+type Props = {
+  requireCompany?: boolean;
+  requirePhone?: boolean;
+  requireDeadline?: boolean;
+  showBudgetField?: boolean;
+  deadlineOptions?: string[];
+  responseHours?: number;
+  successTitle?: string;
+  successMessage?: string;
+};
+
+export function QuoteForm({
+  requireCompany = false,
+  requirePhone = false,
+  requireDeadline = false,
+  showBudgetField = true,
+  deadlineOptions = [],
+  responseHours = 24,
+  successTitle = "Recibido. Gracias.",
+  successMessage = "Te respondemos por email en menos de {hours} horas laborables con cotización cerrada.",
+}: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
   const productRef = useRef<HTMLInputElement>(null);
@@ -18,7 +38,6 @@ export function QuoteForm() {
       }
     }
     window.addEventListener("merch:prefill-product", onPrefill);
-    // also pick up sessionStorage (cross-page prefill desde fichas)
     try {
       const fromSession = sessionStorage.getItem("merch:prefill");
       if (fromSession && productRef.current) {
@@ -60,12 +79,11 @@ export function QuoteForm() {
   }
 
   if (status === "success") {
+    const msg = successMessage.replace("{hours}", String(responseHours));
     return (
       <div className="rounded-3xl border border-social/30 bg-social/10 p-10 text-center">
-        <h3 className="font-display text-2xl font-semibold text-ink">Recibido. Gracias.</h3>
-        <p className="mt-3 text-ink/70">
-          Tienes una respuesta con cotización en menos de 24 horas laborables.
-        </p>
+        <h3 className="font-display text-2xl font-semibold text-ink">{successTitle}</h3>
+        <p className="mt-3 text-ink/70">{msg}</p>
         <button
           type="button"
           onClick={() => setStatus("idle")}
@@ -81,9 +99,9 @@ export function QuoteForm() {
     <form onSubmit={onSubmit} className="grid gap-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <Field name="name" label="Nombre y apellidos" required />
-        <Field name="company" label="Empresa" />
+        <Field name="company" label="Empresa" required={requireCompany} />
         <Field name="email" label="Email" type="email" required />
-        <Field name="phone" label="Teléfono" type="tel" />
+        <Field name="phone" label="Teléfono" type="tel" required={requirePhone} />
       </div>
       <div className="grid gap-5 sm:grid-cols-3">
         <label className="grid min-w-0 gap-2">
@@ -97,9 +115,40 @@ export function QuoteForm() {
           />
         </label>
         <Field name="quantity" label="Cantidad estimada" type="number" placeholder="Ej. 250" />
-        <Field name="deadline" label="¿Para cuándo?" placeholder="Ej. 15 mayo" />
+        {deadlineOptions.length > 0 ? (
+          <label className="grid min-w-0 gap-2">
+            <span className="text-sm font-medium text-ink">
+              ¿Para cuándo?
+              {requireDeadline && <span className="text-accent"> *</span>}
+            </span>
+            <select
+              name="deadline"
+              required={requireDeadline}
+              defaultValue=""
+              className="block w-full min-w-0 rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
+            >
+              <option value="" disabled>
+                Selecciona plazo…
+              </option>
+              {deadlineOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <Field
+            name="deadline"
+            label="¿Para cuándo?"
+            placeholder="Ej. 15 mayo"
+            required={requireDeadline}
+          />
+        )}
       </div>
-      <Field name="budget" label="Presupuesto orientativo (opcional)" placeholder="Ej. 1.500 €" />
+      {showBudgetField && (
+        <Field name="budget" label="Presupuesto orientativo (opcional)" placeholder="Ej. 1.500 €" />
+      )}
 
       <label className="grid gap-2">
         <span className="text-sm font-medium text-ink">Cuéntanos el proyecto</span>

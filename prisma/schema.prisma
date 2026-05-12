@@ -883,6 +883,32 @@ model PageSeo {
   updatedBy   String?
 }
 
+/// Configuración del cotizador — singleton (un único registro id="default").
+/// Permite a admin editar textos, campos requeridos, plazos, métodos de
+/// pago aceptados y plantilla de respuesta sin tocar código.
+model QuoteSettings {
+  id                   String   @id @default("default")
+  heroTitle            String   @default("Cuéntanos qué necesitas.")
+  heroSubtitle         String   @default("Te respondemos en 24h.")
+  heroBullets          String[] @default([])
+  responseHours        Int      @default(24)
+  requireCompany       Boolean  @default(false)
+  requirePhone         Boolean  @default(false)
+  requireDeadline      Boolean  @default(false)
+  showBudgetField      Boolean  @default(true)
+  deadlineOptions      String[] @default([])
+  paymentMethods       String[] @default([])
+  successTitle         String   @default("Recibido. Ya estamos en ello.")
+  successMessage       String   @default("Te respondemos por email en menos de {hours} horas laborables con cotización cerrada.")
+  autoReplyEnabled     Boolean  @default(true)
+  autoReplySubject     String   @default("Recibimos tu solicitud · TodoMerchandising")
+  autoReplyHtml        String   @default("") @db.Text
+  internalNotifyEmails String[] @default([])
+  showOnHome           Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
+  updatedBy            String?
+}
+
 /// Lead Magnet — recurso descargable (PDF/guía/tool) que captura email
 /// del visitante a cambio de la descarga. Cierra funnel de tráfico frío
 /// del blog/SEO sin necesidad de Ads.
