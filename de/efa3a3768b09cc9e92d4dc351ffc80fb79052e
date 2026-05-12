@@ -1,0 +1,25 @@
+public/logo-mark.svg
+  s_65877aa637ec34::t_0c0f4ac9f66479 3-8,10-23
+public/logo-startidea.svg
+  s_65877aa637ec34::t_f31cad8928268d 1-34
+src/app/api/og/creative/route.tsx
+  s_65877aa637ec34::t_8e310799b71f70 112,114-116,119-121
+src/components/Footer.tsx
+  s_65877aa637ec34::t_387b9c9c7ff1f4 70-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "deefa3a3768b09cc9e92d4dc351ffc80fb79052e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
