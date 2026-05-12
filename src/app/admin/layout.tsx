@@ -136,6 +136,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     Blog
                   </Link>
                   <Link
+                    href="/admin/marketing/lead-magnets"
+                    className="text-ink/60 hover:text-accent"
+                    title="Lead magnets / PDFs descargables"
+                  >
+                    Recursos
+                  </Link>
+                  <Link
                     href="/admin/marketing/seo"
                     className="text-ink/60 hover:text-accent"
                     title="Editor SEO por página"

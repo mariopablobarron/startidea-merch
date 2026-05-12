@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/promociones`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/trabajos`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE}/recursos`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/recomendador`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sobre`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/ayuda`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
@@ -29,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const [products, categories, posts] = await Promise.all([
+    const [products, categories, posts, magnets] = await Promise.all([
       prisma.product.findMany({
         where: { active: true, NOT: { override: { is: { hidden: true } } } },
         select: { slug: true, syncedAt: true },
@@ -38,6 +39,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       prisma.category.findMany({ select: { slug: true } }),
       prisma.blogPost.findMany({
         where: { status: "PUBLISHED" },
+        select: { slug: true, updatedAt: true },
+      }),
+      prisma.leadMagnet.findMany({
+        where: { active: true },
         select: { slug: true, updatedAt: true },
       }),
     ]);
@@ -63,7 +68,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    return [...staticPages, ...productPages, ...categoryPages, ...blogPages];
+    const magnetPages: MetadataRoute.Sitemap = magnets.map((m) => ({
+      url: `${BASE}/recursos/${m.slug}`,
+      lastModified: m.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    }));
+
+    return [...staticPages, ...productPages, ...categoryPages, ...blogPages, ...magnetPages];
   } catch {
     return staticPages;
   }

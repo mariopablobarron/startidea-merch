@@ -883,6 +883,53 @@ model PageSeo {
   updatedBy   String?
 }
 
+/// Lead Magnet — recurso descargable (PDF/guía/tool) que captura email
+/// del visitante a cambio de la descarga. Cierra funnel de tráfico frío
+/// del blog/SEO sin necesidad de Ads.
+///
+/// El visitante introduce email + nombre + (opcional) empresa, se le envía
+/// link de descarga y se añade automáticamente a NewsletterSubscriber.
+model LeadMagnet {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  title         String
+  description   String?        @db.Text
+  fileUrl       String         // URL absoluta del PDF/recurso
+  heroUrl       String?        // imagen mock de portada
+  category      String?        // "guía", "plantilla", "checklist", "case-study"
+  tags          String[]       @default([])
+  active        Boolean        @default(true)
+  featured      Boolean        @default(false)
+  downloadCount Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  createdBy     String?
+  downloads     LeadDownload[]
+
+  @@index([active, featured])
+}
+
+/// Cada descarga es un evento separado con tracking UTM completo
+/// para atribución en /admin/analytics/attribution.
+model LeadDownload {
+  id           String     @id @default(cuid())
+  magnet       LeadMagnet @relation(fields: [magnetId], references: [id], onDelete: Cascade)
+  magnetId     String
+  email        String
+  name         String?
+  company      String?
+  source       String?    // utm_source
+  medium       String?    // utm_medium
+  campaign     String?    // utm_campaign
+  referer      String?
+  ipHash       String?    // hash IP para anti-spam, no PII real
+  downloadedAt DateTime   @default(now())
+
+  @@index([magnetId])
+  @@index([email])
+  @@index([downloadedAt])
+}
+
 /// Gasto de marketing por canal/mes — input manual o pull de APIs (Meta/Google/LinkedIn)
 /// para calcular ROAS = revenue (Payment.PAID por UTM) / spend.
 model MarketingSpend {
