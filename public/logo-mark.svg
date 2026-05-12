@@ -1,12 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Símbolo Startidea — "tres bucles entrelazados" según Manual de identidad v1.0.
-  Magenta corporativo #E63E73 sobre transparente.
-  Placeholder estilístico hasta que el equipo de diseño suba el archivo oficial.
+  Símbolo Startidea — dos bucles entrelazados (manuscritos)
+  Magenta corporativo #E63E73 (Manual de identidad v1.0, mayo 2026).
+
+  PENDIENTE: sustituir con el SVG oficial del equipo de diseño (cuando
+  esté en el drive). Este placeholder respeta paleta y proporción pero
+  no es trazo idéntico al manuscrito original.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Startidea">
-  <g fill="none" stroke="#E63E73" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M14 40 C14 26, 26 22, 28 34 C29 41, 22 42, 22 32 C22 22, 32 22, 32 34" />
-    <path d="M32 34 C32 22, 42 22, 42 32 C42 42, 35 41, 36 34 C38 22, 50 26, 50 40" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100" role="img" aria-label="Startidea">
+  <g fill="none" stroke="#E63E73" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Bucle izquierdo: óvalo ligeramente inclinado -->
+    <path d="M 30 80
+             C 5 70, 10 25, 35 15
+             C 60 5, 55 50, 35 55
+             C 22 58, 22 38, 38 38" />
+    <!-- Bucle derecho: óvalo simétrico -->
+    <path d="M 38 38
+             C 50 40, 60 75, 78 78
+             M 70 80
+             C 95 70, 110 25, 80 15
+             C 55 8, 65 55, 82 58
+             C 95 60, 92 40, 80 38" />
   </g>
 </svg>

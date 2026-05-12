@@ -109,16 +109,16 @@ export async function GET(req: NextRequest) {
             color: fg,
           }}
         >
-          {/* Símbolo Startidea (bucles) — abstract */}
+          {/* Símbolo Startidea — dos bucles entrelazados (Manual v1.0) */}
           <svg
-            width={wordmarkSize + 8}
-            height={wordmarkSize + 8}
-            viewBox="0 0 64 64"
+            width={wordmarkSize + 12}
+            height={(wordmarkSize + 12) * 0.85}
+            viewBox="0 0 120 100"
             style={{ flexShrink: 0 }}
           >
-            <g fill="none" stroke={accent} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 40 C14 26, 26 22, 28 34 C29 41, 22 42, 22 32 C22 22, 32 22, 32 34" />
-              <path d="M32 34 C32 22, 42 22, 42 32 C42 42, 35 41, 36 34 C38 22, 50 26, 50 40" />
+            <g fill="none" stroke={accent} strokeWidth={11} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M 30 80 C 5 70, 10 25, 35 15 C 60 5, 55 50, 35 55 C 22 58, 22 38, 38 38" />
+              <path d="M 38 38 C 50 40, 60 75, 78 78 M 70 80 C 95 70, 110 25, 80 15 C 55 8, 65 55, 82 58 C 95 60, 92 40, 80 38" />
             </g>
           </svg>
           <span>

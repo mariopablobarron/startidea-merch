@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logo Startidea completo: símbolo + wordmark "start[magenta]idea[grafito]"
+  Según Manual de identidad v1.0 (mayo 2026).
+  Tipografía wordmark: Montserrat Alternates 800 (extra bold), lowercase.
+  Colores: magenta #E63E73 (start), grafito #2A2A2A (idea).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 230" role="img" aria-label="Startidea">
+  <!-- Símbolo arriba -->
+  <g transform="translate(40 10)" stroke="#E63E73" stroke-width="13" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 30 80
+             C 5 70, 10 25, 35 15
+             C 60 5, 55 50, 35 55
+             C 22 58, 22 38, 38 38" />
+    <path d="M 38 38
+             C 50 40, 60 75, 78 78
+             M 70 80
+             C 95 70, 110 25, 80 15
+             C 55 8, 65 55, 82 58
+             C 95 60, 92 40, 80 38" />
+  </g>
+  <!-- Wordmark startidea -->
+  <text
+    x="100"
+    y="190"
+    text-anchor="middle"
+    font-family="Montserrat Alternates, Montserrat, system-ui, sans-serif"
+    font-weight="800"
+    font-size="56"
+    letter-spacing="-1"
+  >
+    <tspan fill="#E63E73">start</tspan><tspan fill="#2A2A2A">idea</tspan>
+  </text>
+</svg>
