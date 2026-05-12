@@ -253,7 +253,7 @@ export default async function CustomerPortalPage() {
                 Volver al catálogo
               </Link>
               <a
-                href={`mailto:hola@merchandising.startidea.es?subject=Soporte%20cliente`}
+                href={`mailto:pedidos@startidea.es?subject=Soporte%20cliente`}
                 className="rounded-full border border-line bg-bone-soft px-5 py-2.5 text-sm font-medium hover:border-accent"
               >
                 Contactar soporte

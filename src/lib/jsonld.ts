@@ -17,7 +17,7 @@ export const ORGANIZATION_JSONLD = {
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "sales",
-    email: "hola@merchandising.startidea.es",
+    email: "pedidos@startidea.es",
     availableLanguage: ["Spanish"],
     areaServed: "ES",
   },

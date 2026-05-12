@@ -68,8 +68,8 @@ export default function PartnersPage() {
               <h2 className="font-display text-2xl font-semibold text-ink">Quiero apuntarme</h2>
               <p className="mt-3 text-[15px] text-ink/75">
                 Escríbenos a{" "}
-                <a href="mailto:hola@merchandising.startidea.es?subject=Programa%20de%20partners" className="text-accent underline-offset-4 hover:underline">
-                  hola@merchandising.startidea.es
+                <a href="mailto:pedidos@startidea.es?subject=Programa%20de%20partners" className="text-accent underline-offset-4 hover:underline">
+                  pedidos@startidea.es
                 </a>{" "}
                 con tu nombre, perfil profesional y tipo de clientes que llevas. En 48 h te damos
                 de alta o te decimos honestamente si no encaja.

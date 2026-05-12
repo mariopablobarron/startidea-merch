@@ -12,7 +12,7 @@ import webpush from "web-push";
 
 const PUBLIC = process.env.VAPID_PUBLIC_KEY;
 const PRIVATE = process.env.VAPID_PRIVATE_KEY;
-const SUBJECT = process.env.VAPID_SUBJECT || "mailto:hola@merchandising.startidea.es";
+const SUBJECT = process.env.VAPID_SUBJECT || "mailto:pedidos@startidea.es";
 
 let configured = false;
 function ensureConfigured() {

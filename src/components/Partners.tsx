@@ -83,10 +83,10 @@ export function Partners() {
           Red en crecimiento. Si representas un CEE, taller local o cooperativa de inserción
           y quieres colaborar, escríbenos a{" "}
           <a
-            href="mailto:hola@merchandising.startidea.es"
+            href="mailto:pedidos@startidea.es"
             className="font-medium text-accent underline-offset-4 hover:underline"
           >
-            hola@merchandising.startidea.es
+            pedidos@startidea.es
           </a>
           .
         </p>

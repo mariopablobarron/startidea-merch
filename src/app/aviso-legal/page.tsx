@@ -23,7 +23,7 @@ export default function AvisoLegalPage() {
         <li><strong>Domicilio:</strong> C/ Conde Cifuentes, 33 — 18005 Granada, España</li>
         <li><strong>Teléfono:</strong> +34 958 045 789</li>
         <li><strong>Email general:</strong> <a href="mailto:info@startidea.es">info@startidea.es</a></li>
-        <li><strong>Email comercial todomerchandising:</strong> <a href="mailto:hola@merchandising.startidea.es">hola@merchandising.startidea.es</a></li>
+        <li><strong>Email comercial todomerchandising:</strong> <a href="mailto:pedidos@startidea.es">pedidos@startidea.es</a></li>
         <li><strong>Sitio web:</strong> https://merchandising.hubstartidea.es</li>
       </ul>
 

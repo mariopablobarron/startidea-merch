@@ -109,7 +109,7 @@ export default function SobrePage() {
                 Pedir cotización
               </Link>
               <a
-                href="mailto:hola@merchandising.startidea.es"
+                href="mailto:pedidos@startidea.es"
                 className="rounded-full border border-bone/20 px-8 py-4 text-base font-medium text-bone transition hover:border-bone/60"
               >
                 Hablar con nosotros

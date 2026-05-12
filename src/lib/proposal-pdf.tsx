@@ -264,7 +264,7 @@ export async function renderProposalPdf(cart: CartWithItems): Promise<Buffer> {
               <Text style={styles.value}>C/ Conde Cifuentes, 33</Text>
               <Text style={styles.value}>18005 Granada · España</Text>
               <Text style={[styles.value, { color: C.inkMute, marginTop: 6 }]}>
-                hola@merchandising.startidea.es
+                pedidos@startidea.es
               </Text>
               <Text style={[styles.value, { color: C.inkMute }]}>+34 958 045 789</Text>
             </View>
@@ -373,7 +373,7 @@ export async function renderProposalPdf(cart: CartWithItems): Promise<Buffer> {
 
           <Text style={[styles.footerText, { marginTop: 14, color: C.inkMute, fontSize: 7.5 }]}>
             STARTIDEA MALAGA SL · CIF B19583632 · C/ Conde Cifuentes 33, 18005 Granada · España{"\n"}
-            hola@merchandising.startidea.es · +34 958 045 789{"\n"}
+            pedidos@startidea.es · +34 958 045 789{"\n"}
             Inscrita en el Registro Mercantil de Granada · Datos de protección: ver Política de
             Privacidad en https://merchandising.hubstartidea.es/privacidad
           </Text>

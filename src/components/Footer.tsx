@@ -98,8 +98,8 @@ export function Footer() {
             </div>
           </div>
           <FooterCol title="Contacto">
-            <a href="mailto:hola@merchandising.startidea.es" className="hover:text-accent">
-              hola@merchandising.startidea.es
+            <a href="mailto:pedidos@startidea.es" className="hover:text-accent">
+              pedidos@startidea.es
             </a>
             <a href="tel:+34958045789" className="hover:text-accent">
               +34 958 045 789

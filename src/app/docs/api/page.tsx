@@ -36,8 +36,8 @@ export default function ApiDocsPage() {
             </p>
             <p className="mt-3 text-sm text-ink/60">
               Para conseguir tu API key, escribe a{" "}
-              <a href="mailto:hola@merchandising.startidea.es" className="text-accent underline-offset-4 hover:underline">
-                hola@merchandising.startidea.es
+              <a href="mailto:pedidos@startidea.es" className="text-accent underline-offset-4 hover:underline">
+                pedidos@startidea.es
               </a>{" "}
               indicando empresa y caso de uso.
             </p>
@@ -206,7 +206,7 @@ export default function ApiDocsPage() {
                 PDF de propuesta vía API, integración con tu ERP. Todo se puede.
               </p>
               <Link
-                href="mailto:hola@merchandising.startidea.es?subject=Integraci%C3%B3n%20API%20enterprise"
+                href="mailto:pedidos@startidea.es?subject=Integraci%C3%B3n%20API%20enterprise"
                 className="mt-5 inline-flex rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-bone hover:bg-accent"
               >
                 Hablamos →

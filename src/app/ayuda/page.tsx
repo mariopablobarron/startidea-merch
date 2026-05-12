@@ -61,7 +61,7 @@ const SECTIONS = [
       },
       {
         q: "¿En qué formato necesitáis mi logo?",
-        a: "Idealmente vectorial: SVG, PDF, AI o EPS con tipografía convertida a curvas. Si solo tienes JPG o PNG, lo vectorizamos sin coste para encargos a partir de 100 unidades. Los archivos los puedes adjuntar en el formulario o enviarlos por email a hola@merchandising.startidea.es.",
+        a: "Idealmente vectorial: SVG, PDF, AI o EPS con tipografía convertida a curvas. Si solo tienes JPG o PNG, lo vectorizamos sin coste para encargos a partir de 100 unidades. Los archivos los puedes adjuntar en el formulario o enviarlos por email a pedidos@startidea.es.",
       },
       {
         q: "¿Puedo ver el mockup antes de producir?",
@@ -150,8 +150,8 @@ export default function AyudaPage() {
             </h1>
             <p className="mt-4 max-w-3xl text-lg text-ink/70">
               Si no encuentras lo que buscas, escríbenos a{" "}
-              <a href="mailto:hola@merchandising.startidea.es" className="font-medium text-accent underline-offset-4 hover:underline">
-                hola@merchandising.startidea.es
+              <a href="mailto:pedidos@startidea.es" className="font-medium text-accent underline-offset-4 hover:underline">
+                pedidos@startidea.es
               </a>{" "}
               o pide cotización con tu brief — lo leemos y te respondemos en 24 horas.
             </p>

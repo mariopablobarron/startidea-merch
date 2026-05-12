@@ -147,7 +147,7 @@ export default async function CustomerDashboardPage({
                 Volver al catálogo
               </Link>
               <a
-                href={`mailto:hola@merchandising.startidea.es?subject=Certificado%20RSC%20${encodeURIComponent(seed.company || seed.name)}`}
+                href={`mailto:pedidos@startidea.es?subject=Certificado%20RSC%20${encodeURIComponent(seed.company || seed.name)}`}
                 className="rounded-full border border-line bg-bone-soft px-5 py-2.5 text-sm font-medium hover:border-accent"
               >
                 Pedir certificado RSC
