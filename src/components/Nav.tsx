@@ -17,6 +17,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/promociones", label: "Promos", badge: "★" },
   { href: "/recomendador", label: "Recomendador IA" },
   { href: "/trabajos", label: "Trabajos" },
+  { href: "/blog", label: "Blog" },
   { href: "/#impacto", label: "Impacto" },
   { href: "/sobre", label: "Sobre" },
   { href: "/ayuda", label: "Ayuda" },

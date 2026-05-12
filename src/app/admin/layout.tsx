@@ -129,6 +129,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     Emails
                   </Link>
                   <Link
+                    href="/admin/marketing/blog"
+                    className="text-ink/60 hover:text-accent"
+                    title="Blog SEO long-form"
+                  >
+                    Blog
+                  </Link>
+                  <Link
                     href="/admin/marketing/seo"
                     className="text-ink/60 hover:text-accent"
                     title="Editor SEO por página"

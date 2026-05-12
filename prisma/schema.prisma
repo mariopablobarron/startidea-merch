@@ -883,6 +883,48 @@ model PageSeo {
   updatedBy   String?
 }
 
+/// Post de blog SEO — generado por IA o redactado manualmente.
+/// Long-form (1500-2500 palabras) con schema.org Article + FAQPage.
+/// Tracking de posiciones con Google Search Console (futuro).
+model BlogPost {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  title         String
+  excerpt       String?   @db.Text
+  bodyMd        String    @db.Text     // Markdown source
+  heroUrl       String?
+  metaTitle     String?
+  metaDescription String? @db.Text
+  keywordTarget String?                  // keyword principal SEO
+  intent        BlogIntent @default(INFORMATIONAL)
+  schemaJson    Json?                    // schema.org adicional (FAQPage, HowTo…)
+  tags          String[]  @default([])
+  status        BlogPostStatus @default(DRAFT)
+  publishedAt   DateTime?
+  metrics       Json?                    // GSC clicks/impressions/avgPosition
+  author        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  createdBy     String?
+
+  @@index([status, publishedAt])
+  @@index([slug])
+}
+
+enum BlogIntent {
+  INFORMATIONAL  // "qué es", "cómo elegir", "guía"
+  TRANSACTIONAL  // "comprar", "precios", "proveedor"
+  NAVIGATIONAL   // "TodoMerchandising opiniones"
+  COMMERCIAL     // "mejor merchandising", "comparativa"
+}
+
+enum BlogPostStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
 /// Configuración de integraciones externas (Metricool, Meta, Google, LinkedIn).
 /// Guardamos tokens y account IDs aquí en lugar de .env para que el admin
 /// pueda editarlos sin redeploy y rotarlos sin tocar infra. Solo CEO accede.

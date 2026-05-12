@@ -1,14 +1,70 @@
 import type { MetadataRoute } from "next";
+import { prisma } from "@/lib/prisma";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+/**
+ * Sitemap dinámico:
+ *   - Páginas estáticas core
+ *   - Productos activos no-hidden (slug)
+ *   - Categorías
+ *   - Blog posts publicados
+ *
+ * Si la BD está caída en build, devuelve solo las estáticas (degradación).
+ */
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  return [
+  const staticPages: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${BASE}/sobre`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/catalogo`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE}/promociones`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE}/trabajos`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${BASE}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE}/recomendador`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/sobre`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/ayuda`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/aviso-legal`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE}/privacidad`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE}/cookies`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
+
+  try {
+    const [products, categories, posts] = await Promise.all([
+      prisma.product.findMany({
+        where: { active: true, NOT: { override: { is: { hidden: true } } } },
+        select: { slug: true, syncedAt: true },
+        take: 3000,
+      }),
+      prisma.category.findMany({ select: { slug: true } }),
+      prisma.blogPost.findMany({
+        where: { status: "PUBLISHED" },
+        select: { slug: true, updatedAt: true },
+      }),
+    ]);
+
+    const productPages: MetadataRoute.Sitemap = products.map((p) => ({
+      url: `${BASE}/catalogo/${p.slug}`,
+      lastModified: p.syncedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
+    const categoryPages: MetadataRoute.Sitemap = categories.map((c) => ({
+      url: `${BASE}/catalogo?cat=${c.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
+    const blogPages: MetadataRoute.Sitemap = posts.map((p) => ({
+      url: `${BASE}/blog/${p.slug}`,
+      lastModified: p.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    }));
+
+    return [...staticPages, ...productPages, ...categoryPages, ...blogPages];
+  } catch {
+    return staticPages;
+  }
 }
