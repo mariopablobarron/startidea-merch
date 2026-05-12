@@ -1,0 +1,32 @@
+src/app/api/cron/publish-scheduled/route.ts
+  s_65877aa637ec34::t_1fbf8692a92ea3 1-140
+src/app/admin/integrations/metricool/page.tsx
+  s_65877aa637ec34::t_c452683da16627 1-314
+prisma/schema.prisma
+  s_65877aa637ec34::t_78dcb75926577d 886-908
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_5f692b2cb7f95a 78-84
+src/app/admin/integrations/page.tsx
+  s_65877aa637ec34::t_e1a66e73f1a384 1-214
+src/lib/metricool.ts
+  s_65877aa637ec34::t_dc33d9e7fb211a 1-214
+src/app/api/admin/integrations/[provider]/route.ts
+  s_65877aa637ec34::t_d22fad5b1de826 1-71,73-133
+  s_65877aa637ec34::t_da138bdacc6926 72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "9128919960bc1502bea63f185a3b5b44caadbc79",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
