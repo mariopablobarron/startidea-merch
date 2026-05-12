@@ -1,0 +1,43 @@
+src/app/admin/marketing/blog/page.tsx
+  s_65877aa637ec34::t_a0ce3421866509 1-397
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_66c6f1ba55c0e1 132-137
+src/components/Nav.tsx
+  s_65877aa637ec34::t_3e6723822c2a95 20
+src/lib/blog-generator.ts
+  s_65877aa637ec34::t_c45e940207e8b2 1-263
+src/app/api/admin/blog/route.ts
+  s_65877aa637ec34::t_4c4ac1a26233dd 1-121
+prisma/schema.prisma
+  s_65877aa637ec34::t_23d9cd3cae432d 886-927
+src/app/blog/[slug]/page.tsx
+  s_65877aa637ec34::t_70905f10724c6b 1-60,63-77,79-167
+  s_65877aa637ec34::t_09d345706cab91 61-62
+  s_65877aa637ec34::t_0be40c751da890 78
+src/app/admin/marketing/blog/[id]/page.tsx
+  s_65877aa637ec34::t_1f98bc80b49fa7 1-379
+src/app/blog/page.tsx
+  s_65877aa637ec34::t_0fe86f5ae04111 1-121
+src/app/api/admin/blog/generate/route.ts
+  s_65877aa637ec34::t_af169839d1a38a 1-78
+src/app/sitemap.ts
+  s_65877aa637ec34::t_e9a4b50572c505 2,4,6-15,17,19-25,30-69
+src/app/api/admin/blog/[id]/route.ts
+  s_65877aa637ec34::t_c735b2b603b708 1-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "515e3b7c002a54d17c40d2ca3ff7c1df0d50a21a",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
