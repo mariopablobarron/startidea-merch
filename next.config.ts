@@ -21,6 +21,13 @@ const config: NextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: "4mb" },
   },
+  async redirects() {
+    return [
+      // Alias legacy → ruta canónica española
+      { source: "/cart", destination: "/carrito", permanent: true },
+      { source: "/cart/:path*", destination: "/carrito/:path*", permanent: true },
+    ];
+  },
 };
 
 export default config;

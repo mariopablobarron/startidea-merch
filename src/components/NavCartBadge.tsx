@@ -50,7 +50,7 @@ export function NavCartBadge() {
   if (!mounted) {
     return (
       <Link
-        href="/cart"
+        href="/carrito"
         className="inline-flex items-center gap-1.5 rounded-full border border-line bg-bone-soft px-3 py-1.5 text-xs text-ink/60"
         aria-label="Cesta de cotización"
       >
@@ -62,7 +62,7 @@ export function NavCartBadge() {
   const empty = count === 0;
   return (
     <Link
-      href="/cart"
+      href="/carrito"
       className={`relative inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
         empty
           ? "border border-line bg-bone-soft text-ink/60 hover:border-accent"
