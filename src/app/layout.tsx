@@ -25,7 +25,7 @@ const montserratAlt = Montserrat_Alternates({
   display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

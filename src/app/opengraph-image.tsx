@@ -113,7 +113,7 @@ export default async function OG() {
             }}
           >
             <span>Una iniciativa de Startidea</span>
-            <span>merchandising.startidea.es</span>
+            <span>merchandising.hubstartidea.es</span>
           </div>
         </div>
       </div>

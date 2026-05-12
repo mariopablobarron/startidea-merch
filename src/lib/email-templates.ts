@@ -44,7 +44,7 @@ ${preheader ? `<div style="display:none;font-size:1px;line-height:1px;max-height
       </td></tr>
       ${content}
       <tr><td style="padding:24px 40px 32px;border-top:1px solid #0a0a0b0d;font-size:12px;color:#0a0a0b80">
-        Una iniciativa de Startidea · merchandising.startidea.es
+        Una iniciativa de Startidea · merchandising.hubstartidea.es
       </td></tr>
     </table>
   </td></tr>
@@ -134,7 +134,7 @@ export function autoresponseQuoteEmail(d: QuoteEmailData) {
         <table role="presentation" cellpadding="0" cellspacing="0">
           <tr>
             <td style="background:${COLORS.ink};border-radius:9999px">
-              <a href="https://merchandising.startidea.es" style="display:inline-block;padding:14px 28px;color:${COLORS.bone};text-decoration:none;font-weight:500;font-size:14px">Visitar la web</a>
+              <a href="https://merchandising.hubstartidea.es" style="display:inline-block;padding:14px 28px;color:${COLORS.bone};text-decoration:none;font-weight:500;font-size:14px">Visitar la web</a>
             </td>
           </tr>
         </table>
