@@ -1,0 +1,43 @@
+src/components/Nav.tsx
+  s_65877aa637ec34::t_a6aef963ea1a1a 21
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_59e27697b55876 139-144
+src/app/recursos/[slug]/page.tsx
+  s_65877aa637ec34::t_8fe91beb610fed 1-120
+src/app/api/lead-magnets/[slug]/download/route.ts
+  s_65877aa637ec34::t_20ce1567e3c7ee 1-128
+src/app/recursos/page.tsx
+  s_65877aa637ec34::t_3f5d6583366748 1-112
+prisma/schema.prisma
+  s_65877aa637ec34::t_b9473003333270 886-932
+src/app/api/admin/lead-magnets/route.ts
+  s_65877aa637ec34::t_178b90f5b7cb8c 1-79
+src/app/sitemap.ts
+  s_65877aa637ec34::t_ba9273be2d0418 33,44-45
+  s_65877aa637ec34::t_4918d9fc607538 23
+  s_65877aa637ec34::t_eae1d15c65c1f3 71-78
+src/app/api/admin/lead-magnets/[id]/route.ts
+  s_65877aa637ec34::t_0899365e16e5ec 1-58
+src/components/LeadMagnetForm.tsx
+  s_65877aa637ec34::t_0f636bed34953d 1-176
+src/app/admin/marketing/lead-magnets/[id]/page.tsx
+  s_65877aa637ec34::t_202a4d82e087e4 1-271
+src/app/admin/marketing/lead-magnets/page.tsx
+  s_65877aa637ec34::t_b71fbe9c314e24 1-373
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "74816d1fcb1446e49f0bff91ec81ea7e22cbac4b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
