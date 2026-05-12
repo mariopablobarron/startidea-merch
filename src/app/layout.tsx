@@ -9,6 +9,7 @@ import { PWARegister } from "@/components/PWARegister";
 // en navbar. El antiguo tour interrumpía en móvil y se eliminó por UX.
 import { Tour } from "@/components/Tour";
 import { Analytics } from "@/components/Analytics";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 
 // Tipografía oficial Manual de identidad Startidea v1.0
 // Montserrat para todo el sistema · Alternates solo display (h1, citas).
@@ -66,6 +67,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           data-website-id="530b17d7-0550-4d76-8264-13078706b507"
           strategy="afterInteractive"
         />
+        {/* GA4 + Search Console — opcional, se activa con env vars */}
+        <GoogleAnalytics />
       </head>
       <body>
         {children}
