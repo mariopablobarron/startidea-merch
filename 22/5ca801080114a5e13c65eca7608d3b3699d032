@@ -1,0 +1,39 @@
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_88a2c8f6d48fb5 90-95
+src/app/admin/marketing/content/page.tsx
+  s_65877aa637ec34::t_66eb81a6d9aea3 1-273
+src/app/admin/marketing/content/[id]/page.tsx
+  s_65877aa637ec34::t_42cc34160f130a 1-613
+src/app/api/admin/content/[id]/route.ts
+  s_65877aa637ec34::t_11d54c6c22a294 1-93
+src/app/api/admin/content/[id]/approve/route.ts
+  s_65877aa637ec34::t_f42e7d3efd8b11 1-49
+prisma/schema.prisma
+  s_65877aa637ec34::t_7ba77cdd7f64e1 886-1026
+src/lib/content-generator.ts
+  s_65877aa637ec34::t_dabff1c943edde 1-224
+src/app/api/admin/content/route.ts
+  s_65877aa637ec34::t_886189b3db086a 1-130
+src/app/admin/marketing/calendar/page.tsx
+  s_65877aa637ec34::t_29debed4eed449 1-197
+src/app/api/admin/content/generate/route.ts
+  s_65877aa637ec34::t_7d0b98c667413f 1-58
+src/app/api/admin/campaigns/route.ts
+  s_65877aa637ec34::t_6d42ba4302b08c 1-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "225ca801080114a5e13c65eca7608d3b3699d032",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
