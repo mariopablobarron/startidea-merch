@@ -2,9 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Tipografía oficial Manual Startidea v1.0
+  Las CSS vars vienen de next/font (Montserrat + Alternates) seteadas en
+  <html className> en layout.tsx. Aquí solo definimos fallbacks.
+*/
 :root {
-  --font-display: "General Sans", "Söhne", system-ui, sans-serif;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "Montserrat", system-ui, sans-serif;
+  --font-display: "Montserrat Alternates", "Montserrat", system-ui, sans-serif;
 }
 
 html {

@@ -51,9 +51,17 @@ export function Nav() {
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2.5 font-display text-lg font-semibold tracking-tight text-ink sm:text-xl"
+          aria-label="TodoMerchandising — Inicio"
         >
-          <Image src="/logo-mark.svg" alt="" width={28} height={28} className="rounded-md" />
-          <span>
+          <Image
+            src="/logo-mark.svg"
+            alt=""
+            width={32}
+            height={32}
+            priority
+            className="h-7 w-7 sm:h-8 sm:w-8"
+          />
+          <span className="lowercase">
             todo<span className="text-accent">merchandising</span>
           </span>
         </Link>

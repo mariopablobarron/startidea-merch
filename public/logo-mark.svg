@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="14" fill="#0B0B0F"/>
-  <path d="M14 34 L26 22 L38 34 L26 46 Z" fill="#FF5A1F"/>
-  <circle cx="44" cy="22" r="6" fill="#F5F1EA"/>
+<!--
+  Símbolo Startidea — "tres bucles entrelazados" según Manual de identidad v1.0.
+  Magenta corporativo #E63E73 sobre transparente.
+  Placeholder estilístico hasta que el equipo de diseño suba el archivo oficial.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Startidea">
+  <g fill="none" stroke="#E63E73" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 40 C14 26, 26 22, 28 34 C29 41, 22 42, 22 32 C22 22, 32 22, 32 34" />
+    <path d="M32 34 C32 22, 42 22, 42 32 C42 42, 35 41, 36 34 C38 22, 50 26, 50 40" />
+  </g>
 </svg>

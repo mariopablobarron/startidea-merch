@@ -50,8 +50,17 @@ export function Footer() {
               todo<span className="text-accent">merchandising</span>
             </p>
             <p className="mt-4 max-w-sm text-sm text-bone/60">
-              Una iniciativa de Startidea. Merchandising corporativo personalizado con
-              impacto social real.
+              Una iniciativa de{" "}
+              <a
+                href="https://startidea.es"
+                target="_blank"
+                rel="noopener"
+                className="underline-offset-2 hover:underline"
+              >
+                Startidea
+              </a>
+              , consultora de marketing y comunicación con sede en Granada. Damos forma
+              a ideas que ya estaban ahí, esperando ser contadas.
             </p>
             <p className="mt-3 text-xs text-bone/40">
               STARTIDEA MALAGA SL · CIF B19583632
