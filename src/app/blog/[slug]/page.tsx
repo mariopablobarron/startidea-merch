@@ -11,7 +11,8 @@ import { mdToHtml, buildBlogSchema } from "@/lib/blog-generator";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
-export const revalidate = 3600;
+// force-dynamic para evitar pre-render en build sin DATABASE_URL.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

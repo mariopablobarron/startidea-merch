@@ -18,24 +18,33 @@ export async function generateMetadata(): Promise<Metadata> {
   return mergeMetadata(BASE_METADATA, seo);
 }
 
-export const revalidate = 600; // 10 min
+// Build no tiene DATABASE_URL — runtime sí. force-dynamic + try/catch.
+export const dynamic = "force-dynamic";
+
+async function loadPosts() {
+  try {
+    return await prisma.blogPost.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { publishedAt: "desc" },
+      take: 30,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        excerpt: true,
+        heroUrl: true,
+        tags: true,
+        publishedAt: true,
+        author: true,
+      },
+    });
+  } catch {
+    return [];
+  }
+}
 
 export default async function BlogIndexPage() {
-  const posts = await prisma.blogPost.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { publishedAt: "desc" },
-    take: 30,
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      excerpt: true,
-      heroUrl: true,
-      tags: true,
-      publishedAt: true,
-      author: true,
-    },
-  });
+  const posts = await loadPosts();
 
   return (
     <>
