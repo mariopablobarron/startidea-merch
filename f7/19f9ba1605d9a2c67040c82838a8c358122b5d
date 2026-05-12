@@ -1,0 +1,30 @@
+src/lib/tour-steps.ts
+  s_65877aa637ec34::t_333a93d05c0930 1-101
+src/app/layout.tsx
+  s_65877aa637ec34::t_3a1c695113b5d5 8-9
+  s_65877aa637ec34::t_86fa2942fa7d12 10
+  s_65877aa637ec34::t_e371182e36edf0 74
+src/components/TourLauncher.tsx
+  s_65877aa637ec34::t_89edcba3af62ed 1-81
+src/components/Nav.tsx
+  s_65877aa637ec34::t_37f2b228cd8fd4 71,81-91,104,106-109,112
+  s_65877aa637ec34::t_f983cf8c46ade4 11
+src/components/Tour.tsx
+  s_65877aa637ec34::t_0c6d66b671fe09 1-313
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "f719f9ba1605d9a2c67040c82838a8c358122b5d",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
