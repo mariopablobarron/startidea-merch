@@ -82,6 +82,12 @@ export default function AdminAnalyticsPage() {
               >
                 Negocio
               </Link>
+              <Link
+                href="/admin/analytics/attribution"
+                className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent"
+              >
+                Atribución
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">

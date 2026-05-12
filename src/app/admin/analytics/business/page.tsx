@@ -106,6 +106,12 @@ export default function BusinessAnalyticsPage() {
             <span className="rounded-full bg-accent px-3 py-1.5 font-semibold text-bone">
               Negocio
             </span>
+            <Link
+              href="/admin/analytics/attribution"
+              className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent"
+            >
+              Atribución
+            </Link>
           </nav>
         </header>
 

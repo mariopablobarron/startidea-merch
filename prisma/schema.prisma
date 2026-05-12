@@ -883,6 +883,37 @@ model PageSeo {
   updatedBy   String?
 }
 
+/// Gasto de marketing por canal/mes — input manual o pull de APIs (Meta/Google/LinkedIn)
+/// para calcular ROAS = revenue (Payment.PAID por UTM) / spend.
+model MarketingSpend {
+  id          String   @id @default(cuid())
+  // Periodo (siempre primer día del mes para agregación mensual)
+  month       DateTime @db.Date
+  // Fuente del tráfico (utm_source). Ej: google, meta, linkedin, organic, direct
+  source      String
+  // Medio (utm_medium). Ej: cpc, social, email, organic, referral
+  medium      String
+  // Campaña (utm_campaign). Ej: black-friday-2026, retargeting-warm
+  campaign    String?
+  // Coste en céntimos EUR
+  spendCents  Int
+  // Métricas agregadas opcionales (impressions, clicks, conversions)
+  impressions Int?
+  clicks      Int?
+  conversions Int?
+  // Notas opcionales del admin
+  notes       String?  @db.Text
+  // Origen del registro (manual, meta_api, google_api, linkedin_api, metricool)
+  origin      String   @default("manual")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+
+  @@unique([month, source, medium, campaign])
+  @@index([month])
+  @@index([source])
+}
+
 /// Post de blog SEO — generado por IA o redactado manualmente.
 /// Long-form (1500-2500 palabras) con schema.org Article + FAQPage.
 /// Tracking de posiciones con Google Search Console (futuro).
