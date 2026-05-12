@@ -1,0 +1,24 @@
+src/components/GoogleAnalytics.tsx
+  s_65877aa637ec34::t_2bfa0db0ae5dd6 1-45
+src/app/layout.tsx
+  s_65877aa637ec34::t_ec45b5136fb8cb 70-71
+  s_65877aa637ec34::t_6b77ec4b106af1 12
+.env.example
+  s_65877aa637ec34::t_a7fad41789b153 11-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "b9b587fdfa9c3f6a2bc06694468034ea1f106216",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
