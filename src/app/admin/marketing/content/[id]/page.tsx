@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use, useCallback } from "react";
 import Link from "next/link";
+import { CreativeGenerator } from "@/components/CreativeGenerator";
 
 type Status = "DRAFT" | "REVIEW" | "APPROVED" | "SCHEDULED" | "PUBLISHED" | "FAILED" | "ARCHIVED";
 type Channel =
@@ -455,7 +456,10 @@ export default function ContentEditorPage({
                 />
               </Field>
 
-              <Field label="URL creatividad (PNG/MP4)">
+              <Field
+                label="URL creatividad (PNG/MP4)"
+                help="O genera una abajo con plantillas Startidea"
+              >
                 <input
                   type="text"
                   value={creativeUrl}
@@ -465,6 +469,17 @@ export default function ContentEditorPage({
                   className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-xs outline-none focus:border-accent disabled:opacity-50"
                 />
               </Field>
+
+              {!locked && (
+                <CreativeGenerator
+                  pieceId={id}
+                  initialTitle={title || copy.split("\n")[0]?.slice(0, 80)}
+                  onApplied={(url) => {
+                    setCreativeUrl(url);
+                    load();
+                  }}
+                />
+              )}
 
               <Field label="Producto vinculado (slug)" help="Para atribución y carrusel /trabajos">
                 <input

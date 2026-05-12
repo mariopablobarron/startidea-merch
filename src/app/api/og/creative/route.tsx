@@ -1,0 +1,208 @@
+/* eslint-disable @next/next/no-img-element */
+import { ImageResponse } from "next/og";
+import type { NextRequest } from "next/server";
+
+export const runtime = "edge";
+
+/**
+ * Renderiza una creatividad PNG según plantilla.
+ * URL: /api/og/creative?template=...&title=...&subtitle=...&product=...&cta=...&accent=...
+ *
+ * Templates:
+ *   post-square        1080×1080  (IG feed, FB, LinkedIn cuadrado)
+ *   story-vertical     1080×1920  (IG/FB Story, TikTok)
+ *   linkedin-landscape 1200×628   (LinkedIn header post)
+ *   email-header       1200×400   (cabecera de email)
+ *
+ * Todas siguen el Manual de identidad Startidea v1.0:
+ *   Magenta #E63E73 acento · Crema #F4EFE6 fondo · Grafito #2A2A2A tinta
+ *
+ * Cache: 1h CDN (Cloudflare/Vercel respeta) — cambia URL si quieres regenerar.
+ */
+
+const COLORS = {
+  magenta: "#E63E73",
+  magentaDeep: "#A02049",
+  crema: "#F4EFE6",
+  hueso: "#EAE3D3",
+  grafito: "#2A2A2A",
+  grafitoSoft: "#3A3A3A",
+};
+
+type Template = "post-square" | "story-vertical" | "linkedin-landscape" | "email-header";
+
+const DIMENSIONS: Record<Template, { w: number; h: number }> = {
+  "post-square": { w: 1080, h: 1080 },
+  "story-vertical": { w: 1080, h: 1920 },
+  "linkedin-landscape": { w: 1200, h: 628 },
+  "email-header": { w: 1200, h: 400 },
+};
+
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const template = (url.searchParams.get("template") || "post-square") as Template;
+  const title = url.searchParams.get("title") || "Damos forma a ideas que ya estaban ahí";
+  const subtitle = url.searchParams.get("subtitle") || "";
+  const cta = url.searchParams.get("cta") || "";
+  const productUrl = url.searchParams.get("product") || "";
+  const variant = (url.searchParams.get("variant") || "magenta-bg") as "magenta-bg" | "crema-bg";
+
+  const dim = DIMENSIONS[template] || DIMENSIONS["post-square"];
+
+  // Decisión de colores según variante
+  const bg = variant === "magenta-bg" ? COLORS.magenta : COLORS.crema;
+  const fg = variant === "magenta-bg" ? COLORS.crema : COLORS.grafito;
+  const accent = variant === "magenta-bg" ? COLORS.crema : COLORS.magenta;
+  const subdued = variant === "magenta-bg" ? "rgba(244,239,230,0.7)" : "rgba(42,42,42,0.6)";
+
+  // Layout responsivo según template
+  const isVertical = template === "story-vertical";
+  const isLandscape = template === "linkedin-landscape" || template === "email-header";
+  const isSquare = template === "post-square";
+
+  const titleFontSize = isVertical ? 84 : isSquare ? 76 : 58;
+  const subtitleFontSize = isVertical ? 38 : isSquare ? 34 : 26;
+  const ctaFontSize = isVertical ? 32 : isSquare ? 28 : 22;
+  const wordmarkSize = isVertical ? 36 : 28;
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: dim.w,
+          height: dim.h,
+          background: bg,
+          color: fg,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: isVertical ? "80px 70px" : isSquare ? "70px" : "50px 60px",
+          fontFamily: "Montserrat, sans-serif",
+          position: "relative",
+        }}
+      >
+        {/* Decoración: arco/círculo magenta tras título (solo si fondo crema) */}
+        {variant === "crema-bg" && (
+          <div
+            style={{
+              position: "absolute",
+              top: -dim.h * 0.25,
+              right: -dim.h * 0.15,
+              width: dim.h * 0.7,
+              height: dim.h * 0.7,
+              borderRadius: "50%",
+              background: COLORS.magenta,
+              opacity: 0.08,
+            }}
+          />
+        )}
+
+        {/* Top: wordmark */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            fontSize: wordmarkSize,
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            color: fg,
+          }}
+        >
+          {/* Símbolo Startidea (bucles) — abstract */}
+          <svg
+            width={wordmarkSize + 8}
+            height={wordmarkSize + 8}
+            viewBox="0 0 64 64"
+            style={{ flexShrink: 0 }}
+          >
+            <g fill="none" stroke={accent} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 40 C14 26, 26 22, 28 34 C29 41, 22 42, 22 32 C22 22, 32 22, 32 34" />
+              <path d="M32 34 C32 22, 42 22, 42 32 C42 42, 35 41, 36 34 C38 22, 50 26, 50 40" />
+            </g>
+          </svg>
+          <span>
+            todo<span style={{ color: accent }}>merchandising</span>
+          </span>
+        </div>
+
+        {/* Middle: título + subtítulo */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 30, maxWidth: dim.w * 0.85 }}>
+          <h1
+            style={{
+              fontSize: titleFontSize,
+              fontWeight: 700,
+              lineHeight: 1.05,
+              letterSpacing: "-0.025em",
+              margin: 0,
+              color: fg,
+            }}
+          >
+            {title}
+          </h1>
+          {subtitle && (
+            <p
+              style={{
+                fontSize: subtitleFontSize,
+                lineHeight: 1.35,
+                margin: 0,
+                color: subdued,
+                fontWeight: 400,
+              }}
+            >
+              {subtitle}
+            </p>
+          )}
+        </div>
+
+        {/* Bottom: CTA + producto opcional */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 30,
+          }}
+        >
+          {cta && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                background: variant === "magenta-bg" ? "rgba(244,239,230,0.95)" : COLORS.magenta,
+                color: variant === "magenta-bg" ? COLORS.magenta : "#FFF",
+                padding: isVertical ? "22px 38px" : "18px 32px",
+                borderRadius: 999,
+                fontSize: ctaFontSize,
+                fontWeight: 600,
+              }}
+            >
+              {cta}
+              <span style={{ fontSize: ctaFontSize + 4 }}>→</span>
+            </div>
+          )}
+          {productUrl && (
+            <img
+              src={productUrl}
+              alt=""
+              style={{
+                width: isVertical ? 380 : isSquare ? 280 : 200,
+                height: isVertical ? 380 : isSquare ? 280 : 200,
+                objectFit: "contain",
+                marginLeft: "auto",
+              }}
+            />
+          )}
+        </div>
+      </div>
+    ),
+    {
+      width: dim.w,
+      height: dim.h,
+      headers: {
+        "cache-control": "public, max-age=3600, s-maxage=3600, immutable",
+      },
+    },
+  );
+}
