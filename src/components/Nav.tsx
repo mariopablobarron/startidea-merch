@@ -53,20 +53,17 @@ export function Nav() {
       <div className="mx-auto flex h-16 max-w-8xl items-center gap-4 px-4 sm:gap-6 sm:px-6 lg:gap-10 lg:px-10">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2.5 font-display text-lg font-semibold tracking-tight text-ink sm:text-xl"
-          aria-label="TodoMerchandising — Inicio"
+          className="flex shrink-0 items-center"
+          aria-label="Startidea — Inicio"
         >
           <Image
-            src="/logo-mark.svg"
-            alt=""
-            width={32}
-            height={32}
+            src="/logo-startidea.svg"
+            alt="Startidea"
+            width={140}
+            height={161}
             priority
-            className="h-7 w-7 sm:h-8 sm:w-8"
+            className="h-10 w-auto sm:h-11"
           />
-          <span className="lowercase">
-            todo<span className="text-accent">merchandising</span>
-          </span>
         </Link>
 
         {/* Buscador desktop */}

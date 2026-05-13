@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "34900000000";
+const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "34958045789";
 const PRESET_MESSAGE = encodeURIComponent(
   "Hola, vengo de la web de todomerchandising y me gustaría pedir una cotización.",
 );

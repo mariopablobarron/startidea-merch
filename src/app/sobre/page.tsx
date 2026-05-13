@@ -18,8 +18,8 @@ const VALUES = [
   },
   {
     icon: Target,
-    title: "Impacto medible",
-    body: "Reportamos horas de trabajo digno, % producido en CEE y kg de CO₂ evitados. Si no se mide, no es impacto: es buena intención.",
+    title: "Producción responsable",
+    body: "Trabajamos con Centros Especiales de Empleo y talleres locales certificados. Producción nacional, plazos cerrados y materiales responsables.",
   },
   {
     icon: Compass,

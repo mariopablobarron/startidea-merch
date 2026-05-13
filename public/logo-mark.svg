@@ -8,7 +8,7 @@
   no es trazo idéntico al manuscrito original.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100" role="img" aria-label="Startidea">
-  <g fill="none" stroke="#E63E73" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+  <g fill="none" stroke="#2A2A2A" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
     <!-- Bucle izquierdo: óvalo ligeramente inclinado -->
     <path d="M 30 80
              C 5 70, 10 25, 35 15

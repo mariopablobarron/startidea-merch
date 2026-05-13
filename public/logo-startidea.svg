@@ -6,8 +6,8 @@
   Colores: magenta #E63E73 (start), grafito #2A2A2A (idea).
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 230" role="img" aria-label="Startidea">
-  <!-- Símbolo arriba -->
-  <g transform="translate(40 10)" stroke="#E63E73" stroke-width="13" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Símbolo arriba — bucles grafito según imagen oficial 2026-05-13 -->
+  <g transform="translate(40 10)" stroke="#2A2A2A" stroke-width="13" fill="none" stroke-linecap="round" stroke-linejoin="round">
     <path d="M 30 80
              C 5 70, 10 25, 35 15
              C 60 5, 55 50, 35 55

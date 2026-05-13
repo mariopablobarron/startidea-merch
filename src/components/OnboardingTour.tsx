@@ -15,7 +15,7 @@ const STEPS: Step[] = [
   {
     title: "Hola, primera vez aquí.",
     body:
-      "TodoMerchandising es merchandising B2B con impacto social: cada pedido se produce en Centros Especiales de Empleo o talleres locales. Mismo precio que cualquier proveedor — con impacto que sí se mide.",
+      "TodoMerchandising es merchandising B2B: cada pedido se produce en Centros Especiales de Empleo o talleres locales. Mismo precio que cualquier proveedor.",
   },
   {
     title: "Más de 2.000 productos personalizables",

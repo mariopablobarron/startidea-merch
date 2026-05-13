@@ -11,8 +11,8 @@
  * Server component — cero JS adicional.
  */
 
-const TEL = process.env.NEXT_PUBLIC_PHONE || "+34 900 000 000";
-const EMAIL = process.env.NEXT_PUBLIC_EMAIL || "hola@startidea.es";
+const TEL = process.env.NEXT_PUBLIC_PHONE || "+34 958 045 789";
+const EMAIL = process.env.NEXT_PUBLIC_EMAIL || "pedidos@startidea.es";
 const HOURS = "L-V 9-18h";
 
 export function TopBar() {

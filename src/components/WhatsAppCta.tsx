@@ -1,6 +1,6 @@
 "use client";
 
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "34900000000";
+const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "34958045789";
 
 /**
  * CTA contextual de WhatsApp para fichas de producto.

@@ -5,7 +5,6 @@ import { ClientLogos } from "@/components/ClientLogos";
 import { PortfolioGrid } from "@/components/PortfolioGrid";
 import { Marquee } from "@/components/Marquee";
 import { Impact } from "@/components/Impact";
-import { ImpactLive } from "@/components/ImpactLive";
 import { Process } from "@/components/Process";
 import { Categories } from "@/components/Categories";
 import { Partners } from "@/components/Partners";
@@ -75,7 +74,6 @@ export default async function HomePage() {
         <ClientLogos />
         <Marquee />
         <Impact />
-        <ImpactLive />
         <Process />
         <BannerSlot slot="HOME_MID" />
         <PortfolioGrid variant="home" />
