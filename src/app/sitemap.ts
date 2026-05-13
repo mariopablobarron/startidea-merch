@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
 
+// Renderizar en request time, no en build. Sin esto, el sitemap se prerender
+// con BD vacía y queda cacheado para siempre (solo 12 URLs estáticas).
+export const dynamic = "force-dynamic";
+export const revalidate = 3600;
+
 /**
  * Sitemap dinámico:
  *   - Páginas estáticas core
