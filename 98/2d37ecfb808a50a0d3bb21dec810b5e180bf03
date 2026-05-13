@@ -1,0 +1,35 @@
+src/components/Nav.tsx
+  s_65877aa637ec34::t_df4e0ce1aabdcc 56-57,60-63,65
+src/components/TopBar.tsx
+  s_65877aa637ec34::t_72a9964b301acd 14-15
+public/logo-startidea.svg
+  s_65877aa637ec34::t_13d7bc4694a1ba 9-10
+src/components/OnboardingTour.tsx
+  s_65877aa637ec34::t_714f37c4be7923 18
+public/logo-mark.svg
+  s_65877aa637ec34::t_9a7eb5e98fe355 11
+.env.example
+  s_65877aa637ec34::t_2772586a8667fe 15
+src/components/WhatsAppCta.tsx
+  s_65877aa637ec34::t_b55368df71a5a8 3
+src/app/sobre/page.tsx
+  s_65877aa637ec34::t_df80b82b69a691 21-22
+src/components/WhatsAppFloat.tsx
+  s_65877aa637ec34::t_531da39e458244 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "982d37ecfb808a50a0d3bb21dec810b5e180bf03",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
