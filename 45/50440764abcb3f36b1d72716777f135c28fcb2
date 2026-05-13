@@ -1,0 +1,37 @@
+src/components/MarkingCalculator.tsx
+  s_65877aa637ec34::t_792740f573a25c 6
+  s_65877aa637ec34::t_48341adb9ebcad 196-199
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_1b0b3407342904 334-363
+  s_65877aa637ec34::t_c1bcd6bf66a379 420-497
+  s_65877aa637ec34::t_6dce34f742cf88 52,77,80-85,88-91,93-94,96-100,108-111
+src/components/MarkingTechniqueTooltip.tsx
+  s_65877aa637ec34::t_c25c30c3890655 1-86
+src/lib/marking-techniques.ts
+  s_65877aa637ec34::t_f0fade3cfc097e 1-198
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_9b3234935d021c 369-372
+  s_65877aa637ec34::t_ee293b83ff0bd6 500,503,505
+  s_65877aa637ec34::t_8e3f04802ca412 12
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_50ea6c2a5eb5c3 72-81,90,92-97
+  s_65877aa637ec34::t_7cbc188ef468a5 43-45
+  s_65877aa637ec34::t_0173bbfa37ad27 3,11
+  s_65877aa637ec34::t_f2ebc6b2ab7cf7 173-178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "4550440764abcb3f36b1d72716777f135c28fcb2",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
