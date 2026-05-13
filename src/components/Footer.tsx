@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { NewsletterForm } from "./NewsletterForm";
 
 export function Footer() {
@@ -68,26 +69,23 @@ export function Footer() {
               C/ Conde Cifuentes, 33 — 18005 Granada
             </p>
 
-            {/* Endorsement Startidea matriz */}
+            {/* Endorsement Startidea matriz — logo oficial blanco */}
             <a
               href="https://startidea.es"
               target="_blank"
               rel="noopener"
-              className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-bone/15 bg-bone/5 px-4 py-3 transition hover:border-accent/30 hover:bg-bone/10"
+              className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-bone/15 bg-bone/5 px-4 py-3 transition hover:border-bone/30 hover:bg-bone/10"
               title="Visitar Startidea — consultora matriz"
             >
-              <svg viewBox="0 0 120 100" className="h-8 w-10 flex-shrink-0" aria-hidden="true">
-                <g fill="none" stroke="#E63E73" strokeWidth={11} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M 30 80 C 5 70, 10 25, 35 15 C 60 5, 55 50, 35 55 C 22 58, 22 38, 38 38" />
-                  <path d="M 38 38 C 50 40, 60 75, 78 78 M 70 80 C 95 70, 110 25, 80 15 C 55 8, 65 55, 82 58 C 95 60, 92 40, 80 38" />
-                </g>
-              </svg>
-              <span className="text-xs">
-                <span className="block text-bone/50">Una iniciativa de</span>
-                <span className="block font-display text-lg font-bold lowercase tracking-tight">
-                  <span style={{ color: "#E63E73" }}>start</span>
-                  <span className="text-bone">idea</span>
-                </span>
+              <Image
+                src="/logo-startidea-blanco.png"
+                alt="Startidea"
+                width={538}
+                height={538}
+                className="h-12 w-auto flex-shrink-0"
+              />
+              <span className="block text-xs text-bone/60">
+                Una iniciativa de Startidea — Agencia de Innovación Social
               </span>
             </a>
             <div className="mt-6">
