@@ -9,6 +9,7 @@ import {
 } from "@/lib/pricing";
 import { addItem } from "@/lib/cart-storage";
 import { trackEvent } from "@/lib/track";
+import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 
 /**
  * Formulario unificado de pedido en ficha de producto.
@@ -365,7 +366,10 @@ export function ProductOrderForm({
                 ))}
               </select>
             </Field>
-            <Field label="Técnica">
+            <Field
+              label="Técnica"
+              hint={technique && <MarkingTechniqueTooltip name={technique.techniqueName} />}
+            >
               <select
                 value={techIdx}
                 onChange={(e) => setTechIdx(parseInt(e.target.value, 10))}
@@ -493,11 +497,12 @@ function Badge({ color, children }: { color: "accent" | "social"; children: Reac
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-[11px] font-medium uppercase tracking-wider text-ink/50">
+      <span className="flex items-center text-[11px] font-medium uppercase tracking-wider text-ink/50">
         {label}
+        {hint}
       </span>
       <div className="mt-1">{children}</div>
     </label>

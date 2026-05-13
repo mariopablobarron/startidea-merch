@@ -49,8 +49,7 @@ export function CartPage() {
     writeCart(next);
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitCart(directPay: boolean) {
     setError(null);
     setSuccess(null);
     if (items.length === 0) {
@@ -75,22 +74,41 @@ export function CartPage() {
           deadline,
           couponCode: couponDiscount ? couponDiscount.code : undefined,
           items,
+          directPay,
         }),
       });
-      const data = (await res.json()) as { ok?: boolean; id?: string; error?: string };
+      const data = (await res.json()) as {
+        ok?: boolean;
+        id?: string;
+        error?: string;
+        payUrl?: string | null;
+      };
       if (!res.ok || !data.ok) {
         setError(data.error || "Algo falló enviando la cotización.");
-      } else {
-        setSuccess(
-          `Cotización recibida (ref. ${data.id?.slice(0, 8) ?? "?"}). Te respondemos en menos de 24 horas a ${email}.`,
-        );
-        clearCart();
+        return;
       }
+      // Si pidió pago directo y el backend nos devuelve URL, redirige a Stripe.
+      if (directPay && data.payUrl) {
+        clearCart();
+        window.location.href = data.payUrl;
+        return;
+      }
+      // Cotización tradicional: mensaje de éxito + vacía carrito.
+      setSuccess(
+        `Cotización recibida (ref. ${data.id?.slice(0, 8) ?? "?"}). Te respondemos en menos de 24 horas a ${email}.`,
+      );
+      clearCart();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de red.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    // Por defecto el form submit (Enter) usa cotización tradicional.
+    submitCart(false);
   }
 
   if (items.length === 0 && !success) {
@@ -313,10 +331,36 @@ export function CartPage() {
       </div>
 
       <form onSubmit={onSubmit} className="self-start rounded-3xl border border-line bg-bone p-6 lg:sticky lg:top-24">
-        <p className="text-xs font-medium uppercase tracking-wider text-accent">Tus datos</p>
-        <p className="mt-1 font-display text-xl font-semibold text-ink">
-          Solicita la cotización cerrada.
-        </p>
+        {(() => {
+          // Detectamos si TODOS los items tienen precio calculado para
+          // ofrecer pago directo. Si falta alguno, solo cotización.
+          const allPriced =
+            items.length > 0 &&
+            items.every(
+              (it) =>
+                typeof it.totalClientCents === "number" && it.totalClientCents > 0,
+            );
+          return (
+            <>
+              <p className="text-xs font-medium uppercase tracking-wider text-accent">
+                {allPriced ? "Finalizar pedido" : "Tus datos"}
+              </p>
+              <p className="mt-1 font-display text-xl font-semibold text-ink">
+                {allPriced
+                  ? "Paga ahora o pide cotización cerrada."
+                  : "Solicita la cotización cerrada."}
+              </p>
+              {allPriced && (
+                <p className="mt-2 text-xs text-ink/60">
+                  Todos tus productos tienen precio configurado. Puedes pagar
+                  directamente con tarjeta, Apple Pay o Google Pay, o pedir
+                  presupuesto cerrado para tu equipo si necesitas factura
+                  pro-forma o aprobación interna.
+                </p>
+              )}
+            </>
+          );
+        })()}
 
         <div className="mt-5 grid gap-3">
           <input
@@ -373,17 +417,84 @@ export function CartPage() {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-3.5 text-sm font-medium text-bone transition hover:bg-accent disabled:opacity-40"
-        >
-          {submitting ? "Enviando…" : "Pedir cotización cerrada"}
-        </button>
-        <p className="mt-3 text-[11px] text-ink/50">
-          Recibirás un email confirmando que la hemos recibido y otro en menos de 24 h con
-          presupuesto cerrado, mockup y plazo. Sin compromiso.
-        </p>
+        {(() => {
+          const allPriced =
+            items.length > 0 &&
+            items.every(
+              (it) =>
+                typeof it.totalClientCents === "number" && it.totalClientCents > 0,
+            );
+          return (
+            <>
+              {allPriced ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => submitCart(true)}
+                    disabled={submitting}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-3.5 text-sm font-semibold text-bone shadow-sm transition hover:bg-accent-dark disabled:opacity-40"
+                  >
+                    {submitting ? (
+                      "Redirigiendo a Stripe…"
+                    ) : (
+                      <>
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <rect x="2" y="5" width="20" height="14" rx="2" />
+                          <path d="M2 10h20" />
+                        </svg>
+                        Pagar ahora · {EUR.format(total / 100)}
+                      </>
+                    )}
+                  </button>
+                  <p className="mt-2 text-center text-[11px] text-ink/50">
+                    💳 Tarjeta · 🍎 Apple Pay · ⓖ Google Pay · 🔗 Link · pago seguro Stripe
+                  </p>
+                  <div className="mt-4 flex items-center gap-3 text-[10px] uppercase tracking-wider text-ink/30">
+                    <div className="h-px flex-1 bg-line" />
+                    <span>o</span>
+                    <div className="h-px flex-1 bg-line" />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line bg-bone-soft px-6 py-3 text-sm font-medium text-ink/80 transition hover:border-ink hover:text-ink disabled:opacity-40"
+                  >
+                    {submitting ? "Enviando…" : "Solo cotización para mi equipo"}
+                  </button>
+                  <p className="mt-3 text-[11px] text-ink/50">
+                    Si necesitas factura pro-forma, aprobación interna o
+                    plazo de pago, te enviamos presupuesto cerrado por email
+                    en menos de 24 h laborables.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-3.5 text-sm font-medium text-bone transition hover:bg-accent disabled:opacity-40"
+                  >
+                    {submitting ? "Enviando…" : "Pedir cotización cerrada"}
+                  </button>
+                  <p className="mt-3 text-[11px] text-ink/50">
+                    Algunos productos requieren configuración personalizada.
+                    Te enviamos cotización cerrada con precio, mockup y plazo
+                    en menos de 24 h. Sin compromiso.
+                  </p>
+                </>
+              )}
+            </>
+          );
+        })()}
       </form>
     </div>
   );

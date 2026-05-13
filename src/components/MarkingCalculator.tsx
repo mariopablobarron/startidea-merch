@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { addItem } from "@/lib/cart-storage";
 import { trackEvent } from "@/lib/track";
+import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 
 type Position = {
   id: string;
@@ -192,7 +193,10 @@ export function MarkingCalculator({ productSlug, productName, productRef, primar
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium uppercase tracking-wider text-ink/50">Técnica</span>
+              <span className="flex items-center text-xs font-medium uppercase tracking-wider text-ink/50">
+                Técnica
+                {technique && <MarkingTechniqueTooltip name={technique.techniqueName} />}
+              </span>
               <select
                 value={techIdx}
                 onChange={(e) => setTechIdx(parseInt(e.target.value))}

@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { validateCoupon, applyCoupon } from "@/lib/coupons";
 import { notifyTelegram } from "@/lib/telegram";
 import { readPartnerSlug, attachReferral } from "@/lib/referral";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
 
 export const runtime = "nodejs";
 
@@ -37,6 +40,9 @@ const Schema = z.object({
   source: z.string().max(80).optional(),
   couponCode: z.string().max(40).optional().or(z.literal("")),
   items: z.array(ItemSchema).min(1).max(40),
+  // Si true y todos los items tienen precio, generamos paymentLinkToken
+  // y devolvemos payUrl para redirigir al checkout Stripe (Apple/Google Pay).
+  directPay: z.boolean().optional(),
 });
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -63,6 +69,16 @@ export async function POST(req: Request) {
   const data = parsed.data;
   const total = data.items.reduce((sum, it) => sum + (it.totalClientCents || 0), 0);
 
+  // Pago directo: requiere precio en TODOS los items + total > 0.
+  // Si cumple, generamos token y marcamos como SENT (lista para pago).
+  const allPriced = data.items.every(
+    (it) => typeof it.totalClientCents === "number" && it.totalClientCents > 0,
+  );
+  const directPay = Boolean(data.directPay && allPriced && total > 0);
+  const paymentLinkToken = directPay
+    ? `pay_${randomBytes(20).toString("base64url")}`
+    : null;
+
   const cart = await prisma.cartQuote.create({
     data: {
       name: data.name,
@@ -71,8 +87,14 @@ export async function POST(req: Request) {
       phone: data.phone || null,
       message: data.message || null,
       deadline: data.deadline || null,
-      source: data.source || "carrito",
+      source: data.source || (directPay ? "carrito-pago-directo" : "carrito"),
       estimatedTotalCents: total,
+      // Pago directo: status SENT (admin verá que ya está en checkout),
+      // depósito 100% por defecto, token presente.
+      status: directPay ? "SENT" : "NEW",
+      paymentLinkToken,
+      paymentLinkSentAt: directPay ? new Date() : null,
+      depositPercent: directPay ? 100 : null,
       items: {
         create: data.items.map((it) => ({
           productSlug: it.productSlug,
@@ -148,7 +170,12 @@ export async function POST(req: Request) {
     `🛒 <b>Nuevo carrito</b>\n${data.name}${data.company ? ` · ${data.company}` : ""}\n${cart.items.length} productos · <b>${EUR.format(total / 100)}</b>\n📧 ${data.email}`,
   ).catch(() => {});
 
-  return NextResponse.json({ ok: true, id: cart.id, items: cart.items.length });
+  return NextResponse.json({
+    ok: true,
+    id: cart.id,
+    items: cart.items.length,
+    payUrl: paymentLinkToken ? `${SITE_URL}/pay/${paymentLinkToken}` : null,
+  });
 }
 
 function internalCartHtml(cart: { id: string; name: string; company: string | null; email: string; phone: string | null; message: string | null; deadline: string | null; estimatedTotalCents: number | null; items: Array<{ productName: string; productRef: string; quantity: number; markingTechniqueName: string | null; markingPositionId: string | null; markingColours: number | null; totalClientCents: number | null }> }): string {
