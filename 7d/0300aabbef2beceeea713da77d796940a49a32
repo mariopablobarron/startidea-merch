@@ -1,0 +1,30 @@
+src/lib/customer-portal-magic.ts
+  s_65877aa637ec34::t_3da7b4459243e6 1-36
+src/app/api/webhooks/stripe/route.ts
+  s_65877aa637ec34::t_e403304c34603f 9-12
+  s_65877aa637ec34::t_7e539d1f8c5fe2 98-101,108,110-126,139-143,146,151-153
+  s_65877aa637ec34::t_337a7e98354d8e 175-192,204-208,211-247,249,251,255-258,260,263-278,284-285,289-291,297-331
+  s_65877aa637ec34::t_b8a5eefe378fba 102-107,109
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_30f565810a93fe 93-94,99
+src/app/api/pay/[token]/checkout/route.ts
+  s_65877aa637ec34::t_f682f9b98ed631 72-81
+src/lib/midocean-auto-order.ts
+  s_65877aa637ec34::t_db7857fef0bf6f 1-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "7d0300aabbef2beceeea713da77d796940a49a32",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
