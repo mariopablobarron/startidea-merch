@@ -1,0 +1,20 @@
+src/components/Footer.tsx
+  s_65877aa637ec34::t_74ee1109f64035 2
+  s_65877aa637ec34::t_804ad709f747f5 72,77,80-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "e1da3e1213d501353e1c1b226ff51ba2c99442e3",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
