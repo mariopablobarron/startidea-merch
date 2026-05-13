@@ -69,6 +69,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       depositPercent: String(cart.depositPercent),
       kind: isFull ? "FULL" : "DEPOSIT",
     },
+    // Capturamos dirección + teléfono en Stripe para pasárselos a MidOcean
+    // sin necesidad de un step extra en la web (más conversión).
+    shipping_address_collection: {
+      allowed_countries: [
+        "ES", "PT", "FR", "IT", "DE", "AT", "BE", "NL", "LU", "IE",
+        "GB", "DK", "SE", "FI", "NO", "PL", "CZ", "SK", "HU", "RO",
+        "BG", "GR", "EE", "LV", "LT", "SI", "HR", "CY", "MT", "CH",
+      ],
+    },
+    phone_number_collection: { enabled: true },
     // Stripe Tax: cuando esté activado, Stripe calcula IVA por país y permite
     // recoger NIF/VAT del cliente (B2B exempt si aplica)
     ...(taxEnabled

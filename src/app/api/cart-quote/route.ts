@@ -90,11 +90,13 @@ export async function POST(req: Request) {
       source: data.source || (directPay ? "carrito-pago-directo" : "carrito"),
       estimatedTotalCents: total,
       // Pago directo: status SENT (admin verá que ya está en checkout),
-      // depósito 100% por defecto, token presente.
+      // depósito 100% por defecto, token presente. acceptedTotalCents
+      // requerido por /api/pay/[token]/checkout para crear Stripe Session.
       status: directPay ? "SENT" : "NEW",
       paymentLinkToken,
       paymentLinkSentAt: directPay ? new Date() : null,
       depositPercent: directPay ? 100 : null,
+      acceptedTotalCents: directPay ? total : null,
       items: {
         create: data.items.map((it) => ({
           productSlug: it.productSlug,
