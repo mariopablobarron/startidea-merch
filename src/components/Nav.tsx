@@ -57,12 +57,12 @@ export function Nav() {
           aria-label="Startidea — Inicio"
         >
           <Image
-            src="/logo-startidea.svg"
+            src="/logo-startidea.png"
             alt="Startidea"
-            width={140}
-            height={161}
+            width={538}
+            height={538}
             priority
-            className="h-10 w-auto sm:h-11"
+            className="h-12 w-auto sm:h-14"
           />
         </Link>
 
