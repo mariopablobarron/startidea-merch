@@ -67,6 +67,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   Analytics
                 </Link>
               )}
+              {(session.role === "CEO" || session.role === "COMERCIAL") && (
+                <Link
+                  href="/admin/analytics/seo"
+                  className="text-ink/60 hover:text-accent"
+                  title="Dashboard Search Console + GA4 embebido (Looker Studio)"
+                >
+                  SEO 📊
+                </Link>
+              )}
               {session.role === "CEO" && (
                 <>
                   <Link href="/admin/users" className="text-ink/60 hover:text-accent">
