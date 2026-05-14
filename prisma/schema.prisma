@@ -701,6 +701,12 @@ model CartQuoteItem {
   unitPriceClientCents Int?
   totalClientCents     Int?
 
+  // Logo del cliente subido (URL relativa /files/customer-logos/...).
+  // Mario lo descarga para enviarlo a MidOcean al producir.
+  customerLogoUrl      String?
+  customerLogoFilename String?
+  customerLogoSize     Int?    // bytes
+
   notes           String?
 
   @@index([cartId])

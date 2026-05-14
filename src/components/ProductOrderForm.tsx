@@ -101,6 +101,55 @@ export function ProductOrderForm({
   const [colours, setColours] = useState(1);
   const [manipulation, setManipulation] = useState("A");
 
+  // Logo cliente
+  const [logo, setLogo] = useState<{ url: string; filename: string; size: number } | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [mockupUrl, setMockupUrl] = useState<string | null>(null);
+  const [mockupLoading, setMockupLoading] = useState(false);
+
+  async function onLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoError(null);
+    setLogoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("logo", file);
+      const res = await fetch("/api/uploads/customer-logo", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setLogoError(data.error || "Error subiendo");
+        return;
+      }
+      setLogo({ url: data.url, filename: data.filename, size: data.size });
+      // Generar mockup automáticamente con el logo subido
+      if (withMarking && position) {
+        setMockupLoading(true);
+        const fd2 = new FormData();
+        fd2.append("logo", file);
+        fd2.append("productSlug", productSlug);
+        fd2.append("positionId", position.positionId);
+        const mockRes = await fetch("/api/mockup/generate", { method: "POST", body: fd2 });
+        if (mockRes.ok) {
+          const blob = await mockRes.blob();
+          if (mockupUrl) URL.revokeObjectURL(mockupUrl);
+          setMockupUrl(URL.createObjectURL(blob));
+        }
+        setMockupLoading(false);
+      }
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
+  function clearLogo() {
+    setLogo(null);
+    if (mockupUrl) URL.revokeObjectURL(mockupUrl);
+    setMockupUrl(null);
+    setLogoError(null);
+  }
+
   const position = positionsAvailable[positionIdx];
   const technique = position?.techniques[techIdx];
   const maxColors = technique?.maxColors ?? 1;
@@ -203,6 +252,9 @@ export function ProductOrderForm({
       markingComplexity: withMarking ? manipulation : null,
       unitPriceClientCents: unitCents,
       totalClientCents: totalCents,
+      customerLogoUrl: withMarking ? logo?.url ?? null : null,
+      customerLogoFilename: withMarking ? logo?.filename ?? null : null,
+      customerLogoSize: withMarking ? logo?.size ?? null : null,
     });
     setAddedAt(Date.now());
   }
@@ -412,6 +464,95 @@ export function ProductOrderForm({
           {apiOk && calc.marking?.warning && (
             <p className="text-[11px] text-accent-deep">⚠ {calc.marking.warning}</p>
           )}
+
+          {/* Upload logo + mockup preview */}
+          <div className="mt-3 rounded-xl border border-accent/20 bg-accent-wash/50 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-accent-deep">
+                  Tu logo
+                </p>
+                <p className="mt-0.5 text-[11px] text-ink/60">
+                  Lo necesitamos para preparar el mockup oficial.
+                </p>
+              </div>
+              {logo && (
+                <button
+                  type="button"
+                  onClick={clearLogo}
+                  className="text-[10px] text-ink/50 hover:text-accent"
+                >
+                  Quitar
+                </button>
+              )}
+            </div>
+
+            {!logo ? (
+              <label className="mt-2 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-accent/30 bg-bone px-3 py-3 text-center transition hover:border-accent">
+                <svg className="h-5 w-5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span className="text-xs font-medium text-ink">
+                  {logoUploading ? "Subiendo…" : "Subir logo (PNG, JPG, SVG, PDF)"}
+                </span>
+                <span className="text-[10px] text-ink/50">Máx 5 MB · fondo transparente recomendado</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml,image/webp,application/pdf"
+                  onChange={onLogoChange}
+                  disabled={logoUploading}
+                  className="hidden"
+                />
+              </label>
+            ) : (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center gap-2 rounded-lg bg-bone p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={logo.url}
+                    alt={logo.filename}
+                    className="h-10 w-10 flex-shrink-0 rounded object-contain"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-ink">{logo.filename}</p>
+                    <p className="text-[10px] text-ink/50">
+                      {(logo.size / 1024).toFixed(1)} KB · ✓ subido
+                    </p>
+                  </div>
+                </div>
+                {(mockupLoading || mockupUrl) && (
+                  <div className="rounded-lg bg-bone p-2">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-ink/50">
+                      Mockup preview
+                    </p>
+                    {mockupLoading ? (
+                      <p className="mt-1 text-center text-xs text-ink/50">Generando…</p>
+                    ) : (
+                      mockupUrl && (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={mockupUrl}
+                            alt="Mockup preview"
+                            className="mt-1 w-full rounded"
+                          />
+                          <p className="mt-1 text-[10px] text-ink/40">
+                            Mockup orientativo. El oficial te lo enviamos antes de producir.
+                          </p>
+                        </>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {logoError && (
+              <p className="mt-2 text-[11px] text-accent-deep">⚠ {logoError}</p>
+            )}
+          </div>
         </div>
       )}
 

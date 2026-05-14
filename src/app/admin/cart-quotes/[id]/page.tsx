@@ -20,6 +20,9 @@ type CartItem = {
   unitPriceClientCents: number | null;
   totalClientCents: number | null;
   notes: string | null;
+  customerLogoUrl: string | null;
+  customerLogoFilename: string | null;
+  customerLogoSize: number | null;
 };
 
 type Cart = {
@@ -161,6 +164,28 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
                     {it.productName}
                   </Link>
                   <p className="text-xs text-ink/50">Ref. {it.productRef}</p>
+                  {it.customerLogoUrl && (
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-social/30 bg-social/5 px-2 py-1">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={it.customerLogoUrl}
+                        alt={it.customerLogoFilename || "Logo"}
+                        className="h-8 w-8 rounded object-contain"
+                      />
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-social">
+                          Logo cliente
+                        </p>
+                        <a
+                          href={it.customerLogoUrl}
+                          download={it.customerLogoFilename || "logo"}
+                          className="text-[11px] font-medium text-social hover:underline"
+                        >
+                          {it.customerLogoFilename || "Descargar"} ↓
+                        </a>
+                      </div>
+                    </div>
+                  )}
                   <p className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
                     <span className="rounded-full bg-bone-soft px-2 py-0.5">Cant: {it.quantity}</span>
                     {it.colorName && <span className="rounded-full bg-bone-soft px-2 py-0.5">{it.colorName}</span>}

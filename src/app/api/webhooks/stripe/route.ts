@@ -244,6 +244,25 @@ async function postPaymentAutoflow(args: {
   const firstName = customer.name.split(" ")[0];
   const amountFmt = (amountCents / 100).toFixed(2);
 
+  // Cargamos items para email interno con logos descargables
+  const cartWithItems = await prisma.cartQuote.findUnique({
+    where: { id: cartId },
+    select: {
+      items: {
+        select: {
+          productName: true,
+          productRef: true,
+          quantity: true,
+          customerLogoUrl: true,
+          customerLogoFilename: true,
+          markingTechniqueName: true,
+          markingPositionId: true,
+          markingColours: true,
+        },
+      },
+    },
+  });
+
   void markReferralEarned(cartId, amountCents).catch(() => {});
 
   const viaLabel = via === "express-checkout" ? " (Apple/Google Pay)" : "";
@@ -282,7 +301,14 @@ async function postPaymentAutoflow(args: {
         from: RESEND_FROM,
         to: RESEND_TO_INTERNAL,
         subject: `[Pago recibido] ${customer.name}${customer.company ? " · " + customer.company : ""} · ${amountFmt}€${via === "express-checkout" ? " (wallet)" : ""}`,
-        html: `<p>Pago recibido vía Stripe${viaLabel}.</p><p>Cliente: ${customer.name} (${customer.email})</p><p>Importe: ${amountFmt} €</p><p>Cart ID: <code>${cartId}</code></p><p>Auto-flow MidOcean: ver logs server (telegram notifica resultado).</p>${receiptUrl ? `<p><a href="${receiptUrl}">Ver recibo Stripe</a></p>` : ""}`,
+        html: internalPaymentEmailHtml({
+          customer,
+          amountFmt,
+          cartId,
+          viaLabel,
+          receiptUrl,
+          items: cartWithItems?.items || [],
+        }),
       }),
       resend.emails.send({
         from: RESEND_FROM,
@@ -292,6 +318,64 @@ async function postPaymentAutoflow(args: {
       }),
     ]).catch((err) => console.error("[stripe webhook resend]", err));
   }
+}
+
+function internalPaymentEmailHtml(args: {
+  customer: { name: string; email: string; company: string | null };
+  amountFmt: string;
+  cartId: string;
+  viaLabel: string;
+  receiptUrl?: string;
+  items: Array<{
+    productName: string;
+    productRef: string;
+    quantity: number;
+    customerLogoUrl: string | null;
+    customerLogoFilename: string | null;
+    markingTechniqueName: string | null;
+    markingPositionId: string | null;
+    markingColours: number | null;
+  }>;
+}): string {
+  const { customer, amountFmt, cartId, viaLabel, receiptUrl, items } = args;
+  const adminUrl = `${SITE_URL}/admin/cart-quotes/${cartId}`;
+
+  const logosBlock = items
+    .filter((it) => it.customerLogoUrl)
+    .map((it) => {
+      const logoAbsUrl = it.customerLogoUrl!.startsWith("http")
+        ? it.customerLogoUrl
+        : `${SITE_URL}${it.customerLogoUrl}`;
+      const marking = it.markingTechniqueName
+        ? ` · ${it.markingTechniqueName} en ${it.markingPositionId}${it.markingColours && it.markingColours > 1 ? ` (${it.markingColours} col.)` : ""}`
+        : "";
+      return `<li style="margin:8px 0;">
+        <strong>${it.productName}</strong> (${it.productRef}) × ${it.quantity}${marking}<br>
+        <a href="${logoAbsUrl}" style="color:#E63E73;">📥 ${it.customerLogoFilename || "Logo cliente"}</a>
+      </li>`;
+    })
+    .join("");
+
+  return `<div style="font-family:-apple-system,sans-serif;max-width:680px;color:#2A2A2A;">
+    <h2 style="font-family:Georgia,serif;">Pago recibido vía Stripe${viaLabel}</h2>
+    <p><strong>Cliente:</strong> ${customer.name} (${customer.email})${customer.company ? `<br><strong>Empresa:</strong> ${customer.company}` : ""}</p>
+    <p><strong>Importe:</strong> ${amountFmt} €</p>
+    <p><strong>Cart ID:</strong> <code>${cartId}</code></p>
+
+    ${logosBlock
+      ? `<h3 style="font-family:Georgia,serif;margin-top:24px;">Logos a descargar para MidOcean</h3>
+         <ul style="padding-left:20px;">${logosBlock}</ul>`
+      : '<p style="color:#888;font-size:13px;">Sin logos personalizados subidos.</p>'}
+
+    <p style="margin-top:24px;">
+      <a href="${adminUrl}" style="background:#E63E73;color:white;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:600;">Abrir cart en admin →</a>
+    </p>
+
+    <p style="color:#888;font-size:12px;margin-top:16px;">
+      Auto-flow MidOcean: revisa Telegram para resultado (placed/dryRun/error).
+      ${receiptUrl ? `<br><a href="${receiptUrl}">Ver recibo Stripe</a>` : ""}
+    </p>
+  </div>`;
 }
 
 function clientPaidEmailHtml(args: {

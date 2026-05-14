@@ -20,6 +20,10 @@ export type CartItem = {
   unitPriceClientCents?: number | null;
   totalClientCents?: number | null;
   notes?: string | null;
+  // Logo del cliente subido tras /api/uploads/customer-logo (preview + admin)
+  customerLogoUrl?: string | null;
+  customerLogoFilename?: string | null;
+  customerLogoSize?: number | null;
 };
 
 const KEY = "merch:cart";

@@ -28,6 +28,9 @@ const ItemSchema = z.object({
   unitPriceClientCents: z.number().int().nullable().optional(),
   totalClientCents: z.number().int().nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
+  customerLogoUrl: z.string().max(500).nullable().optional(),
+  customerLogoFilename: z.string().max(200).nullable().optional(),
+  customerLogoSize: z.number().int().nullable().optional(),
 });
 
 const Schema = z.object({
@@ -114,6 +117,9 @@ export async function POST(req: Request) {
           unitPriceClientCents: it.unitPriceClientCents ?? null,
           totalClientCents: it.totalClientCents ?? null,
           notes: it.notes ?? null,
+          customerLogoUrl: it.customerLogoUrl ?? null,
+          customerLogoFilename: it.customerLogoFilename ?? null,
+          customerLogoSize: it.customerLogoSize ?? null,
         })),
       },
     },

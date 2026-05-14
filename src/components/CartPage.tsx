@@ -217,6 +217,25 @@ export function CartPage() {
               </Link>
               <p className="text-xs text-ink/50">Ref. {it.productRef}</p>
 
+              {it.customerLogoUrl && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg bg-bone-soft p-1.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={it.customerLogoUrl}
+                    alt={it.customerLogoFilename || "Logo"}
+                    className="h-8 w-8 flex-shrink-0 rounded object-contain"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-social">
+                      ✓ Logo subido
+                    </p>
+                    <p className="truncate text-[11px] text-ink/60">
+                      {it.customerLogoFilename}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {it.markingTechniqueCode && (
                 <p className="mt-2 flex flex-wrap gap-1.5">
                   <span className="rounded-full bg-accent-wash px-2.5 py-0.5 text-[11px] font-medium text-accent-deep">
