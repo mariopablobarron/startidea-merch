@@ -1,0 +1,30 @@
+src/components/EmailCapturePopup.tsx
+  s_65877aa637ec34::t_8cb7bb52c21546 1-242
+src/app/api/newsletter/subscribe/route.ts
+  s_65877aa637ec34::t_c74167e25e7955 45-49,52-62,67-69,73-77,83
+src/components/CookieBanner.tsx
+  s_65877aa637ec34::t_bd99be604ebf75 1-211
+src/app/layout.tsx
+  s_65877aa637ec34::t_17d71a203294b3 13
+  s_65877aa637ec34::t_b40849c039c512 14
+  s_65877aa637ec34::t_6285c813f92e05 83
+  s_65877aa637ec34::t_d39c12d2e6735f 82
+src/components/GoogleAnalytics.tsx
+  s_65877aa637ec34::t_e46ac00c7cae28 34,36-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "d82faf67a375ff84fce0ecfad353f4c002975512",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
