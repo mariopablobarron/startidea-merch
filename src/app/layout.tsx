@@ -10,6 +10,8 @@ import { PWARegister } from "@/components/PWARegister";
 import { Tour } from "@/components/Tour";
 import { Analytics } from "@/components/Analytics";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { CookieBanner } from "@/components/CookieBanner";
+import { EmailCapturePopup } from "@/components/EmailCapturePopup";
 
 // Tipografía oficial Manual de identidad Startidea v1.0
 // Montserrat para todo el sistema · Alternates solo display (h1, citas).
@@ -77,6 +79,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Tour />
         <PWARegister />
         <Analytics />
+        <CookieBanner />
+        <EmailCapturePopup />
       </body>
     </html>
   );

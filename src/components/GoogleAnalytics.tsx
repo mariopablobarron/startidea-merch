@@ -31,7 +31,21 @@ export function GoogleAnalytics() {
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
               gtag('js', new Date());
+              // Consent Mode v2: por defecto todo denied hasta que el banner
+              // de cookies persista la preferencia del usuario. CookieBanner
+              // emite gtag('consent','update',...) con sus elecciones.
+              gtag('consent', 'default', {
+                analytics_storage: 'denied',
+                ad_storage: 'denied',
+                ad_user_data: 'denied',
+                ad_personalization: 'denied',
+                functionality_storage: 'granted',
+                personalization_storage: 'denied',
+                security_storage: 'granted',
+                wait_for_update: 500
+              });
               gtag('config', '${gaId}', {
                 anonymize_ip: true,
                 cookie_flags: 'SameSite=Strict;Secure'
