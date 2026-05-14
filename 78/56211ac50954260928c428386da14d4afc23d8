@@ -1,0 +1,41 @@
+prisma/schema.prisma
+  s_65877aa637ec34::t_fe00e2afd0e2a8 704-709
+src/app/api/webhooks/stripe/route.ts
+  s_65877aa637ec34::t_20d56922da449e 304-311
+  s_65877aa637ec34::t_aefb59db805e7e 323-380
+  s_65877aa637ec34::t_30dd3d4917494a 247-265
+src/app/admin/cart-quotes/[id]/page.tsx
+  s_65877aa637ec34::t_f15f58614f3d50 23-25
+  s_65877aa637ec34::t_a8166ee5164603 167-188
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_9b52819f6eb8e5 220-238
+src/app/api/uploads/customer-logo/route.ts
+  s_65877aa637ec34::t_5c81faa0f8c504 1-64
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_56c476fd22a2f1 467-555
+  s_65877aa637ec34::t_92cff06e446fff 255-257
+  s_65877aa637ec34::t_55efa5294208ef 104-152
+src/app/files/[...path]/route.ts
+  s_65877aa637ec34::t_f90a5113d0f8e6 1-65
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_86ce1198f0b6e4 120-122
+  s_65877aa637ec34::t_33be9fb44a9a3e 31-33
+src/lib/cart-storage.ts
+  s_65877aa637ec34::t_2396af7a5da82f 23-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "7856211ac50954260928c428386da14d4afc23d8",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
