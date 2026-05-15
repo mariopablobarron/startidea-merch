@@ -1,0 +1,29 @@
+src/lib/magnific.ts
+  s_65877aa637ec34::t_d2fe3b71705baa 112-117,119-120,125,130,135-136,142-143
+  s_65877aa637ec34::t_d50e3d12287b62 89-96,99-107
+src/app/admin/marketing/assets/AssetStudio.tsx
+  s_65877aa637ec34::t_b1830bfb65f338 277,280-282,284-286,288-320
+  s_65877aa637ec34::t_9325fbee5f1cf2 79
+  s_65877aa637ec34::t_8fe1f36f3c25bd 176,178,192,211,216-219,230,234,237-240,253-262
+src/app/api/admin/marketing/magnific/remove-bg/route.ts
+  s_65877aa637ec34::t_7c0ae75ec94527 6-20,22-23
+src/app/api/admin/marketing/magnific/upscale/route.ts
+  s_65877aa637ec34::t_7aa1262eaaa3be 12,16
+  s_65877aa637ec34::t_697b3620debb05 42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "1b9f2fdcadbd533e0acff8eeeeafeca77f3b1f50",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
