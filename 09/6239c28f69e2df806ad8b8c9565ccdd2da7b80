@@ -1,0 +1,23 @@
+src/lib/midocean-auto-order.ts
+  s_65877aa637ec34::t_4f75bbe2813a18 71-98
+  s_65877aa637ec34::t_93dca3a0a0403a 24-26
+src/app/api/admin/cart-quotes/[id]/place-order/route.ts
+  s_65877aa637ec34::t_19393ebf7de42b 7-9
+  s_65877aa637ec34::t_ab32abf71fb66a 54-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "096239c28f69e2df806ad8b8c9565ccdd2da7b80",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
