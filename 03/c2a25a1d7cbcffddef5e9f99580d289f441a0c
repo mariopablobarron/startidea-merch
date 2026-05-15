@@ -1,0 +1,23 @@
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_07f22d6b045076 420-488,493
+  s_65877aa637ec34::t_d03c70e41b5ddf 40-50,58-60
+  s_65877aa637ec34::t_5b231352620e9e 98-135,147-148
+  s_65877aa637ec34::t_2d0753ec4ae8c8 385-393,404,409-411
+  s_65877aa637ec34::t_f94d1501cc9248 348-356,366,371-373
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "03c2a25a1d7cbcffddef5e9f99580d289f441a0c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
