@@ -76,13 +76,7 @@ export function AssetStudio({
             onFeedback={setFeedback}
           />
         )}
-        {tab === "remove-bg" && (
-          <RemoveBgForm
-            enabled={enabled}
-            onSuccess={addTask}
-            onFeedback={setFeedback}
-          />
-        )}
+        {tab === "remove-bg" && <RemoveBgForm />}
         {tab === "mystic" && (
           <MysticForm
             enabled={enabled}
@@ -179,8 +173,9 @@ function UpscaleForm({
   onFeedback: (f: { ok: boolean; msg: string }) => void;
 }) {
   const [imageUrl, setImageUrl] = useState("");
-  const [scale, setScale] = useState<2 | 4>(2);
+  const [scale, setScale] = useState<"2x" | "4x" | "8x" | "16x">("2x");
   const [creativity, setCreativity] = useState(3);
+  const [precision, setPrecision] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
@@ -194,6 +189,7 @@ function UpscaleForm({
           imageUrl: imageUrl.trim(),
           scale_factor: scale,
           creativity,
+          precision,
         }),
       });
       const data = await res.json();
@@ -212,11 +208,15 @@ function UpscaleForm({
   return (
     <>
       <h3 className="font-display text-lg font-semibold text-ink">
-        Upscale creativo (2x / 4x)
+        Upscale creativo (2x / 4x / 8x / 16x)
       </h3>
       <p className="mb-4 mt-1 text-xs text-ink/60">
         Sube una foto borrosa o pequeña del catálogo y obtén una versión nítida con detalle
         IA. Asíncrono — la tarea se procesa en ~30-90 segundos.
+        <span className="block mt-1 text-[10px] text-ink/40">
+          La URL debe ser pública y resolverse sin redirects. Si Magnific no puede
+          descargarla, devolverá "Unable to resolve image".
+        </span>
       </p>
       <Field label="URL de la imagen">
         <input
@@ -227,15 +227,17 @@ function UpscaleForm({
           className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
         />
       </Field>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <Field label="Factor de escala">
           <select
             value={scale}
-            onChange={(e) => setScale(Number(e.target.value) as 2 | 4)}
+            onChange={(e) => setScale(e.target.value as "2x" | "4x" | "8x" | "16x")}
             className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm"
           >
-            <option value={2}>2x (más rápido / barato)</option>
-            <option value={4}>4x (máximo detalle)</option>
+            <option value="2x">2x (rápido)</option>
+            <option value="4x">4x (recomendado)</option>
+            <option value="8x">8x (alto detalle)</option>
+            <option value="16x">16x (máximo)</option>
           </select>
         </Field>
         <Field label={`Creatividad (${creativity})`}>
@@ -247,6 +249,17 @@ function UpscaleForm({
             onChange={(e) => setCreativity(Number(e.target.value))}
             className="w-full"
           />
+        </Field>
+        <Field label="Modo">
+          <label className="mt-1 inline-flex items-center gap-2 text-xs text-ink/70">
+            <input
+              type="checkbox"
+              checked={precision}
+              onChange={(e) => setPrecision(e.target.checked)}
+              className="h-4 w-4 accent-accent"
+            />
+            <span>Precision (mejor fidelidad al original)</span>
+          </label>
         </Field>
       </div>
       <button
@@ -261,64 +274,50 @@ function UpscaleForm({
   );
 }
 
-function RemoveBgForm({
-  enabled,
-  onSuccess,
-  onFeedback,
-}: {
-  enabled: boolean;
-  onSuccess: (t: TaskDTO) => void;
-  onFeedback: (f: { ok: boolean; msg: string }) => void;
-}) {
-  const [imageUrl, setImageUrl] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function submit() {
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/admin/marketing/magnific/remove-bg", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ imageUrl: imageUrl.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        onFeedback({ ok: false, msg: data.error || "Error" });
-      } else {
-        onSuccess(mapTask(data.task));
-        onFeedback({ ok: true, msg: "✓ Fondo eliminado" });
-        setImageUrl("");
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
+function RemoveBgForm() {
   return (
     <>
-      <h3 className="font-display text-lg font-semibold text-ink">Eliminar fondo (PNG transparente)</h3>
+      <h3 className="font-display text-lg font-semibold text-ink">
+        Eliminar fondo · No disponible
+      </h3>
       <p className="mb-4 mt-1 text-xs text-ink/60">
-        Síncrono — devuelve la URL del PNG sin fondo en segundos. Ideal para fichas de
-        producto y banners.
+        El endpoint <code className="rounded bg-bone-soft px-1 py-0.5">/v1/ai/remove-background</code>{" "}
+        que documenta Magnific no está disponible en la API pública con tu plan actual
+        (verificado 2026-05). En su lugar, prueba alternativas equivalentes:
       </p>
-      <Field label="URL de la imagen">
-        <input
-          type="url"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="https://..."
-          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
-        />
-      </Field>
-      <button
-        type="button"
-        onClick={submit}
-        disabled={!enabled || !imageUrl.trim() || submitting}
-        className="mt-4 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
-      >
-        {submitting ? "Procesando…" : "Quitar fondo →"}
-      </button>
+      <ul className="space-y-2 text-sm text-ink/70">
+        <li className="rounded-xl border border-line bg-bone-soft p-3">
+          <strong>· Mystic con prompt específico</strong>: pídele que regenere el producto
+          sobre fondo plano blanco o transparente, ej. "Bolsa tote blanca sobre fondo
+          transparente, vista frontal, sin sombras".
+        </li>
+        <li className="rounded-xl border border-line bg-bone-soft p-3">
+          <strong>· Herramientas alternativas gratuitas</strong>:{" "}
+          <a
+            href="https://www.remove.bg"
+            target="_blank"
+            rel="noopener"
+            className="text-accent underline"
+          >
+            remove.bg
+          </a>
+          ,{" "}
+          <a
+            href="https://photoroom.com"
+            target="_blank"
+            rel="noopener"
+            className="text-accent underline"
+          >
+            photoroom.com
+          </a>
+          {" "}— quitar fondo manualmente y subir el PNG al catálogo.
+        </li>
+        <li className="rounded-xl border border-line bg-bone-soft p-3">
+          <strong>· API alternativa</strong>: si quieres automatizarlo, te puedo conectar
+          la API de remove.bg (50 imágenes/mes gratis) o photoroom (1.000/mes con plan
+          básico).
+        </li>
+      </ul>
     </>
   );
 }

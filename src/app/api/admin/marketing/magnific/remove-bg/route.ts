@@ -1,59 +1,24 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { authenticateAdminRequest } from "@/lib/admin-auth";
-import { getMagnificConfig, removeBackground } from "@/lib/magnific";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const Schema = z.object({ imageUrl: z.string().url() });
-
-export async function POST(req: Request) {
-  const session = await authenticateAdminRequest(req);
-  if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  if (!["CEO", "COMERCIAL"].includes(session.role)) {
-    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
-  }
-
-  const cfg = await getMagnificConfig();
-  if (!cfg) {
-    return NextResponse.json({ error: "Magnific no configurada o desactivada" }, { status: 503 });
-  }
-
-  const body = await req.json().catch(() => ({}));
-  const parsed = Schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
-  }
-
-  const result = await removeBackground(cfg, parsed.data.imageUrl);
-
-  if (!result.ok) {
-    // Persistimos también los fallos para tener historial
-    const failed = await prisma.magnificTask.create({
-      data: {
-        type: "remove-bg",
-        status: "failed",
-        inputUrl: parsed.data.imageUrl,
-        error: result.error.slice(0, 1000),
-        createdBy: session.email,
-      },
-    });
-    return NextResponse.json({ error: result.error, status: result.status, task: failed }, { status: 502 });
-  }
-
-  // Remove-bg es síncrono — task creada ya como ready
-  const task = await prisma.magnificTask.create({
-    data: {
-      type: "remove-bg",
-      status: "ready",
-      inputUrl: parsed.data.imageUrl,
-      outputUrl: result.result.url,
-      previewUrl: result.result.preview,
-      createdBy: session.email,
+/**
+ * Remove Background — DESACTIVADO 2026-05.
+ *
+ * El endpoint `/v1/ai/remove-background` documentado en magnific.com no está
+ * disponible en la API pública (404 con key válida vs. 401 con key inválida).
+ * Mantengo la route para no romper enlaces externos pero devuelve 501.
+ *
+ * Cuando Magnific habilite la feature, restaurar desde git log o usar API
+ * alternativa (remove.bg / photoroom).
+ */
+export async function POST() {
+  return NextResponse.json(
+    {
+      error:
+        "Endpoint remove-background no disponible en Magnific API pública. Usa Mystic con prompt o herramientas externas (remove.bg, photoroom).",
     },
-  });
-
-  return NextResponse.json({ ok: true, task, urls: result.result });
+    { status: 501 },
+  );
 }

@@ -9,10 +9,11 @@ export const dynamic = "force-dynamic";
 
 const Schema = z.object({
   imageUrl: z.string().url(),
-  scale_factor: z.union([z.literal(2), z.literal(4)]).optional(),
+  scale_factor: z.enum(["2x", "4x", "8x", "16x"]).optional(),
   creativity: z.number().min(0).max(10).optional(),
   hdr: z.number().min(0).max(10).optional(),
   resemblance: z.number().min(0).max(10).optional(),
+  precision: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
     creativity: parsed.data.creativity,
     hdr: parsed.data.hdr,
     resemblance: parsed.data.resemblance,
+    precision: parsed.data.precision,
   });
 
   if (!result.ok) {

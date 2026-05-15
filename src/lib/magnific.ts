@@ -86,58 +86,61 @@ export async function testMagnificConnection(
 }
 
 /**
- * Remove Background — SÍNCRONO. Devuelve URLs directamente.
- * Body: { image_url: string }
+ * Remove Background — DESACTIVADO 2026-05.
+ *
+ * El endpoint `/v1/ai/remove-background` documentado en magnific.com NO existe en
+ * la API live para nuestra key (devuelve 404 mientras que un key inválido daría
+ * 401). Probables causas: feature beta no expuesta en API pública, o requiere
+ * plan superior. Si Magnific la habilita, restaurar.
+ *
+ * Mientras tanto la UI muestra esta funcionalidad como "no disponible".
  */
 export async function removeBackground(
-  cfg: MagnificConfig,
-  imageUrl: string,
-): Promise<{ ok: true; result: MagnificRemoveBgResponse } | { ok: false; error: string; status?: number }> {
-  try {
-    const res = await fetch(`${API_BASE}/v1/ai/remove-background`, {
-      method: "POST",
-      headers: authHeaders(cfg),
-      body: JSON.stringify({ image_url: imageUrl }),
-    });
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      return { ok: false, error: `HTTP ${res.status}: ${txt.slice(0, 500)}`, status: res.status };
-    }
-    const data = (await res.json()) as MagnificRemoveBgResponse;
-    return { ok: true, result: data };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
-  }
+  _cfg: MagnificConfig,
+  _imageUrl: string,
+): Promise<{ ok: false; error: string; status?: number }> {
+  return {
+    ok: false,
+    error:
+      "Endpoint remove-background no disponible en la API pública de Magnific con tu plan actual. Disponibles: Upscaler, Mystic, Relight.",
+    status: 501,
+  };
 }
 
 /**
  * Upscale — ASÍNCRONO. Devuelve task_id.
- * Doc: /v1/ai/image-upscaler (creative upscaler)
- * Params típicos: image_url, scale_factor (2/4), creativity, hdr, resemblance.
- * Como no hay schema verificado, mandamos los más comunes y dejamos
- * `params` libres para que UI pueda añadir más.
+ * Endpoint: POST /v1/ai/image-upscaler (también existe `/image-upscaler-precision`)
+ *
+ * Schema REAL verificado contra la API live (2026-05):
+ *   - Campo de imagen: `image` (NO image_url) — URL pública
+ *   - scale_factor: string "2x" | "4x" | "8x" | "16x" (NO numérico)
+ *   - Devuelve { data: { task_id, status, generated: [] } }
  */
+export type UpscaleScale = "2x" | "4x" | "8x" | "16x";
+
 export async function upscaleImage(
   cfg: MagnificConfig,
   imageUrl: string,
   options: {
-    scale_factor?: 2 | 4;
+    scale_factor?: UpscaleScale;
     creativity?: number; // 0-10
     hdr?: number;
     resemblance?: number;
     webhook_url?: string;
+    precision?: boolean; // si true usa el endpoint precision
   } = {},
 ): Promise<{ ok: true; taskId: string; status: MagnificTaskStatus } | { ok: false; error: string; status?: number }> {
   try {
     const body: Record<string, unknown> = {
-      image_url: imageUrl,
-      scale_factor: options.scale_factor ?? 2,
+      image: imageUrl,
+      scale_factor: options.scale_factor ?? "2x",
       ...(options.creativity !== undefined ? { creativity: options.creativity } : {}),
       ...(options.hdr !== undefined ? { hdr: options.hdr } : {}),
       ...(options.resemblance !== undefined ? { resemblance: options.resemblance } : {}),
       ...(options.webhook_url ? { webhook_url: options.webhook_url } : {}),
     };
-    const res = await fetch(`${API_BASE}/v1/ai/image-upscaler`, {
+    const endpoint = options.precision ? "image-upscaler-precision" : "image-upscaler";
+    const res = await fetch(`${API_BASE}/v1/ai/${endpoint}`, {
       method: "POST",
       headers: authHeaders(cfg),
       body: JSON.stringify(body),
