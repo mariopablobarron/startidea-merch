@@ -1,0 +1,45 @@
+src/components/EmailCapturePopup.tsx
+  s_65877aa637ec34::t_d20fa5039790e8 112-113
+  s_65877aa637ec34::t_384ef49a2898bf 5
+src/app/api/proof/[token]/revision/route.ts
+  s_65877aa637ec34::t_88538eb7e15ed7 56-59
+  s_65877aa637ec34::t_1239bec17faac1 6
+src/app/layout.tsx
+  s_65877aa637ec34::t_15d26f685e0b6e 13
+  s_65877aa637ec34::t_0559c5091a3aa7 75-76
+src/app/pay/[token]/success/page.tsx
+  s_65877aa637ec34::t_a28c81ba161a0e 2-4,17-43
+src/app/pay/[token]/success/PaySuccessClient.tsx
+  s_65877aa637ec34::t_c029623d4c9e70 1-111
+src/app/api/proof/[token]/reject/route.ts
+  s_65877aa637ec34::t_5dfbbb4b539cd5 66-69
+  s_65877aa637ec34::t_4550ca42cfbd80 7
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_9574e275b22a5f 12
+  s_65877aa637ec34::t_6b30f205fb61b3 243-249
+.env.example
+  s_65877aa637ec34::t_6f2187ab3dfb99 14-20
+src/app/api/proof/[token]/approve/route.ts
+  s_65877aa637ec34::t_a7bb8ecf9bef66 65-68
+  s_65877aa637ec34::t_96c661aa50631a 7
+src/components/AdsPixels.tsx
+  s_65877aa637ec34::t_9c9a2fd995bfb2 1-104
+src/lib/ads-events.ts
+  s_65877aa637ec34::t_e7aa7ef7f4f80b 1-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "53e840703c6aa08f725fb1e2146af3ddef745a5a",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
