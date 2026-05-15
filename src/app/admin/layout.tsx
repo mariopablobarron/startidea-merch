@@ -103,6 +103,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     Productos
                   </Link>
                   <Link
+                    href="/admin/products/auto-describe"
+                    className="text-ink/60 hover:text-accent"
+                    title="Auto-generar descripciones con IA para productos sin descripción"
+                  >
+                    IA descripciones ✨
+                  </Link>
+                  <Link
                     href="/admin/marketing/content"
                     className="text-ink/60 hover:text-accent"
                     title="Content Studio — IA copy + workflow aprobación"
