@@ -1,0 +1,26 @@
+src/app/api/admin/marketing/magnific/relight/route.ts
+  s_65877aa637ec34::t_fdeb410e0e3ca2 1-54
+src/lib/magnific.ts
+  s_65877aa637ec34::t_58a67c843dfcbb 228-262
+src/app/admin/marketing/assets/AssetStudio.tsx
+  s_65877aa637ec34::t_5f9893e76f6426 335-436
+  s_65877aa637ec34::t_5ea43f4f5c60f9 17
+  s_65877aa637ec34::t_3e80b21d774fcc 82-88
+  s_65877aa637ec34::t_c51a6bd13260c4 63-64,69-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "56da934947d19abe5d25458018e20c405ba288eb",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
