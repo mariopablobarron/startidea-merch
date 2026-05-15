@@ -37,7 +37,17 @@ const SORT_LABELS: Record<Sort, string> = {
 export default async function CatalogoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; cat?: string; color?: string; mat?: string; page?: string; sort?: Sort }>;
+  searchParams: Promise<{
+    q?: string;
+    cat?: string;
+    color?: string;
+    mat?: string;
+    page?: string;
+    sort?: Sort;
+    priceMin?: string; // €
+    priceMax?: string; // €
+    stock?: string; // "1" → solo en stock
+  }>;
 }) {
   const sp = await searchParams;
   const qRaw = (sp.q || "").trim();
@@ -45,6 +55,9 @@ export default async function CatalogoPage({
   const catSlug = (sp.cat || "").trim();
   const colorGroup = (sp.color || "").trim();
   const material = (sp.mat || "").trim();
+  const priceMin = sp.priceMin ? Math.max(0, parseInt(sp.priceMin, 10) || 0) : null;
+  const priceMax = sp.priceMax ? Math.max(0, parseInt(sp.priceMax, 10) || 0) : null;
+  const inStock = sp.stock === "1";
   const sort: Sort = (sp.sort as Sort) || "name";
   const page = Math.max(1, parseInt(sp.page || "1", 10) || 1);
   const perPage = 24;
@@ -82,6 +95,44 @@ export default async function CatalogoPage({
         }
       : undefined;
 
+  // Price filter aplica sobre fromPriceCents (centavos), o sobre override
+  // customFromPriceCents si admin definió uno explícito.
+  const priceFilter: Prisma.ProductWhereInput | undefined =
+    priceMin !== null || priceMax !== null
+      ? {
+          OR: [
+            // Producto con override de precio
+            {
+              override: {
+                is: {
+                  customFromPriceCents: {
+                    ...(priceMin !== null ? { gte: priceMin * 100 } : {}),
+                    ...(priceMax !== null ? { lte: priceMax * 100 } : {}),
+                  },
+                },
+              },
+            },
+            // Producto sin override, usar fromPriceCents
+            {
+              AND: [
+                { override: null },
+                {
+                  fromPriceCents: {
+                    ...(priceMin !== null ? { gte: priceMin * 100 } : {}),
+                    ...(priceMax !== null ? { lte: priceMax * 100 } : {}),
+                  },
+                },
+              ],
+            },
+          ],
+        }
+      : undefined;
+
+  // Stock filter: al menos una variante con stockQty > 0
+  const stockFilter: Prisma.ProductWhereInput | undefined = inStock
+    ? { variants: { some: { stockQty: { gt: 0 } } } }
+    : undefined;
+
   const where: Prisma.ProductWhereInput = {
     active: true,
     NOT: { override: { is: { hidden: true } } },
@@ -93,6 +144,8 @@ export default async function CatalogoPage({
     ...(material
       ? { material: { contains: material, mode: "insensitive" as const } }
       : {}),
+    ...(priceFilter || {}),
+    ...(stockFilter || {}),
   };
 
   // Productos destacados (override.featured = true) siempre primero,
@@ -292,7 +345,15 @@ export default async function CatalogoPage({
                 {colorGroups.length > 0 && (
                   <FilterBlock title="Color">
                     <Chip
-                      href={buildHref({ q, cat: catSlug, mat: material, sort })}
+                      href={buildHref({
+                        q: qRaw,
+                        cat: catSlug,
+                        mat: material,
+                        sort,
+                        priceMin: priceMin?.toString(),
+                        priceMax: priceMax?.toString(),
+                        stock: inStock ? "1" : undefined,
+                      })}
                       active={!colorGroup}
                       label="Cualquiera"
                     />
@@ -302,11 +363,14 @@ export default async function CatalogoPage({
                         <Chip
                           key={c.colorGroup!}
                           href={buildHref({
-                            q,
+                            q: qRaw,
                             cat: catSlug,
                             mat: material,
                             color: c.colorGroup!,
                             sort,
+                            priceMin: priceMin?.toString(),
+                            priceMax: priceMax?.toString(),
+                            stock: inStock ? "1" : undefined,
                           })}
                           active={colorGroup.toLowerCase() === c.colorGroup!.toLowerCase()}
                           label={`${c.colorGroup}`}
@@ -318,7 +382,15 @@ export default async function CatalogoPage({
                 {materials.length > 0 && (
                   <FilterBlock title="Material">
                     <Chip
-                      href={buildHref({ q, cat: catSlug, color: colorGroup, sort })}
+                      href={buildHref({
+                        q: qRaw,
+                        cat: catSlug,
+                        color: colorGroup,
+                        sort,
+                        priceMin: priceMin?.toString(),
+                        priceMax: priceMax?.toString(),
+                        stock: inStock ? "1" : undefined,
+                      })}
                       active={!material}
                       label="Cualquiera"
                     />
@@ -329,11 +401,14 @@ export default async function CatalogoPage({
                         <Chip
                           key={m.material!}
                           href={buildHref({
-                            q,
+                            q: qRaw,
                             cat: catSlug,
                             color: colorGroup,
                             mat: m.material!,
                             sort,
+                            priceMin: priceMin?.toString(),
+                            priceMax: priceMax?.toString(),
+                            stock: inStock ? "1" : undefined,
                           })}
                           active={material.toLowerCase() === m.material!.toLowerCase()}
                           label={m.material!}
@@ -342,12 +417,80 @@ export default async function CatalogoPage({
                   </FilterBlock>
                 )}
 
-                {(q || catSlug || colorGroup || material) && (
+                {/* Rango de precio */}
+                <FilterBlock title="Rango de precio (€/ud)">
+                  <form method="get" action="/catalogo" className="space-y-2">
+                    {q && <input type="hidden" name="q" value={qRaw} />}
+                    {catSlug && <input type="hidden" name="cat" value={catSlug} />}
+                    {colorGroup && <input type="hidden" name="color" value={colorGroup} />}
+                    {material && <input type="hidden" name="mat" value={material} />}
+                    {sort && <input type="hidden" name="sort" value={sort} />}
+                    {inStock && <input type="hidden" name="stock" value="1" />}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        name="priceMin"
+                        defaultValue={priceMin ?? ""}
+                        min={0}
+                        placeholder="Desde"
+                        className="w-full rounded-lg border border-line bg-bone-soft px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                      />
+                      <span className="text-xs text-ink/40">—</span>
+                      <input
+                        type="number"
+                        name="priceMax"
+                        defaultValue={priceMax ?? ""}
+                        min={0}
+                        placeholder="Hasta"
+                        className="w-full rounded-lg border border-line bg-bone-soft px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full rounded-full bg-ink px-3 py-1.5 text-xs font-medium text-bone hover:bg-accent"
+                    >
+                      Aplicar precio
+                    </button>
+                  </form>
+                </FilterBlock>
+
+                {/* Disponibilidad / Stock */}
+                <FilterBlock title="Disponibilidad">
+                  <Chip
+                    href={buildHref({
+                      q: qRaw,
+                      cat: catSlug,
+                      color: colorGroup,
+                      mat: material,
+                      sort,
+                      priceMin: priceMin?.toString(),
+                      priceMax: priceMax?.toString(),
+                    })}
+                    active={!inStock}
+                    label="Todos"
+                  />
+                  <Chip
+                    href={buildHref({
+                      q: qRaw,
+                      cat: catSlug,
+                      color: colorGroup,
+                      mat: material,
+                      sort,
+                      stock: "1",
+                      priceMin: priceMin?.toString(),
+                      priceMax: priceMax?.toString(),
+                    })}
+                    active={inStock}
+                    label="✓ Solo en stock"
+                  />
+                </FilterBlock>
+
+                {(q || catSlug || colorGroup || material || priceMin !== null || priceMax !== null || inStock) && (
                   <Link
                     href="/catalogo"
                     className="mt-6 inline-block text-xs text-ink/60 underline-offset-4 hover:text-accent hover:underline"
                   >
-                    Limpiar filtros
+                    Limpiar todos los filtros
                   </Link>
                 )}
               </aside>
