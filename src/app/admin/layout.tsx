@@ -182,6 +182,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   <Link href="/admin/proposals/new" className="text-accent hover:text-accent-dark">
                     ⚡ Nueva propuesta IA
                   </Link>
+                  <Link href="/admin/proposals/ai" className="text-accent hover:text-accent-dark" title="Genera presupuesto desde brief libre del cliente">
+                    ✨ Quote Builder IA
+                  </Link>
                 </>
               )}
             </nav>
