@@ -1,0 +1,24 @@
+src/app/files/[...path]/route.ts
+  s_65877aa637ec34::t_a3d7116237502b 35
+src/app/admin/cart-quotes/[id]/page.tsx
+  s_65877aa637ec34::t_e8c7f1264f6449 461-485
+  s_65877aa637ec34::t_9f117704a3aee4 513-514,516-549
+src/app/api/admin/uploads/proof/route.ts
+  s_65877aa637ec34::t_e219b468925333 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "86265c0e5ab29d9cddd164db4294fc2228a26889",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
