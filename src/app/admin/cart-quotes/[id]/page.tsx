@@ -458,6 +458,31 @@ function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
     }
   }
 
+  async function onProofFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/uploads/proof", {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        // Devolvemos URL relativa; el endpoint create-proof acepta cualquier URL válida
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        setProofUrl(`${origin}${data.url}`);
+      } else {
+        setResult({ error: data.error || "Error al subir" });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="mt-6 space-y-4">
       <div className="rounded-2xl border border-line bg-bone p-5">
@@ -485,23 +510,43 @@ function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
       <div className="rounded-2xl border border-line bg-bone p-5">
         <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Crear proof para el cliente</p>
         <p className="mt-1 text-xs text-ink/60">
-          URL del mockup (Drive/S3/Dropbox público). Se enviará un email al cliente con un link único para aprobar/rechazar.
+          Sube el mockup directamente o pega URL pública (Drive/Dropbox). Tras &quot;Enviar al cliente&quot;
+          el cliente recibe email con link único para aprobar/rechazar.
         </p>
-        <div className="mt-3 flex gap-2">
-          <input
-            value={proofUrl}
-            onChange={(e) => setProofUrl(e.target.value)}
-            placeholder="https://…/mockup.png"
-            className="flex-1 rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
-          />
-          <button
-            type="button"
-            disabled={busy || !/^https?:\/\//.test(proofUrl)}
-            onClick={createProof}
-            className="rounded-full bg-ink px-4 py-2 text-xs font-medium text-bone hover:bg-accent disabled:opacity-40"
-          >
-            Enviar al cliente
-          </button>
+        <div className="mt-3 grid gap-2">
+          <div className="flex gap-2">
+            <input
+              value={proofUrl}
+              onChange={(e) => setProofUrl(e.target.value)}
+              placeholder="https://…/mockup.png o URL devuelta tras subir abajo"
+              className="flex-1 rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+            <button
+              type="button"
+              disabled={busy || !/^https?:\/\//.test(proofUrl)}
+              onClick={createProof}
+              className="rounded-full bg-ink px-4 py-2 text-xs font-medium text-bone hover:bg-accent disabled:opacity-40"
+            >
+              Enviar al cliente
+            </button>
+          </div>
+          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line bg-bone-soft px-3 py-3 text-center transition hover:border-accent">
+            <svg className="h-4 w-4 text-ink/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <span className="text-xs font-medium text-ink/70">
+              {busy ? "Subiendo…" : "Subir mockup (PNG/JPG/SVG/PDF · máx 20MB)"}
+            </span>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/svg+xml,image/webp,application/pdf"
+              onChange={onProofFile}
+              disabled={busy}
+              className="hidden"
+            />
+          </label>
         </div>
       </div>
 
