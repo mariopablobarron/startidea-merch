@@ -1,0 +1,27 @@
+src/app/files/[...path]/route.ts
+  s_65877aa637ec34::t_de77b885423288 35
+docker-compose.yml
+  s_65877aa637ec34::t_ddccfc5487fa84 60-62,65-69
+  s_65877aa637ec34::t_0a8cab0c36a4f7 103
+src/lib/magnific-storage.ts
+  s_65877aa637ec34::t_96f02cf5df89e5 1-62
+src/app/api/admin/marketing/magnific/tasks/[id]/route.ts
+  s_65877aa637ec34::t_a06524f9ce4b43 10
+  s_65877aa637ec34::t_8813171f332518 53-68,71-74,79,82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "7dd95c8bada8bcb2da8017589b0dd9f06931de45",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
