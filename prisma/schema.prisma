@@ -774,6 +774,10 @@ model Payment {
   refundedAt            DateTime?
   failureReason         String?
 
+  // Factura
+  invoiceNumber         String?        @unique  // formato 2026-0001 (YYYY-NNNN)
+  invoiceIssuedAt       DateTime?
+
   @@index([cartId])
   @@index([status])
 }

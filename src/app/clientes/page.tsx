@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getCustomerSession } from "@/lib/customer-auth";
+import { OrderTimeline } from "@/components/OrderTimeline";
+import { buildCartTimelineEvents } from "@/lib/cart-timeline";
 
 export const metadata: Metadata = {
   title: "Portal cliente",
@@ -34,15 +36,13 @@ export default async function CustomerPortalPage() {
     orderBy: { createdAt: "desc" },
     include: {
       items: { select: { quantity: true, productName: true, productRef: true, primaryImageUrl: true } },
-      payments: { where: { status: "PAID" }, select: { amountCents: true, paidAt: true } },
+      payments: { where: { status: "PAID" }, select: { id: true, amountCents: true, paidAt: true, invoiceNumber: true } },
       proofs: {
-        where: { status: "PENDING" },
-        select: { token: true, artworkUrl: true, createdAt: true },
+        select: { token: true, artworkUrl: true, createdAt: true, status: true, decidedAt: true },
         orderBy: { createdAt: "desc" },
-        take: 1,
       },
       trackings: {
-        select: { status: true, trackingCode: true, carrier: true, carrierUrl: true },
+        select: { status: true, trackingCode: true, carrier: true, carrierUrl: true, fetchedAt: true },
         orderBy: { fetchedAt: "desc" },
         take: 1,
       },
@@ -61,7 +61,7 @@ export default async function CustomerPortalPage() {
   const eurInvestedInCEE = Math.round(totalPaid * 0.4);
   const co2SavedKg = Math.round(totalItems * 1.2);
   const pendingPayments = carts.filter((c) => c.paymentLinkToken && c.payments.length === 0);
-  const pendingProofs = carts.filter((c) => c.proofs.length > 0);
+  const pendingProofs = carts.filter((c) => c.proofs.some((p) => p.status === "PENDING"));
 
   return (
     <main className="min-h-screen bg-bone-soft">
@@ -95,19 +95,22 @@ export default async function CustomerPortalPage() {
               Tienes acciones pendientes
             </p>
             <ul className="mt-3 space-y-2">
-              {pendingProofs.map((c) => (
-                <li key={`p-${c.id}`}>
-                  <Link
-                    href={`/proof/${c.proofs[0]?.token}`}
-                    className="flex items-center justify-between gap-3 rounded-xl bg-bone p-3 hover:bg-accent-mist"
-                  >
-                    <span className="text-sm">
-                      🎨 <strong>Mockup esperando aprobación</strong> — pedido {c.id.slice(0, 6)}
-                    </span>
-                    <span className="text-xs text-accent-deep">Revisar →</span>
-                  </Link>
-                </li>
-              ))}
+              {pendingProofs.map((c) => {
+                const pending = c.proofs.find((p) => p.status === "PENDING");
+                return (
+                  <li key={`p-${c.id}`}>
+                    <Link
+                      href={`/proof/${pending?.token}`}
+                      className="flex items-center justify-between gap-3 rounded-xl bg-bone p-3 hover:bg-accent-mist"
+                    >
+                      <span className="text-sm">
+                        🎨 <strong>Mockup esperando aprobación</strong> — pedido {c.id.slice(0, 6)}
+                      </span>
+                      <span className="text-xs text-accent-deep">Revisar →</span>
+                    </Link>
+                  </li>
+                );
+              })}
               {pendingPayments.map((c) => (
                 <li key={`pay-${c.id}`}>
                   <Link
@@ -203,6 +206,18 @@ export default async function CustomerPortalPage() {
                         {paid > 0 && (
                           <span className="text-social">✓ Pagado {EUR.format(paid / 100)}</span>
                         )}
+                        {c.payments.map((p) => (
+                          <a
+                            key={p.id}
+                            href={`/api/clientes/invoice/${p.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-accent underline-offset-4 hover:underline"
+                            title={p.invoiceNumber ? `Factura ${p.invoiceNumber}` : "Generar factura"}
+                          >
+                            🧾 Factura PDF
+                          </a>
+                        ))}
                         {tracking?.trackingCode && (
                           <a
                             href={tracking.carrierUrl || "#"}
@@ -215,9 +230,9 @@ export default async function CustomerPortalPage() {
                         )}
                       </div>
                       <div className="flex gap-2">
-                        {c.proofs[0] && (
+                        {c.proofs.find((p) => p.status === "PENDING") && (
                           <Link
-                            href={`/proof/${c.proofs[0].token}`}
+                            href={`/proof/${c.proofs.find((p) => p.status === "PENDING")?.token}`}
                             className="rounded-full bg-accent px-3 py-1 text-bone"
                           >
                             🎨 Aprobar mockup
@@ -233,6 +248,18 @@ export default async function CustomerPortalPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Timeline visual del progreso */}
+                    {(c.payments.length > 0 || c.status !== "NEW") && (
+                      <details className="mt-4 border-t border-line pt-3">
+                        <summary className="cursor-pointer text-[11px] font-medium uppercase tracking-wider text-ink/50 hover:text-accent">
+                          Ver progreso del pedido
+                        </summary>
+                        <div className="mt-3">
+                          <OrderTimeline events={buildCartTimelineEvents(c)} />
+                        </div>
+                      </details>
+                    )}
                   </li>
                 );
               })}
