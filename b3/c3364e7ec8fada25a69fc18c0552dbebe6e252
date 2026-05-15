@@ -1,0 +1,24 @@
+src/lib/magnific.ts
+  s_65877aa637ec34::t_a7df260190ded8 161-169,171-188,193-194
+src/app/api/admin/marketing/magnific/mystic/route.ts
+  s_65877aa637ec34::t_8ad8a6b2bfcfaf 12-31
+src/app/admin/marketing/assets/AssetStudio.tsx
+  s_65877aa637ec34::t_e5e43fbcf507c3 325-339,350-351
+  s_65877aa637ec34::t_fef19fbef81460 401,404-406,409,412,415-417
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b3c3364e7ec8fada25a69fc18c0552dbebe6e252",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
