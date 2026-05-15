@@ -7,6 +7,7 @@ import {
   magnificEndpointForType,
   magnificStatusToDb,
 } from "@/lib/magnific";
+import { persistRemoteImage } from "@/lib/magnific-storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,18 +50,36 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   const newStatus = magnificStatusToDb(remote.status);
-  const outputUrl = remote.generated[0] ?? null;
+  const remoteImageUrl = remote.generated[0] ?? null;
+
+  // Si la task está READY y tenemos URL remota:
+  // 1. Descargamos la imagen a /app/uploads/magnific-assets/ (persistente)
+  // 2. Guardamos en BD la URL LOCAL como outputUrl (sobrevive expiración del
+  //    token de Magnific). La URL remota se conserva en params.remoteUrl
+  //    por trazabilidad.
+  let finalOutputUrl = remoteImageUrl;
+  let persistedBytes: number | null = null;
+  if (newStatus === "ready" && remoteImageUrl && !task.outputUrl?.startsWith("/files/")) {
+    const persisted = await persistRemoteImage(remoteImageUrl, task.id);
+    if (persisted) {
+      finalOutputUrl = persisted.url;
+      persistedBytes = persisted.bytes;
+    }
+  }
 
   // Solo escribir si cambió algo (evita writes innecesarios)
-  if (newStatus !== task.status || (outputUrl && outputUrl !== task.outputUrl)) {
+  if (
+    newStatus !== task.status ||
+    (finalOutputUrl && finalOutputUrl !== task.outputUrl)
+  ) {
     const updated = await prisma.magnificTask.update({
       where: { id },
       data: {
         status: newStatus,
-        ...(outputUrl ? { outputUrl } : {}),
+        ...(finalOutputUrl ? { outputUrl: finalOutputUrl } : {}),
       },
     });
-    return NextResponse.json({ ok: true, task: updated });
+    return NextResponse.json({ ok: true, task: updated, persistedBytes });
   }
 
   return NextResponse.json({ ok: true, task });

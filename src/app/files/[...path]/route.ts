@@ -32,7 +32,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ path: s
   }
 
   // Solo permitimos kinds conocidos como primera parte
-  const allowedKinds = new Set(["customer-logos", "admin-proofs"]);
+  const allowedKinds = new Set(["customer-logos", "admin-proofs", "magnific-assets"]);
   if (!allowedKinds.has(parts[0])) {
     return NextResponse.json({ error: "Path no permitido" }, { status: 403 });
   }

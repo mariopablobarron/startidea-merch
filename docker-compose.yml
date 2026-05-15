@@ -57,8 +57,16 @@ services:
       # Forzar bind a 0.0.0.0 — sin esto Next.js standalone escucha solo
       # en el hostname interno del container y el healthcheck localhost falla.
       HOSTNAME: "0.0.0.0"
+      # Directorio persistente para uploads (customer-logos, magnific-assets, etc).
+      # Montado en /app/uploads vía volumen Docker (sobrevive redeploys).
+      UPLOADS_DIR: /app/uploads
     expose:
       - "3000"
+    volumes:
+      # Persistencia de archivos subidos por usuarios (logos clientes para
+      # personalización + imágenes generadas por Magnific). Sin este volume
+      # los uploads se pierden en cada rebuild del contenedor.
+      - merch_uploads:/app/uploads
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 30s
@@ -92,3 +100,4 @@ networks:
 
 volumes:
   merch_pgdata_v2:
+  merch_uploads:
