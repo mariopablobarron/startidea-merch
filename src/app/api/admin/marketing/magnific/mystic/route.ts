@@ -9,8 +9,26 @@ export const dynamic = "force-dynamic";
 
 const Schema = z.object({
   prompt: z.string().min(3).max(2000),
-  resolution: z.enum(["1K", "2K", "4K"]).optional(),
-  aspect_ratio: z.enum(["1:1", "16:9", "9:16", "4:3", "3:4", "21:9"]).optional(),
+  resolution: z.enum(["1k", "2k", "4k"]).optional(),
+  aspect_ratio: z
+    .enum([
+      "square_1_1",
+      "classic_4_3",
+      "traditional_3_4",
+      "widescreen_16_9",
+      "social_story_9_16",
+      "smartphone_horizontal_20_9",
+      "smartphone_vertical_9_20",
+      "film_horizontal_21_9",
+      "film_vertical_9_21",
+      "standard_3_2",
+      "portrait_2_3",
+      "horizontal_2_1",
+      "vertical_1_2",
+      "social_5_4",
+      "social_post_4_5",
+    ])
+    .optional(),
   model: z.string().optional(),
   structure_reference: z.string().url().optional(),
   style_reference: z.string().url().optional(),

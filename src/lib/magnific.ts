@@ -158,13 +158,40 @@ export async function upscaleImage(
 
 /**
  * Mystic — generación de imagen desde prompt (ultra-realista).
+ *
+ * Schema REAL verificado contra API live (2026-05):
+ *   - resolution: lowercase "1k" | "2k" | "4k" (NO mayúscula)
+ *   - aspect_ratio: nombres descriptivos (NO "1:1"). Valores aceptados:
+ *       square_1_1, classic_4_3, traditional_3_4, widescreen_16_9,
+ *       social_story_9_16, smartphone_horizontal_20_9, smartphone_vertical_9_20,
+ *       film_horizontal_21_9, film_vertical_9_21, standard_3_2, portrait_2_3,
+ *       horizontal_2_1, vertical_1_2, social_5_4, social_post_4_5
+ *   - Devuelve { data: { task_id, status, generated, has_nsfw } }
  */
+export type MysticResolution = "1k" | "2k" | "4k";
+export type MysticAspectRatio =
+  | "square_1_1"
+  | "classic_4_3"
+  | "traditional_3_4"
+  | "widescreen_16_9"
+  | "social_story_9_16"
+  | "smartphone_horizontal_20_9"
+  | "smartphone_vertical_9_20"
+  | "film_horizontal_21_9"
+  | "film_vertical_9_21"
+  | "standard_3_2"
+  | "portrait_2_3"
+  | "horizontal_2_1"
+  | "vertical_1_2"
+  | "social_5_4"
+  | "social_post_4_5";
+
 export async function generateMystic(
   cfg: MagnificConfig,
   prompt: string,
   options: {
-    resolution?: "1K" | "2K" | "4K";
-    aspect_ratio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "21:9";
+    resolution?: MysticResolution;
+    aspect_ratio?: MysticAspectRatio;
     model?: string;
     structure_reference?: string;
     style_reference?: string;

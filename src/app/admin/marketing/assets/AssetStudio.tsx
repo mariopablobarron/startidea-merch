@@ -322,6 +322,21 @@ function RemoveBgForm() {
   );
 }
 
+const MYSTIC_ASPECTS: Array<{ id: string; label: string }> = [
+  { id: "square_1_1", label: "1:1 · Instagram post / LinkedIn" },
+  { id: "social_post_4_5", label: "4:5 · Instagram carousel" },
+  { id: "social_story_9_16", label: "9:16 · Story / Reel / TikTok" },
+  { id: "widescreen_16_9", label: "16:9 · Banner web / YouTube thumbnail" },
+  { id: "classic_4_3", label: "4:3 · Clásico horizontal" },
+  { id: "traditional_3_4", label: "3:4 · Clásico vertical" },
+  { id: "standard_3_2", label: "3:2 · Cámara DSLR horizontal" },
+  { id: "portrait_2_3", label: "2:3 · Pinterest pin" },
+  { id: "horizontal_2_1", label: "2:1 · Twitter/X header" },
+  { id: "vertical_1_2", label: "1:2 · Banner vertical" },
+  { id: "film_horizontal_21_9", label: "21:9 · Cinemascope horizontal" },
+  { id: "social_5_4", label: "5:4 · Foto retrato Facebook" },
+];
+
 function MysticForm({
   enabled,
   onSuccess,
@@ -332,8 +347,8 @@ function MysticForm({
   onFeedback: (f: { ok: boolean; msg: string }) => void;
 }) {
   const [prompt, setPrompt] = useState("");
-  const [resolution, setResolution] = useState<"1K" | "2K" | "4K">("2K");
-  const [aspectRatio, setAspectRatio] = useState<"1:1" | "16:9" | "9:16" | "4:3">("1:1");
+  const [resolution, setResolution] = useState<"1k" | "2k" | "4k">("2k");
+  const [aspectRatio, setAspectRatio] = useState<string>("square_1_1");
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
@@ -383,24 +398,23 @@ function MysticForm({
         <Field label="Resolución">
           <select
             value={resolution}
-            onChange={(e) => setResolution(e.target.value as "1K" | "2K" | "4K")}
+            onChange={(e) => setResolution(e.target.value as "1k" | "2k" | "4k")}
             className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm"
           >
-            <option value="1K">1K (rápido)</option>
-            <option value="2K">2K (recomendado)</option>
-            <option value="4K">4K (alta calidad)</option>
+            <option value="1k">1k (rápido)</option>
+            <option value="2k">2k (recomendado)</option>
+            <option value="4k">4k (alta calidad)</option>
           </select>
         </Field>
-        <Field label="Aspect ratio">
+        <Field label="Formato">
           <select
             value={aspectRatio}
-            onChange={(e) => setAspectRatio(e.target.value as "1:1" | "16:9" | "9:16" | "4:3")}
+            onChange={(e) => setAspectRatio(e.target.value)}
             className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm"
           >
-            <option value="1:1">1:1 (Instagram post)</option>
-            <option value="9:16">9:16 (Story / Reel / TikTok)</option>
-            <option value="16:9">16:9 (banner / YouTube)</option>
-            <option value="4:3">4:3 (clásico)</option>
+            {MYSTIC_ASPECTS.map((a) => (
+              <option key={a.id} value={a.id}>{a.label}</option>
+            ))}
           </select>
         </Field>
       </div>
