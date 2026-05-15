@@ -10,6 +10,7 @@ import { PWARegister } from "@/components/PWARegister";
 import { Tour } from "@/components/Tour";
 import { Analytics } from "@/components/Analytics";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { AdsPixels } from "@/components/AdsPixels";
 import { CookieBanner } from "@/components/CookieBanner";
 import { EmailCapturePopup } from "@/components/EmailCapturePopup";
 
@@ -71,6 +72,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         {/* GA4 + Search Console — opcional, se activa con env vars */}
         <GoogleAnalytics />
+        {/* Pixels publicitarios Meta + Google Ads + LinkedIn (env-driven) */}
+        <AdsPixels />
       </head>
       <body>
         {children}

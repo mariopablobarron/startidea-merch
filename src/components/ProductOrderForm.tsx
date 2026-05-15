@@ -9,6 +9,7 @@ import {
 } from "@/lib/pricing";
 import { addItem } from "@/lib/cart-storage";
 import { trackEvent } from "@/lib/track";
+import { trackAddToCart } from "@/lib/ads-events";
 import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 
 /**
@@ -238,6 +239,13 @@ export function ProductOrderForm({
         technique: withMarking ? technique?.techniqueCode : null,
         totalCents,
       },
+    });
+    // Eventos ads (Meta + Google + LinkedIn)
+    trackAddToCart({
+      value: totalCents ? totalCents / 100 : undefined,
+      currency: "EUR",
+      contentId: productRef,
+      contentName: productName,
     });
     addItem({
       productSlug,

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { midoceanProofs } from "@/lib/suppliers/midocean-orders";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
+import { notifyTelegram } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -60,6 +61,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     toStatus: "APPROVED",
     at: new Date().toISOString(),
   });
+
+  void notifyTelegram(
+    `✅ <b>Mockup aprobado</b>\n${proof.cart.name}${proof.cart.company ? ` · ${proof.cart.company}` : ""}\n📧 ${proof.cart.email}\nCart <code>${proof.cartId.slice(0, 8)}</code> · pasamos producción a marcha`,
+  ).catch(() => {});
 
   return NextResponse.json({ ok: true, status: updated.status });
 }

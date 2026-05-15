@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { trackLead } from "@/lib/ads-events";
 
 /**
  * Popup de captura de email con lead magnet (cupón WELCOME10 10% descuento).
@@ -108,6 +109,8 @@ export function EmailCapturePopup() {
       try {
         localStorage.setItem(STORAGE_KEY, "converted");
       } catch {}
+      // Lead event a Meta/Google/LinkedIn
+      trackLead({ method: "email-popup-welcome10" });
       setDone({ ok: true, coupon: data.couponCode || "WELCOME10" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de red");
