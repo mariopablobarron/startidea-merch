@@ -1,0 +1,29 @@
+src/app/api/admin/quote-ai/save/route.ts
+  s_65877aa637ec34::t_2d366adfc04345 1-166
+src/app/api/admin/quote-ai/generate/route.ts
+  s_65877aa637ec34::t_b4957df3581f88 154,156-165,167-173,175-191,194-199
+  s_65877aa637ec34::t_b3cda9658cfeaa 146
+  s_65877aa637ec34::t_b44fe6278d3305 1-145,147-153,155,166,174,192-193,200-205
+src/lib/quote-ai-builder.ts
+  s_65877aa637ec34::t_19c9ba461a2548 1-274
+src/app/admin/proposals/ai/page.tsx
+  s_65877aa637ec34::t_d517e46258d69a 1-416
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_cd1e1d7878f575 185-187
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "375ce602e1e3b3c62499e16e2903cfce10bfe193",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
