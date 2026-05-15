@@ -1056,11 +1056,33 @@ model IntegrationConfig {
 enum IntegrationProvider {
   METRICOOL
   MAGNIFIC      // IA imágenes: upscaler, remove-bg, mystic, relight, expand
+  REPLICATE     // IA imágenes pay-per-use: real-esrgan, flux, rembg, etc.
   META_ADS
   GOOGLE_ADS
   LINKEDIN_ADS
   RESEND        // ya usado para emails (placeholder por unificación)
   STRIPE        // ya usado (placeholder)
+}
+
+/// Tareas Replicate (upscale, flux, remove-bg, etc). Mismo patrón que
+/// MagnificTask. La diferencia es el provider y los modelos disponibles.
+model ReplicateTask {
+  id          String   @id @default(cuid())
+  type        String   // "upscale" | "generate" | "remove-bg"
+  status      String   // "queued" | "processing" | "ready" | "failed"
+  model       String   // ej "philz1337x/clarity-upscaler"
+  inputUrl    String?  @db.Text
+  outputUrl   String?  @db.Text  // URL local persistida (tras descarga)
+  remotePredictionId String?
+  prompt      String?  @db.Text
+  params      Json?
+  error       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+
+  @@index([type, status])
+  @@index([createdAt])
 }
 
 /// Tareas Magnific (upscale, remove-bg, mystic, relight, expand). Persistimos

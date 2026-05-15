@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { testMetricoolConnection, type MetricoolConfig } from "@/lib/metricool";
 import { testMagnificConnection, type MagnificConfig } from "@/lib/magnific";
+import { testReplicateConnection, type ReplicateConfig } from "@/lib/replicate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 const PROVIDERS = [
   "METRICOOL",
   "MAGNIFIC",
+  "REPLICATE",
   "META_ADS",
   "GOOGLE_ADS",
   "LINKEDIN_ADS",
@@ -125,6 +127,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ provide
     } else {
       const test = await testMagnificConnection({ apiKey: cfg.apiKey });
       result = test.ok ? { ok: true, data: { message: "Auth OK" } } : { ok: false, error: test.error };
+    }
+  } else if (provider === "REPLICATE") {
+    const cfg = row.config as Partial<ReplicateConfig>;
+    if (!cfg.apiToken) {
+      result = { ok: false, error: "Falta apiToken" };
+    } else {
+      const test = await testReplicateConnection({ apiToken: cfg.apiToken });
+      result = test.ok
+        ? { ok: true, data: { message: "Auth OK", username: test.username } }
+        : { ok: false, error: test.error };
     }
   } else {
     result = { ok: false, error: `Test no implementado para ${provider}` };

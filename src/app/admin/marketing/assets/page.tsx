@@ -31,11 +31,48 @@ export default async function AssetsPage() {
     "apiKey" in integ.config &&
     Boolean((integ.config as { apiKey?: string }).apiKey);
 
-  // Tareas recientes (últimas 30)
-  const tasks = await prisma.magnificTask.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 30,
-  });
+  // Tareas recientes — combinar Magnific + Replicate (últimas 30 globales)
+  const [magnificTasks, replicateTasks, replicateInteg] = await Promise.all([
+    prisma.magnificTask.findMany({ orderBy: { createdAt: "desc" }, take: 30 }),
+    prisma.replicateTask.findMany({ orderBy: { createdAt: "desc" }, take: 30 }),
+    prisma.integrationConfig.findUnique({ where: { provider: "REPLICATE" } }),
+  ]);
+  const replicateEnabled =
+    replicateInteg?.enabled === true &&
+    typeof replicateInteg?.config === "object" &&
+    replicateInteg?.config !== null &&
+    "apiToken" in replicateInteg.config &&
+    Boolean((replicateInteg.config as { apiToken?: string }).apiToken);
+
+  // Unificar con provider tag y ordenar
+  const allTasks = [
+    ...magnificTasks.map((t) => ({
+      id: t.id,
+      provider: "magnific" as const,
+      type: t.type,
+      status: t.status,
+      inputUrl: t.inputUrl,
+      outputUrl: t.outputUrl,
+      previewUrl: t.previewUrl,
+      prompt: t.prompt,
+      error: t.error,
+      createdAt: t.createdAt.toISOString(),
+    })),
+    ...replicateTasks.map((t) => ({
+      id: t.id,
+      provider: "replicate" as const,
+      type: t.type,
+      status: t.status,
+      inputUrl: t.inputUrl,
+      outputUrl: t.outputUrl,
+      previewUrl: null,
+      prompt: t.prompt,
+      error: t.error,
+      createdAt: t.createdAt.toISOString(),
+    })),
+  ]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 30);
 
   return (
     <main className="min-h-screen bg-bone-soft p-6 lg:p-8">
@@ -49,16 +86,25 @@ export default async function AssetsPage() {
               Asset Studio ✨
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-ink/60">
-              IA imágenes con Magnific: upscale, eliminar fondos, generar creatividades
-              y expandir formato para redes. Tareas asíncronas se actualizan automáticamente.
+              IA imágenes con Magnific (premium) y Replicate (económico). Upscale,
+              eliminar fondos, generar creatividades. Tareas asíncronas se actualizan
+              automáticamente.
             </p>
           </div>
-          <Link
-            href="/admin/integrations/magnific"
-            className="rounded-full border border-line bg-bone px-4 py-1.5 text-xs hover:border-accent"
-          >
-            ⚙ Config Magnific
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/integrations/magnific"
+              className="rounded-full border border-line bg-bone px-4 py-1.5 text-xs hover:border-accent"
+            >
+              ⚙ Magnific
+            </Link>
+            <Link
+              href="/admin/integrations/replicate"
+              className="rounded-full border border-line bg-bone px-4 py-1.5 text-xs hover:border-accent"
+            >
+              ⚙ Replicate
+            </Link>
+          </div>
         </header>
 
         {(!isEnabled || !hasKey) && (
@@ -75,17 +121,11 @@ export default async function AssetsPage() {
           </div>
         )}
 
-        <AssetStudio enabled={isEnabled && hasKey} initialTasks={tasks.map(t => ({
-          id: t.id,
-          type: t.type,
-          status: t.status,
-          inputUrl: t.inputUrl,
-          outputUrl: t.outputUrl,
-          previewUrl: t.previewUrl,
-          prompt: t.prompt,
-          error: t.error,
-          createdAt: t.createdAt.toISOString(),
-        }))} />
+        <AssetStudio
+          enabled={isEnabled && hasKey}
+          replicateEnabled={replicateEnabled}
+          initialTasks={allTasks}
+        />
       </div>
     </main>
   );

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 
 type TaskDTO = {
   id: string;
+  provider: "magnific" | "replicate";
   type: string;
   status: string;
   inputUrl: string | null;
@@ -14,13 +15,22 @@ type TaskDTO = {
   createdAt: string;
 };
 
-type Tab = "upscale" | "relight" | "mystic" | "remove-bg";
+type Tab =
+  | "upscale"
+  | "relight"
+  | "mystic"
+  | "remove-bg"
+  | "r-upscale"
+  | "r-flux"
+  | "r-remove-bg";
 
 export function AssetStudio({
   enabled,
+  replicateEnabled,
   initialTasks,
 }: {
   enabled: boolean;
+  replicateEnabled: boolean;
   initialTasks: TaskDTO[];
 }) {
   const [tab, setTab] = useState<Tab>("upscale");
@@ -28,19 +38,23 @@ export function AssetStudio({
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // === Polling de tasks no terminadas cada 5s ===
+  // Polleo al endpoint correcto según provider (magnific o replicate).
   useEffect(() => {
     const pending = tasks.filter((t) => t.status === "queued" || t.status === "processing");
     if (pending.length === 0) return;
     const interval = setInterval(async () => {
       for (const t of pending) {
         try {
-          const res = await fetch(`/api/admin/marketing/magnific/tasks/${t.id}`, {
-            credentials: "include",
-          });
+          const endpoint = t.provider === "replicate"
+            ? `/api/admin/marketing/replicate/tasks/${t.id}`
+            : `/api/admin/marketing/magnific/tasks/${t.id}`;
+          const res = await fetch(endpoint, { credentials: "include" });
           if (!res.ok) continue;
           const data = await res.json();
           if (data.task) {
-            setTasks((prev) => prev.map((x) => (x.id === t.id ? mapTask(data.task) : x)));
+            setTasks((prev) =>
+              prev.map((x) => (x.id === t.id ? mapTask(data.task, t.provider) : x)),
+            );
           }
         } catch {
           /* swallow */
@@ -56,19 +70,35 @@ export function AssetStudio({
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 border-b border-line">
-        <TabButton active={tab === "upscale"} onClick={() => setTab("upscale")}>
-          🔍 Upscale
-        </TabButton>
-        <TabButton active={tab === "relight"} onClick={() => setTab("relight")}>
-          💡 Relight
-        </TabButton>
-        <TabButton active={tab === "mystic"} onClick={() => setTab("mystic")}>
-          ✨ Mystic (generar)
-        </TabButton>
-        <TabButton active={tab === "remove-bg"} onClick={() => setTab("remove-bg")}>
-          ✂ Quitar fondo
-        </TabButton>
+      <div className="space-y-2 border-b border-line pb-2">
+        <div className="flex flex-wrap gap-2">
+          <span className="self-center text-[10px] uppercase tracking-wider text-ink/40">
+            Magnific ⭐ premium
+          </span>
+          <TabButton active={tab === "upscale"} onClick={() => setTab("upscale")}>
+            🔍 Upscale
+          </TabButton>
+          <TabButton active={tab === "relight"} onClick={() => setTab("relight")}>
+            💡 Relight
+          </TabButton>
+          <TabButton active={tab === "mystic"} onClick={() => setTab("mystic")}>
+            ✨ Mystic
+          </TabButton>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="self-center text-[10px] uppercase tracking-wider text-ink/40">
+            Replicate 💰 económico
+          </span>
+          <TabButton active={tab === "r-upscale"} onClick={() => setTab("r-upscale")}>
+            🚀 Upscale ECO
+          </TabButton>
+          <TabButton active={tab === "r-flux"} onClick={() => setTab("r-flux")}>
+            ⚡ Flux (generar)
+          </TabButton>
+          <TabButton active={tab === "r-remove-bg"} onClick={() => setTab("r-remove-bg")}>
+            ✂ Quitar fondo
+          </TabButton>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-line bg-bone p-5 lg:p-6">
@@ -87,6 +117,15 @@ export function AssetStudio({
           />
         )}
         {tab === "remove-bg" && <RemoveBgForm />}
+        {tab === "r-upscale" && (
+          <ReplicateUpscaleForm onSuccess={addTask} onFeedback={setFeedback} />
+        )}
+        {tab === "r-flux" && (
+          <ReplicateFluxForm onSuccess={addTask} onFeedback={setFeedback} />
+        )}
+        {tab === "r-remove-bg" && (
+          <ReplicateRemoveBgForm onSuccess={addTask} onFeedback={setFeedback} />
+        )}
         {tab === "mystic" && (
           <MysticForm
             enabled={enabled}
@@ -124,24 +163,28 @@ export function AssetStudio({
   );
 }
 
-function mapTask(t: {
-  id: string;
-  type: string;
-  status: string;
-  inputUrl: string | null;
-  outputUrl: string | null;
-  previewUrl: string | null;
-  prompt: string | null;
-  error: string | null;
-  createdAt: string | Date;
-}): TaskDTO {
+function mapTask(
+  t: {
+    id: string;
+    type: string;
+    status: string;
+    inputUrl: string | null;
+    outputUrl: string | null;
+    previewUrl?: string | null;
+    prompt: string | null;
+    error: string | null;
+    createdAt: string | Date;
+  },
+  provider: "magnific" | "replicate" = "magnific",
+): TaskDTO {
   return {
     id: t.id,
+    provider,
     type: t.type,
     status: t.status,
     inputUrl: t.inputUrl,
     outputUrl: t.outputUrl,
-    previewUrl: t.previewUrl,
+    previewUrl: t.previewUrl ?? null,
     prompt: t.prompt,
     error: t.error,
     createdAt:
@@ -542,6 +585,215 @@ function MysticForm({
   );
 }
 
+// === REPLICATE FORMS ============================================
+
+function ReplicateUpscaleForm({
+  onSuccess,
+  onFeedback,
+}: {
+  onSuccess: (t: TaskDTO) => void;
+  onFeedback: (f: { ok: boolean; msg: string }) => void;
+}) {
+  const [imageUrl, setImageUrl] = useState("");
+  const [scale, setScale] = useState(2);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/marketing/replicate/upscale", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ imageUrl: imageUrl.trim(), scale_factor: scale }),
+      });
+      const data = await res.json();
+      if (!res.ok) onFeedback({ ok: false, msg: data.error || "Error" });
+      else {
+        onSuccess(mapTask(data.task, "replicate"));
+        onFeedback({ ok: true, msg: "Tarea Replicate enviada — actualizando…" });
+        setImageUrl("");
+      }
+    } finally { setSubmitting(false); }
+  }
+
+  return (
+    <>
+      <h3 className="font-display text-lg font-semibold text-ink">
+        Upscale económico (Clarity Upscaler / Replicate)
+      </h3>
+      <p className="mb-4 mt-1 text-xs text-ink/60">
+        Modelo <code>philz1337x/clarity-upscaler</code>. ~$0,005/imagen. 30-60s.
+        Calidad superior a real-esrgan. Bueno para procesar lotes del catálogo.
+      </p>
+      <Field label="URL de la imagen">
+        <input
+          type="url"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          placeholder="https://cdn1.midocean.com/image/700X700/mo2105-23.jpg"
+          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+        />
+      </Field>
+      <div className="mt-3">
+        <Field label={`Factor (${scale}x)`}>
+          <input
+            type="range"
+            min={2}
+            max={10}
+            value={scale}
+            onChange={(e) => setScale(Number(e.target.value))}
+            className="w-full"
+          />
+        </Field>
+      </div>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!imageUrl.trim() || submitting}
+        className="mt-4 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
+      >
+        {submitting ? "Enviando…" : "Upscale ECO →"}
+      </button>
+    </>
+  );
+}
+
+const FLUX_ASPECTS = ["1:1", "16:9", "9:16", "4:3", "3:4", "21:9", "2:3", "3:2", "5:4", "4:5"] as const;
+
+function ReplicateFluxForm({
+  onSuccess,
+  onFeedback,
+}: {
+  onSuccess: (t: TaskDTO) => void;
+  onFeedback: (f: { ok: boolean; msg: string }) => void;
+}) {
+  const [prompt, setPrompt] = useState("");
+  const [aspectRatio, setAspectRatio] = useState<string>("1:1");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/marketing/replicate/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ prompt: prompt.trim(), aspect_ratio: aspectRatio }),
+      });
+      const data = await res.json();
+      if (!res.ok) onFeedback({ ok: false, msg: data.error || "Error" });
+      else {
+        onSuccess(mapTask(data.task, "replicate"));
+        onFeedback({ ok: true, msg: "Flux enviado — actualizando…" });
+        setPrompt("");
+      }
+    } finally { setSubmitting(false); }
+  }
+
+  return (
+    <>
+      <h3 className="font-display text-lg font-semibold text-ink">
+        Generar con Flux Schnell (Replicate)
+      </h3>
+      <p className="mb-4 mt-1 text-xs text-ink/60">
+        Modelo <code>black-forest-labs/flux-schnell</code>. ~$0,003/imagen.
+        Genera en 1-4 segundos. Más barato del mercado. Buena calidad pero
+        menos foto-realista que Mystic.
+      </p>
+      <Field label="Prompt">
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={3}
+          placeholder="Tote bag de algodón blanco con logo minimalista, mesa madera, luz natural"
+          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+        />
+      </Field>
+      <Field label="Aspect ratio">
+        <select
+          value={aspectRatio}
+          onChange={(e) => setAspectRatio(e.target.value)}
+          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm"
+        >
+          {FLUX_ASPECTS.map((a) => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+      </Field>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={prompt.trim().length < 3 || submitting}
+        className="mt-4 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
+      >
+        {submitting ? "Generando…" : "Flux →"}
+      </button>
+    </>
+  );
+}
+
+function ReplicateRemoveBgForm({
+  onSuccess,
+  onFeedback,
+}: {
+  onSuccess: (t: TaskDTO) => void;
+  onFeedback: (f: { ok: boolean; msg: string }) => void;
+}) {
+  const [imageUrl, setImageUrl] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/marketing/replicate/remove-bg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ imageUrl: imageUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) onFeedback({ ok: false, msg: data.error || "Error" });
+      else {
+        onSuccess(mapTask(data.task, "replicate"));
+        onFeedback({ ok: true, msg: "Remove BG enviado — actualizando…" });
+        setImageUrl("");
+      }
+    } finally { setSubmitting(false); }
+  }
+
+  return (
+    <>
+      <h3 className="font-display text-lg font-semibold text-ink">
+        Quitar fondo (Replicate)
+      </h3>
+      <p className="mb-4 mt-1 text-xs text-ink/60">
+        Modelo <code>851-labs/background-remover</code>. ~$0,005/imagen.
+        Devuelve PNG con alfa transparente. ~10-30s.
+      </p>
+      <Field label="URL de la imagen">
+        <input
+          type="url"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          placeholder="https://..."
+          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+        />
+      </Field>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!imageUrl.trim() || submitting}
+        className="mt-4 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
+      >
+        {submitting ? "Procesando…" : "Quitar fondo →"}
+      </button>
+    </>
+  );
+}
+
+// === TASK CARD =================================================
+
 function TaskCard({ task }: { task: TaskDTO }) {
   const statusColor: Record<string, string> = {
     queued: "bg-bone-soft text-ink/50",
@@ -555,6 +807,7 @@ function TaskCard({ task }: { task: TaskDTO }) {
     mystic: "✨",
     relight: "💡",
     expand: "↔",
+    generate: "⚡",
   };
   return (
     <li className="rounded-2xl border border-line bg-bone p-3">
@@ -562,6 +815,9 @@ function TaskCard({ task }: { task: TaskDTO }) {
         <div className="flex items-center gap-1.5 text-xs">
           <span>{typeIcon[task.type] || "•"}</span>
           <span className="font-mono uppercase text-ink/60">{task.type}</span>
+          <span className="ml-1 rounded-full bg-bone-soft px-1.5 py-0.5 text-[9px] text-ink/40">
+            {task.provider === "replicate" ? "R" : "M"}
+          </span>
         </div>
         <span
           className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${

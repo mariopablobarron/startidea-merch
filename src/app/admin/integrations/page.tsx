@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 
-type Provider = "METRICOOL" | "MAGNIFIC" | "META_ADS" | "GOOGLE_ADS" | "LINKEDIN_ADS" | "RESEND" | "STRIPE";
+type Provider = "METRICOOL" | "MAGNIFIC" | "REPLICATE" | "META_ADS" | "GOOGLE_ADS" | "LINKEDIN_ADS" | "RESEND" | "STRIPE";
 
 type IntegrationRow = {
   provider: Provider;
@@ -33,10 +33,18 @@ const PROVIDERS: Array<{
   {
     id: "MAGNIFIC",
     label: "Magnific",
-    fase: "IA imágenes · Upscale, fondos, Mystic, expand, relight",
+    fase: "IA imágenes premium · Upscale, fondos, Mystic, expand, relight",
     status: "active",
     description:
       "Upscale fotos producto (2x/4x), quitar fondos (PNG), generar creatividades realistas con Mystic, expandir formato para redes (9:16, 1:1, 16:9), cambiar iluminación.",
+  },
+  {
+    id: "REPLICATE",
+    label: "Replicate",
+    fase: "IA imágenes pay-per-use · Real-ESRGAN, Flux, Remove BG",
+    status: "active",
+    description:
+      "Alternativa económica (~$0,002-0,005/imagen). Real-ESRGAN upscaler, Flux Schnell generación rápida, background-remover. Ideal para volumen alto: procesar 500 fotos catálogo ~$1-3.",
   },
   {
     id: "META_ADS",
