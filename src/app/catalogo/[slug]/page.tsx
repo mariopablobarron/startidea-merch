@@ -16,6 +16,8 @@ import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
 import { proxyImageUrl } from "@/lib/proxy-image";
+import { JsonLd } from "@/components/JsonLd";
+import { productJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 
 export const revalidate = 3600;
 
@@ -141,9 +143,31 @@ export default async function ProductDetailPage({
   }
   breadcrumbs.push({ name: displayName });
 
+  // Schema.org Product + BreadcrumbList para rich snippets SEO
+  const minPriceCents = tiers
+    ? Math.min(...tiers.map((t) => t.unitPriceCents))
+    : baseCents ?? null;
+  const productSchema = productJsonLd({
+    slug: product.slug,
+    name: displayName,
+    description: displayDescription || displayShortDescription,
+    primaryImageUrl: product.primaryImageUrl,
+    productRef: product.supplierRef,
+    priceCents: minPriceCents,
+    category: product.category?.name ?? null,
+  });
+  const breadcrumbSchema = breadcrumbJsonLd(
+    breadcrumbs
+      .filter((b) => b.href)
+      .map((b) => ({ name: b.name, url: b.href! }))
+      .concat([{ name: displayName, url: `/catalogo/${product.slug}` }]),
+  );
+
   return (
     <>
       <Nav />
+      <JsonLd data={productSchema} />
+      <JsonLd data={breadcrumbSchema} />
       <main className="bg-bone">
         <div className="mx-auto max-w-8xl px-6 pt-10 lg:px-10">
           <nav className="flex flex-wrap gap-1.5 text-xs text-ink/60">
