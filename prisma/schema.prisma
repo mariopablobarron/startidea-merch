@@ -1055,11 +1055,34 @@ model IntegrationConfig {
 
 enum IntegrationProvider {
   METRICOOL
+  MAGNIFIC      // IA imágenes: upscaler, remove-bg, mystic, relight, expand
   META_ADS
   GOOGLE_ADS
   LINKEDIN_ADS
   RESEND        // ya usado para emails (placeholder por unificación)
   STRIPE        // ya usado (placeholder)
+}
+
+/// Tareas Magnific (upscale, remove-bg, mystic, relight, expand). Persistimos
+/// historial por dos motivos: (1) tracking de coste y uso por usuario,
+/// (2) poll a Magnific async sin perder el task_id si se cierra la pestaña.
+model MagnificTask {
+  id          String   @id @default(cuid())
+  type        String   // "upscale" | "remove-bg" | "mystic" | "relight" | "expand" | "style-transfer"
+  status      String   // "queued" | "processing" | "ready" | "failed"
+  inputUrl    String?  @db.Text  // URL imagen origen (no para mystic)
+  outputUrl   String?  @db.Text  // URL imagen final (cuando ready)
+  previewUrl  String?  @db.Text  // versión preview (algunos endpoints la dan)
+  remoteTaskId String? // task_id devuelto por Magnific (para polling)
+  prompt      String?  @db.Text  // para mystic
+  params      Json?    // params de la request (scale, resolution, aspect_ratio, etc)
+  error       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?  // email del admin que lanzó la task
+
+  @@index([type, status])
+  @@index([createdAt])
 }
 
 /// Campaña de marketing — agrupa piezas de contenido + ads bajo un objetivo

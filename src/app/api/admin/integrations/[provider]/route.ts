@@ -3,12 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { testMetricoolConnection, type MetricoolConfig } from "@/lib/metricool";
+import { testMagnificConnection, type MagnificConfig } from "@/lib/magnific";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PROVIDERS = [
   "METRICOOL",
+  "MAGNIFIC",
   "META_ADS",
   "GOOGLE_ADS",
   "LINKEDIN_ADS",
@@ -115,6 +117,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ provide
         accounts: cfg.accounts || {},
       });
       result = test.ok ? { ok: true, data: { brands: test.brands } } : { ok: false, error: test.error };
+    }
+  } else if (provider === "MAGNIFIC") {
+    const cfg = row.config as Partial<MagnificConfig>;
+    if (!cfg.apiKey) {
+      result = { ok: false, error: "Falta apiKey" };
+    } else {
+      const test = await testMagnificConnection({ apiKey: cfg.apiKey });
+      result = test.ok ? { ok: true, data: { message: "Auth OK" } } : { ok: false, error: test.error };
     }
   } else {
     result = { ok: false, error: `Test no implementado para ${provider}` };

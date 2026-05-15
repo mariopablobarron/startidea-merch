@@ -138,6 +138,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     Portfolio
                   </Link>
                   <Link
+                    href="/admin/marketing/assets"
+                    className="text-ink/60 hover:text-accent"
+                    title="Asset Studio · IA imágenes con Magnific (upscale, fondos, mystic)"
+                  >
+                    Assets ✨
+                  </Link>
+                  <Link
                     href="/admin/marketing/broadcasts"
                     className="text-ink/60 hover:text-accent"
                     title="Email broadcasts"

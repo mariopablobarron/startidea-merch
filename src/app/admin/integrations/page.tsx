@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 
-type Provider = "METRICOOL" | "META_ADS" | "GOOGLE_ADS" | "LINKEDIN_ADS" | "RESEND" | "STRIPE";
+type Provider = "METRICOOL" | "MAGNIFIC" | "META_ADS" | "GOOGLE_ADS" | "LINKEDIN_ADS" | "RESEND" | "STRIPE";
 
 type IntegrationRow = {
   provider: Provider;
@@ -29,6 +29,14 @@ const PROVIDERS: Array<{
     status: "active",
     description:
       "Publica piezas aprobadas en IG, FB, LinkedIn, X, TikTok, YouTube, Pinterest y Threads cuando llega su scheduledAt.",
+  },
+  {
+    id: "MAGNIFIC",
+    label: "Magnific",
+    fase: "IA imágenes · Upscale, fondos, Mystic, expand, relight",
+    status: "active",
+    description:
+      "Upscale fotos producto (2x/4x), quitar fondos (PNG), generar creatividades realistas con Mystic, expandir formato para redes (9:16, 1:1, 16:9), cambiar iluminación.",
   },
   {
     id: "META_ADS",

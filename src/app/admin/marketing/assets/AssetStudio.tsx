@@ -1,0 +1,504 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+
+type TaskDTO = {
+  id: string;
+  type: string;
+  status: string;
+  inputUrl: string | null;
+  outputUrl: string | null;
+  previewUrl: string | null;
+  prompt: string | null;
+  error: string | null;
+  createdAt: string;
+};
+
+type Tab = "upscale" | "remove-bg" | "mystic";
+
+export function AssetStudio({
+  enabled,
+  initialTasks,
+}: {
+  enabled: boolean;
+  initialTasks: TaskDTO[];
+}) {
+  const [tab, setTab] = useState<Tab>("upscale");
+  const [tasks, setTasks] = useState<TaskDTO[]>(initialTasks);
+  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // === Polling de tasks no terminadas cada 5s ===
+  useEffect(() => {
+    const pending = tasks.filter((t) => t.status === "queued" || t.status === "processing");
+    if (pending.length === 0) return;
+    const interval = setInterval(async () => {
+      for (const t of pending) {
+        try {
+          const res = await fetch(`/api/admin/marketing/magnific/tasks/${t.id}`, {
+            credentials: "include",
+          });
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (data.task) {
+            setTasks((prev) => prev.map((x) => (x.id === t.id ? mapTask(data.task) : x)));
+          }
+        } catch {
+          /* swallow */
+        }
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [tasks]);
+
+  const addTask = useCallback((task: TaskDTO) => {
+    setTasks((prev) => [task, ...prev].slice(0, 30));
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-2 border-b border-line">
+        <TabButton active={tab === "upscale"} onClick={() => setTab("upscale")}>
+          🔍 Upscale
+        </TabButton>
+        <TabButton active={tab === "remove-bg"} onClick={() => setTab("remove-bg")}>
+          ✂ Quitar fondo
+        </TabButton>
+        <TabButton active={tab === "mystic"} onClick={() => setTab("mystic")}>
+          ✨ Mystic (generar)
+        </TabButton>
+      </div>
+
+      <div className="rounded-2xl border border-line bg-bone p-5 lg:p-6">
+        {tab === "upscale" && (
+          <UpscaleForm
+            enabled={enabled}
+            onSuccess={addTask}
+            onFeedback={setFeedback}
+          />
+        )}
+        {tab === "remove-bg" && (
+          <RemoveBgForm
+            enabled={enabled}
+            onSuccess={addTask}
+            onFeedback={setFeedback}
+          />
+        )}
+        {tab === "mystic" && (
+          <MysticForm
+            enabled={enabled}
+            onSuccess={addTask}
+            onFeedback={setFeedback}
+          />
+        )}
+      </div>
+
+      {feedback && (
+        <div
+          className={`rounded-xl px-3 py-2 text-xs ${
+            feedback.ok ? "bg-social/10 text-social" : "bg-accent-wash text-accent-deep"
+          }`}
+        >
+          {feedback.ok ? "✓" : "⚠"} {feedback.msg}
+        </div>
+      )}
+
+      <section>
+        <h2 className="mb-3 font-display text-base font-semibold text-ink">
+          Tareas recientes ({tasks.length})
+        </h2>
+        {tasks.length === 0 ? (
+          <p className="text-sm text-ink/50">No hay tareas todavía.</p>
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {tasks.map((t) => (
+              <TaskCard key={t.id} task={t} />
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function mapTask(t: {
+  id: string;
+  type: string;
+  status: string;
+  inputUrl: string | null;
+  outputUrl: string | null;
+  previewUrl: string | null;
+  prompt: string | null;
+  error: string | null;
+  createdAt: string | Date;
+}): TaskDTO {
+  return {
+    id: t.id,
+    type: t.type,
+    status: t.status,
+    inputUrl: t.inputUrl,
+    outputUrl: t.outputUrl,
+    previewUrl: t.previewUrl,
+    prompt: t.prompt,
+    error: t.error,
+    createdAt:
+      typeof t.createdAt === "string" ? t.createdAt : new Date(t.createdAt).toISOString(),
+  };
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
+        active
+          ? "border-accent text-accent"
+          : "border-transparent text-ink/60 hover:text-ink"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function UpscaleForm({
+  enabled,
+  onSuccess,
+  onFeedback,
+}: {
+  enabled: boolean;
+  onSuccess: (t: TaskDTO) => void;
+  onFeedback: (f: { ok: boolean; msg: string }) => void;
+}) {
+  const [imageUrl, setImageUrl] = useState("");
+  const [scale, setScale] = useState<2 | 4>(2);
+  const [creativity, setCreativity] = useState(3);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/marketing/magnific/upscale", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          imageUrl: imageUrl.trim(),
+          scale_factor: scale,
+          creativity,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        onFeedback({ ok: false, msg: data.error || "Error" });
+      } else {
+        onSuccess(mapTask(data.task));
+        onFeedback({ ok: true, msg: "Tarea enviada — actualizando estado…" });
+        setImageUrl("");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <h3 className="font-display text-lg font-semibold text-ink">
+        Upscale creativo (2x / 4x)
+      </h3>
+      <p className="mb-4 mt-1 text-xs text-ink/60">
+        Sube una foto borrosa o pequeña del catálogo y obtén una versión nítida con detalle
+        IA. Asíncrono — la tarea se procesa en ~30-90 segundos.
+      </p>
+      <Field label="URL de la imagen">
+        <input
+          type="url"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          placeholder="https://merchandising.hubstartidea.es/uploads/producto-x.jpg"
+          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+        />
+      </Field>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Field label="Factor de escala">
+          <select
+            value={scale}
+            onChange={(e) => setScale(Number(e.target.value) as 2 | 4)}
+            className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm"
+          >
+            <option value={2}>2x (más rápido / barato)</option>
+            <option value={4}>4x (máximo detalle)</option>
+          </select>
+        </Field>
+        <Field label={`Creatividad (${creativity})`}>
+          <input
+            type="range"
+            min={0}
+            max={10}
+            value={creativity}
+            onChange={(e) => setCreativity(Number(e.target.value))}
+            className="w-full"
+          />
+        </Field>
+      </div>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!enabled || !imageUrl.trim() || submitting}
+        className="mt-4 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
+      >
+        {submitting ? "Enviando…" : "Upscale →"}
+      </button>
+    </>
+  );
+}
+
+function RemoveBgForm({
+  enabled,
+  onSuccess,
+  onFeedback,
+}: {
+  enabled: boolean;
+  onSuccess: (t: TaskDTO) => void;
+  onFeedback: (f: { ok: boolean; msg: string }) => void;
+}) {
+  const [imageUrl, setImageUrl] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/marketing/magnific/remove-bg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ imageUrl: imageUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        onFeedback({ ok: false, msg: data.error || "Error" });
+      } else {
+        onSuccess(mapTask(data.task));
+        onFeedback({ ok: true, msg: "✓ Fondo eliminado" });
+        setImageUrl("");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <h3 className="font-display text-lg font-semibold text-ink">Eliminar fondo (PNG transparente)</h3>
+      <p className="mb-4 mt-1 text-xs text-ink/60">
+        Síncrono — devuelve la URL del PNG sin fondo en segundos. Ideal para fichas de
+        producto y banners.
+      </p>
+      <Field label="URL de la imagen">
+        <input
+          type="url"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          placeholder="https://..."
+          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+        />
+      </Field>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!enabled || !imageUrl.trim() || submitting}
+        className="mt-4 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
+      >
+        {submitting ? "Procesando…" : "Quitar fondo →"}
+      </button>
+    </>
+  );
+}
+
+function MysticForm({
+  enabled,
+  onSuccess,
+  onFeedback,
+}: {
+  enabled: boolean;
+  onSuccess: (t: TaskDTO) => void;
+  onFeedback: (f: { ok: boolean; msg: string }) => void;
+}) {
+  const [prompt, setPrompt] = useState("");
+  const [resolution, setResolution] = useState<"1K" | "2K" | "4K">("2K");
+  const [aspectRatio, setAspectRatio] = useState<"1:1" | "16:9" | "9:16" | "4:3">("1:1");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/marketing/magnific/mystic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          resolution,
+          aspect_ratio: aspectRatio,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        onFeedback({ ok: false, msg: data.error || "Error" });
+      } else {
+        onSuccess(mapTask(data.task));
+        onFeedback({ ok: true, msg: "Tarea enviada — actualizando estado…" });
+        setPrompt("");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <h3 className="font-display text-lg font-semibold text-ink">
+        Mystic — Generación ultra-realista
+      </h3>
+      <p className="mb-4 mt-1 text-xs text-ink/60">
+        Describe la imagen que quieres y Mystic la genera. Asíncrono (~60-180s).
+      </p>
+      <Field label="Prompt">
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={4}
+          placeholder="Una bolsa tote de algodón blanco sobre una mesa de madera, luz natural, estilo editorial minimalista, producto destacado en primer plano…"
+          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+        />
+      </Field>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Field label="Resolución">
+          <select
+            value={resolution}
+            onChange={(e) => setResolution(e.target.value as "1K" | "2K" | "4K")}
+            className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm"
+          >
+            <option value="1K">1K (rápido)</option>
+            <option value="2K">2K (recomendado)</option>
+            <option value="4K">4K (alta calidad)</option>
+          </select>
+        </Field>
+        <Field label="Aspect ratio">
+          <select
+            value={aspectRatio}
+            onChange={(e) => setAspectRatio(e.target.value as "1:1" | "16:9" | "9:16" | "4:3")}
+            className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm"
+          >
+            <option value="1:1">1:1 (Instagram post)</option>
+            <option value="9:16">9:16 (Story / Reel / TikTok)</option>
+            <option value="16:9">16:9 (banner / YouTube)</option>
+            <option value="4:3">4:3 (clásico)</option>
+          </select>
+        </Field>
+      </div>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!enabled || prompt.trim().length < 3 || submitting}
+        className="mt-4 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
+      >
+        {submitting ? "Generando…" : "Generar imagen →"}
+      </button>
+    </>
+  );
+}
+
+function TaskCard({ task }: { task: TaskDTO }) {
+  const statusColor: Record<string, string> = {
+    queued: "bg-bone-soft text-ink/50",
+    processing: "bg-accent-mist text-accent-deep",
+    ready: "bg-social/15 text-social",
+    failed: "bg-accent-wash text-accent-deep",
+  };
+  const typeIcon: Record<string, string> = {
+    upscale: "🔍",
+    "remove-bg": "✂",
+    mystic: "✨",
+    relight: "💡",
+    expand: "↔",
+  };
+  return (
+    <li className="rounded-2xl border border-line bg-bone p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs">
+          <span>{typeIcon[task.type] || "•"}</span>
+          <span className="font-mono uppercase text-ink/60">{task.type}</span>
+        </div>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+            statusColor[task.status] || "bg-bone-soft text-ink/50"
+          }`}
+        >
+          {task.status}
+        </span>
+      </div>
+      {task.outputUrl ? (
+        <a
+          href={task.outputUrl}
+          target="_blank"
+          rel="noopener"
+          className="mt-2 block aspect-square overflow-hidden rounded-xl bg-bone-soft"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={task.previewUrl || task.outputUrl}
+            alt="Resultado"
+            className="h-full w-full object-cover"
+          />
+        </a>
+      ) : task.inputUrl ? (
+        <div className="mt-2 aspect-square overflow-hidden rounded-xl bg-bone-soft opacity-50">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={task.inputUrl} alt="Input" className="h-full w-full object-cover" />
+        </div>
+      ) : (
+        <div className="mt-2 aspect-square rounded-xl bg-bone-soft flex items-center justify-center text-xs text-ink/40">
+          {task.status === "processing" ? "Generando…" : "—"}
+        </div>
+      )}
+      {task.prompt && (
+        <p className="mt-2 line-clamp-2 text-[11px] text-ink/60">{task.prompt}</p>
+      )}
+      {task.error && (
+        <p className="mt-1 line-clamp-2 text-[10px] text-accent-deep">{task.error}</p>
+      )}
+      <p className="mt-1 text-[10px] text-ink/40">
+        {new Date(task.createdAt).toLocaleString("es-ES")}
+      </p>
+      {task.outputUrl && (
+        <a
+          href={task.outputUrl}
+          download
+          className="mt-2 inline-block text-[11px] text-accent underline"
+        >
+          Descargar
+        </a>
+      )}
+    </li>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-ink/60">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
