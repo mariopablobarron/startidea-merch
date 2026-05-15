@@ -1,0 +1,20 @@
+src/lib/suppliers/midocean-pricelist-sync.ts
+  s_65877aa637ec34::t_2324941344f37c 36,39-47
+  s_65877aa637ec34::t_32711d4e0d051c 219-223
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "0a814d50aa74b9fa2efccfa348000d6074834dbd",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
