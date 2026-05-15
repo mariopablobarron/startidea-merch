@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminSecret } from "@/lib/auth";
 import { midoceanOrders, type MidoceanCreateOrderPayload, type MidoceanOrderItem } from "@/lib/suppliers/midocean-orders";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -48,20 +51,32 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const customerOrderRef = `merch-${cart.id.slice(0, 8)}`;
 
-  const items: MidoceanOrderItem[] = cart.items.map((it) => ({
-    master_code: it.productRef,
-    sku: it.variantSku || it.productRef, // fallback al ref si no hay variante específica
-    quantity: it.quantity,
-    print_positions: it.markingTechniqueCode && it.markingPositionId
-      ? [
-          {
-            position_id: it.markingPositionId,
-            printing_technique: it.markingTechniqueCode,
-            number_of_print_colors: it.markingColours ?? 1,
-          },
-        ]
-      : undefined,
-  }));
+  const items: MidoceanOrderItem[] = cart.items.map((it) => {
+    // Si hay logo subido por el cliente lo enviamos como print_artwork_url
+    // absoluto, así MidOcean lo descarga y produce con el arte correcto
+    // (sin necesidad de proof manual ni biblioteca de logotipos).
+    let artworkUrl: string | undefined;
+    if (it.customerLogoUrl) {
+      artworkUrl = it.customerLogoUrl.startsWith("http")
+        ? it.customerLogoUrl
+        : `${SITE_URL}${it.customerLogoUrl}`;
+    }
+    return {
+      master_code: it.productRef,
+      sku: it.variantSku || it.productRef, // fallback al ref si no hay variante específica
+      quantity: it.quantity,
+      print_positions: it.markingTechniqueCode && it.markingPositionId
+        ? [
+            {
+              position_id: it.markingPositionId,
+              printing_technique: it.markingTechniqueCode,
+              number_of_print_colors: it.markingColours ?? 1,
+              ...(artworkUrl ? { print_artwork_url: artworkUrl } : {}),
+            },
+          ]
+        : undefined,
+    };
+  });
 
   const payload: MidoceanCreateOrderPayload = {
     shipping_address: {

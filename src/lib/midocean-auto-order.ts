@@ -21,6 +21,9 @@ import {
 } from "@/lib/suppliers/midocean-orders";
 import { notifyTelegram } from "@/lib/telegram";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+
 export type AutoOrderResult =
   | { ok: true; orderId: string }
   | { ok: true; dryRun: true; reason: string }
@@ -65,21 +68,34 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
 
   const customerOrderRef = `merch-${cart.id.slice(0, 8)}`;
 
-  const items: MidoceanOrderItem[] = cart.items.map((it) => ({
-    master_code: it.productRef,
-    sku: it.variantSku || it.productRef,
-    quantity: it.quantity,
-    print_positions:
-      it.markingTechniqueCode && it.markingPositionId
-        ? [
-            {
-              position_id: it.markingPositionId,
-              printing_technique: it.markingTechniqueCode,
-              number_of_print_colors: it.markingColours ?? 1,
-            },
-          ]
-        : undefined,
-  }));
+  const items: MidoceanOrderItem[] = cart.items.map((it) => {
+    // Si el cliente subió logo, lo enviamos a MidOcean como URL pública
+    // absoluta para que ellos puedan descargarlo y producir con el artwork
+    // correcto. Si la URL ya es absoluta (http/https), la usamos tal cual;
+    // si es relativa (/files/...) la prefijamos con SITE_URL.
+    let artworkUrl: string | undefined;
+    if (it.customerLogoUrl) {
+      artworkUrl = it.customerLogoUrl.startsWith("http")
+        ? it.customerLogoUrl
+        : `${SITE_URL}${it.customerLogoUrl}`;
+    }
+    return {
+      master_code: it.productRef,
+      sku: it.variantSku || it.productRef,
+      quantity: it.quantity,
+      print_positions:
+        it.markingTechniqueCode && it.markingPositionId
+          ? [
+              {
+                position_id: it.markingPositionId,
+                printing_technique: it.markingTechniqueCode,
+                number_of_print_colors: it.markingColours ?? 1,
+                ...(artworkUrl ? { print_artwork_url: artworkUrl } : {}),
+              },
+            ]
+          : undefined,
+    };
+  });
 
   const payload: MidoceanCreateOrderPayload = {
     shipping_address: {
