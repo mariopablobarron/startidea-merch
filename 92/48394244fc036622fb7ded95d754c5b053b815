@@ -1,0 +1,52 @@
+src/app/admin/integrations/page.tsx
+  s_65877aa637ec34::t_471ebf4aa080d1 36,41-47
+  s_65877aa637ec34::t_92ef8de1e884bc 6
+src/lib/replicate.ts
+  s_65877aa637ec34::t_c6aa10103da607 1-167
+prisma/schema.prisma
+  s_65877aa637ec34::t_c0a171b3f26997 1059
+  s_65877aa637ec34::t_48972cc07ee9ec 1067-1087
+src/app/admin/integrations/replicate/page.tsx
+  s_65877aa637ec34::t_6b971c7338caf9 1-210
+src/app/api/admin/marketing/replicate/tasks/[id]/route.ts
+  s_65877aa637ec34::t_8016cad7a650c6 1-66
+prisma/migrations/20260516120000_add_replicate_integration/migration.sql
+  s_65877aa637ec34::t_d19ee1e7ccb856 1-25
+src/app/admin/marketing/assets/AssetStudio.tsx
+  s_65877aa637ec34::t_3d153b85633409 166-179,182,187
+  s_65877aa637ec34::t_a8ae64b5929a25 29,33
+  s_65877aa637ec34::t_6946ae69878a98 18-25
+  s_65877aa637ec34::t_41e3ddb49c9caf 120-128
+  s_65877aa637ec34::t_8a94b551a2afe9 588-796,810,818-820
+  s_65877aa637ec34::t_a283a9ed46c453 73-101
+  s_65877aa637ec34::t_b340769da15d3e 41,48-51,55-57
+  s_65877aa637ec34::t_1e06a9dd1d0558 7
+src/app/api/admin/marketing/replicate/generate/route.ts
+  s_65877aa637ec34::t_ed4fcba0dc9112 1-71
+src/app/api/admin/marketing/replicate/remove-bg/route.ts
+  s_65877aa637ec34::t_d2d8da31bffaa5 1-59
+src/app/admin/marketing/assets/page.tsx
+  s_65877aa637ec34::t_a9f98c44fa0d9f 124-128
+  s_65877aa637ec34::t_188c46f92ff52c 34-75,89-91,94-106
+src/app/api/admin/marketing/replicate/upscale/route.ts
+  s_65877aa637ec34::t_cfb704fdf201a2 1-67
+src/app/api/admin/integrations/[provider]/route.ts
+  s_65877aa637ec34::t_a42beb7cad8f36 7,15
+  s_65877aa637ec34::t_76f7877edca8de 131-140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "9248394244fc036622fb7ded95d754c5b053b815",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
