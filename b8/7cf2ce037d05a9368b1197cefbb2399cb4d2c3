@@ -1,0 +1,47 @@
+src/app/api/admin/integrations/[provider]/route.ts
+  s_65877aa637ec34::t_08acda1c93f70c 6,13
+  s_65877aa637ec34::t_f8c07a459277bc 121-128
+src/app/api/admin/marketing/magnific/upscale/route.ts
+  s_65877aa637ec34::t_a3f4441a1de7cf 1-59
+src/app/admin/integrations/magnific/page.tsx
+  s_65877aa637ec34::t_5b44bb04277902 1-219
+src/app/admin/integrations/page.tsx
+  s_65877aa637ec34::t_01b04e143c7088 34-40
+  s_65877aa637ec34::t_f4e32f30d8cf84 6
+src/app/admin/marketing/assets/page.tsx
+  s_65877aa637ec34::t_073debd74843c3 3,5
+  s_65877aa637ec34::t_b341f9310d8fcc 1-2,4,6-16,22-92
+  s_65877aa637ec34::t_34a13b2d1987b4 17-21
+prisma/migrations/20260515211350_add_magnific_integration/migration.sql
+  s_65877aa637ec34::t_f860b41b3d8dd7 1-25
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_f3c12a5b2a2ae3 141-146
+src/lib/magnific.ts
+  s_65877aa637ec34::t_a6f607316bd226 1-249
+src/app/api/admin/marketing/magnific/mystic/route.ts
+  s_65877aa637ec34::t_3cdb6f1ae197d9 1-61
+src/app/api/admin/marketing/magnific/remove-bg/route.ts
+  s_65877aa637ec34::t_d73b0429cc46f7 1-59
+src/app/api/admin/marketing/magnific/tasks/[id]/route.ts
+  s_65877aa637ec34::t_5d8a0650c460c3 1-67
+src/app/admin/marketing/assets/AssetStudio.tsx
+  s_65877aa637ec34::t_9978096098d693 1-504
+prisma/schema.prisma
+  s_65877aa637ec34::t_f516c8e0435ae1 1058,1066-1085
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b87cf2ce037d05a9368b1197cefbb2399cb4d2c3",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
