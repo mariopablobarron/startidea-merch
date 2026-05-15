@@ -225,6 +225,47 @@ export async function generateMystic(
 }
 
 /**
+ * Image Relight — ASÍNCRONO. Cambia iluminación de una foto.
+ * Útil para fotos producto: pasar de luz dura a luz natural sin re-shooting.
+ *
+ * Schema REAL verificado contra API live (2026-05):
+ *   - Body: { image: URL, prompt?: string }
+ *     - image: URL pública (REQ)
+ *     - prompt: descripción de la iluminación deseada (opcional)
+ *   - Endpoint: POST /v1/ai/image-relight
+ *   - Devuelve { data: { task_id, status, generated: [] } }
+ */
+export async function relightImage(
+  cfg: MagnificConfig,
+  imageUrl: string,
+  options: {
+    prompt?: string;
+    webhook_url?: string;
+  } = {},
+): Promise<{ ok: true; taskId: string; status: MagnificTaskStatus } | { ok: false; error: string; status?: number }> {
+  try {
+    const body: Record<string, unknown> = {
+      image: imageUrl,
+      ...(options.prompt ? { prompt: options.prompt } : {}),
+      ...(options.webhook_url ? { webhook_url: options.webhook_url } : {}),
+    };
+    const res = await fetch(`${API_BASE}/v1/ai/image-relight`, {
+      method: "POST",
+      headers: authHeaders(cfg),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      return { ok: false, error: `HTTP ${res.status}: ${txt.slice(0, 500)}`, status: res.status };
+    }
+    const data = (await res.json()) as MagnificAsyncResponse;
+    return { ok: true, taskId: data.data.task_id, status: data.data.status };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/**
  * Poll status de cualquier task async.
  * El endpoint cambia según el tipo: /v1/ai/{kind}/{task-id}
  */

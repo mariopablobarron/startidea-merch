@@ -14,7 +14,7 @@ type TaskDTO = {
   createdAt: string;
 };
 
-type Tab = "upscale" | "remove-bg" | "mystic";
+type Tab = "upscale" | "relight" | "mystic" | "remove-bg";
 
 export function AssetStudio({
   enabled,
@@ -60,17 +60,27 @@ export function AssetStudio({
         <TabButton active={tab === "upscale"} onClick={() => setTab("upscale")}>
           🔍 Upscale
         </TabButton>
-        <TabButton active={tab === "remove-bg"} onClick={() => setTab("remove-bg")}>
-          ✂ Quitar fondo
+        <TabButton active={tab === "relight"} onClick={() => setTab("relight")}>
+          💡 Relight
         </TabButton>
         <TabButton active={tab === "mystic"} onClick={() => setTab("mystic")}>
           ✨ Mystic (generar)
+        </TabButton>
+        <TabButton active={tab === "remove-bg"} onClick={() => setTab("remove-bg")}>
+          ✂ Quitar fondo
         </TabButton>
       </div>
 
       <div className="rounded-2xl border border-line bg-bone p-5 lg:p-6">
         {tab === "upscale" && (
           <UpscaleForm
+            enabled={enabled}
+            onSuccess={addTask}
+            onFeedback={setFeedback}
+          />
+        )}
+        {tab === "relight" && (
+          <RelightForm
             enabled={enabled}
             onSuccess={addTask}
             onFeedback={setFeedback}
@@ -318,6 +328,108 @@ function RemoveBgForm() {
           básico).
         </li>
       </ul>
+    </>
+  );
+}
+
+const RELIGHT_PRESETS: Array<{ label: string; prompt: string }> = [
+  { label: "🌅 Hora dorada cálida", prompt: "warm golden hour light, soft sunset, natural shadows" },
+  { label: "☀️ Luz natural día", prompt: "soft natural daylight, diffused, even illumination" },
+  { label: "💡 Estudio profesional", prompt: "professional studio lighting, three-point setup, neutral backdrop" },
+  { label: "🌙 Atmósfera nocturna", prompt: "moody evening light, low key, dramatic shadows" },
+  { label: "🪟 Luz de ventana", prompt: "soft window light from the left, gentle highlights" },
+  { label: "✨ Producto editorial", prompt: "editorial product photography lighting, clean white background" },
+];
+
+function RelightForm({
+  enabled,
+  onSuccess,
+  onFeedback,
+}: {
+  enabled: boolean;
+  onSuccess: (t: TaskDTO) => void;
+  onFeedback: (f: { ok: boolean; msg: string }) => void;
+}) {
+  const [imageUrl, setImageUrl] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/marketing/magnific/relight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          imageUrl: imageUrl.trim(),
+          prompt: prompt.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        onFeedback({ ok: false, msg: data.error || "Error" });
+      } else {
+        onSuccess(mapTask(data.task));
+        onFeedback({ ok: true, msg: "Tarea enviada — actualizando estado…" });
+        setImageUrl("");
+        setPrompt("");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <h3 className="font-display text-lg font-semibold text-ink">
+        Cambiar iluminación (Relight)
+      </h3>
+      <p className="mb-4 mt-1 text-xs text-ink/60">
+        Modifica la luz de una foto producto sin rehacer el shooting. Útil para
+        adaptar fotos de mayoristas a tu estilo visual o cambiar de luz dura a luz
+        natural. Asíncrono (~30-60s).
+      </p>
+      <Field label="URL de la imagen">
+        <input
+          type="url"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          placeholder="https://cdn1.midocean.com/image/700X700/mo2105-23.jpg"
+          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+        />
+      </Field>
+      <Field label="Estilo de iluminación (presets)">
+        <div className="mt-1 flex flex-wrap gap-2">
+          {RELIGHT_PRESETS.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => setPrompt(p.prompt)}
+              className="rounded-full border border-line bg-bone-soft px-3 py-1 text-xs hover:border-accent hover:bg-accent/5"
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <Field label="Prompt (descripción libre, opcional)">
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={2}
+          placeholder="Ej: warm sunset light from the right, soft shadows, golden hour"
+          className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+        />
+      </Field>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!enabled || !imageUrl.trim() || submitting}
+        className="mt-4 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
+      >
+        {submitting ? "Enviando…" : "Aplicar Relight →"}
+      </button>
     </>
   );
 }
