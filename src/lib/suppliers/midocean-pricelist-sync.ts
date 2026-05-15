@@ -33,8 +33,18 @@ type MidoceanPrintPricelist = {
 
 type MidoceanProductPricelist = {
   currency: string;
+  date?: string;
   pricelist_valid_from?: string;
   pricelist_valid_until?: string;
+  // Formato real (verificado 2026-05-15): array bajo data.price con
+  // sku + variant_id + price + valid_until. Sin scales escalonadas.
+  price?: Array<{
+    sku?: string;
+    variant_id?: string;
+    price?: string;
+    valid_until?: string;
+  }>;
+  // Formato legacy / esperado: products bajo otra estructura
   products?: Array<{
     sku?: string;
     master_code?: string;
@@ -206,8 +216,11 @@ export async function syncMidoceanProductPricelist(): Promise<MidoceanProductPri
 
   const data = (await midoceanClient.fetchProductPricelist()) as MidoceanProductPricelist;
 
-  // El feed de pricelist puede tener distintas estructuras. Manejamos las dos más habituales.
-  const items = Array.isArray(data) ? data : data.products || [];
+  // Feed real de MidOcean usa data.price (verificado 2026-05-15).
+  // Mantenemos data.products como fallback por si en futuro cambia.
+  const items = Array.isArray(data)
+    ? data
+    : data.price || data.products || [];
 
   for (const item of items as Array<{ sku?: string; price?: string; scales?: Array<{ minimum_quantity: string; price: string }> }>) {
     if (!item.sku) continue;
