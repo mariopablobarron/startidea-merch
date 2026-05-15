@@ -1,0 +1,22 @@
+src/lib/jsonld.ts
+  s_65877aa637ec34::t_d6dafb73c3b3d3 84-159
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_749f95292a8a4b 19-20
+  s_65877aa637ec34::t_a3f2bb76068635 146-165,169-170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8e2525a3070a0981e9564f616541915c5ddf36c5",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
