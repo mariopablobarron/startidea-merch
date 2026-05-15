@@ -1,0 +1,36 @@
+prisma/schema.prisma
+  s_65877aa637ec34::t_1bd0e5286e0840 777-780
+src/app/api/cron/abandoned-reminders/route.ts
+  s_65877aa637ec34::t_e75258c13e3cbb 1-147
+src/app/clientes/page.tsx
+  s_65877aa637ec34::t_0ed708abd688a8 112-113
+  s_65877aa637ec34::t_7e5b7a52cb5f41 41,45
+  s_65877aa637ec34::t_91c3f8189c8e86 233,235,251-262
+  s_65877aa637ec34::t_5fac1957d749e3 209-220
+  s_65877aa637ec34::t_87f9805d7ccea0 98-111
+  s_65877aa637ec34::t_f47dd156e11cde 6-7
+  s_65877aa637ec34::t_fb336c8d5fdb16 64
+  s_65877aa637ec34::t_1dc0ce73f99658 39
+src/app/api/clientes/invoice/[paymentId]/route.ts
+  s_65877aa637ec34::t_3da009416e91f1 1-156
+src/lib/invoice-pdf.tsx
+  s_65877aa637ec34::t_3d805dce411011 1-314
+src/lib/cart-timeline.ts
+  s_65877aa637ec34::t_a7c8a39bf3248e 1-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "c08918c3c6273a67c3fc131fedc538e4a908c2f4",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
