@@ -42,8 +42,8 @@ export function Categories() {
             </motion.h2>
           </div>
           <motion.p variants={fadeUp} className="max-w-md text-ink/60">
-            Catálogo unificado de MidOcean (Makito en breve) — más de 2.000 referencias
-            personalizables con stock europeo.{" "}
+            Más de 2.000 referencias personalizables con stock europeo y
+            producción en talleres locales certificados.{" "}
             <Link href="/catalogo" className="font-medium text-accent underline-offset-4 hover:underline">
               Explorar catálogo →
             </Link>

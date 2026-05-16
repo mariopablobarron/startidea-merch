@@ -56,7 +56,7 @@ export default function PrivacidadPage() {
       <p>Los datos podrán comunicarse a:</p>
       <ul>
         <li>Encargados de tratamiento que prestan servicios de hosting y email transaccional bajo contrato (Coolify/VPS, Resend).</li>
-        <li>Proveedores de producción (Centros Especiales de Empleo, talleres, MidOcean, Makito) únicamente cuando sea imprescindible para ejecutar un pedido.</li>
+        <li>Proveedores de producción (Centros Especiales de Empleo, talleres locales y mayoristas europeos certificados) únicamente cuando sea imprescindible para ejecutar un pedido.</li>
         <li>Administraciones públicas cuando exista obligación legal.</li>
       </ul>
 

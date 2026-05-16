@@ -76,18 +76,18 @@ export default function ApiDocsPage() {
   "page": 1, "pageSize": 20, "total": 142, "totalPages": 8,
   "items": [
     {
-      "ref": "MO2763",
-      "slug": "atoll-100-mo2763",
+      "ref": "STM-A7B2C9",
+      "slug": "atoll-100",
       "name": "ATOLL 100",
-      "brand": "midocean",
+      "brand": "TodoMerchandising",
       "description": "Toalla de microfibra 100x150cm…",
       "material": "PE",
       "countryOfOrigin": "CN",
       "dimensions": { "length_mm": 1000, "width_mm": 1500, "height_mm": 0, "weight_g": 280 },
-      "image": "https://cdn1.midocean.com/image/700X700/mo2763-03.jpg",
+      "image": "https://merchandising.hubstartidea.es/api/m/A7B2C9XK",
       "category": { "name": "Toallas deportivas", "slug": "toallas-deportivas" },
       "variants": [
-        { "sku": "MO2763-03", "colorName": "Negro", "colorGroup": "Negro", "stockQty": 1240,
+        { "sku": "STM-A7B2C9-NEG", "colorName": "Negro", "colorGroup": "Negro", "stockQty": 1240,
           "gtin": "8719941007840", "size": null }
       ],
       "marking": [
@@ -131,7 +131,7 @@ export default function ApiDocsPage() {
     "deadline": "2026-09-15",
     "items": [
       {
-        "ref": "MO2763",
+        "ref": "STM-A7B2C9",
         "quantity": 100,
         "marking": { "position": "UPPER MIDDLE", "technique": "EM", "colours": 2 },
         "notes": "Logo en hilo dorado preferentemente"
@@ -153,7 +153,7 @@ export default function ApiDocsPage() {
               </p>
               <p className="mt-3 text-[15px] text-ink/75">
                 Devuelve el estado actual de la cotización: precio negociado, depósito,
-                URL de pago, ID MidOcean, items con marcaje, pagos recibidos.
+                URL de pago, items con marcaje, pagos recibidos.
               </p>
               <Code>{`curl -s "${SITE}/api/v1/quotes/cmh1234abcdefg" \\
   -H "Authorization: Bearer merch_live_XXXXXXXX_YYYY..."`}</Code>

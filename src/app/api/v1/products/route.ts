@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateApiKey, requireScope } from "@/lib/api-auth";
+import { publicRef } from "@/lib/internal-ref";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,7 +33,8 @@ export async function GET(req: Request) {
       orderBy: { name: "asc" },
       select: {
         slug: true,
-        supplierRef: true,
+        id: true,
+        internalRef: true,
         name: true,
         brand: true,
         shortDescription: true,
@@ -67,7 +69,7 @@ export async function GET(req: Request) {
     total,
     totalPages: Math.ceil(total / pageSize),
     items: items.map((p) => ({
-      ref: p.supplierRef,
+      ref: publicRef(p),
       slug: p.slug,
       name: p.name,
       brand: p.brand,

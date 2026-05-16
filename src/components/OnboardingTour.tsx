@@ -20,7 +20,7 @@ const STEPS: Step[] = [
   {
     title: "Más de 2.000 productos personalizables",
     body:
-      "Catálogo conectado en directo con MidOcean. Stock europeo real, precios escalados por cantidad, áreas de marcaje detalladas. Búscalo por nombre, categoría, color o material.",
+      "Catálogo curado con stock europeo real, precios escalados por cantidad y áreas de marcaje detalladas. Búscalo por nombre, categoría, color o material.",
     cta: { label: "Abrir catálogo →", href: "/catalogo" },
   },
   {

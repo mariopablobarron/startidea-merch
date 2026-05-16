@@ -65,12 +65,16 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
 
-  // Resolver productos a partir de los refs
+  // Resolver productos a partir de los refs públicas (STM-XXX).
+  // NUNCA exponemos supplierRef al cliente externo — el match se hace
+  // por internalRef. Si un producto no tiene internalRef todavía
+  // (backfill pendiente), no se podrá referenciar por API hasta el
+  // próximo sync. Esto es intencional para no filtrar el sourcing.
   const products = await prisma.product.findMany({
-    where: { supplierRef: { in: data.items.map((it) => it.ref) }, active: true },
-    select: { supplierRef: true, slug: true, name: true, primaryImageUrl: true },
+    where: { internalRef: { in: data.items.map((it) => it.ref) }, active: true },
+    select: { internalRef: true, slug: true, name: true, primaryImageUrl: true },
   });
-  const byRef = new Map(products.map((p) => [p.supplierRef, p]));
+  const byRef = new Map(products.map((p) => [p.internalRef!, p]));
   const unknown = data.items.filter((it) => !byRef.has(it.ref));
   if (unknown.length > 0) {
     return NextResponse.json(

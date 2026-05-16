@@ -62,7 +62,7 @@ export default function SobrePage() {
               <p>
                 <strong className="text-ink">No somos sólo CEE</strong>. Combinamos producción
                 en Centros Especiales de Empleo, talleres locales y proveedores europeos
-                certificados (Makito, MidOcean) para garantizar plazos, calidad y stock real.
+                certificados para garantizar plazos, calidad y stock real.
               </p>
               <p>
                 <strong className="text-ink">No prometemos imposibles</strong>. Si tu plazo es

@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 export const metadata: Metadata = {
   title: "Recomendador inteligente · Encuentra el merchandising perfecto",
   description:
-    "Cuéntanos qué necesitas y nuestro asistente IA recomienda 3-5 productos del catálogo MidOcean en segundos. Brief libre, presupuesto, cantidad y filtro eco. Cotización humana en 24h.",
+    "Cuéntanos qué necesitas y nuestro asistente IA recomienda 3-5 productos en segundos. Brief libre, presupuesto, cantidad y filtro eco. Cotización humana en 24h.",
 };
 
 export const dynamic = "force-dynamic";

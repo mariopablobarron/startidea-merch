@@ -152,7 +152,7 @@ export default async function ProductDetailPage({
     name: displayName,
     description: displayDescription || displayShortDescription,
     primaryImageUrl: product.primaryImageUrl,
-    productRef: product.supplierRef,
+    productRef: displayRef, // Ref pública Startidea (nunca supplierRef)
     priceCents: minPriceCents,
     category: product.category?.name ?? null,
   });

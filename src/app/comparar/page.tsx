@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { prisma } from "@/lib/prisma";
 import { estimateBaseCentsFromName, defaultTiersFromBase, formatMoney, pickTier } from "@/lib/pricing";
+import { publicRef } from "@/lib/internal-ref";
 
 export const metadata: Metadata = {
   title: "Comparar productos · Decide entre 2 ó 3 referencias",
@@ -131,7 +132,8 @@ function ComparatorTable({ products }: { products: ComparatorProduct[] }) {
       {
         key: "ref",
         label: "Referencia",
-        render: (p) => <span className="font-mono text-sm">{p.supplierRef}</span>,
+        // Ref pública Startidea (STM-XXX), nunca supplierRef del proveedor
+        render: (p) => <span className="font-mono text-sm">{publicRef(p)}</span>,
       },
       {
         key: "category",
