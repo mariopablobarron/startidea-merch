@@ -19,7 +19,11 @@ import { trackLead } from "@/lib/ads-events";
 
 const STORAGE_KEY = "merch:lead-popup:v1";
 const SHOW_AFTER_MS = 5000;
-const MOBILE_AUTO_SHOW_MS = 25000;
+// Mobile: 60s (antes 25s) y solo si el usuario ha scrolleado al menos un 50%
+// de la página. Disparar el popup mientras alguien toca el nav (común a 25s)
+// bloquea el menú hamburguesa y mata la conversión.
+const MOBILE_AUTO_SHOW_MS = 60000;
+const MOBILE_MIN_SCROLL_PERCENT = 50;
 const COOKIE_CONSENT_KEY = "merch:cookie-consent:v1"; // no mostrar antes de que decidan cookies
 
 export function EmailCapturePopup() {
@@ -48,10 +52,28 @@ export function EmailCapturePopup() {
       try {
         if (!localStorage.getItem(COOKIE_CONSENT_KEY)) return;
       } catch {}
+      // No interrumpir si hay otro modal/dialog abierto (menú, search, etc.)
+      if (typeof document !== "undefined") {
+        if (document.querySelector('[role="dialog"]:not([data-popup="lead"]),[aria-modal="true"]:not([data-popup="lead"])')) {
+          return;
+        }
+        // Si el usuario está escribiendo en un input/textarea, no interrumpir
+        const active = document.activeElement;
+        if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT")) {
+          return;
+        }
+      }
       setOpen(true);
       try {
         localStorage.setItem(STORAGE_KEY, "shown");
       } catch {}
+    }
+
+    function hasScrolledEnough(): boolean {
+      if (typeof window === "undefined") return false;
+      const scrolled = window.scrollY + window.innerHeight;
+      const total = document.documentElement.scrollHeight;
+      return total > 0 && (scrolled / total) * 100 >= MOBILE_MIN_SCROLL_PERCENT;
     }
 
     // Tras el delay mínimo, armamos los triggers reales
@@ -59,7 +81,11 @@ export function EmailCapturePopup() {
       const isMobile =
         typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
       if (isMobile) {
-        mobileTimer = setTimeout(trigger, MOBILE_AUTO_SHOW_MS - SHOW_AFTER_MS);
+        // Mobile: trigger solo si llegó al 50% de scroll AL menos a los 60s.
+        // Si no, esperamos pero la siguiente comprobación tira.
+        mobileTimer = setTimeout(() => {
+          if (hasScrolledEnough()) trigger();
+        }, MOBILE_AUTO_SHOW_MS - SHOW_AFTER_MS);
       } else {
         exitListener = (e: MouseEvent) => {
           if (e.clientY <= 0) trigger();
@@ -126,6 +152,7 @@ export function EmailCapturePopup() {
       role="dialog"
       aria-modal="true"
       aria-label="Suscríbete y recibe 10% descuento"
+      data-popup="lead"
       className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/40 p-3 backdrop-blur-sm sm:items-center sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) dismiss();

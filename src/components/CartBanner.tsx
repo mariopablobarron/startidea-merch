@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { readCart, cartTotalCents, type CartItem } from "@/lib/cart-storage";
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -13,6 +14,7 @@ const EUR = new Intl.NumberFormat("es-ES", {
 
 export function CartBanner() {
   const [items, setItems] = useState<CartItem[]>([]);
+  const pathname = usePathname();
 
   useEffect(() => {
     function refresh() {
@@ -26,6 +28,12 @@ export function CartBanner() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
+
+  // No mostrar en páginas donde el carrito YA es contexto principal:
+  // /carrito (estás ahí), /pay/* (estás pagando), /clientes/* (portal cliente)
+  // En mobile además el banner se solapaba con la imagen del producto.
+  const HIDDEN_ON = ["/carrito", "/pay", "/clientes"];
+  if (pathname && HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
 
   if (items.length === 0) return null;
 
