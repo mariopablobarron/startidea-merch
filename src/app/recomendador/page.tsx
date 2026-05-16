@@ -3,6 +3,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { Recommender } from "@/components/Recommender";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "Recomendador inteligente · Encuentra el merchandising perfecto",
@@ -10,7 +11,27 @@ export const metadata: Metadata = {
     "Cuéntanos qué necesitas y nuestro asistente IA recomienda 3-5 productos del catálogo MidOcean en segundos. Brief libre, presupuesto, cantidad y filtro eco. Cotización humana en 24h.",
 };
 
-export default function RecomendadorPage() {
+export const dynamic = "force-dynamic";
+
+async function getProductCount(): Promise<number> {
+  try {
+    return await prisma.product.count({ where: { active: true } });
+  } catch {
+    return 2000;
+  }
+}
+
+function formatCount(n: number): string {
+  if (n >= 1000) {
+    const k = Math.floor(n / 100) / 10; // 2363 → 2.3
+    return `${k.toString().replace(".", ",")}k+`;
+  }
+  return `${n}+`;
+}
+
+export default async function RecomendadorPage() {
+  const productCount = await getProductCount();
+  const countLabel = formatCount(productCount);
   return (
     <>
       <Nav />
@@ -24,7 +45,7 @@ export default function RecomendadorPage() {
               Encuentra el merchandising perfecto en 30 segundos.
             </h1>
             <p className="mt-4 max-w-3xl text-lg text-ink/70">
-              Te quitamos el trabajo de filtrar 2.400+ productos. Cuéntanos público,
+              Te quitamos el trabajo de filtrar {countLabel} productos. Cuéntanos público,
               cantidad, presupuesto y valores que quieres transmitir, y nuestro asistente
               elige los que mejor encajan. Después, un humano cierra la cotización en menos
               de 24 horas.
@@ -52,7 +73,7 @@ export default function RecomendadorPage() {
               />
               <Step
                 num="2"
-                title="Filtramos 2.400+ productos"
+                title={`Filtramos ${countLabel} productos`}
                 text="El asistente revisa todo el catálogo en segundos y elige 3-5 productos que encajan, con justificación clara de por qué."
               />
               <Step

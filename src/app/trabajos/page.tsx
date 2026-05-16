@@ -25,7 +25,7 @@ export default function TrabajosPage() {
       <main>
         <section className="border-b border-line bg-bone py-12 lg:py-16">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Portfolio</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">— Portfolio</p>
             <h1 className="mt-3 font-display text-section font-semibold text-ink">
               Trabajos realizados
             </h1>

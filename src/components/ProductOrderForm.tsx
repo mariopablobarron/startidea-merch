@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   defaultTiersFromBase,
   formatMoney,
@@ -223,6 +223,24 @@ export function ProductOrderForm({
 
   // Feedback "añadido al carrito"
   const [addedAt, setAddedAt] = useState<number | null>(null);
+
+  // Mobile sticky CTA: visible cuando los botones primarios salen de viewport.
+  // La ficha de producto en mobile tiene ~7.500 px de scroll y obliga a Marina
+  // a hacer scroll-up para encontrar "Añadir al pedido". El sticky resuelve
+  // ese punto de fricción detectado en el audit Marina.
+  const actionsRef = useRef<HTMLDivElement | null>(null);
+  const [actionsInView, setActionsInView] = useState(true);
+  useEffect(() => {
+    const el = actionsRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => setActionsInView(entry.isIntersecting),
+      { threshold: 0.1 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   useEffect(() => {
     if (!addedAt) return;
     const t = setTimeout(() => setAddedAt(null), 2500);
@@ -588,7 +606,7 @@ export function ProductOrderForm({
       </div>
 
       {/* 5. Botones */}
-      <div className="mt-5 grid gap-2">
+      <div ref={actionsRef} className="mt-5 grid gap-2">
         <button
           type="button"
           onClick={onCotizar}
@@ -609,6 +627,35 @@ export function ProductOrderForm({
           {recentlyAdded ? "✓ Añadido al pedido" : "+ Añadir al pedido"}
         </button>
       </div>
+
+      {/* Sticky CTA mobile — solo visible cuando los botones principales
+          quedan fuera de la viewport. Resuelve el scroll de 7.500 px en
+          mobile (fricción detectada en audit). */}
+      {!actionsInView && totalCents != null && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bone/95 px-3 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden">
+          <div className="mx-auto flex max-w-3xl items-center gap-3">
+            <div className="flex-1">
+              <p className="text-[10px] uppercase tracking-wider text-ink/50">
+                {finalQty.toLocaleString("es-ES")} uds {withMarking ? "· con marcaje" : ""}
+              </p>
+              <p className="font-display text-lg font-semibold tabular-nums text-ink">
+                {formatMoney(totalCents).formatted}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onAddToCart}
+              className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
+                recentlyAdded
+                  ? "bg-social/15 text-social"
+                  : "bg-accent text-bone hover:bg-accent-dark"
+              }`}
+            >
+              {recentlyAdded ? "✓ Añadido" : "+ Añadir"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <p className="mt-4 text-[11px] leading-relaxed text-ink/50">
         {withMarking
