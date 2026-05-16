@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
+import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { validateCoupon, applyCoupon } from "@/lib/coupons";
 import { notifyTelegram } from "@/lib/telegram";
@@ -127,44 +127,23 @@ export async function POST(req: Request) {
   });
 
   // Notificar por email (best-effort, no bloquea respuesta).
-  //
-  // ⚠️ Histórico: este catch silenciaba el bug del 2026-05-16 donde Resend
-  // rechazaba con 422/403 (env quoting + dominio no verificado). Para que
-  // no vuelva a pasar, ante CUALQUIER fallo del send disparamos alerta
-  // a Telegram con detalle del error. Un cliente que no recibe email es
-  // un lead potencialmente perdido — Mario debe saberlo en directo.
-  if (resend) {
-    void Promise.all([
-      resend.emails.send({
-        from: RESEND_FROM,
-        to: RESEND_TO_INTERNAL,
-        replyTo: data.email,
-        subject: `[Carrito] ${data.name}${data.company ? " · " + data.company : ""} · ${EUR.format(total / 100)}`,
-        html: internalCartHtml(cart),
-      }),
-      resend.emails.send({
-        from: RESEND_FROM,
-        to: data.email,
-        subject: `${data.name.split(" ")[0]}, recibimos tu cotización con ${cart.items.length} producto${cart.items.length === 1 ? "" : "s"}`,
-        html: clientCartHtml(cart),
-      }),
-    ]).catch((err) => {
-      console.error("[cart-quote] resend error", err);
-      const detail =
-        err && typeof err === "object" && "message" in err
-          ? String((err as { message: unknown }).message)
-          : String(err);
-      void notifyTelegram(
-        `⚠️ <b>Resend FALLÓ enviando cotización</b>\n` +
-          `Cliente: ${data.name}${data.company ? ` (${data.company})` : ""}\n` +
-          `Email: ${data.email}\n` +
-          `Cart ID: <code>${cart.id}</code>\n` +
-          `Total: ${EUR.format(total / 100)}\n` +
-          `Detalle: ${detail.slice(0, 300)}\n\n` +
-          `El cliente NO recibió confirmación. Procesa manual desde /admin/cart-quotes/${cart.id}`,
-      ).catch(() => {});
-    });
-  }
+  // sendEmail dispara alerta Telegram automática si Resend falla
+  // (cobertura del bug 2026-05-16 donde el silencio dejó emails sin enviar).
+  void Promise.all([
+    sendEmail({
+      to: RESEND_TO_INTERNAL,
+      replyTo: data.email,
+      subject: `[Carrito] ${data.name}${data.company ? " · " + data.company : ""} · ${EUR.format(total / 100)}`,
+      html: internalCartHtml(cart),
+      context: `cart-quote internal · ${cart.id}`,
+    }),
+    sendEmail({
+      to: data.email,
+      subject: `${data.name.split(" ")[0]}, recibimos tu cotización con ${cart.items.length} producto${cart.items.length === 1 ? "" : "s"}`,
+      html: clientCartHtml(cart),
+      context: `cart-quote client · ${cart.id}`,
+    }),
+  ]);
 
   // Si hay referral activo (cookie o querystring), asociar partner
   const refSlug = readPartnerSlug(req);
