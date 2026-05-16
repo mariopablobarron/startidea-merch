@@ -186,55 +186,163 @@ export async function POST(req: Request) {
   });
 }
 
+// Helper inline para traducir códigos de zona en emails. No importamos
+// el helper TS para mantener este archivo autocontenido (los emails se
+// renderizan server-side y la lib funciona bien aquí, pero un fallback
+// inline garantiza que no se rompa si hay un código no mapeado).
+function humanZone(code: string | null): string {
+  if (!code) return "";
+  return code
+    .toUpperCase()
+    .replace(/\s+DO\s+[A-Z0-9]+/g, "")
+    .replace(/\s+DA\s+[A-Z0-9]+/g, "")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function internalCartHtml(cart: { id: string; name: string; company: string | null; email: string; phone: string | null; message: string | null; deadline: string | null; estimatedTotalCents: number | null; items: Array<{ productName: string; productRef: string; quantity: number; markingTechniqueName: string | null; markingPositionId: string | null; markingColours: number | null; totalClientCents: number | null }> }): string {
   const rows = cart.items
     .map(
       (it) => `
       <tr>
-        <td style="padding:10px;border-bottom:1px solid #eee;">${it.productName}<br><small style="color:#888">${it.productRef}</small></td>
-        <td style="padding:10px;border-bottom:1px solid #eee;text-align:center;">${it.quantity}</td>
-        <td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;">${it.markingTechniqueName ? `${it.markingTechniqueName} en ${it.markingPositionId}${it.markingColours && it.markingColours > 1 ? ` (${it.markingColours} col.)` : ""}` : "—"}</td>
-        <td style="padding:10px;border-bottom:1px solid #eee;text-align:right;font-weight:600;">${it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : "—"}</td>
+        <td style="padding:12px;border-bottom:1px solid #E8E2D5;">${it.productName}<br><small style="color:#6b6b6b">Ref. ${it.productRef}</small></td>
+        <td style="padding:12px;border-bottom:1px solid #E8E2D5;text-align:center;font-weight:600;">${it.quantity}</td>
+        <td style="padding:12px;border-bottom:1px solid #E8E2D5;font-size:13px;color:#444;">${it.markingTechniqueName ? `${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}${it.markingColours && it.markingColours > 1 ? ` · ${it.markingColours} col.` : ""}` : "—"}</td>
+        <td style="padding:12px;border-bottom:1px solid #E8E2D5;text-align:right;font-weight:600;">${it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : "—"}</td>
       </tr>`,
     )
     .join("");
 
   return `
-    <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:680px;margin:0 auto;color:#0a0a0b;">
-      <h2 style="font-family:Georgia,serif;color:#0a0a0b;">Nueva cotización con carrito</h2>
-      <p><strong>${cart.name}</strong>${cart.company ? ` · ${cart.company}` : ""}<br>
-      ${cart.email}${cart.phone ? ` · ${cart.phone}` : ""}</p>
-      ${cart.deadline ? `<p>Fecha límite: <strong>${cart.deadline}</strong></p>` : ""}
-      ${cart.message ? `<p style="background:#faf8f4;padding:12px;border-radius:8px;">${cart.message.replace(/\n/g, "<br>")}</p>` : ""}
-      <table style="width:100%;border-collapse:collapse;margin-top:16px;">
-        <thead>
-          <tr style="background:#faf8f4;">
-            <th style="padding:10px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Producto</th>
-            <th style="padding:10px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Cant.</th>
-            <th style="padding:10px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Marcaje</th>
-            <th style="padding:10px;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Total</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-        <tfoot>
-          <tr><td colspan="3" style="padding:12px;text-align:right;font-weight:600;">Total estimado:</td>
-          <td style="padding:12px;text-align:right;font-weight:600;font-size:18px;">${cart.estimatedTotalCents != null ? EUR.format(cart.estimatedTotalCents / 100) : "—"}</td></tr>
-        </tfoot>
-      </table>
-      <p style="margin-top:24px;color:#888;font-size:12px;">ID: <code>${cart.id}</code></p>
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:24px 12px;">
+      <div style="max-width:680px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+        <div style="background:#2A2A2A;padding:20px 24px;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(244,239,230,0.6);">— Admin · Cotización nueva</p>
+          <h1 style="margin:6px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#FFFFFF;">${cart.name}${cart.company ? ` · ${cart.company}` : ""}</h1>
+        </div>
+        <div style="padding:24px;">
+          <p style="margin:0;font-size:14px;color:#444;">
+            <a href="mailto:${cart.email}" style="color:#E63E73;text-decoration:none;">${cart.email}</a>${cart.phone ? ` · <a href="tel:${cart.phone}" style="color:#E63E73;text-decoration:none;">${cart.phone}</a>` : ""}
+          </p>
+          ${cart.deadline ? `<p style="margin:8px 0 0;font-size:14px;color:#444;">⏰ Fecha límite cliente: <strong>${cart.deadline}</strong></p>` : ""}
+          ${cart.message ? `<div style="margin-top:16px;background:#F4EFE6;border-left:3px solid #E63E73;padding:14px 16px;border-radius:8px;font-size:14px;line-height:1.5;color:#2A2A2A;">${cart.message.replace(/\n/g, "<br>")}</div>` : ""}
+
+          <table style="width:100%;border-collapse:collapse;margin-top:24px;">
+            <thead>
+              <tr style="background:#F4EFE6;">
+                <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b6b;">Producto</th>
+                <th style="padding:10px 12px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b6b;">Cant.</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b6b;">Marcaje</th>
+                <th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b6b;">Total</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+            <tfoot>
+              <tr><td colspan="3" style="padding:16px 12px;text-align:right;font-weight:600;font-size:13px;color:#6b6b6b;">Total estimado:</td>
+              <td style="padding:16px 12px;text-align:right;font-weight:700;font-size:20px;color:#E63E73;">${cart.estimatedTotalCents != null ? EUR.format(cart.estimatedTotalCents / 100) : "—"}</td></tr>
+            </tfoot>
+          </table>
+
+          <p style="margin:32px 0 0;text-align:center;">
+            <a href="${SITE_URL}/admin/cart-quotes/${cart.id}" style="display:inline-block;background:#2A2A2A;color:#FFFFFF;text-decoration:none;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:600;">Abrir en admin →</a>
+          </p>
+          <p style="margin-top:24px;color:#a09e98;font-size:11px;">ID interno: <code style="background:#F4EFE6;padding:2px 6px;border-radius:4px;">${cart.id.slice(0, 12)}</code></p>
+        </div>
+      </div>
     </div>`;
 }
 
-function clientCartHtml(cart: { id: string; name: string; items: Array<unknown>; estimatedTotalCents: number | null }): string {
+function clientCartHtml(cart: { id: string; name: string; company: string | null; estimatedTotalCents: number | null; items: Array<{ productName: string; productRef: string; quantity: number; markingTechniqueName: string | null; markingPositionId: string | null; markingColours: number | null; totalClientCents: number | null }> }): string {
+  const firstName = cart.name.split(" ")[0] || cart.name;
+  const itemsHtml = cart.items
+    .map(
+      (it) => `
+      <tr>
+        <td style="padding:14px 0;border-bottom:1px solid #E8E2D5;font-size:14px;line-height:1.4;">
+          <strong style="color:#2A2A2A;">${it.productName}</strong><br>
+          <span style="color:#6b6b6b;font-size:12px;">
+            ${it.quantity} uds${it.markingTechniqueName ? ` · ${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}` : " · sin marcaje"}
+          </span>
+        </td>
+        <td style="padding:14px 0;border-bottom:1px solid #E8E2D5;text-align:right;font-size:14px;font-weight:600;color:#2A2A2A;white-space:nowrap;vertical-align:top;">
+          ${it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : "—"}
+        </td>
+      </tr>`,
+    )
+    .join("");
+
   return `
-    <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:600px;margin:0 auto;color:#0a0a0b;">
-      <h2 style="font-family:Georgia,serif;">Hola ${cart.name.split(" ")[0]},</h2>
-      <p>Hemos recibido tu cotización con <strong>${cart.items.length} producto${cart.items.length === 1 ? "" : "s"}</strong> ${cart.estimatedTotalCents ? `por un total estimado de <strong>${EUR.format(cart.estimatedTotalCents / 100)}</strong>` : ""}.</p>
-      <p>Un humano de TodoMerchandising la revisa ahora mismo y te enviamos cotización cerrada con mockup, plazo y transporte en menos de 24 horas laborables.</p>
-      <p style="margin-top:24px;">Si quieres añadir información, simplemente respóndeme a este email.</p>
-      <p style="color:#888;font-size:12px;margin-top:32px;">
-        Referencia interna: <code>${cart.id}</code><br>
-        STARTIDEA MALAGA SL · CIF B19583632 · Granada
-      </p>
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+
+        <!-- Header con eyebrow + título grande -->
+        <div style="padding:32px 32px 24px;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Cotización recibida</p>
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+            Gracias ${firstName}.<br>
+            <span style="color:#a09e98;">La estamos revisando.</span>
+          </h1>
+          <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
+            Un humano de TodoMerchandising tiene tu petición en pantalla ahora mismo.
+            En menos de <strong>24 horas laborables</strong> recibirás precio cerrado,
+            mockup técnico y plazo de entrega.
+          </p>
+        </div>
+
+        <!-- Items -->
+        <div style="padding:0 32px;">
+          <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Tu cotización</p>
+          <table style="width:100%;border-collapse:collapse;border-top:1px solid #E8E2D5;">
+            ${itemsHtml}
+            ${cart.estimatedTotalCents ? `
+            <tr>
+              <td style="padding:18px 0 0;font-size:13px;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;">Total orientativo</td>
+              <td style="padding:18px 0 0;text-align:right;font-size:22px;font-weight:700;color:#E63E73;font-family:Georgia,serif;">
+                ${EUR.format(cart.estimatedTotalCents / 100)}
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding:4px 0 0;font-size:11px;color:#a09e98;line-height:1.5;">
+                Precio orientativo. El presupuesto cerrado incluirá marcaje, plazo y transporte definitivos.
+              </td>
+            </tr>
+            ` : ""}
+          </table>
+        </div>
+
+        <!-- Qué pasa ahora -->
+        <div style="margin:32px;padding:24px;background:#F4EFE6;border-radius:12px;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Qué pasa ahora</p>
+          <ol style="margin:12px 0 0;padding-left:20px;font-size:14px;line-height:1.7;color:#2A2A2A;">
+            <li><strong>Revisamos tu brief</strong> y producto a producto contrastamos stock, técnica de marcaje y plazo viable.</li>
+            <li><strong>Te enviamos cotización cerrada</strong> con mockup técnico del fabricante, precio final y plazo de entrega.</li>
+            <li>Cuando das el OK, <strong>producimos y entregamos</strong> — todo en Centros Especiales de Empleo y talleres certificados.</li>
+          </ol>
+        </div>
+
+        <!-- CTAs / contacto -->
+        <div style="padding:0 32px 32px;text-align:center;">
+          <p style="margin:0 0 16px;font-size:14px;color:#444;">
+            ¿Quieres añadir algo? Simplemente <strong>responde a este email</strong>
+            o escríbenos directo:
+          </p>
+          <p style="margin:0;font-size:14px;line-height:2;">
+            <a href="https://wa.me/34958045789" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">WhatsApp +34 958 045 789</a><br>
+            <a href="mailto:pedidos@startidea.es" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">pedidos@startidea.es</a>
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background:#2A2A2A;padding:24px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">
+            todo<span style="color:#E63E73;">merchandising</span>
+          </p>
+          <p style="margin:8px 0 0;">
+            Una iniciativa de Startidea · Agencia de Innovación Social<br>
+            STARTIDEA MALAGA SL · CIF B19583632 · C/ Conde Cifuentes, 33 — 18005 Granada<br>
+            Tu cotización: <code style="background:rgba(244,239,230,0.1);padding:1px 5px;border-radius:3px;color:rgba(244,239,230,0.85);">${cart.id.slice(0, 8)}</code>
+          </p>
+        </div>
+      </div>
     </div>`;
 }
