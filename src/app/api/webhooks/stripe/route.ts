@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
-import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
+import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
 import { notifyTelegram } from "@/lib/telegram";
 import { markReferralEarned } from "@/lib/referral";
@@ -294,30 +294,30 @@ async function postPaymentAutoflow(args: {
     console.error("[stripe webhook magic-link]", err);
   }
 
-  // Emails
-  if (resend) {
-    void Promise.all([
-      resend.emails.send({
-        from: RESEND_FROM,
-        to: RESEND_TO_INTERNAL,
-        subject: `[Pago recibido] ${customer.name}${customer.company ? " · " + customer.company : ""} · ${amountFmt}€${via === "express-checkout" ? " (wallet)" : ""}`,
-        html: internalPaymentEmailHtml({
-          customer,
-          amountFmt,
-          cartId,
-          viaLabel,
-          receiptUrl,
-          items: cartWithItems?.items || [],
-        }),
+  // Emails de confirmación de pago. sendEmail dispara alerta Telegram
+  // automática si Resend falla — un cliente que paga y NO recibe email
+  // de confirmación es disputa segura.
+  void Promise.all([
+    sendEmail({
+      to: RESEND_TO_INTERNAL,
+      subject: `[Pago recibido] ${customer.name}${customer.company ? " · " + customer.company : ""} · ${amountFmt}€${via === "express-checkout" ? " (wallet)" : ""}`,
+      html: internalPaymentEmailHtml({
+        customer,
+        amountFmt,
+        cartId,
+        viaLabel,
+        receiptUrl,
+        items: cartWithItems?.items || [],
       }),
-      resend.emails.send({
-        from: RESEND_FROM,
-        to: customer.email,
-        subject: `Hemos recibido tu pago — gracias ${firstName}`,
-        html: clientPaidEmailHtml({ firstName, amountFmt, cartId, portalLink, receiptUrl }),
-      }),
-    ]).catch((err) => console.error("[stripe webhook resend]", err));
-  }
+      context: `stripe paid · ${cartId}`,
+    }),
+    sendEmail({
+      to: customer.email,
+      subject: `Hemos recibido tu pago — gracias ${firstName}`,
+      html: clientPaidEmailHtml({ firstName, amountFmt, cartId, portalLink, receiptUrl }),
+      context: `stripe paid client · ${cartId}`,
+    }),
+  ]);
 }
 
 function internalPaymentEmailHtml(args: {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSecret } from "@/lib/auth";
-import { resend, RESEND_FROM } from "@/lib/resend";
+import { sendEmail } from "@/lib/resend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,10 +73,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  if (!resend) {
-    return NextResponse.json({ error: "Resend no configurado" }, { status: 503 });
-  }
-
   const recoverUrl = `${SITE_URL}/cotizar?recover=${cart.id}`;
   const firstName = cart.name.split(" ")[0] || "";
 
@@ -105,10 +101,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       ? `${firstName ? firstName + ", t" : "T"}u cotización en TodoMerchandising te espera`
       : `${firstName ? firstName + ", n" : "N"}o pierdas tu cotización pendiente`;
 
-  await resend.emails.send({
-    from: RESEND_FROM,
+  const result = await sendEmail({
     to: cart.email,
     subject,
+    context: `cart-quote remind · ${cart.id}`,
     html: `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;color:#0a0a0b;line-height:1.5;">
   <h2 style="font-family:Georgia,serif;font-size:26px;color:#0a0a0b;margin:0 0 8px;">Hola ${firstName || cart.name},</h2>
@@ -135,8 +131,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     Si no quieres más recordatorios, responde "BAJA" a este email.
   </p>
 </div>`,
-    text: `Hola ${firstName || cart.name},\n\nTe dejaste algunos productos en tu cotización en TodoMerchandising:\n\n${cart.items.map((it) => `- ${it.quantity}× ${it.productName}`).join("\n")}\n\nRetomar tu cotización: ${recoverUrl}\n\nSTARTIDEA MALAGA SL`,
   });
+
+  if (!result.ok) {
+    return NextResponse.json(
+      { error: result.error || "Resend no pudo enviar el recordatorio" },
+      { status: 502 },
+    );
+  }
 
   await prisma.cartQuote.update({
     where: { id: cart.id },
