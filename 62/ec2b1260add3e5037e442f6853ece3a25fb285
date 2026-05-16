@@ -1,0 +1,34 @@
+src/app/admin/cart-quotes/[id]/page.tsx
+  s_65877aa637ec34::t_45188f6a21db68 119-122
+src/app/api/cron/post-order-drip/route.ts
+  s_65877aa637ec34::t_41cb7a7ddb8091 88,91
+  s_65877aa637ec34::t_4533c9d45481f4 115,118
+  s_65877aa637ec34::t_334046ef0b2d4b 4
+  s_65877aa637ec34::t_fd29b005632a12 156,159
+src/app/admin/cart-quotes/page.tsx
+  s_65877aa637ec34::t_8c709318a621a7 78
+src/app/api/admin/broadcasts/[id]/send/route.ts
+  s_65877aa637ec34::t_2286cb1a336100 5-6
+  s_65877aa637ec34::t_1ee762adf87b5e 51-59,61
+  s_65877aa637ec34::t_578ba7f24b6181 138-152
+src/app/api/admin/quote-ai/save/route.ts
+  s_65877aa637ec34::t_8798675dfab811 6
+  s_65877aa637ec34::t_bccc52f507af8b 124,127
+  s_65877aa637ec34::t_600609cdf3d166 106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "62ec2b1260add3e5037e442f6853ece3a25fb285",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
