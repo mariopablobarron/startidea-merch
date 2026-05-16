@@ -18,6 +18,11 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Heap limit Node durante el build. Sin esto, en VPS con multiple containers
+# (luciernaga + hub + mentor + merch + nextcrm + startidea-web) el build de
+# Next.js puede consumir 3-4 GB y disparar OOM kill → corrupción Postgres
+# (incidente 2026-05-16). 2 GB es suficiente y deja margen para el resto.
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN pnpm prisma generate && pnpm build
 
 # --- prod-deps (solo producción, hoisted) ---
