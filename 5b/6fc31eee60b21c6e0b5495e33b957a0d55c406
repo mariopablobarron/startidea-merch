@@ -1,0 +1,31 @@
+src/components/MockupGenerator.tsx
+  s_65877aa637ec34::t_1cea627eb209f0 4
+  s_65877aa637ec34::t_77c11e20e4e929 63,66,69-71
+  s_65877aa637ec34::t_22e962d7bb2e56 99
+  s_65877aa637ec34::t_cf9810da67af50 129-131,138-155,158,161
+src/lib/marking-position-display.ts
+  s_65877aa637ec34::t_a24b7f47ceee7a 1-101
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_0b208f71e7fad2 349,359
+  s_65877aa637ec34::t_64f2e6124b2bca 18
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_b0225caf41e365 4
+  s_65877aa637ec34::t_cb2966b3f8663f 292
+  s_65877aa637ec34::t_baa7036f3e37e7 440
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "5b6fc31eee60b21c6e0b5495e33b957a0d55c406",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
