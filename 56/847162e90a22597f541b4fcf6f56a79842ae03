@@ -1,0 +1,43 @@
+src/app/api/v1/products/route.ts
+  s_65877aa637ec34::t_2ec38372b23c68 4
+  s_65877aa637ec34::t_e2ac54eace27ee 36-37
+  s_65877aa637ec34::t_3deb51eb88f0cc 72
+src/app/recomendador/page.tsx
+  s_65877aa637ec34::t_d812f0db46b647 11
+src/components/OnboardingTour.tsx
+  s_65877aa637ec34::t_d1bcf15fa01821 23
+src/components/Categories.tsx
+  s_65877aa637ec34::t_7ad31dafe5182a 45-46
+src/app/api/v1/quotes/route.ts
+  s_65877aa637ec34::t_7282264f1d20cf 68-72,74-75,77
+src/app/sobre/page.tsx
+  s_65877aa637ec34::t_65ec6ecc1944cd 65
+src/app/privacidad/page.tsx
+  s_65877aa637ec34::t_3fbf0e1eeaa8c3 59
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_41252c0d1bd2cd 155
+src/app/comparar/page.tsx
+  s_65877aa637ec34::t_9e4a7afeca1fc0 9
+  s_65877aa637ec34::t_ae0bb6e3638ea2 135-136
+src/app/docs/api/page.tsx
+  s_65877aa637ec34::t_b9286e8c9eca96 79-80,82,87
+  s_65877aa637ec34::t_4f9f6dc2fa7561 156
+  s_65877aa637ec34::t_94ed11b689be9b 134
+  s_65877aa637ec34::t_5a5bbc9e651026 90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "56847162e90a22597f541b4fcf6f56a79842ae03",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
