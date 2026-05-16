@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
@@ -77,7 +77,17 @@ export default async function ProductDetailPage({
       override: true,
     },
   });
-  if (!product) notFound();
+  // Slug antiguo (contenía supplier SKU, p.ej. "-mo9812"): 301 al slug actual
+  if (!product) {
+    const redirectEntry = await prisma.productSlugRedirect.findUnique({
+      where: { oldSlug: slug },
+      select: { product: { select: { slug: true } } },
+    });
+    if (redirectEntry?.product?.slug) {
+      permanentRedirect(`/catalogo/${redirectEntry.product.slug}`);
+    }
+    notFound();
+  }
   // Si admin lo marcó hidden, no se muestra al público
   if (product.override?.hidden) notFound();
 

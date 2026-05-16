@@ -179,7 +179,20 @@ async function upsertProduct(
     }
   }
 
-  const slug = slugify(`${raw.product_name}-${raw.master_code}`);
+  // Slug LIMPIO sin supplier SKU (no exponer "-mo9812" al cliente).
+  // Si ya existe el producto con un slug que NO contiene el master_code,
+  // lo mantenemos (estable). Si no, calculamos uno nuevo con resolución
+  // de colisiones y archivamos el slug antiguo como redirect 301.
+  const existing = await prisma.product.findUnique({
+    where: { supplier_supplierRef: { supplier: "midocean", supplierRef: raw.master_code } },
+    select: { id: true, slug: true },
+  });
+  const masterToken = raw.master_code.toLowerCase();
+  const currentSlugIsClean = existing && !existing.slug.toLowerCase().includes(masterToken);
+  const slug = currentSlugIsClean
+    ? existing!.slug
+    : await resolveCleanProductSlug(raw.product_name, existing?.id ?? null);
+
   const productData = {
     supplier: "midocean" as const,
     supplierRef: raw.master_code,
@@ -206,6 +219,19 @@ async function upsertProduct(
     create: productData,
     update: productData,
   });
+
+  // Si el slug acaba de cambiar, archivar el viejo como redirect 301.
+  // Solo si el viejo era no-limpio (contenía supplier SKU) — los renames
+  // espontáneos no nos interesan.
+  if (existing && existing.slug !== slug && existing.slug.toLowerCase().includes(masterToken)) {
+    await prisma.productSlugRedirect
+      .upsert({
+        where: { oldSlug: existing.slug },
+        create: { oldSlug: existing.slug, productId: product.id },
+        update: { productId: product.id },
+      })
+      .catch(() => {});
+  }
 
   // Asignar referencia propia Startidea (determinística desde id) si falta.
   // No se sobrescribe nunca para mantener estabilidad de URLs/refs ya conocidas.
@@ -288,4 +314,31 @@ async function upsertProduct(
   }
 
   ctx.onCounts(1, raw.variants?.length ?? 0, 0);
+}
+
+/**
+ * Genera un slug limpio (sin supplier SKU) único entre productos.
+ * Si colisiona con otro producto distinto, añade sufijo -2, -3, …
+ * El productSelf permite reutilizar el slug propio sin contarse a sí mismo
+ * como colisión.
+ */
+export async function resolveCleanProductSlug(
+  productName: string,
+  productSelfId: string | null,
+): Promise<string> {
+  const base = slugify(productName) || "producto";
+  let candidate = base;
+  let suffix = 1;
+  // Hasta 50 intentos (suficiente para repeticiones reales de nombre)
+  while (suffix <= 50) {
+    const collision = await prisma.product.findUnique({
+      where: { slug: candidate },
+      select: { id: true },
+    });
+    if (!collision || collision.id === productSelfId) return candidate;
+    suffix++;
+    candidate = `${base}-${suffix}`;
+  }
+  // Fallback defensivo (no debería darse en práctica)
+  return `${base}-${Date.now().toString(36).slice(-4)}`;
 }

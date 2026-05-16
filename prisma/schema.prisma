@@ -155,11 +155,25 @@ model Product {
   positions       MarkingPosition[]
   embedding       ProductEmbedding?
   override        ProductOverride?
+  slugRedirects   ProductSlugRedirect[] @relation("SlugRedirects")
 
   @@unique([supplier, supplierRef])
   @@index([categoryId])
   @@index([active])
   @@index([syncedAt])
+}
+
+/// Redirects 301 de slugs antiguos (incluían supplier SKU como "-mo9812")
+/// hacia el slug actual limpio del producto. Sirve para no romper SEO/links
+/// externos al migrar el formato.
+model ProductSlugRedirect {
+  id        String   @id @default(cuid())
+  oldSlug   String   @unique
+  product   Product? @relation("SlugRedirects", fields: [productId], references: [id], onDelete: SetNull)
+  productId String?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
 }
 
 /// Override editable desde admin por producto.
