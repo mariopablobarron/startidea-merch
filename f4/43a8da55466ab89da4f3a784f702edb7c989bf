@@ -1,0 +1,27 @@
+src/components/EmailCapturePopup.tsx
+  s_65877aa637ec34::t_ec50ac5be1c19e 155
+  s_65877aa637ec34::t_3d478003116705 55-65,72-76
+  s_65877aa637ec34::t_bcbd6868badd64 84-88
+  s_65877aa637ec34::t_bef967f3cff43d 22-26
+src/components/CartBanner.tsx
+  s_65877aa637ec34::t_50a198c9887c36 5
+  s_65877aa637ec34::t_0bb420edb2a791 17,32-36
+src/app/recomendador/page.tsx
+  s_65877aa637ec34::t_d7045bd1dd7c4d 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "f443a8da55466ab89da4f3a784f702edb7c989bf",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
