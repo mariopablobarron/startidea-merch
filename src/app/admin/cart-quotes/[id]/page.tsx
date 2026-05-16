@@ -116,7 +116,10 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
 
         <header className="mt-4 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl font-semibold text-ink">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+              — Cotización <code className="font-mono">{cart.id.slice(0, 8)}</code>
+            </p>
+            <h1 className="mt-1 font-display text-3xl font-semibold text-ink">
               {cart.name}{cart.company && <span className="text-ink/60"> · {cart.company}</span>}
             </h1>
             <p className="mt-1 text-sm text-ink/70">

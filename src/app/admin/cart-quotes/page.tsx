@@ -75,7 +75,7 @@ export default function AdminCartQuotesPage() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-8 flex items-end justify-between">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Admin</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">— Admin · Cotizaciones</p>
             <h1 className="mt-1 font-display text-3xl font-semibold text-ink">
               Carritos de cotización
             </h1>

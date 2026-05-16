@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
-import { resend, RESEND_FROM } from "@/lib/resend";
+import { sendEmail } from "@/lib/resend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,16 +80,15 @@ async function sendStep(
     customerToken: string | null;
   },
 ) {
-  if (!resend) return;
   const firstName = cart.name.split(" ")[0];
   const totalItems = cart.items.reduce((s, it) => s + it.quantity, 0);
   const co2 = Math.round(totalItems * 1.2);
 
   if (step === 0) {
-    await resend.emails.send({
-      from: RESEND_FROM,
+    await sendEmail({
       to: cart.email,
       subject: `${firstName}, gracias — esto es lo que has generado`,
+      context: `post-order-drip step=0 · ${cart.id}`,
       html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
         <h2 style="font-family:Georgia,serif;">Pedido entregado ✓</h2>
         <p>Hola ${firstName},</p>
@@ -113,10 +112,10 @@ async function sendStep(
 
   if (step === 14) {
     const dashUrl = cart.customerToken ? `${SITE_URL}/clientes/${cart.customerToken}` : null;
-    await resend.emails.send({
-      from: RESEND_FROM,
+    await sendEmail({
       to: cart.email,
       subject: `${firstName}, tu informe de impacto está listo para tu memoria`,
+      context: `post-order-drip step=14 · ${cart.id}`,
       html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
         <h2 style="font-family:Georgia,serif;">Tu informe de impacto</h2>
         <p>Hola ${firstName},</p>
@@ -154,10 +153,10 @@ async function sendStep(
       });
     } catch {}
 
-    await resend.emails.send({
-      from: RESEND_FROM,
+    await sendEmail({
       to: cart.email,
       subject: `${firstName}, ¿toca repetir? Tienes 10% sobre tu próxima cotización`,
+      context: `post-order-drip step=45 · ${cart.id}`,
       html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
         <h2 style="font-family:Georgia,serif;">¿Hay próxima campaña en mente?</h2>
         <p>Hola ${firstName},</p>

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
-import { resend, RESEND_FROM } from "@/lib/resend";
+import { resend, RESEND_FROM, sendEmail } from "@/lib/resend";
+import { notifyTelegram } from "@/lib/telegram";
 import { resolveAudience } from "@/lib/broadcast-audience";
 
 export const runtime = "nodejs";
@@ -47,21 +48,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const parsed = TestSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Email inválido" }, { status: 400 });
 
-    try {
-      await resend.emails.send({
-        from: RESEND_FROM,
-        to: parsed.data.testEmail,
-        subject: `[TEST] ${broadcast.subject}`,
-        html: applyFooter(broadcast.html, `${SITE_URL}/api/newsletter/unsubscribe?token=test`),
-        text: broadcast.text || stripHtml(broadcast.html),
-      });
-      return NextResponse.json({ ok: true, sentTo: parsed.data.testEmail, test: true });
-    } catch (e) {
-      return NextResponse.json(
-        { error: e instanceof Error ? e.message : "Error envío" },
-        { status: 500 },
-      );
+    // sendEmail dispara alerta Telegram automática si Resend falla.
+    const result = await sendEmail({
+      to: parsed.data.testEmail,
+      subject: `[TEST] ${broadcast.subject}`,
+      html: applyFooter(broadcast.html, `${SITE_URL}/api/newsletter/unsubscribe?token=test`),
+      context: `broadcast test · ${broadcast.id}`,
+    });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: 502 });
     }
+    return NextResponse.json({ ok: true, sentTo: parsed.data.testEmail, test: true });
   }
 
   // ── Caso REAL: envía a la audiencia ──────────────────────────
@@ -137,6 +134,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       failedCount,
     },
   });
+
+  // Alerta Telegram si tasa de fallo > 50% (indica problema sistémico:
+  // quota Resend, dominio caído, etc.). Sin spam por cada fallo individual
+  // ya que el delivery por email queda registrado en BroadcastDelivery.
+  if (recipients.length > 0 && failedCount / recipients.length > 0.5) {
+    void notifyTelegram(
+      `⚠️ <b>Broadcast con ${failedCount}/${recipients.length} fallos (${Math.round(
+        (failedCount / recipients.length) * 100,
+      )}%)</b>\n` +
+        `Asunto: ${broadcast.subject.slice(0, 100)}\n` +
+        `Broadcast ID: <code>${id}</code>\n` +
+        `Audiencia: ${broadcast.audience}\n\n` +
+        `Revisa /admin/marketing/broadcasts/${id} y los deliveries en BD.`,
+    ).catch(() => {});
+  }
 
   return NextResponse.json({
     ok: true,

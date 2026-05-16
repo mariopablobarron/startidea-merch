@@ -3,7 +3,7 @@ import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/admin-auth";
-import { resend, RESEND_FROM } from "@/lib/resend";
+import { sendEmail } from "@/lib/resend";
 import { notifyTelegram } from "@/lib/telegram";
 
 export const runtime = "nodejs";
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
   });
 
   // Email cliente
-  if (data.sendEmailToCustomer && resend) {
+  if (data.sendEmailToCustomer) {
     const firstName = data.customerName.split(" ")[0] || "";
     const itemsHtml = data.lines
       .map(
@@ -121,10 +121,10 @@ export async function POST(req: Request) {
       : `${SITE_URL}/clientes/login`;
     const ctaLabel = paymentLinkToken ? "Pagar y confirmar pedido →" : "Ver mi cotización en el portal →";
 
-    await resend.emails.send({
-      from: RESEND_FROM,
+    await sendEmail({
       to: data.customerEmail,
       subject: `${firstName ? firstName + ", t" : "T"}u cotización cerrada · TodoMerchandising`,
+      context: `quote-ai cerrado · ${cart.id}`,
       html: `<div style="font-family:-apple-system,sans-serif;max-width:640px;margin:0 auto;color:#2A2A2A;">
         <h2 style="font-family:Georgia,serif;">Cotización cerrada</h2>
         <p>Hola ${firstName || data.customerName},</p>
