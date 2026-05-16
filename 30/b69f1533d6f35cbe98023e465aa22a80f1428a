@@ -1,0 +1,23 @@
+src/app/api/mockup/generate/route.ts
+  s_65877aa637ec34::t_a1efd0d0bbbacf 232
+  s_65877aa637ec34::t_ce9896b0a1ba93 112-126,146-203
+src/components/MockupGenerator.tsx
+  s_65877aa637ec34::t_4c875ca4b559c8 8-13,25,38,50-59
+  s_65877aa637ec34::t_430c477bffc6f7 158-178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "30b69f1533d6f35cbe98023e465aa22a80f1428a",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
