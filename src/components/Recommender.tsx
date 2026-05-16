@@ -75,7 +75,7 @@ export function Recommender() {
   return (
     <div className="grid gap-12 lg:grid-cols-[1fr,1.2fr]">
       <form onSubmit={onSubmit} className="rounded-3xl border border-line bg-bone p-7 lg:p-8">
-        <p className="text-xs font-medium uppercase tracking-wider text-accent">
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
           Asistente de selección
         </p>
         <h2 className="mt-3 font-display text-3xl font-semibold text-ink">
@@ -205,7 +205,7 @@ export function Recommender() {
 
         {result && "ok" in result && "needsClarification" in result && result.needsClarification && result.clarificationQuestion && (
           <div className="rounded-3xl border border-accent bg-accent-wash p-7">
-            <p className="text-xs font-medium uppercase tracking-wider text-accent-deep">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60-deep">
               Necesito un detalle más
             </p>
             <p className="mt-3 font-display text-xl font-semibold text-ink">
@@ -219,7 +219,7 @@ export function Recommender() {
 
         {result && "ok" in result && (!("needsClarification" in result) || !result.needsClarification) && result.recommendations.length > 0 && (
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               {result.recommendations.length} recomendaciones para ti
             </p>
             <ul className="mt-4 space-y-4">

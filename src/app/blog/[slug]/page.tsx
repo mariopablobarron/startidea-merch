@@ -134,7 +134,7 @@ export default async function BlogPostPage({
           />
 
           <aside className="mt-12 rounded-3xl border border-line bg-bone-soft p-6 lg:p-8">
-            <p className="text-xs font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               ¿Lo aplicas a tu próximo pedido?
             </p>
             <h2 className="mt-2 font-display text-2xl font-semibold text-ink">

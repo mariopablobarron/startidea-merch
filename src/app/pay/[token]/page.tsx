@@ -50,7 +50,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
     <main className="min-h-screen bg-bone-soft py-16">
       <div className="mx-auto max-w-3xl px-6">
         <div className="rounded-3xl border border-line bg-bone p-8 lg:p-10">
-          <p className="text-sm font-medium uppercase tracking-wider text-accent">Pago seguro</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Pago seguro</p>
           <h1 className="mt-3 font-display text-3xl font-semibold text-ink">
             Hola {cart.name.split(" ")[0]}, tu cotización está lista.
           </h1>

@@ -286,7 +286,7 @@ export function ProductOrderForm({
 
   return (
     <div className="mt-6 rounded-3xl border border-line bg-bone p-5 lg:p-6">
-      <p className="text-xs font-medium uppercase tracking-wider text-accent">
+      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
         Pedir cotización
       </p>
       <h2 className="mt-1 font-display text-xl font-semibold text-ink">

@@ -79,7 +79,7 @@ export function ImpactLive() {
       className="border-t border-line bg-ink text-bone"
     >
       <div className="mx-auto max-w-8xl px-6 py-20 lg:px-10 lg:py-28">
-        <p className="text-xs font-medium uppercase tracking-wider text-accent-light">
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60-light">
           Impacto real · datos en directo
         </p>
         <h2 className="mt-3 max-w-3xl font-display text-section font-semibold">
@@ -121,7 +121,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   return (
     <div>
       <p className="font-display text-5xl font-semibold tabular-nums text-bone">{value}</p>
-      <p className="mt-3 text-sm font-medium uppercase tracking-wider text-accent-light">{label}</p>
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60-light">{label}</p>
       {sub && <p className="mt-1 text-xs text-bone/50">{sub}</p>}
     </div>
   );

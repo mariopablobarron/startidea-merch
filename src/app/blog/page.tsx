@@ -52,7 +52,7 @@ export default async function BlogIndexPage() {
       <main>
         <section className="border-b border-line bg-bone py-14 lg:py-20">
           <div className="mx-auto max-w-4xl px-6 lg:px-10">
-            <p className="text-sm font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Blog
             </p>
             <h1 className="mt-3 font-display text-section font-semibold text-ink">
@@ -77,7 +77,7 @@ export default async function BlogIndexPage() {
                   <li key={p.id}>
                     <Link
                       href={`/blog/${p.slug}`}
-                      className="group block rounded-3xl border border-line bg-bone p-6 transition hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg lg:p-8"
+                      className="group block rounded-3xl border border-line bg-bone p-6 transition hover:border-accent/40 hover:shadow-lg lg:p-8"
                     >
                       <div className="flex flex-wrap gap-6 lg:flex-nowrap">
                         {p.heroUrl && (

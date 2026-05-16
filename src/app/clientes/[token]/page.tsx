@@ -54,7 +54,7 @@ export default async function CustomerDashboardPage({
     <main className="min-h-screen bg-bone-soft">
       <section className="border-b border-line bg-bone py-14 lg:py-20">
         <div className="mx-auto max-w-5xl px-6 lg:px-10">
-          <p className="text-sm font-medium uppercase tracking-wider text-accent">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
             Dashboard de impacto · {seed.company || seed.name}
           </p>
           <h1 className="mt-3 font-display text-section font-semibold text-ink">
@@ -169,7 +169,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   return (
     <div>
       <p className="font-display text-5xl font-semibold tabular-nums text-bone">{value}</p>
-      <p className="mt-3 text-sm font-medium uppercase tracking-wider text-accent-light">{label}</p>
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60-light">{label}</p>
       {sub && <p className="mt-1 text-xs text-bone/50">{sub}</p>}
     </div>
   );

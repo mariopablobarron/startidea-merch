@@ -35,7 +35,7 @@ export default function SobrePage() {
       <main className="bg-bone">
         <section className="bg-bone py-24 lg:py-36">
           <div className="mx-auto max-w-4xl px-6 lg:px-10">
-            <p className="mb-6 text-sm font-medium uppercase tracking-wider text-accent">
+            <p className="mb-6 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Sobre nosotros
             </p>
             <h1 className="font-display text-hero font-semibold text-ink">

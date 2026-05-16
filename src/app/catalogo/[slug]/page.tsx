@@ -354,7 +354,7 @@ export default async function ProductDetailPage({
                           </div>
                         )}
                         <div className="p-5">
-                          <p className="text-xs font-medium uppercase tracking-wider text-accent">
+                          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
                             {pos.positionId}
                           </p>
                           {(pos.maxWidthMm || pos.maxHeightMm) && (
@@ -389,7 +389,7 @@ export default async function ProductDetailPage({
             {/* DERECHA — sticky con info + configurador */}
             <aside className="lg:sticky lg:top-24 lg:self-start">
               {publicBrand(product.brand) && (
-                <p className="text-xs font-medium uppercase tracking-wider text-accent">
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
                   {publicBrand(product.brand)}
                 </p>
               )}

@@ -29,9 +29,9 @@ export function Categories() {
           <div className="max-w-2xl">
             <motion.p
               variants={fadeUp}
-              className="mb-6 text-sm font-medium uppercase tracking-wider text-accent"
+              className="mb-6 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60"
             >
-              Catálogo
+              — Catálogo
             </motion.p>
             <motion.h2
               variants={fadeUp}

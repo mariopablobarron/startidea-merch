@@ -10,8 +10,8 @@ export async function QuoteSection() {
       <div className="mx-auto max-w-8xl px-6 lg:px-10">
         <div className="grid gap-16 lg:grid-cols-[1fr,1.4fr]">
           <div>
-            <p className="mb-6 text-sm font-medium uppercase tracking-wider text-accent">
-              Cotización
+            <p className="mb-6 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+              — Cotización en 24h
             </p>
             <h2 className="font-display text-section font-semibold text-ink">
               {settings.heroTitle}

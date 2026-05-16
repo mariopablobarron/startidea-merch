@@ -41,7 +41,7 @@ export default async function RecursosPage() {
       <main>
         <section className="border-b border-line bg-bone py-14 lg:py-20">
           <div className="mx-auto max-w-4xl px-6 lg:px-10">
-            <p className="text-sm font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Recursos gratis
             </p>
             <h1 className="mt-3 font-display text-section font-semibold text-ink">
@@ -66,7 +66,7 @@ export default async function RecursosPage() {
                   <li key={m.id}>
                     <Link
                       href={`/recursos/${m.slug}`}
-                      className="group block h-full rounded-3xl border border-line bg-bone p-5 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-lg"
+                      className="group block h-full rounded-3xl border border-line bg-bone p-5 transition hover:border-accent/40 hover:shadow-lg"
                     >
                       {m.heroUrl && (
                         <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-2xl bg-bone-soft">

@@ -213,7 +213,7 @@ export default function AdminProposalsNewPage() {
             {result.summary && <p className="mt-3 text-sm text-ink/80">{result.summary}</p>}
             {result.internalAdvice && (
               <div className="mt-4 rounded-2xl bg-bone p-4">
-                <p className="text-xs font-medium uppercase tracking-wider text-accent">Consejo interno IA</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Consejo interno IA</p>
                 <p className="mt-2 text-sm text-ink/80">{result.internalAdvice}</p>
               </div>
             )}

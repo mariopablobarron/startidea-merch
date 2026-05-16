@@ -38,9 +38,9 @@ export function Process() {
         >
           <motion.p
             variants={fadeUp}
-            className="mb-6 text-sm font-medium uppercase tracking-wider text-accent"
+            className="mb-6 text-[11px] font-medium uppercase tracking-[0.18em] text-bone/50"
           >
-            Cómo trabajamos
+            — Cómo trabajamos
           </motion.p>
           <motion.h2 variants={fadeUp} className="font-display text-section font-semibold">
             Sin intermediarios opacos.<br />

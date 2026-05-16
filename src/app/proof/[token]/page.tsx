@@ -36,7 +36,7 @@ export default async function ProofPage({ params }: { params: Promise<{ token: s
     <main className="min-h-screen bg-bone-soft py-16">
       <div className="mx-auto max-w-3xl px-6">
         <div className="rounded-3xl border border-line bg-bone p-8 lg:p-10">
-          <p className="text-sm font-medium uppercase tracking-wider text-accent">Aprobar mockup</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Aprobar mockup</p>
           <h1 className="mt-3 font-display text-3xl font-semibold text-ink">
             Revisa cómo va a quedar tu pedido.
           </h1>

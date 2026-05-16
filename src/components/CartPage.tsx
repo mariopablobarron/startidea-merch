@@ -361,7 +361,7 @@ export function CartPage() {
             );
           return (
             <>
-              <p className="text-xs font-medium uppercase tracking-wider text-accent">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
                 {allPriced ? "Finalizar pedido" : "Tus datos"}
               </p>
               <p className="mt-1 font-display text-xl font-semibold text-ink">

@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-bone-soft p-8">
       <div className="w-full max-w-md rounded-3xl border border-line bg-bone p-8 lg:p-10">
-        <p className="text-xs font-medium uppercase tracking-wider text-accent">Acceso panel</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Acceso panel</p>
         <h1 className="mt-2 font-display text-2xl font-semibold text-ink">Inicia sesión</h1>
         <p className="mt-2 text-sm text-ink/60">
           Si es la primera vez y aún no hay usuarios en el sistema, usa tu email y el

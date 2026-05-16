@@ -42,9 +42,9 @@ export function Cases() {
         >
           <motion.p
             variants={fadeUp}
-            className="mb-6 text-sm font-medium uppercase tracking-wider text-accent"
+            className="mb-6 text-[11px] font-medium uppercase tracking-[0.18em] text-bone/50"
           >
-            Casos
+            — Casos de estudio
           </motion.p>
           <motion.h2 variants={fadeUp} className="font-display text-section font-semibold">
             Lo que ya hemos hecho<br />
@@ -65,7 +65,7 @@ export function Cases() {
               variants={fadeUp}
               className="flex flex-col rounded-3xl border border-bone/10 bg-ink-soft p-8 transition hover:border-accent/40"
             >
-              <p className="text-xs font-medium uppercase tracking-wider text-accent">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-bone/50">
                 {c.sector}
               </p>
               <h3 className="mt-5 font-display text-xl font-semibold leading-snug">

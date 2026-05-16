@@ -69,7 +69,7 @@ export default async function PromocionesPage() {
       <main className="bg-bone">
         <section className="border-b border-line bg-gradient-to-br from-accent/10 via-bone to-bone py-14 lg:py-20">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
-            <p className="text-sm font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Promociones
             </p>
             <h1 className="mt-3 max-w-3xl font-display text-section font-semibold text-ink">
@@ -118,7 +118,7 @@ export default async function PromocionesPage() {
                     <Link
                       key={p.id}
                       href={`/catalogo/${p.slug}`}
-                      className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-5 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
+                      className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-5 transition hover:border-accent/40"
                     >
                       {(ov?.featured || tags.length > 0) && (
                         <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1">

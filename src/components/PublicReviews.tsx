@@ -30,7 +30,7 @@ export function PublicReviews() {
   return (
     <section className="border-t border-line bg-bone-soft py-20 lg:py-28">
       <div className="mx-auto max-w-8xl px-6 lg:px-10">
-        <p className="text-xs font-medium uppercase tracking-wider text-accent">Lo que dicen</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Lo que dicen</p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
           <h2 className="font-display text-section font-semibold text-ink">
             Empresas que ya han producido con nosotros.

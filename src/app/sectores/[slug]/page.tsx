@@ -44,7 +44,7 @@ export default async function SectorDetailPage({
             </Link>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <span className="text-5xl">{s.icon}</span>
-              <p className="text-sm font-medium uppercase tracking-wider text-accent">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
                 Sector
               </p>
             </div>

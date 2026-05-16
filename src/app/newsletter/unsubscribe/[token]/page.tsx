@@ -22,7 +22,7 @@ export default async function UnsubscribePage({ params }: { params: Promise<{ to
   return (
     <main className="min-h-screen bg-bone-soft py-16">
       <div className="mx-auto max-w-xl px-6 text-center">
-        <p className="text-xs font-medium uppercase tracking-wider text-accent">Baja confirmada</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Baja confirmada</p>
         <h1 className="mt-3 font-display text-3xl font-semibold text-ink">
           {sub.email} ya no recibirá emails.
         </h1>

@@ -159,7 +159,7 @@ export default function AttributionPage() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Analytics · Atribución
             </p>
             <h1 className="mt-1 font-display text-3xl font-semibold text-ink">

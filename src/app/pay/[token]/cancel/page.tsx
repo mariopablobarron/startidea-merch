@@ -12,7 +12,7 @@ export default async function PayCancelPage({ params }: { params: Promise<{ toke
     <main className="min-h-screen bg-bone-soft py-16">
       <div className="mx-auto max-w-2xl px-6">
         <div className="rounded-3xl border border-line bg-bone p-10 text-center">
-          <p className="text-sm font-medium uppercase tracking-wider text-accent">Pago cancelado</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Pago cancelado</p>
           <h1 className="mt-3 font-display text-3xl font-semibold text-ink">
             No te preocupes, no se ha cobrado nada.
           </h1>

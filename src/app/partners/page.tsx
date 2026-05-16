@@ -15,7 +15,7 @@ export default function PartnersPage() {
       <main className="bg-bone-soft">
         <section className="border-b border-line bg-bone py-16 lg:py-24">
           <div className="mx-auto max-w-3xl px-6 lg:px-10">
-            <p className="text-sm font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Programa de partners
             </p>
             <h1 className="mt-3 font-display text-section font-semibold text-ink">

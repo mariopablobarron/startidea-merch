@@ -56,7 +56,7 @@ export default async function ResourcePage({
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
               <div>
                 {magnet.category && (
-                  <p className="text-xs font-medium uppercase tracking-wider text-accent">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
                     {magnet.category}
                   </p>
                 )}

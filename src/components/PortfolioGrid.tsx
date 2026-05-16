@@ -41,7 +41,7 @@ export async function PortfolioGrid({
       <div className="mx-auto max-w-8xl px-6 lg:px-10">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Trabajos realizados
             </p>
             <h2

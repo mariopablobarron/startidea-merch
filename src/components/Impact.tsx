@@ -40,9 +40,9 @@ export function Impact() {
           <div>
             <motion.p
               variants={fadeUp}
-              className="mb-6 text-sm font-medium uppercase tracking-wider text-accent"
+              className="mb-6 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60"
             >
-              Por qué existimos
+              — Por qué existimos
             </motion.p>
             <motion.h2
               variants={fadeUp}
@@ -66,7 +66,7 @@ export function Impact() {
               <motion.article
                 key={title}
                 variants={fadeUp}
-                className="rounded-3xl border border-line bg-bone-soft p-7 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
+                className="rounded-3xl border border-line bg-bone-soft p-7 transition hover:border-accent/40"
               >
                 <Icon className="h-7 w-7 text-accent" strokeWidth={1.5} />
                 <h3 className="mt-5 font-display text-xl font-semibold">{title}</h3>

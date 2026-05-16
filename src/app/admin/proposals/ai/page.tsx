@@ -154,7 +154,7 @@ export default function AIQuoteBuilderPage() {
       <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-accent">Ventas · IA</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Ventas · IA</p>
             <h1 className="mt-1 font-display text-2xl font-semibold text-ink lg:text-3xl">
               AI Quote Builder
             </h1>

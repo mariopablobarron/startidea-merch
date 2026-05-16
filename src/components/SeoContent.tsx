@@ -23,7 +23,7 @@ export function SeoContent() {
       className="border-t border-line bg-bone py-20 lg:py-28"
     >
       <div className="mx-auto max-w-4xl px-6 lg:px-10">
-        <p className="text-xs font-medium uppercase tracking-wider text-accent">Guía completa</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Guía completa</p>
         <h2
           id="seo-content-title"
           className="mt-3 font-display text-section font-semibold text-ink"

@@ -253,7 +253,7 @@ export default async function CatalogoPage({
       <main className="bg-bone">
         <section className="border-b border-line bg-bone py-12 lg:py-16">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
-            <p className="mb-4 text-sm font-medium uppercase tracking-wider text-accent">
+            <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Catálogo
             </p>
             <h1 className="font-display text-section font-semibold text-ink">
@@ -533,7 +533,7 @@ export default async function CatalogoPage({
                           <Link
                             key={p.id}
                             href={`/catalogo/${p.slug}`}
-                            className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-5 transition hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl"
+                            className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-5 transition hover:border-accent/40"
                           >
                             {/* Badges de marketing arriba a la izquierda */}
                             {(isFeatured || tags.length > 0) && (

@@ -68,7 +68,7 @@ export default async function CustomerPortalPage() {
       {/* Header */}
       <header className="border-b border-line bg-bone py-10 lg:py-14">
         <div className="mx-auto max-w-6xl px-6 lg:px-10">
-          <p className="text-sm font-medium uppercase tracking-wider text-accent">Portal cliente</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Portal cliente</p>
           <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
             <h1 className="font-display text-3xl font-semibold text-ink lg:text-4xl">
               Hola {session.name.split(" ")[0]}
@@ -91,7 +91,7 @@ export default async function CustomerPortalPage() {
       {(pendingProofs.length > 0 || pendingPayments.length > 0) && (
         <section className="border-b border-line bg-accent-wash py-6">
           <div className="mx-auto max-w-6xl px-6 lg:px-10">
-            <p className="text-xs font-medium uppercase tracking-wider text-accent-deep">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60-deep">
               Tienes acciones pendientes
             </p>
             <ul className="mt-3 space-y-2">
@@ -132,7 +132,7 @@ export default async function CustomerPortalPage() {
       {/* Impacto agregado */}
       <section className="bg-ink py-12 text-bone lg:py-16">
         <div className="mx-auto max-w-6xl px-6 lg:px-10">
-          <p className="text-xs font-medium uppercase tracking-wider text-accent-light">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60-light">
             Tu impacto acumulado
           </p>
           <div className="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -297,7 +297,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   return (
     <div>
       <p className="font-display text-4xl font-semibold tabular-nums text-bone">{value}</p>
-      <p className="mt-2 text-sm font-medium uppercase tracking-wider text-accent-light">{label}</p>
+      <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60-light">{label}</p>
       {sub && <p className="mt-1 text-xs text-bone/50">{sub}</p>}
     </div>
   );

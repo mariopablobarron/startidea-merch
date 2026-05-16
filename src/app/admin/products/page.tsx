@@ -120,7 +120,7 @@ export default function AdminProductsPage() {
     <main className="min-h-screen bg-bone-soft p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
         <header className="mb-6">
-          <p className="text-xs font-medium uppercase tracking-wider text-accent">Marketing</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Marketing</p>
           <h1 className="mt-1 font-display text-3xl font-semibold text-ink">Productos</h1>
           <p className="mt-2 text-sm text-ink/60">
             {total} {total === 1 ? "producto" : "productos"} · Edita precio, descripción, imágenes

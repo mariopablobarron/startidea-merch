@@ -75,7 +75,7 @@ export default function AdminSeoStatsPage() {
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Analytics
             </p>
             <h1 className="mt-1 font-display text-2xl font-semibold text-ink lg:text-3xl">
@@ -153,7 +153,7 @@ function ConfigForm({
       {isFirstSetup && (
         <>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-accent">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Configuración inicial
             </p>
             <h2 className="mt-1 font-display text-xl font-semibold text-ink">
