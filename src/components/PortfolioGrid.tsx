@@ -42,7 +42,7 @@ export async function PortfolioGrid({
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
-              Trabajos realizados
+              — Trabajos realizados
             </p>
             <h2
               id="portfolio-title"

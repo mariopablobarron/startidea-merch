@@ -46,7 +46,7 @@ export function Faq() {
             variants={fadeUp}
             className="mb-6 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60"
           >
-            Preguntas frecuentes
+            — Preguntas frecuentes
           </motion.p>
           <motion.h2
             variants={fadeUp}

@@ -12,6 +12,7 @@ import { Cases } from "@/components/Cases";
 import { PublicReviews } from "@/components/PublicReviews";
 import { SeoContent } from "@/components/SeoContent";
 import { Faq } from "@/components/Faq";
+import { ClosingStatement } from "@/components/ClosingStatement";
 import { QuoteSection } from "@/components/QuoteSection";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
@@ -83,6 +84,7 @@ export default async function HomePage() {
         <Categories />
         <SeoContent />
         <Faq />
+        <ClosingStatement />
         <QuoteSection />
       </main>
       <Footer />
