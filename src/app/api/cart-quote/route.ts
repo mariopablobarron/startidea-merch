@@ -126,7 +126,13 @@ export async function POST(req: Request) {
     include: { items: true },
   });
 
-  // Notificar por email (best-effort, no bloquea respuesta)
+  // Notificar por email (best-effort, no bloquea respuesta).
+  //
+  // ⚠️ Histórico: este catch silenciaba el bug del 2026-05-16 donde Resend
+  // rechazaba con 422/403 (env quoting + dominio no verificado). Para que
+  // no vuelva a pasar, ante CUALQUIER fallo del send disparamos alerta
+  // a Telegram con detalle del error. Un cliente que no recibe email es
+  // un lead potencialmente perdido — Mario debe saberlo en directo.
   if (resend) {
     void Promise.all([
       resend.emails.send({
@@ -142,7 +148,22 @@ export async function POST(req: Request) {
         subject: `${data.name.split(" ")[0]}, recibimos tu cotización con ${cart.items.length} producto${cart.items.length === 1 ? "" : "s"}`,
         html: clientCartHtml(cart),
       }),
-    ]).catch((err) => console.error("[cart-quote] resend error", err));
+    ]).catch((err) => {
+      console.error("[cart-quote] resend error", err);
+      const detail =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message: unknown }).message)
+          : String(err);
+      void notifyTelegram(
+        `⚠️ <b>Resend FALLÓ enviando cotización</b>\n` +
+          `Cliente: ${data.name}${data.company ? ` (${data.company})` : ""}\n` +
+          `Email: ${data.email}\n` +
+          `Cart ID: <code>${cart.id}</code>\n` +
+          `Total: ${EUR.format(total / 100)}\n` +
+          `Detalle: ${detail.slice(0, 300)}\n\n` +
+          `El cliente NO recibió confirmación. Procesa manual desde /admin/cart-quotes/${cart.id}`,
+      ).catch(() => {});
+    });
   }
 
   // Si hay referral activo (cookie o querystring), asociar partner
