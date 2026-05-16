@@ -89,23 +89,38 @@ async function sendStep(
       to: cart.email,
       subject: `${firstName}, gracias — esto es lo que has generado`,
       context: `post-order-drip step=0 · ${cart.id}`,
-      html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
-        <h2 style="font-family:Georgia,serif;">Pedido entregado ✓</h2>
-        <p>Hola ${firstName},</p>
-        <p>Tu pedido ha llegado. Aquí tienes el resumen del impacto que has generado con TodoMerchandising:</p>
-        <table style="width:100%;margin:24px 0;border-collapse:collapse;">
-          <tr><td style="padding:12px;background:#faf8f4;border-radius:8px;">
-            <p style="margin:0;font-size:11px;text-transform:uppercase;color:#6b6b6b;">Productos producidos</p>
-            <p style="margin:4px 0 0;font-size:24px;font-weight:600;">${totalItems}</p>
-          </td></tr>
-          <tr><td style="padding:12px;background:#faf8f4;border-radius:8px;margin-top:8px;">
-            <p style="margin:0;font-size:11px;text-transform:uppercase;color:#6b6b6b;">CO₂ ahorrado</p>
-            <p style="margin:4px 0 0;font-size:24px;font-weight:600;">${co2} kg</p>
-          </td></tr>
-        </table>
-        <p>Cuando tengas un momento, ¿nos cuentas qué tal? Te llegará un email con un link sencillo para valorar.</p>
-        <p style="color:#6b6b6b;font-size:12px;margin-top:32px;">STARTIDEA MALAGA SL · CIF B19583632</p>
-      </div>`,
+      html: `
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+        <div style="padding:32px 32px 24px;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Pedido entregado</p>
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+            Gracias ${firstName}.<br>
+            <span style="color:#E63E73;">Esto es lo que has generado.</span>
+          </h1>
+        </div>
+        <div style="padding:0 32px 32px;">
+          <table style="width:100%;border-collapse:separate;border-spacing:0 8px;">
+            <tr><td style="background:#F4EFE6;padding:20px;border-radius:12px;">
+              <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Productos producidos</p>
+              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#2A2A2A;">${totalItems}</p>
+            </td></tr>
+            <tr><td style="background:#F4EFE6;padding:20px;border-radius:12px;">
+              <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">CO₂ ahorrado</p>
+              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#E63E73;">${co2} kg</p>
+            </td></tr>
+          </table>
+          <p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#444;">
+            ¿Nos cuentas qué tal ha ido? Te llegará un email con un link rápido para
+            valorar — tarda menos de 30 segundos y nos ayuda muchísimo.
+          </p>
+        </div>
+        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+          <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
+        </div>
+      </div>
+    </div>`,
     });
     return;
   }
@@ -116,18 +131,39 @@ async function sendStep(
       to: cart.email,
       subject: `${firstName}, tu informe de impacto está listo para tu memoria`,
       context: `post-order-drip step=14 · ${cart.id}`,
-      html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
-        <h2 style="font-family:Georgia,serif;">Tu informe de impacto</h2>
-        <p>Hola ${firstName},</p>
-        <p>Han pasado dos semanas desde tu pedido. Tienes tu dashboard de impacto con todos los datos verificables, listo para incluir en tu memoria de sostenibilidad o presentación interna.</p>
-        ${
-          dashUrl
-            ? `<p style="text-align:center;margin:28px 0;"><a href="${dashUrl}" style="background:#ff6b35;color:white;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;">Ver mi dashboard →</a></p>`
-            : `<p>Si quieres acceso a tu dashboard privado, respóndenos a este email y te lo enviamos.</p>`
-        }
-        <p style="font-size:13px;color:#6b6b6b;">¿Quieres certificado RSC oficial firmado para reporte GRI/EFRAG? Respóndenos y lo emitimos en 48 h.</p>
-        <p style="color:#6b6b6b;font-size:12px;margin-top:32px;">STARTIDEA MALAGA SL · CIF B19583632</p>
-      </div>`,
+      html: `
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+        <div style="padding:32px 32px 24px;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Informe disponible</p>
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+            Hola ${firstName}.<br>
+            <span style="color:#a09e98;">Tu informe de impacto está listo.</span>
+          </h1>
+          <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
+            Han pasado dos semanas desde tu pedido. Tienes el dashboard con datos
+            verificables (horas de trabajo digno, % producido en CEE, kg CO₂
+            evitados) — listo para incluir en tu memoria de sostenibilidad o
+            presentación interna.
+          </p>
+        </div>
+        <div style="padding:0 32px 32px;text-align:center;">
+          ${
+            dashUrl
+              ? `<a href="${dashUrl}" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Ver mi dashboard →</a>`
+              : `<p style="margin:0;font-size:14px;color:#444;">Responde a este email y te enviamos acceso a tu dashboard privado.</p>`
+          }
+          <p style="margin:20px 0 0;font-size:12px;color:#6b6b6b;line-height:1.6;">
+            ¿Necesitas certificado RSC oficial firmado para reporte GRI o EFRAG?<br>
+            Respóndenos y lo emitimos en <strong>48 h</strong>.
+          </p>
+        </div>
+        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+          <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada</p>
+        </div>
+      </div>
+    </div>`,
     });
     return;
   }
@@ -157,19 +193,41 @@ async function sendStep(
       to: cart.email,
       subject: `${firstName}, ¿toca repetir? Tienes 10% sobre tu próxima cotización`,
       context: `post-order-drip step=45 · ${cart.id}`,
-      html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
-        <h2 style="font-family:Georgia,serif;">¿Hay próxima campaña en mente?</h2>
-        <p>Hola ${firstName},</p>
-        <p>Han pasado 6 semanas desde tu último pedido. Si tienes evento, onboarding o cierre de Q a la vista, te dejamos un código personal que reduce un 10% tu próxima cotización:</p>
-        <div style="background:#fff3ed;border:2px dashed #ff6b35;padding:20px;text-align:center;border-radius:12px;margin:24px 0;">
-          <p style="margin:0;font-family:monospace;font-size:24px;font-weight:700;color:#c43c0d;">${code}</p>
-          <p style="margin:8px 0 0;font-size:11px;color:#6b6b6b;">Válido 30 días · Solo en tu próximo carrito</p>
+      html: `
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+        <div style="padding:32px 32px 24px;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Para tu próxima campaña</p>
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+            Hola ${firstName}.<br>
+            <span style="color:#E63E73;">10% para tu próxima cotización.</span>
+          </h1>
+          <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
+            Han pasado 6 semanas desde tu último pedido. Si tienes evento, onboarding
+            o cierre de Q a la vista, te dejamos un código personal que reduce un 10%
+            sobre tu próxima cotización.
+          </p>
         </div>
-        <p style="text-align:center;">
-          <a href="${SITE_URL}/catalogo" style="background:#0a0a0b;color:white;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">Volver al catálogo →</a>
-        </p>
-        <p style="color:#6b6b6b;font-size:12px;margin-top:32px;">STARTIDEA MALAGA SL · CIF B19583632</p>
-      </div>`,
+        <div style="padding:0 32px;">
+          <div style="background:#FBDFE9;border:2px dashed #E63E73;padding:24px;text-align:center;border-radius:12px;">
+            <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Tu código personal</p>
+            <p style="margin:8px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#E63E73;letter-spacing:0.05em;">${code}</p>
+            <p style="margin:10px 0 0;font-size:12px;color:#6b6b6b;">Válido 30 días · Solo en tu próximo carrito</p>
+          </div>
+        </div>
+        <div style="padding:24px 32px 32px;text-align:center;">
+          <a href="${SITE_URL}/catalogo" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Volver al catálogo →</a>
+          <p style="margin:16px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;">
+            ¿Quieres que te recomendemos novedades alineadas con tu marca?<br>
+            Responde a este email con dos líneas de brief.
+          </p>
+        </div>
+        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+          <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
+        </div>
+      </div>
+    </div>`,
     });
     return;
   }
