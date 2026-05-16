@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/admin-auth";
 import { LogoutButton } from "@/components/admin/LogoutButton";
+import { NavDropdown } from "@/components/admin/NavDropdown";
 
 export const metadata: Metadata = {
   title: "Panel · TodoMerchandising",
@@ -76,123 +76,52 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   SEO 📊
                 </Link>
               )}
-              {session.role === "CEO" && (
+              {(session.role === "CEO" || session.role === "COMERCIAL") && (
                 <>
-                  <Link href="/admin/users" className="text-ink/60 hover:text-accent">
-                    Usuarios
-                  </Link>
-                  <Link href="/admin/coupons" className="text-ink/60 hover:text-accent">
-                    Cupones
+                  <NavDropdown
+                    label="Catálogo"
+                    items={[
+                      { href: "/admin/products", label: "Productos", title: "Editar productos: precio, descripción, destacar" },
+                      { href: "/admin/products/auto-describe", label: "IA descripciones ✨", title: "Auto-generar descripciones con IA para productos sin descripción" },
+                      { href: "/admin/recomendador", label: "Consultas IA", title: "Historial de consultas al recomendador" },
+                    ]}
+                  />
+                  <NavDropdown
+                    label="Marketing"
+                    items={[
+                      { href: "/admin/marketing/content", label: "Content Studio ✨", title: "Content Studio — IA copy + workflow aprobación" },
+                      { href: "/admin/marketing/site", label: "Copy (CMS home)" },
+                      { href: "/admin/marketing/banners", label: "Banners promocionales" },
+                      { href: "/admin/marketing/portfolio", label: "Portfolio", title: "Trabajos realizados (portfolio público)" },
+                      { href: "/admin/marketing/assets", label: "Asset Studio ✨", title: "IA imágenes con Magnific/Replicate" },
+                      { href: "/admin/marketing/broadcasts", label: "Emails (broadcasts)" },
+                      { href: "/admin/marketing/blog", label: "Blog SEO" },
+                      { href: "/admin/marketing/lead-magnets", label: "Recursos / lead magnets" },
+                      { href: "/admin/marketing/seo", label: "SEO por página" },
+                      { href: "/admin/marketing/cotizador", label: "Cotizador (settings)" },
+                    ]}
+                  />
+                  <Link href="/admin/proposals/new" className="text-accent hover:text-accent-dark">
+                    ⚡ Propuesta IA
                   </Link>
                   <Link
-                    href="/admin/integrations"
-                    className="text-ink/60 hover:text-accent"
-                    title="Conectar Metricool, Meta Ads, Google Ads, LinkedIn Ads"
+                    href="/admin/proposals/ai"
+                    className="text-accent hover:text-accent-dark"
+                    title="Genera presupuesto desde brief libre del cliente"
                   >
-                    Integraciones
+                    ✨ Quote Builder
                   </Link>
                 </>
               )}
-              {(session.role === "CEO" || session.role === "COMERCIAL") && (
-                <>
-                  <Link
-                    href="/admin/products"
-                    className="text-ink/60 hover:text-accent"
-                    title="Editar productos: precio, descripción, destacar"
-                  >
-                    Productos
-                  </Link>
-                  <Link
-                    href="/admin/products/auto-describe"
-                    className="text-ink/60 hover:text-accent"
-                    title="Auto-generar descripciones con IA para productos sin descripción"
-                  >
-                    IA descripciones ✨
-                  </Link>
-                  <Link
-                    href="/admin/marketing/content"
-                    className="text-ink/60 hover:text-accent"
-                    title="Content Studio — IA copy + workflow aprobación"
-                  >
-                    Content ✨
-                  </Link>
-                  <Link
-                    href="/admin/marketing/site"
-                    className="text-ink/60 hover:text-accent"
-                    title="CMS · editar copy de la home"
-                  >
-                    Copy
-                  </Link>
-                  <Link
-                    href="/admin/marketing/banners"
-                    className="text-ink/60 hover:text-accent"
-                    title="Banners promocionales"
-                  >
-                    Banners
-                  </Link>
-                  <Link
-                    href="/admin/marketing/portfolio"
-                    className="text-ink/60 hover:text-accent"
-                    title="Trabajos realizados (portfolio público)"
-                  >
-                    Portfolio
-                  </Link>
-                  <Link
-                    href="/admin/marketing/assets"
-                    className="text-ink/60 hover:text-accent"
-                    title="Asset Studio · IA imágenes con Magnific (upscale, fondos, mystic)"
-                  >
-                    Assets ✨
-                  </Link>
-                  <Link
-                    href="/admin/marketing/broadcasts"
-                    className="text-ink/60 hover:text-accent"
-                    title="Email broadcasts"
-                  >
-                    Emails
-                  </Link>
-                  <Link
-                    href="/admin/marketing/blog"
-                    className="text-ink/60 hover:text-accent"
-                    title="Blog SEO long-form"
-                  >
-                    Blog
-                  </Link>
-                  <Link
-                    href="/admin/marketing/lead-magnets"
-                    className="text-ink/60 hover:text-accent"
-                    title="Lead magnets / PDFs descargables"
-                  >
-                    Recursos
-                  </Link>
-                  <Link
-                    href="/admin/marketing/seo"
-                    className="text-ink/60 hover:text-accent"
-                    title="Editor SEO por página"
-                  >
-                    SEO
-                  </Link>
-                  <Link
-                    href="/admin/marketing/cotizador"
-                    className="text-ink/60 hover:text-accent"
-                    title="Configurar formulario de cotización"
-                  >
-                    Cotizador
-                  </Link>
-                  <Link
-                    href="/admin/recomendador"
-                    className="text-ink/60 hover:text-accent"
-                    title="Consultas al recomendador IA"
-                  >
-                    IA queries
-                  </Link>
-                  <Link href="/admin/proposals/new" className="text-accent hover:text-accent-dark">
-                    ⚡ Nueva propuesta IA
-                  </Link>
-                  <Link href="/admin/proposals/ai" className="text-accent hover:text-accent-dark" title="Genera presupuesto desde brief libre del cliente">
-                    ✨ Quote Builder IA
-                  </Link>
-                </>
+              {session.role === "CEO" && (
+                <NavDropdown
+                  label="Admin"
+                  items={[
+                    { href: "/admin/users", label: "Usuarios" },
+                    { href: "/admin/coupons", label: "Cupones" },
+                    { href: "/admin/integrations", label: "Integraciones", title: "Metricool, Magnific, Replicate, Meta Ads, etc." },
+                  ]}
+                />
               )}
             </nav>
             <div className="flex items-center gap-2">
