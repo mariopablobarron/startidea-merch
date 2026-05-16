@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { displayPositionId } from "@/lib/marking-position-display";
 import {
   defaultTiersFromBase,
   formatMoney,
@@ -288,7 +289,7 @@ export function ProductOrderForm({
   function onCotizar() {
     const markingTxt =
       withMarking && technique && position
-        ? ` · ${technique.techniqueName} en ${position.positionId}${
+        ? ` · ${technique.techniqueName} en ${displayPositionId(position.positionId)}${
             colours > 1 ? ` · ${colours} colores` : ""
           }`
         : " · sin marcaje";
@@ -436,7 +437,7 @@ export function ProductOrderForm({
               >
                 {positionsAvailable.map((p, i) => (
                   <option key={p.id} value={i}>
-                    {p.positionId}
+                    {displayPositionId(p.positionId)}
                     {p.maxWidthMm && p.maxHeightMm
                       ? ` · ${p.maxWidthMm}×${p.maxHeightMm}mm`
                       : ""}

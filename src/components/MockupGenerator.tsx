@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { displayPositionId } from "@/lib/marking-position-display";
 
 type Position = { id: string; positionId: string };
 
@@ -59,13 +60,15 @@ export function MockupGenerator({
       >
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
-            Mockup automático
+            — Previsualización rápida
           </p>
           <p className="mt-1 font-display text-xl font-semibold text-ink">
-            Sube tu logo y mira cómo queda al instante.
+            Sube tu logo y mira cómo encaja.
           </p>
           <p className="mt-1 text-sm text-ink/60">
-            Resultado orientativo. El mockup oficial te lo enviamos antes de producir.
+            Es una <strong>simulación visual aproximada</strong> — el mockup técnico
+            final lo prepara el fabricante con dimensiones exactas y se valida
+            contigo antes de producir.
           </p>
         </div>
         <svg
@@ -93,7 +96,7 @@ export function MockupGenerator({
               >
                 {positions.map((p) => (
                   <option key={p.id} value={p.positionId}>
-                    {p.positionId}
+                    {displayPositionId(p.positionId)}
                   </option>
                 ))}
               </select>
@@ -123,19 +126,39 @@ export function MockupGenerator({
 
           {previewUrl && !loading && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Resultado</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
+                Resultado · previsualización
+              </p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
                 alt="Mockup generado"
                 className="mt-2 w-full rounded-2xl border border-line bg-bone-soft"
               />
+
+              {/* Disclaimer fuerte legal-friendly */}
+              <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4">
+                <p className="font-display text-sm font-semibold text-ink">
+                  ⚠ Esta no es la imagen final del producto
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink/75">
+                  Es una simulación rápida para que veas cómo encaja tu logo en la
+                  zona elegida. El <strong>mockup técnico real</strong> lo prepara
+                  el fabricante con las medidas exactas del área de marcaje, la
+                  técnica seleccionada y las proporciones correctas — y te lo
+                  enviamos para que lo apruebes <strong>antes de producir nada</strong>.
+                </p>
+                <p className="mt-2 text-[12px] text-ink/55">
+                  Sin tu aprobación expresa del mockup técnico final, no producimos.
+                </p>
+              </div>
+
               <a
                 href={previewUrl}
-                download="mockup.png"
+                download="previsualizacion.png"
                 className="mt-3 inline-block text-xs text-accent underline-offset-4 hover:underline"
               >
-                Descargar PNG →
+                Descargar previsualización →
               </a>
             </div>
           )}

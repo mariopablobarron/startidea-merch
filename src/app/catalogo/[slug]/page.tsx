@@ -15,6 +15,7 @@ import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
+import { displayPositionId } from "@/lib/marking-position-display";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { JsonLd } from "@/components/JsonLd";
 import { productJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
@@ -345,7 +346,7 @@ export default async function ProductDetailPage({
                           <div className="relative aspect-[4/3] bg-bone">
                             <Image
                               src={proxyImageUrl(pos.imageUrl)!}
-                              alt={`Zona ${pos.positionId}`}
+                              alt={`Zona ${displayPositionId(pos.positionId)}`}
                               fill
                               sizes="(max-width:640px) 100vw, 50vw"
                               className="object-contain p-3"
@@ -355,7 +356,7 @@ export default async function ProductDetailPage({
                         )}
                         <div className="p-5">
                           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
-                            {pos.positionId}
+                            {displayPositionId(pos.positionId)}
                           </p>
                           {(pos.maxWidthMm || pos.maxHeightMm) && (
                             <p className="mt-2 font-display text-xl font-semibold text-ink tabular-nums">
