@@ -109,6 +109,21 @@ export async function POST(req: Request) {
     );
   }
 
+  // Metadata original del logo (para validaciones geométricas)
+  let logoOriginalW = 0;
+  let logoOriginalH = 0;
+  let logoHasAlpha = false;
+  let logoFormat: string | undefined;
+  try {
+    const meta = await sharp(logoBuffer, { failOn: "none" }).metadata();
+    logoOriginalW = meta.width || 0;
+    logoOriginalH = meta.height || 0;
+    logoHasAlpha = meta.hasAlpha === true;
+    logoFormat = meta.format;
+  } catch {
+    /* lo manejamos abajo si el resize falla */
+  }
+
   // Tamaño del logo: ~30% del ancho de la imagen base
   const targetLogoW = Math.round(baseW * 0.3);
   let logoResized: { data: Buffer; info: { width: number; height: number } };
@@ -126,6 +141,66 @@ export async function POST(req: Request) {
       },
       { status: 422 },
     );
+  }
+
+  // ── Validaciones geométricas (warnings, no errores) ──────────────
+  // El cliente las recibe en header X-Mockup-Warnings (JSON base64)
+  // para decidir si avisar. No bloquean el render — informan.
+  const warnings: Array<{ code: string; level: "info" | "warn"; text: string }> = [];
+
+  // 1) Logo sin canal alfa → fondo no transparente (probable JPG con bg)
+  if (!logoHasAlpha && logoFormat !== "svg") {
+    warnings.push({
+      code: "no_alpha",
+      level: "warn",
+      text:
+        "Tu logo NO tiene fondo transparente (PNG con alfa o SVG). Si tiene fondo blanco, " +
+        "se verá ese rectángulo en la pieza producida. Recomendamos PNG transparente o SVG.",
+    });
+  }
+
+  // 2) Aspect ratio del logo vs área (si tenemos dimensiones MM)
+  if (position?.maxWidthMm && position?.maxHeightMm && logoOriginalW > 0 && logoOriginalH > 0) {
+    const logoAR = logoOriginalW / logoOriginalH;
+    const areaAR = position.maxWidthMm / position.maxHeightMm;
+    const ratio = Math.max(logoAR, areaAR) / Math.min(logoAR, areaAR);
+    if (ratio > 2.5) {
+      const logoShape = logoAR > 1.5 ? "muy alargado" : logoAR < 0.7 ? "muy alto" : "cuadrado";
+      const areaShape = areaAR > 1.5 ? "alargada" : areaAR < 0.7 ? "alta" : "cuadrada";
+      warnings.push({
+        code: "aspect_mismatch",
+        level: "warn",
+        text:
+          `Tu logo es ${logoShape} pero el área de marcaje es ${areaShape}. ` +
+          `Tu logo quedará pequeño y centrado para que entre completo. ` +
+          `Si quieres más impacto, sube una versión con proporción similar al área (${position.maxWidthMm}×${position.maxHeightMm} mm).`,
+      });
+    }
+  }
+
+  // 3) Logo demasiado pequeño en píxeles (no llega a 150 DPI cuando se imprima)
+  // Asumiendo 150 DPI = 6 px/mm, un logo de 200 px serviría para área de ~33 mm.
+  // Por debajo de 400 px de ancho, casi siempre queda pixelado al imprimir.
+  if (logoOriginalW > 0 && logoOriginalW < 400 && logoFormat !== "svg") {
+    warnings.push({
+      code: "low_resolution",
+      level: "warn",
+      text:
+        `Tu logo mide ${logoOriginalW}×${logoOriginalH} px. Para impresión nítida ` +
+        `recomendamos al menos 800×800 px o un SVG vectorial. Si solo lo tienes pequeño, ` +
+        `podemos vectorizarlo sin coste — coméntalo en el brief.`,
+    });
+  }
+
+  // 4) Información dimensional del área (siempre que esté disponible)
+  if (position?.maxWidthMm && position?.maxHeightMm) {
+    warnings.push({
+      code: "area_info",
+      level: "info",
+      text:
+        `Área disponible: ${position.maxWidthMm} × ${position.maxHeightMm} mm. ` +
+        `Tu logo se ajustará respetando proporción.`,
+    });
   }
 
   const left = Math.round((baseW - logoResized.info.width) / 2);
@@ -154,6 +229,7 @@ export async function POST(req: Request) {
       "Content-Type": "image/png",
       "Cache-Control": "private, max-age=300",
       "X-Mockup-Position": position?.positionId || "default",
+      "X-Mockup-Warnings": Buffer.from(JSON.stringify(warnings)).toString("base64"),
     },
   });
 }

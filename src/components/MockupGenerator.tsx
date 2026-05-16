@@ -5,6 +5,12 @@ import { displayPositionId } from "@/lib/marking-position-display";
 
 type Position = { id: string; positionId: string };
 
+type MockupWarning = {
+  code: string;
+  level: "info" | "warn";
+  text: string;
+};
+
 export function MockupGenerator({
   productSlug,
   positions,
@@ -16,6 +22,7 @@ export function MockupGenerator({
   const [open, setOpen] = useState(true);
   const [positionId, setPositionId] = useState(positions[0]?.positionId || "");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<MockupWarning[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +35,7 @@ export function MockupGenerator({
     }
     setLoading(true);
     setError(null);
+    setWarnings([]);
     try {
       const fd = new FormData();
       fd.append("logo", file);
@@ -38,6 +46,17 @@ export function MockupGenerator({
         const j = await res.json().catch(() => ({}));
         setError(j.error || `Error ${res.status}`);
         return;
+      }
+      // Leer warnings del header (base64 JSON)
+      const warningsB64 = res.headers.get("X-Mockup-Warnings");
+      if (warningsB64) {
+        try {
+          const decoded = atob(warningsB64);
+          const parsed = JSON.parse(decoded) as MockupWarning[];
+          if (Array.isArray(parsed)) setWarnings(parsed);
+        } catch {
+          /* swallow */
+        }
       }
       const blob = await res.blob();
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -135,6 +154,27 @@ export function MockupGenerator({
                 alt="Mockup generado"
                 className="mt-2 w-full rounded-2xl border border-line bg-bone-soft"
               />
+
+              {/* Warnings de validación geométrica (Capa B) */}
+              {warnings.length > 0 && (
+                <ul className="mt-4 space-y-2">
+                  {warnings.map((w) => (
+                    <li
+                      key={w.code}
+                      className={`flex gap-2 rounded-xl border p-3 text-[13px] leading-relaxed ${
+                        w.level === "warn"
+                          ? "border-accent/30 bg-accent/5 text-ink/80"
+                          : "border-line bg-bone-soft text-ink/70"
+                      }`}
+                    >
+                      <span className="text-base leading-none">
+                        {w.level === "warn" ? "⚠" : "ⓘ"}
+                      </span>
+                      <span className="flex-1">{w.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
               {/* Disclaimer fuerte legal-friendly */}
               <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4">
