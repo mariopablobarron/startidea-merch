@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
+import { getMarkingBase } from "@/lib/marking-base-cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,34 +58,43 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Producto sin imagen base disponible" }, { status: 422 });
   }
 
-  // Descargar imagen base con UA real (algunos CDN bloquean fetch sin UA)
-  let baseBuffer: Buffer;
-  try {
-    const baseRes = await fetch(baseUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; TodoMerchandising/1.0)",
-        Accept: "image/jpeg,image/png,image/*,*/*;q=0.8",
-      },
-    });
-    if (!baseRes.ok) {
+  // Si la base elegida es una marking-position técnica del proveedor,
+  // intentar cache local primero (anti-rotura si el CDN externo cambia).
+  // Si no es de marking-position o el cache no la tiene, fallback a fetch
+  // directo del CDN.
+  let baseBuffer: Buffer | null = null;
+  const isMarkingPositionBase = position?.imageUrl === baseUrl;
+  if (isMarkingPositionBase) {
+    baseBuffer = await getMarkingBase(baseUrl);
+  }
+  if (!baseBuffer) {
+    try {
+      const baseRes = await fetch(baseUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; TodoMerchandising/1.0)",
+          Accept: "image/jpeg,image/png,image/*,*/*;q=0.8",
+        },
+      });
+      if (!baseRes.ok) {
+        return NextResponse.json(
+          { error: `No se pudo descargar imagen base del producto (HTTP ${baseRes.status})` },
+          { status: 502 },
+        );
+      }
+      const ct = baseRes.headers.get("content-type") || "";
+      if (!ct.startsWith("image/") && ct !== "application/octet-stream") {
+        return NextResponse.json(
+          { error: `Imagen base inválida (content-type ${ct})` },
+          { status: 502 },
+        );
+      }
+      baseBuffer = Buffer.from(await baseRes.arrayBuffer());
+    } catch (e) {
       return NextResponse.json(
-        { error: `No se pudo descargar imagen base del producto (HTTP ${baseRes.status})` },
+        { error: `Error descargando imagen base: ${e instanceof Error ? e.message : "network"}` },
         { status: 502 },
       );
     }
-    const ct = baseRes.headers.get("content-type") || "";
-    if (!ct.startsWith("image/") && ct !== "application/octet-stream") {
-      return NextResponse.json(
-        { error: `Imagen base inválida (content-type ${ct})` },
-        { status: 502 },
-      );
-    }
-    baseBuffer = Buffer.from(await baseRes.arrayBuffer());
-  } catch (e) {
-    return NextResponse.json(
-      { error: `Error descargando imagen base: ${e instanceof Error ? e.message : "network"}` },
-      { status: 502 },
-    );
   }
 
   const logoBuffer = Buffer.from(await file.arrayBuffer());
