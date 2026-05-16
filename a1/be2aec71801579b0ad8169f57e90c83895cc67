@@ -1,0 +1,21 @@
+src/app/api/quote-request/route.ts
+  s_65877aa637ec34::t_a5a2ae4dd9a40d 93-109,111,113
+  s_65877aa637ec34::t_9206978dc9c7de 4
+  s_65877aa637ec34::t_908cfe06affe94 61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "a1be2aec71801579b0ad8169f57e90c83895cc67",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
