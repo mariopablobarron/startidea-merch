@@ -1,0 +1,22 @@
+src/app/api/mockup/generate/route.ts
+  s_65877aa637ec34::t_b5f21055502b83 61-92,94
+  s_65877aa637ec34::t_5a1e012f8f2c89 4
+src/lib/marking-base-cache.ts
+  s_65877aa637ec34::t_56293d70d5e012 1-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "79668510ac978450a391683c542049b9e0079152",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
