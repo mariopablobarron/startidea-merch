@@ -386,33 +386,83 @@ function clientPaidEmailHtml(args: {
   receiptUrl?: string;
 }): string {
   const { firstName, amountFmt, cartId, portalLink, receiptUrl } = args;
-  return `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
-    <h2 style="font-family:Georgia,serif;color:#2A2A2A;">Pago recibido ✓</h2>
-    <p>Hola ${firstName},</p>
-    <p>Hemos recibido tu pago de <strong>${amountFmt} €</strong>. Pasamos producción a marcha.</p>
-    <p>Referencia de pedido: <code>${cartId.slice(0, 8)}</code></p>
+  return `
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
 
-    ${portalLink ? `
-    <p style="text-align:center;margin:32px 0;">
-      <a href="${portalLink}" style="background:#E63E73;color:white;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Ver estado de mi pedido →</a>
-    </p>
-    <p style="font-size:13px;color:#6b6b6b;">Este enlace te da acceso directo a tu portal de cliente para seguir el estado del pedido, descargar factura y ver tracking de envío cuando esté disponible. Vale 7 días; después puedes solicitar uno nuevo en <a href="${SITE_URL}/clientes/login" style="color:#E63E73;">${SITE_URL.replace("https://", "")}/clientes/login</a>.</p>
-    ` : ""}
+        <!-- Header con check verde grande -->
+        <div style="padding:40px 32px 24px;text-align:center;">
+          <div style="display:inline-block;width:64px;height:64px;line-height:64px;border-radius:50%;background:#4a9d7f;color:#FFFFFF;font-size:32px;font-weight:bold;margin-bottom:20px;">✓</div>
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Pago confirmado</p>
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15;color:#2A2A2A;">
+            Gracias ${firstName}.<br>
+            <span style="color:#E63E73;">Pasamos a producción.</span>
+          </h1>
+          <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
+            Hemos recibido tu pago de <strong>${amountFmt} €</strong>. Tu pedido entra
+            en cola de producción ahora mismo.
+          </p>
+        </div>
 
-    ${receiptUrl ? `<p><a href="${receiptUrl}" style="color:#E63E73;">Descargar recibo Stripe →</a></p>` : ""}
+        ${portalLink ? `
+        <!-- CTA portal cliente -->
+        <div style="padding:0 32px 8px;text-align:center;">
+          <a href="${portalLink}" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Ver estado de mi pedido →</a>
+          <p style="margin:12px 0 0;font-size:11px;color:#a09e98;line-height:1.5;">
+            Acceso a tu portal: tracking, factura, mockups y proofs.<br>
+            Enlace válido 7 días — después solicita uno nuevo en
+            <a href="${SITE_URL}/clientes/login" style="color:#6b6b6b;">${SITE_URL.replace("https://", "")}/clientes/login</a>
+          </p>
+        </div>
+        ` : ""}
 
-    <hr style="border:0;border-top:1px solid #eee;margin:32px 0;">
-    <h3 style="font-family:Georgia,serif;font-size:16px;">¿Qué pasa ahora?</h3>
-    <ol style="padding-left:20px;color:#444;line-height:1.6;">
-      <li><strong>Producción:</strong> tu pedido entra en cola. Te enviamos un mockup de aprobación si tu pedido lleva personalización.</li>
-      <li><strong>Envío:</strong> recibirás email con código de seguimiento del transportista.</li>
-      <li><strong>Entrega:</strong> 7-15 días laborables salvo urgencia coordinada.</li>
-    </ol>
+        <!-- Qué pasa ahora -->
+        <div style="margin:32px;padding:24px;background:#F4EFE6;border-radius:12px;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Qué pasa ahora</p>
+          <ol style="margin:12px 0 0;padding-left:20px;font-size:14px;line-height:1.7;color:#2A2A2A;">
+            <li><strong>Mockup de aprobación</strong> (si lleva personalización) — te lo enviamos para revisión antes de imprimir nada.</li>
+            <li><strong>Producción</strong> — fabricamos en Centros Especiales de Empleo y talleres certificados.</li>
+            <li><strong>Envío</strong> — recibirás email con tracking del transportista en cuanto salga.</li>
+            <li><strong>Entrega</strong> — 7-15 días laborables salvo urgencia coordinada.</li>
+          </ol>
+        </div>
 
-    <p style="color:#6b6b6b;font-size:12px;margin-top:32px;">
-      STARTIDEA MALAGA SL · CIF B19583632 · pedidos@startidea.es · +34 958 045 789
-    </p>
-  </div>`;
+        <!-- Recibo Stripe + ID corto -->
+        <div style="padding:0 32px 24px;text-align:center;">
+          <p style="margin:0;font-size:13px;color:#6b6b6b;">
+            Referencia de tu pedido:
+            <code style="background:#F4EFE6;padding:2px 8px;border-radius:4px;color:#2A2A2A;font-weight:600;">${cartId.slice(0, 8).toUpperCase()}</code>
+          </p>
+          ${receiptUrl ? `
+          <p style="margin:12px 0 0;font-size:13px;">
+            <a href="${receiptUrl}" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">Descargar recibo Stripe →</a>
+          </p>
+          ` : ""}
+        </div>
+
+        <!-- Contacto rápido -->
+        <div style="padding:0 32px 24px;text-align:center;border-top:1px solid #E8E2D5;padding-top:24px;">
+          <p style="margin:0;font-size:13px;color:#444;">
+            ¿Algo no encaja? Estamos a un email:
+          </p>
+          <p style="margin:8px 0 0;font-size:14px;line-height:1.8;">
+            <a href="https://wa.me/34958045789" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">WhatsApp +34 958 045 789</a><br>
+            <a href="mailto:pedidos@startidea.es" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">pedidos@startidea.es</a>
+          </p>
+        </div>
+
+        <!-- Footer brand -->
+        <div style="background:#2A2A2A;padding:24px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">
+            todo<span style="color:#E63E73;">merchandising</span>
+          </p>
+          <p style="margin:8px 0 0;">
+            Una iniciativa de Startidea · Agencia de Innovación Social<br>
+            STARTIDEA MALAGA SL · CIF B19583632 · C/ Conde Cifuentes, 33 — 18005 Granada
+          </p>
+        </div>
+      </div>
+    </div>`;
 }
 
 async function handleIntentFailed(intent: Stripe.PaymentIntent) {

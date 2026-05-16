@@ -80,20 +80,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .map(
       (it) => `
       <tr>
-        <td style="padding:8px 0;border-bottom:1px solid #eee;">${it.quantity}× ${it.productName}</td>
-        <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;color:#888;">${
-          it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : ""
-        }</td>
+        <td style="padding:12px 0;border-bottom:1px solid #E8E2D5;font-size:14px;color:#2A2A2A;">
+          <strong>${it.quantity}×</strong> ${it.productName}
+        </td>
+        <td style="padding:12px 0;border-bottom:1px solid #E8E2D5;text-align:right;font-size:14px;color:#6b6b6b;font-weight:600;white-space:nowrap;">
+          ${it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : ""}
+        </td>
       </tr>`,
     )
     .join("");
 
   const totalLine = cart.estimatedTotalCents
-    ? `<p style="margin-top:16px;font-size:18px;color:#0a0a0b;"><strong>Total estimado: ${EUR.format(cart.estimatedTotalCents / 100)}</strong></p>`
+    ? `
+    <tr>
+      <td style="padding:18px 0 0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Total estimado</td>
+      <td style="padding:18px 0 0;text-align:right;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#E63E73;">${EUR.format(cart.estimatedTotalCents / 100)}</td>
+    </tr>`
     : "";
 
   const customBlock = body.customMessage
-    ? `<p style="margin:24px 0;padding:16px;background:#fff3eb;border-left:3px solid #ff6b35;border-radius:6px;">${body.customMessage.replace(/</g, "&lt;")}</p>`
+    ? `<div style="margin:24px 32px;padding:16px;background:#FBDFE9;border-left:3px solid #E63E73;border-radius:8px;font-size:14px;line-height:1.5;color:#2A2A2A;">${body.customMessage.replace(/</g, "&lt;")}</div>`
     : "";
 
   const subject =
@@ -106,31 +112,63 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     subject,
     context: `cart-quote remind · ${cart.id}`,
     html: `
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;color:#0a0a0b;line-height:1.5;">
-  <h2 style="font-family:Georgia,serif;font-size:26px;color:#0a0a0b;margin:0 0 8px;">Hola ${firstName || cart.name},</h2>
-  <p style="font-size:16px;color:#444;">Te dejaste algunos productos en tu cotización y no queremos que se te pasen. Esto es lo que tenías:</p>
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
 
-  <table style="width:100%;margin-top:20px;font-size:14px;">
-    ${itemsHtml}
-  </table>
-  ${totalLine}
+        <!-- Header con eyebrow + título -->
+        <div style="padding:32px 32px 24px;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Te esperamos</p>
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+            Hola ${firstName || cart.name}.<br>
+            <span style="color:#a09e98;">Tu cotización sigue aquí.</span>
+          </h1>
+          <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
+            Te dejaste algunos productos a medio configurar. Los hemos guardado por
+            si quieres retomarlo.
+          </p>
+        </div>
 
-  ${customBlock}
+        <!-- Items -->
+        <div style="padding:0 32px;">
+          <table style="width:100%;border-collapse:collapse;border-top:1px solid #E8E2D5;">
+            ${itemsHtml}
+            ${totalLine}
+          </table>
+        </div>
 
-  <p style="margin-top:24px;">Si aún te interesa, podemos cerrarte la cotización con tarifas finales en <strong>menos de 24h</strong>. Solo nos hace falta confirmar cantidades y técnica de marcaje.</p>
+        ${customBlock}
 
-  <div style="margin:32px 0;">
-    <a href="${recoverUrl}" style="display:inline-block;background:#ff6b35;color:#fff;text-decoration:none;padding:14px 28px;border-radius:999px;font-weight:600;font-size:15px;">Retomar mi cotización →</a>
-  </div>
+        <!-- CTA primario -->
+        <div style="padding:24px 32px;text-align:center;">
+          <a href="${recoverUrl}" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Retomar mi cotización →</a>
+          <p style="margin:16px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;">
+            Si aún te interesa, te enviamos cotización cerrada con mockup, plazo y
+            transporte en <strong>menos de 24h laborables</strong>.
+          </p>
+        </div>
 
-  <p style="color:#888;font-size:13px;">¿Prefieres que te llamemos? Responde a este email o escríbenos por WhatsApp y te marcamos en 1h laboral.</p>
+        <!-- Contacto humano -->
+        <div style="padding:0 32px 32px;border-top:1px solid #E8E2D5;padding-top:24px;">
+          <p style="margin:0;font-size:13px;color:#444;text-align:center;">
+            ¿Prefieres que te llamemos? Responde a este email o:
+          </p>
+          <p style="margin:8px 0 0;font-size:14px;line-height:2;text-align:center;">
+            <a href="https://wa.me/34958045789" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">WhatsApp +34 958 045 789</a>
+          </p>
+        </div>
 
-  <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-  <p style="color:#888;font-size:12px;margin:0;">
-    STARTIDEA MALAGA SL · CIF B19583632 · Málaga, España<br>
-    Si no quieres más recordatorios, responde "BAJA" a este email.
-  </p>
-</div>`,
+        <!-- Footer -->
+        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">
+            todo<span style="color:#E63E73;">merchandising</span>
+          </p>
+          <p style="margin:6px 0 0;">
+            STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es<br>
+            <span style="color:rgba(244,239,230,0.5);">Si no quieres más recordatorios, responde "BAJA" a este email.</span>
+          </p>
+        </div>
+      </div>
+    </div>`,
   });
 
   if (!result.ok) {
