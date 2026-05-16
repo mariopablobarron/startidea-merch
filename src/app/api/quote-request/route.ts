@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
+import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { autoresponseQuoteEmail, internalQuoteEmail, type QuoteEmailData } from "@/lib/email-templates";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { getQuoteSettings } from "@/lib/quote-settings";
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
   const settings = await getQuoteSettings();
 
-  if (resend) {
+  {
     const emailData: QuoteEmailData = {
       id: created.id,
       name: data.name,
@@ -90,32 +90,27 @@ export async function POST(req: Request) {
 
     const autoReplySubject = settings.autoReplySubject || `${data.name.split(" ")[0]}, recibimos tu solicitud — respuesta en ${settings.responseHours}h`;
 
-    try {
-      const sends = [
-        resend.emails.send({
-          from: RESEND_FROM,
-          to: internalTo,
-          replyTo: data.email,
-          subject: `[Cotización] ${data.name}${data.company ? " · " + data.company : ""}`,
-          html: internalQuoteEmail(emailData),
+    // sendEmail dispara alerta Telegram automática si Resend falla.
+    const sends = [
+      sendEmail({
+        to: internalTo,
+        replyTo: data.email,
+        subject: `[Cotización] ${data.name}${data.company ? " · " + data.company : ""}`,
+        html: internalQuoteEmail(emailData),
+        context: "quote-request internal",
+      }),
+    ];
+    if (settings.autoReplyEnabled) {
+      sends.push(
+        sendEmail({
+          to: data.email,
+          subject: autoReplySubject,
+          html: autoReplyHtml,
+          context: "quote-request autoreply",
         }),
-      ];
-      if (settings.autoReplyEnabled) {
-        sends.push(
-          resend.emails.send({
-            from: RESEND_FROM,
-            to: data.email,
-            subject: autoReplySubject,
-            html: autoReplyHtml,
-          }),
-        );
-      }
-      await Promise.all(sends);
-    } catch (err) {
-      console.error("[quote-request] resend error", err);
+      );
     }
-  } else {
-    console.warn("[quote-request] RESEND_API_KEY ausente — solo persistido en DB");
+    await Promise.all(sends);
   }
 
   void notifyAdmins({
