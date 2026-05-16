@@ -22,10 +22,13 @@ const STATUS_LABEL: Record<QuoteStatus, string> = {
   ARCHIVED: "Archivada",
 };
 
+// Status colors usan paleta oficial Startidea (Manual v1.0). Magenta es
+// el único acento de color — los estados distintos se diferencian por
+// peso/opacidad y no por color hue externo.
 const STATUS_COLOR: Record<QuoteStatus, string> = {
   NEW: "bg-accent/15 text-accent",
   IN_PROGRESS: "bg-accent-mist text-accent-deep",
-  SENT: "bg-purple-100 text-purple-700",
+  SENT: "bg-ink text-bone",
   WON: "bg-social/15 text-social",
   LOST: "bg-accent-wash text-accent-deep",
   ARCHIVED: "bg-ink/5 text-ink/50",
