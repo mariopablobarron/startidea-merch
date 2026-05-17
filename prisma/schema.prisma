@@ -156,11 +156,47 @@ model Product {
   embedding       ProductEmbedding?
   override        ProductOverride?
   slugRedirects   ProductSlugRedirect[] @relation("SlugRedirects")
+  mockupRequests  MockupRequest[]
 
   @@unique([supplier, supplierRef])
   @@index([categoryId])
   @@index([active])
   @@index([syncedAt])
+}
+
+/// Lead-magnet: cuando el cliente NO confía en la previsualización automática
+/// del mockup y prefiere que el equipo le mande mockup técnico real con
+/// medidas exactas y la técnica de marcaje correcta. Promesa: 4h laborables.
+model MockupRequest {
+  id           String              @id @default(cuid())
+  product      Product?            @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId    String?
+  productSlug  String              // copia textual del slug en el momento de la solicitud
+  positionId   String?             // zona elegida (FRONT DO DL, ROUNDSCREEN, etc)
+  name         String
+  email        String
+  company      String?
+  phone        String?
+  brief        String?             @db.Text
+  logoUrl      String?             // URL local /uploads/... si subió logo
+  status       MockupRequestStatus @default(NEW)
+  sourceUrl    String?             // página desde donde se solicitó
+  notes        String?             @db.Text
+  fulfilledAt  DateTime?
+  fulfilledBy  String?             // email del admin
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([status])
+  @@index([productId])
+  @@index([createdAt])
+}
+
+enum MockupRequestStatus {
+  NEW
+  IN_PROGRESS
+  DELIVERED
+  CANCELLED
 }
 
 /// Redirects 301 de slugs antiguos (incluían supplier SKU como "-mo9812")

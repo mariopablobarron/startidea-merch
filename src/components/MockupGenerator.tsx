@@ -25,6 +25,49 @@ export function MockupGenerator({
   const [warnings, setWarnings] = useState<MockupWarning[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Capa D: petición de mockup técnico real al equipo (4h laborables)
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const [requestSending, setRequestSending] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [reqName, setReqName] = useState("");
+  const [reqEmail, setReqEmail] = useState("");
+  const [reqCompany, setReqCompany] = useState("");
+  const [reqPhone, setReqPhone] = useState("");
+  const [reqBrief, setReqBrief] = useState("");
+
+  async function submitRequest(e: React.FormEvent) {
+    e.preventDefault();
+    if (requestSending) return;
+    setRequestSending(true);
+    setRequestError(null);
+    try {
+      const res = await fetch("/api/mockup-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productSlug,
+          positionId: positionId || null,
+          name: reqName,
+          email: reqEmail,
+          company: reqCompany || null,
+          phone: reqPhone || null,
+          brief: reqBrief || null,
+          sourceUrl: typeof window !== "undefined" ? window.location.href : null,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setRequestError(j.error || `Error ${res.status}`);
+        return;
+      }
+      setRequestSent(true);
+    } catch (err) {
+      setRequestError(err instanceof Error ? err.message : "Error inesperado");
+    } finally {
+      setRequestSending(false);
+    }
+  }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -202,6 +245,137 @@ export function MockupGenerator({
               </a>
             </div>
           )}
+
+          {/* ── Capa D — mockup técnico hecho por el equipo en 4h ─────── */}
+          <div className="mt-6 rounded-2xl border border-line bg-bone-soft p-5">
+            {!requestOpen && !requestSent && (
+              <button
+                type="button"
+                onClick={() => setRequestOpen(true)}
+                className="flex w-full flex-col items-start gap-1 text-left"
+              >
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
+                  — Mejor con mockup técnico real
+                </p>
+                <p className="font-display text-base font-semibold text-ink">
+                  ¿Prefieres que te lo hagamos nosotros? Te lo mandamos en 4h laborables.
+                </p>
+                <p className="text-[13px] text-ink/65 leading-relaxed">
+                  Mockup técnico con medidas exactas, técnica correcta y validación
+                  del fabricante. Gratis, sin compromiso.
+                </p>
+                <span className="mt-1 text-xs font-medium text-accent">
+                  Pedirlo →
+                </span>
+              </button>
+            )}
+
+            {requestOpen && !requestSent && (
+              <form onSubmit={submitRequest} className="space-y-3">
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
+                    — Mockup técnico en 4h
+                  </p>
+                  <p className="mt-1 text-sm text-ink/70 leading-relaxed">
+                    Te lo prepara el equipo con dimensiones exactas y técnica
+                    recomendada. Respuesta en menos de 4h laborables.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="block">
+                    <span className="text-xs font-medium uppercase tracking-wider text-ink/50">Nombre*</span>
+                    <input
+                      type="text"
+                      required
+                      value={reqName}
+                      onChange={(e) => setReqName(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-accent"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-medium uppercase tracking-wider text-ink/50">Email*</span>
+                    <input
+                      type="email"
+                      required
+                      value={reqEmail}
+                      onChange={(e) => setReqEmail(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-accent"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-medium uppercase tracking-wider text-ink/50">Empresa</span>
+                    <input
+                      type="text"
+                      value={reqCompany}
+                      onChange={(e) => setReqCompany(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-accent"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-medium uppercase tracking-wider text-ink/50">Teléfono</span>
+                    <input
+                      type="tel"
+                      value={reqPhone}
+                      onChange={(e) => setReqPhone(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-accent"
+                    />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="text-xs font-medium uppercase tracking-wider text-ink/50">
+                    Brief breve (opcional)
+                  </span>
+                  <textarea
+                    rows={3}
+                    value={reqBrief}
+                    onChange={(e) => setReqBrief(e.target.value)}
+                    placeholder="Colores corporativos, plazo aproximado, cantidades, técnica que prefieres…"
+                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-accent"
+                  />
+                </label>
+                {requestError && (
+                  <div className="rounded-xl bg-accent/10 p-3 text-xs text-accent-deep">
+                    ⚠ {requestError}
+                  </div>
+                )}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <button
+                    type="submit"
+                    disabled={requestSending || !reqName.trim() || !reqEmail.trim()}
+                    className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
+                  >
+                    {requestSending ? "Enviando…" : "Pedir mockup técnico →"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRequestOpen(false)}
+                    className="text-xs text-ink/60 hover:text-ink"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+                <p className="text-[11px] text-ink/45">
+                  Tus datos sólo se usan para enviarte el mockup técnico. Sin compromiso,
+                  sin spam.
+                </p>
+              </form>
+            )}
+
+            {requestSent && (
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
+                  — Recibido
+                </p>
+                <p className="mt-1 font-display text-base font-semibold text-ink">
+                  Estamos en ello. Te llega mockup técnico en menos de 4h laborables.
+                </p>
+                <p className="mt-2 text-[13px] text-ink/65 leading-relaxed">
+                  Te confirmamos por email. Si necesitas algo antes, responde a esa
+                  confirmación o escríbenos por WhatsApp +34 958 045 789.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

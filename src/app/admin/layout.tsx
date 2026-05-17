@@ -49,6 +49,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 Pedidos
               </Link>
               <Link
+                href="/admin/mockup-requests"
+                className="text-ink/60 hover:text-accent"
+                title="Peticiones de mockup técnico (Capa D · respuesta en 4h)"
+              >
+                Mockups 🎨
+              </Link>
+              <Link
                 href="/admin/clientes"
                 className="text-ink/60 hover:text-accent"
                 title="CRM clientes — LTV, segmentos, notas"
