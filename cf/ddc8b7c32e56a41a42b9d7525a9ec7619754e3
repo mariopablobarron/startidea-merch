@@ -1,0 +1,46 @@
+src/lib/midocean-auto-order.ts
+  s_65877aa637ec34::t_f7c48698842d32 82-99,104
+  s_65877aa637ec34::t_a822bf0788c1c0 50
+prisma/schema.prisma
+  s_65877aa637ec34::t_e0ae7a3609e091 922-929,933-955
+src/components/ExtraMarkingsPanel.tsx
+  s_65877aa637ec34::t_e1289b25073958 1-163
+src/lib/cart-storage.ts
+  s_65877aa637ec34::t_ccc04551a28c17 7-22,31,37-39
+src/app/api/voice-agent/tools/submit-quote/route.ts
+  s_65877aa637ec34::t_ee65b1b19e7de9 76-93,100-104
+  s_65877aa637ec34::t_a0e2f58dd3ab65 11-17,21,25-26
+src/app/api/quote/calculate/route.ts
+  s_65877aa637ec34::t_8d50104c03adac 13-25,28-35,39,45-46,62,66,70,72,89-112,114-115,117-130,134,141,145-147,155,157-173,176-177,181-187
+prisma/migrations/20260517170000_cart_quote_item_marking/migration.sql
+  s_65877aa637ec34::t_5c2e8871f5388d 1-47
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_f32ebba9b3ea7a 106-107
+  s_65877aa637ec34::t_117c26e7a9e141 178-203,210,231-232
+  s_65877aa637ec34::t_3d366bb5143f30 11,15
+  s_65877aa637ec34::t_e08e8cbfd56f0c 553-559
+  s_65877aa637ec34::t_76cb24ffe9c478 296-323,330-334,336-337
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_ddf05e54b7962b 255-258,260-288,295
+  s_65877aa637ec34::t_c5522e2661af25 16-25,34,39-41
+  s_65877aa637ec34::t_b496f2a43176b3 123-175,178
+  s_65877aa637ec34::t_1d92bd9c1eaf93 363-364
+  s_65877aa637ec34::t_bba2fc952cea5a 259
+  s_65877aa637ec34::t_8eb13d9927e4fc 340,344-352,357
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "cfddc8b7c32e56a41a42b9d7525a9ec7619754e3",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
