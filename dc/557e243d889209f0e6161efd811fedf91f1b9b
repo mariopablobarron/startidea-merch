@@ -1,0 +1,23 @@
+prisma/migrations/20260517120000_processed_stripe_event/migration.sql
+  s_65877aa637ec34::t_ec476ffe52d644 1-11
+src/app/api/webhooks/stripe/route.ts
+  s_65877aa637ec34::t_8a85bf061fe0da 37-52
+prisma/schema.prisma
+  s_65877aa637ec34::t_c14942b230e0c2 167-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "dc557e243d889209f0e6161efd811fedf91f1b9b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
