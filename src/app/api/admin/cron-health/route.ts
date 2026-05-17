@@ -41,10 +41,15 @@ type CronReport = {
 function classify(
   lastAt: Date | null,
   frequencyHours: number,
+  options?: { eligibleCandidates?: number },
 ): { status: CronStatus; hoursSince: number | null } {
   if (!lastAt) return { status: "NEVER", hoursSince: null };
   const hours = (Date.now() - lastAt.getTime()) / 3_600_000;
   if (hours <= frequencyHours * 1.5) return { status: "OK", hoursSince: hours };
+  // STALE sólo si hay trabajo elegible ahora mismo. Si no, OK con nota.
+  if (options && typeof options.eligibleCandidates === "number" && options.eligibleCandidates === 0) {
+    return { status: "OK", hoursSince: hours };
+  }
   return { status: "STALE", hoursSince: hours };
 }
 
@@ -225,7 +230,18 @@ async function buildReport(): Promise<CronReport[]> {
       orderBy: { sentAt: "desc" },
       select: { sentAt: true },
     });
-    const c = classify(r?.sentAt ?? null, 24);
+    // Candidatos elegibles ahora: carritos NEW/IN_PROGRESS con edad entre 24-48h
+    // sin EmailDripSent step=1 (la ventana más amplia para evitar falsos negativos)
+    const eligible = await prisma.cartQuote.count({
+      where: {
+        status: { in: ["NEW", "IN_PROGRESS"] },
+        createdAt: {
+          lt: new Date(Date.now() - 24 * 3_600_000),
+          gt: new Date(Date.now() - 30 * 24 * 3_600_000),
+        },
+      },
+    });
+    const c = classify(r?.sentAt ?? null, 24, { eligibleCandidates: eligible });
     reports.push({
       name: "abandoned-cart-drip",
       endpoint: "/api/cron/abandoned-cart-drip",
@@ -234,7 +250,12 @@ async function buildReport(): Promise<CronReport[]> {
       lastEvidenceAt: r?.sentAt?.toISOString() ?? null,
       hoursSince: c.hoursSince,
       status: c.status,
-      note: c.status === "NEVER" ? "Sin carritos abandonados elegibles aún" : undefined,
+      note:
+        eligible === 0
+          ? "Sin candidatos elegibles ahora (necesita CartQuote NEW/IN_PROGRESS >24h)"
+          : c.status === "STALE"
+            ? `${eligible} candidatos elegibles sin atender`
+            : undefined,
     });
   }
 
@@ -245,7 +266,18 @@ async function buildReport(): Promise<CronReport[]> {
       orderBy: { reminderSentAt: "desc" },
       select: { reminderSentAt: true },
     });
-    const c = classify(r?.reminderSentAt ?? null, 12);
+    // Candidatos elegibles: NEW/IN_PROGRESS >24h sin reminder reciente
+    const eligible = await prisma.cartQuote.count({
+      where: {
+        status: { in: ["NEW", "IN_PROGRESS"] },
+        createdAt: { lt: new Date(Date.now() - 24 * 3_600_000) },
+        OR: [
+          { reminderSentAt: null },
+          { reminderSentAt: { lt: new Date(Date.now() - 48 * 3_600_000) } },
+        ],
+      },
+    });
+    const c = classify(r?.reminderSentAt ?? null, 12, { eligibleCandidates: eligible });
     reports.push({
       name: "abandoned-reminders",
       endpoint: "/api/cron/abandoned-reminders",
@@ -254,7 +286,12 @@ async function buildReport(): Promise<CronReport[]> {
       lastEvidenceAt: r?.reminderSentAt?.toISOString() ?? null,
       hoursSince: c.hoursSince,
       status: c.status,
-      note: c.status === "NEVER" ? "Sin carritos elegibles aún" : undefined,
+      note:
+        eligible === 0
+          ? "Sin candidatos elegibles ahora"
+          : c.status === "STALE"
+            ? `${eligible} candidatos elegibles sin atender`
+            : undefined,
     });
   }
 
