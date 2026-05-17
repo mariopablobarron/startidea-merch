@@ -1,0 +1,22 @@
+src/app/api/voice-agent/tools/search-products/route.ts
+  s_65877aa637ec34::t_bd632650adc9dc 31-44,48-57,59,64,72
+  s_65877aa637ec34::t_3565ce8157372f 85,90-93
+src/app/api/voice-agent/tools/calculate-quote/route.ts
+  s_65877aa637ec34::t_3bce53dedf6186 55-71,76-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "49b30de003af8666376ace6668eb2dbdccc3318d",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
