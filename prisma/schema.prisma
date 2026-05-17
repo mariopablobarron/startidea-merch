@@ -164,6 +164,25 @@ model Product {
   @@index([syncedAt])
 }
 
+/// Histórico de ejecuciones de los crons del sistema. Cada fila es una
+/// invocación (programada por el VPS o lanzada manualmente desde admin).
+/// Sirve para diagnóstico y auditoría — la página /admin/system/crons lo lee.
+model CronRunLog {
+  id           String   @id @default(cuid())
+  name         String   // ej. "backup-db", "post-order-drip"
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+  ok           Boolean  @default(false)
+  httpStatus   Int?
+  durationMs   Int?
+  response     String?  @db.Text   // primeros ~500 chars del body
+  error        String?  @db.Text
+  triggeredBy  String   @default("cron") // "cron" | "manual:<email>" | "test"
+
+  @@index([name, startedAt(sort: Desc)])
+  @@index([startedAt(sort: Desc)])
+}
+
 /// Lead-magnet: cuando el cliente NO confía en la previsualización automática
 /// del mockup y prefiere que el equipo le mande mockup técnico real con
 /// medidas exactas y la técnica de marcaje correcta. Promesa: 4h laborables.

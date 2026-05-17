@@ -127,6 +127,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     { href: "/admin/users", label: "Usuarios" },
                     { href: "/admin/coupons", label: "Cupones" },
                     { href: "/admin/integrations", label: "Integraciones", title: "Metricool, Magnific, Replicate, Meta Ads, etc." },
+                    { href: "/admin/system/crons", label: "Crons ⏱", title: "Estado de los crons del VPS · disparar manualmente · histórico" },
                   ]}
                 />
               )}
