@@ -1,0 +1,25 @@
+src/app/recursos/merchandising-centro-especial-empleo/page.tsx
+  s_65877aa637ec34::t_54aa32263b2242 1-207
+src/app/recursos/merchandising-producido-espana/page.tsx
+  s_65877aa637ec34::t_57452322277abd 1-171
+src/app/recursos/merchandising-sostenible-empresas/page.tsx
+  s_65877aa637ec34::t_02a4af1a345dc6 1-215
+src/components/pillar/PillarShell.tsx
+  s_65877aa637ec34::t_ade8644a735e66 1-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "917c378dddd6179ccb5cfdc6b92d1ba7bf16c3c5",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
