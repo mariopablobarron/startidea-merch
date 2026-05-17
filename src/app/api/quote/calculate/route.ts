@@ -10,16 +10,40 @@ export const dynamic = "force-dynamic";
 /**
  * Calculadora pública — devuelve precio cliente final (con margen aplicado).
  * NO expone costes netos. Pensado para llamarlo desde la ficha del producto.
+ *
+ * Acepta DOS formatos de entrada para no romper integraciones existentes:
+ *
+ *   A) Legacy / 1-marca:
+ *      { productSlug, quantity, techniqueCode?, numberOfColours?, positionCount?, ... }
+ *
+ *   B) Multi-marca (nuevo):
+ *      { productSlug, quantity, markings: [
+ *          { positionId, techniqueCode, numberOfColours?, printAreaCm2?, manipulationCode? },
+ *          ...
+ *      ] }
+ *
+ * Internamente B es el camino canónico; A se normaliza a un array de 1.
  */
+
+const MarkingSchema = z.object({
+  positionId: z.string().min(1).max(60).optional(),
+  techniqueCode: z.string().min(1).max(40),
+  numberOfColours: z.number().int().min(1).max(20).optional(),
+  printAreaCm2: z.number().positive().optional(),
+  manipulationCode: z.string().length(1).optional(),
+});
 
 const Schema = z.object({
   productSlug: z.string().min(1),
   quantity: z.number().int().positive().max(1_000_000),
+  // legacy
   techniqueCode: z.string().optional(),
   numberOfColours: z.number().int().min(1).max(10).optional(),
   printAreaCm2: z.number().positive().optional(),
   manipulationCode: z.string().length(1).optional(),
   positionCount: z.number().int().min(1).max(10).optional(),
+  // nuevo
+  markings: z.array(MarkingSchema).max(10).optional(),
 });
 
 export async function POST(req: Request) {
@@ -35,22 +59,17 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
 
-  // 1) Producto + variant principal con priceTiers
+  // Producto + variant principal
   const product = await prisma.product.findUnique({
     where: { slug: data.productSlug },
     include: {
-      variants: {
-        take: 1,
-        include: { priceTiers: { orderBy: { minQty: "asc" } } },
-      },
+      variants: { take: 1, include: { priceTiers: { orderBy: { minQty: "asc" } } } },
       category: { select: { name: true } },
     },
   });
-  if (!product) {
-    return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
-  }
+  if (!product) return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
 
-  // 2) Coste neto del producto/ud (proveedor o estimate)
+  // Coste neto unidad
   const variant = product.variants[0];
   let netUnitCostCents = 0;
   let priceSource: "provider" | "estimate" = "estimate";
@@ -67,33 +86,64 @@ export async function POST(req: Request) {
     netUnitCostCents = tier?.unitPriceCents ?? baseCents;
   }
 
-  // 3) Coste de marcaje (si llega técnica)
-  let markingBreakdown: Awaited<ReturnType<typeof calculateMarkingCost>> | null = null;
-  if (data.techniqueCode) {
+  // Normalizar a array de marcas (legacy → array de 1, multi → array tal cual)
+  const markings = data.markings && data.markings.length > 0
+    ? data.markings
+    : data.techniqueCode
+      ? [{
+          techniqueCode: data.techniqueCode,
+          numberOfColours: data.numberOfColours,
+          printAreaCm2: data.printAreaCm2,
+          manipulationCode: data.manipulationCode,
+        }]
+      : [];
+
+  // Calcular cada marca por separado y agregar
+  type MarkingResult = {
+    positionId?: string;
+    techniqueCode: string;
+    techniqueName: string;
+    netCostCents: number;
+    clientCostCents: number;
+    warning?: string;
+  };
+  const markingResults: MarkingResult[] = [];
+  let markingNetTotalCents = 0;
+  for (const m of markings) {
     try {
-      markingBreakdown = await calculateMarkingCost({
-        techniqueCode: data.techniqueCode,
+      const br = await calculateMarkingCost({
+        techniqueCode: m.techniqueCode,
         quantity: data.quantity,
-        positionCount: data.positionCount,
-        printAreaCm2: data.printAreaCm2,
-        numberOfColours: data.numberOfColours,
-        manipulationCode: data.manipulationCode,
+        positionCount: data.positionCount, // pasamos solo si viene en payload legacy
+        printAreaCm2: m.printAreaCm2,
+        numberOfColours: m.numberOfColours,
+        manipulationCode: m.manipulationCode,
+      });
+      const net = br.totalCostCents ?? 0;
+      markingNetTotalCents += net;
+      markingResults.push({
+        positionId: m.positionId,
+        techniqueCode: br.techniqueCode,
+        techniqueName: br.techniqueName,
+        netCostCents: net,
+        clientCostCents: applyMargin(net),
+        warning: br.warning,
       });
     } catch (e) {
       return NextResponse.json(
-        { error: "Error al calcular marcaje", detail: e instanceof Error ? e.message : String(e) },
+        { error: `Error al calcular marcaje ${m.techniqueCode}`, detail: e instanceof Error ? e.message : String(e) },
         { status: 400 },
       );
     }
   }
 
   const productNetCostCents = netUnitCostCents * data.quantity;
-  const markingNetCostCents = markingBreakdown?.totalCostCents ?? 0;
-  const totalNetCostCents = productNetCostCents + markingNetCostCents;
+  const totalNetCostCents = productNetCostCents + markingNetTotalCents;
   const totalClientCents = applyMargin(totalNetCostCents);
-
-  // Precio unitario al cliente (incluye marcaje prorrateado)
   const clientUnitCents = Math.round(totalClientCents / data.quantity);
+
+  // Coste solo del producto cliente (para mostrar desglose)
+  const productClientCents = applyMargin(productNetCostCents);
 
   return NextResponse.json({
     ok: true,
@@ -102,21 +152,39 @@ export async function POST(req: Request) {
       slug: product.slug,
       name: product.name,
       ref: product.supplierRef,
-      priceSource, // "provider" o "estimate"
+      priceSource,
     },
-    marking: markingBreakdown
-      ? {
-          techniqueCode: markingBreakdown.techniqueCode,
-          techniqueName: markingBreakdown.techniqueName,
-          warning: markingBreakdown.warning,
-        }
-      : null,
+    // Compatibilidad legacy: si solo había 1 marca, expongo "marking" en el shape antiguo
+    marking:
+      markingResults.length === 1
+        ? {
+            techniqueCode: markingResults[0].techniqueCode,
+            techniqueName: markingResults[0].techniqueName,
+            warning: markingResults[0].warning,
+          }
+        : null,
+    // Nuevo: array completo con detalle por marca
+    markings: markingResults.map((m) => ({
+      positionId: m.positionId,
+      techniqueCode: m.techniqueCode,
+      techniqueName: m.techniqueName,
+      clientCost: formatMoney(m.clientCostCents),
+      warning: m.warning,
+    })),
     pricing: {
       currency: "EUR",
+      productClient: formatMoney(productClientCents),
+      markingClient: formatMoney(applyMargin(markingNetTotalCents)),
       unitClient: formatMoney(clientUnitCents),
       totalClient: formatMoney(totalClientCents),
-      // No exponemos costes netos
     },
+    // Campo legacy (un poco diferente de markingClient pero compatible):
+    clientMarkingPerUnit:
+      markingNetTotalCents > 0
+        ? formatMoney(Math.round(applyMargin(markingNetTotalCents) / data.quantity))
+        : null,
+    clientUnitPrice: formatMoney(clientUnitCents),
+    clientTotal: formatMoney(totalClientCents),
     disclaimer:
       "Precio orientativo con margen comercial estándar. El presupuesto cerrado se calcula tras revisar artwork, plazo y transporte.",
   });

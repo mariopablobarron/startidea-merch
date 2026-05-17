@@ -8,10 +8,11 @@ import {
   pickTier,
   type PriceTier,
 } from "@/lib/pricing";
-import { addItem } from "@/lib/cart-storage";
+import { addItem, type CartItemMarking } from "@/lib/cart-storage";
 import { trackEvent } from "@/lib/track";
 import { trackAddToCart } from "@/lib/ads-events";
 import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
+import { ExtraMarkingsPanel, type ExtraMarking } from "./ExtraMarkingsPanel";
 
 /**
  * Formulario unificado de pedido en ficha de producto.
@@ -102,6 +103,8 @@ export function ProductOrderForm({
   const [techIdx, setTechIdx] = useState(0);
   const [colours, setColours] = useState(1);
   const [manipulation, setManipulation] = useState("A");
+  // Marcas extra (textil con pecho + manga + espalda)
+  const [extraMarkings, setExtraMarkings] = useState<ExtraMarking[]>([]);
 
   // Logo cliente
   const [logo, setLogo] = useState<{ url: string; filename: string; size: number } | null>(null);
@@ -172,17 +175,39 @@ export function ProductOrderForm({
     const timer = setTimeout(async () => {
       setLoadingCalc(true);
       try {
+        // Construir array de marcas: primera (principal) + extras
+        const markingsPayload = [
+          {
+            positionId: position.positionId,
+            techniqueCode: technique.techniqueCode,
+            numberOfColours: Math.min(colours, maxColors),
+            printAreaCm2,
+            manipulationCode: manipulation,
+          },
+          ...extraMarkings
+            .map((em) => {
+              const p = positionsAvailable[em.positionIdx];
+              const t = p?.techniques[em.techIdx];
+              if (!p || !t) return null;
+              const areaCm2 = p.maxWidthMm && p.maxHeightMm
+                ? (p.maxWidthMm / 10) * (p.maxHeightMm / 10)
+                : undefined;
+              return {
+                positionId: p.positionId,
+                techniqueCode: t.techniqueCode,
+                numberOfColours: Math.min(em.colours, t.maxColors ?? 1),
+                printAreaCm2: areaCm2,
+              };
+            })
+            .filter(Boolean),
+        ];
         const res = await fetch("/api/quote/calculate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             productSlug,
             quantity: finalQty,
-            techniqueCode: technique.techniqueCode,
-            numberOfColours: Math.min(colours, maxColors),
-            printAreaCm2,
-            manipulationCode: manipulation,
-            positionCount: 1,
+            markings: markingsPayload,
           }),
         });
         const data: CalcResponse = await res.json();
@@ -203,6 +228,8 @@ export function ProductOrderForm({
     position,
     technique,
     maxColors,
+    extraMarkings,
+    positionsAvailable,
   ]);
 
   // Precio calculado
@@ -266,17 +293,48 @@ export function ProductOrderForm({
       contentId: productRef,
       contentName: productName,
     });
+    // Construir array de marcas: primera + extras
+    const allMarkings: CartItemMarking[] = withMarking && position && technique
+      ? [
+          {
+            positionId: position.positionId,
+            positionLabel: displayPositionId(position.positionId),
+            techniqueCode: technique.techniqueCode,
+            techniqueName: technique.techniqueName,
+            numberOfColors: Math.min(colours, maxColors),
+            manipulationCode: manipulation,
+          },
+          ...extraMarkings
+            .map<CartItemMarking | null>((em) => {
+              const p = positionsAvailable[em.positionIdx];
+              const t = p?.techniques[em.techIdx];
+              if (!p || !t) return null;
+              return {
+                positionId: p.positionId,
+                positionLabel: displayPositionId(p.positionId),
+                techniqueCode: t.techniqueCode,
+                techniqueName: t.techniqueName,
+                numberOfColors: Math.min(em.colours, t.maxColors ?? 1),
+              };
+            })
+            .filter((m): m is CartItemMarking => m !== null),
+        ]
+      : [];
+
     addItem({
       productSlug,
       productRef,
       productName,
       primaryImageUrl,
       quantity: finalQty,
-      markingTechniqueCode: withMarking ? technique?.techniqueCode ?? null : null,
-      markingTechniqueName: withMarking ? technique?.techniqueName ?? null : null,
-      markingPositionId: withMarking ? position?.positionId ?? null : null,
-      markingColours: withMarking ? Math.min(colours, maxColors) : null,
+      // Shape plano (compatibilidad): primer marcaje
+      markingTechniqueCode: allMarkings[0]?.techniqueCode ?? null,
+      markingTechniqueName: allMarkings[0]?.techniqueName ?? null,
+      markingPositionId: allMarkings[0]?.positionId ?? null,
+      markingColours: allMarkings[0]?.numberOfColors ?? null,
       markingComplexity: withMarking ? manipulation : null,
+      // Nuevo array completo
+      markings: allMarkings.length > 0 ? allMarkings : undefined,
       unitPriceClientCents: unitCents,
       totalClientCents: totalCents,
       customerLogoUrl: withMarking ? logo?.url ?? null : null,
@@ -491,6 +549,13 @@ export function ProductOrderForm({
           {apiOk && calc.marking?.warning && (
             <p className="text-[11px] text-accent-deep">⚠ {calc.marking.warning}</p>
           )}
+
+          {/* Multi-marca: textil con pecho + manga + espalda */}
+          <ExtraMarkingsPanel
+            positionsAvailable={positionsAvailable}
+            extraMarkings={extraMarkings}
+            onChange={setExtraMarkings}
+          />
 
           {/* Upload logo + mockup preview */}
           <div className="mt-3 rounded-xl border border-accent/20 bg-accent-wash/50 p-3">

@@ -13,6 +13,16 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubs
 
 export const runtime = "nodejs";
 
+const MarkingSchema = z.object({
+  positionId: z.string().min(1).max(60),
+  positionLabel: z.string().max(120).optional().nullable(),
+  techniqueCode: z.string().min(1).max(40),
+  techniqueName: z.string().max(120).optional().nullable(),
+  numberOfColors: z.number().int().min(1).max(20).default(1),
+  manipulationCode: z.string().max(2).optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
+});
+
 const ItemSchema = z.object({
   productSlug: z.string().min(1),
   productRef: z.string().min(1),
@@ -21,11 +31,14 @@ const ItemSchema = z.object({
   quantity: z.number().int().positive().max(1_000_000),
   variantSku: z.string().nullable().optional(),
   colorName: z.string().nullable().optional(),
+  // Shape plano (deprecated, mantenido por compat)
   markingTechniqueCode: z.string().nullable().optional(),
   markingTechniqueName: z.string().nullable().optional(),
   markingPositionId: z.string().nullable().optional(),
   markingColours: z.number().int().min(1).max(10).nullable().optional(),
-  markingComplexity: z.string().length(1).nullable().optional(),
+  markingComplexity: z.string().max(2).nullable().optional(),
+  // Nuevo: array completo multi-marca
+  markings: z.array(MarkingSchema).max(10).optional(),
   unitPriceClientCents: z.number().int().nullable().optional(),
   totalClientCents: z.number().int().nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
@@ -107,29 +120,62 @@ export async function POST(req: Request) {
       depositPercent: directPay ? 100 : null,
       acceptedTotalCents: directPay ? total : null,
       items: {
-        create: data.items.map((it) => ({
-          productSlug: it.productSlug,
-          productRef: it.productRef,
-          productName: it.productName,
-          primaryImageUrl: it.primaryImageUrl ?? null,
-          quantity: it.quantity,
-          variantSku: it.variantSku ?? null,
-          colorName: it.colorName ?? null,
-          markingTechniqueCode: it.markingTechniqueCode ?? null,
-          markingTechniqueName: it.markingTechniqueName ?? null,
-          markingPositionId: it.markingPositionId ?? null,
-          markingColours: it.markingColours ?? null,
-          markingComplexity: it.markingComplexity ?? null,
-          unitPriceClientCents: it.unitPriceClientCents ?? null,
-          totalClientCents: it.totalClientCents ?? null,
-          notes: it.notes ?? null,
-          customerLogoUrl: it.customerLogoUrl ?? null,
-          customerLogoFilename: it.customerLogoFilename ?? null,
-          customerLogoSize: it.customerLogoSize ?? null,
-        })),
+        create: data.items.map((it) => {
+          // Resolver shape efectivo: array markings prima; si no, los campos planos.
+          // Si hay array, el primer elemento es ESPEJO de los campos planos.
+          const markingsArr = it.markings && it.markings.length > 0
+            ? it.markings
+            : it.markingPositionId && it.markingTechniqueCode
+              ? [{
+                  positionId: it.markingPositionId,
+                  positionLabel: null,
+                  techniqueCode: it.markingTechniqueCode,
+                  techniqueName: it.markingTechniqueName || null,
+                  numberOfColors: it.markingColours || 1,
+                  manipulationCode: it.markingComplexity || null,
+                  notes: null,
+                }]
+              : [];
+
+          const first = markingsArr[0];
+          return {
+            productSlug: it.productSlug,
+            productRef: it.productRef,
+            productName: it.productName,
+            primaryImageUrl: it.primaryImageUrl ?? null,
+            quantity: it.quantity,
+            variantSku: it.variantSku ?? null,
+            colorName: it.colorName ?? null,
+            // Shape plano: espejo del primer marcaje
+            markingTechniqueCode: first?.techniqueCode ?? null,
+            markingTechniqueName: first?.techniqueName ?? null,
+            markingPositionId: first?.positionId ?? null,
+            markingColours: first?.numberOfColors ?? null,
+            markingComplexity: first?.manipulationCode ?? it.markingComplexity ?? null,
+            unitPriceClientCents: it.unitPriceClientCents ?? null,
+            totalClientCents: it.totalClientCents ?? null,
+            notes: it.notes ?? null,
+            customerLogoUrl: it.customerLogoUrl ?? null,
+            customerLogoFilename: it.customerLogoFilename ?? null,
+            customerLogoSize: it.customerLogoSize ?? null,
+            // Relación N marcas
+            markings: markingsArr.length > 0 ? {
+              create: markingsArr.map((m, idx) => ({
+                positionId: m.positionId,
+                positionLabel: m.positionLabel ?? null,
+                techniqueCode: m.techniqueCode,
+                techniqueName: m.techniqueName ?? null,
+                numberOfColors: m.numberOfColors,
+                manipulationCode: m.manipulationCode ?? null,
+                notes: m.notes ?? null,
+                order: idx,
+              })),
+            } : undefined,
+          };
+        }),
       },
     },
-    include: { items: true },
+    include: { items: { include: { markings: { orderBy: { order: "asc" } } } } },
   });
 
   // Notificar por email (best-effort, no bloquea respuesta).
@@ -206,14 +252,47 @@ function humanZone(code: string | null): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function internalCartHtml(cart: { id: string; name: string; company: string | null; email: string; phone: string | null; message: string | null; deadline: string | null; estimatedTotalCents: number | null; items: Array<{ productName: string; productRef: string; quantity: number; markingTechniqueName: string | null; markingPositionId: string | null; markingColours: number | null; totalClientCents: number | null }> }): string {
+function renderMarkings(it: {
+  markingTechniqueName: string | null;
+  markingPositionId: string | null;
+  markingColours: number | null;
+  markings?: Array<{ techniqueName: string | null; techniqueCode?: string; positionId: string; numberOfColors: number }>;
+}): string {
+  // Si hay array markings con más de 1, renderizamos lista. Si 1 o 0, usamos campos planos.
+  const list = it.markings && it.markings.length > 1
+    ? it.markings.map((m) => `${m.techniqueName || m.techniqueCode || "—"} en ${humanZone(m.positionId)}${m.numberOfColors > 1 ? ` · ${m.numberOfColors} col.` : ""}`)
+    : it.markingTechniqueName
+      ? [`${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}${it.markingColours && it.markingColours > 1 ? ` · ${it.markingColours} col.` : ""}`]
+      : [];
+  if (list.length === 0) return "—";
+  if (list.length === 1) return list[0];
+  return list.map((s, i) => `<span style="display:block;font-size:12px;color:#444;">${i + 1}. ${s}</span>`).join("");
+}
+
+type CartItemRow = {
+  productName: string;
+  productRef: string;
+  quantity: number;
+  markingTechniqueName: string | null;
+  markingPositionId: string | null;
+  markingColours: number | null;
+  totalClientCents: number | null;
+  markings?: Array<{
+    techniqueName: string | null;
+    techniqueCode?: string;
+    positionId: string;
+    numberOfColors: number;
+  }>;
+};
+
+function internalCartHtml(cart: { id: string; name: string; company: string | null; email: string; phone: string | null; message: string | null; deadline: string | null; estimatedTotalCents: number | null; items: CartItemRow[] }): string {
   const rows = cart.items
     .map(
       (it) => `
       <tr>
         <td style="padding:12px;border-bottom:1px solid #E8E2D5;">${it.productName}<br><small style="color:#6b6b6b">Ref. ${it.productRef}</small></td>
         <td style="padding:12px;border-bottom:1px solid #E8E2D5;text-align:center;font-weight:600;">${it.quantity}</td>
-        <td style="padding:12px;border-bottom:1px solid #E8E2D5;font-size:13px;color:#444;">${it.markingTechniqueName ? `${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}${it.markingColours && it.markingColours > 1 ? ` · ${it.markingColours} col.` : ""}` : "—"}</td>
+        <td style="padding:12px;border-bottom:1px solid #E8E2D5;font-size:13px;color:#444;">${renderMarkings(it)}</td>
         <td style="padding:12px;border-bottom:1px solid #E8E2D5;text-align:right;font-weight:600;">${it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : "—"}</td>
       </tr>`,
     )
@@ -258,22 +337,31 @@ function internalCartHtml(cart: { id: string; name: string; company: string | nu
     </div>`;
 }
 
-function clientCartHtml(cart: { id: string; name: string; company: string | null; estimatedTotalCents: number | null; items: Array<{ productName: string; productRef: string; quantity: number; markingTechniqueName: string | null; markingPositionId: string | null; markingColours: number | null; totalClientCents: number | null }> }): string {
+function clientCartHtml(cart: { id: string; name: string; company: string | null; estimatedTotalCents: number | null; items: CartItemRow[] }): string {
   const firstName = cart.name.split(" ")[0] || cart.name;
   const itemsHtml = cart.items
     .map(
-      (it) => `
+      (it) => {
+        const marksText = it.markings && it.markings.length > 1
+          ? it.markings
+              .map((m) => `${m.techniqueName || ""} en ${humanZone(m.positionId)}`)
+              .join(" · ")
+          : it.markingTechniqueName
+            ? `${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}`
+            : "sin marcaje";
+        return `
       <tr>
         <td style="padding:14px 0;border-bottom:1px solid #E8E2D5;font-size:14px;line-height:1.4;">
           <strong style="color:#2A2A2A;">${it.productName}</strong><br>
           <span style="color:#6b6b6b;font-size:12px;">
-            ${it.quantity} uds${it.markingTechniqueName ? ` · ${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}` : " · sin marcaje"}
+            ${it.quantity} uds · ${marksText}
           </span>
         </td>
         <td style="padding:14px 0;border-bottom:1px solid #E8E2D5;text-align:right;font-size:14px;font-weight:600;color:#2A2A2A;white-space:nowrap;vertical-align:top;">
           ${it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : "—"}
         </td>
-      </tr>`,
+      </tr>`;
+      },
     )
     .join("");
 

@@ -47,7 +47,7 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
 
   const cart = await prisma.cartQuote.findUnique({
     where: { id: cartId },
-    include: { items: true },
+    include: { items: { include: { markings: { orderBy: { order: "asc" } } } } },
   });
   if (!cart) return { ok: false, error: "Cart no encontrado" };
 
@@ -79,21 +79,29 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
         ? it.customerLogoUrl
         : `${SITE_URL}${it.customerLogoUrl}`;
     }
+    // Construir print_positions: si hay markings[] (multi-marca), mapear cada uno.
+    // Si no, intentar reconstruirlo desde campos planos (compat).
+    const printPositions = it.markings && it.markings.length > 0
+      ? it.markings.map((m) => ({
+          position_id: m.positionId,
+          printing_technique: m.techniqueCode,
+          number_of_print_colors: m.numberOfColors,
+          ...(artworkUrl ? { print_artwork_url: artworkUrl } : {}),
+        }))
+      : it.markingTechniqueCode && it.markingPositionId
+        ? [{
+            position_id: it.markingPositionId,
+            printing_technique: it.markingTechniqueCode,
+            number_of_print_colors: it.markingColours ?? 1,
+            ...(artworkUrl ? { print_artwork_url: artworkUrl } : {}),
+          }]
+        : undefined;
+
     return {
       master_code: it.productRef,
       sku: it.variantSku || it.productRef,
       quantity: it.quantity,
-      print_positions:
-        it.markingTechniqueCode && it.markingPositionId
-          ? [
-              {
-                position_id: it.markingPositionId,
-                printing_technique: it.markingTechniqueCode,
-                number_of_print_colors: it.markingColours ?? 1,
-                ...(artworkUrl ? { print_artwork_url: artworkUrl } : {}),
-              },
-            ]
-          : undefined,
+      print_positions: printPositions,
     };
   });
 

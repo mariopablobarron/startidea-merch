@@ -8,12 +8,22 @@ export const dynamic = "force-dynamic";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
+const MarkingSchema = z.object({
+  position_id: z.string().max(40),
+  technique_code: z.string().max(20),
+  number_of_colors: z.number().int().min(1).max(20).optional(),
+  notes: z.string().max(500).optional().nullable(),
+});
+
 const ItemSchema = z.object({
   product_slug: z.string().min(1),
   quantity: z.number().int().positive().max(1_000_000),
+  // Shape plano (1 marca, compat)
   marking_position_id: z.string().max(40).optional().nullable(),
   technique_code: z.string().max(20).optional().nullable(),
   number_of_colors: z.number().int().min(1).max(10).optional().nullable(),
+  // Multi-marca (N marcas en un mismo item: pecho + manga + espalda)
+  markings: z.array(MarkingSchema).max(10).optional(),
   notes: z.string().max(500).optional().nullable(),
 });
 
@@ -63,15 +73,35 @@ export async function POST(req: Request) {
     .map((it) => {
       const p = bySlug.get(it.product_slug);
       if (!p) return null;
+      // Resolver marcas: si vienen array, usarlo; si no, intentar reconstruirlo
+      // desde campos planos (1 marca) para compat.
+      const markings = it.markings && it.markings.length > 0
+        ? it.markings.map((m) => ({
+            positionId: m.position_id,
+            techniqueCode: m.technique_code,
+            numberOfColors: m.number_of_colors || 1,
+            notes: m.notes || null,
+          }))
+        : it.marking_position_id && it.technique_code
+          ? [{
+              positionId: it.marking_position_id,
+              techniqueCode: it.technique_code,
+              numberOfColors: it.number_of_colors || 1,
+              notes: null,
+            }]
+          : [];
+
       return {
         productSlug: p.slug,
         productRef: p.internalRef || p.slug,
         productName: p.name,
         primaryImageUrl: p.primaryImageUrl,
         quantity: it.quantity,
-        markingPositionId: it.marking_position_id || null,
-        markingTechniqueCode: it.technique_code || null,
-        numberOfColours: it.number_of_colors || null,
+        // shape plano (primer marcaje, compat) + array completo
+        markingPositionId: markings[0]?.positionId || null,
+        markingTechniqueCode: markings[0]?.techniqueCode || null,
+        markingColours: markings[0]?.numberOfColors || null,
+        markings: markings.length > 0 ? markings : undefined,
         notes: it.notes || null,
       };
     })

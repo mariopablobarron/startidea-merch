@@ -919,7 +919,40 @@ model CartQuoteItem {
 
   notes           String?
 
+  // Multi-marcaje (textil con bordado pecho + serigrafía espalda + láser manga…).
+  // Si no hay markings, los campos planos arriba (markingTechniqueCode/PositionId/
+  // Colours) son la única marca. Si hay markings[], el primer elemento es
+  // espejo de los campos planos y los siguientes son marcas adicionales.
+  // Mantenemos los campos planos durante la transición para no romper queries
+  // existentes (drips, dashboard, midocean-auto-order legacy).
+  markings        CartQuoteItemMarking[]
+
   @@index([cartId])
+}
+
+/// Marca adicional de un CartQuoteItem (textil con pecho + manga + espalda).
+/// Permite N personalizaciones por ítem, cada una con su técnica/colores/coste.
+/// MidOcean acepta exactamente esto en su array `printing_positions[]`.
+model CartQuoteItemMarking {
+  id                    String        @id @default(cuid())
+  item                  CartQuoteItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId                String
+
+  positionId            String        // ej. "FRONT DO DL", "BACK", "SLEEVE_R"
+  positionLabel         String?       // ej. "Frontal", "Espalda" (snapshot al añadir)
+  techniqueCode         String        // ej. "S1" serigrafía, "L1" láser, "E1" bordado
+  techniqueName         String?       // snapshot human-readable
+  numberOfColors        Int           @default(1)
+  manipulationCode      String?       // S/M/L/X (rango de cantidad MidOcean)
+
+  // Coste snapshot del momento (céntimos EUR)
+  setupCostCents        Int?          // coste fijo de preparación de esta marca
+  unitCostCents         Int?          // coste por unidad de esta marca
+
+  notes                 String?       // ej. "logo claim mismo color que bordado"
+  order                 Int           @default(0)  // orden visual
+
+  @@index([itemId, order])
 }
 
 // ============================================================================

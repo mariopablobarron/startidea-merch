@@ -4,6 +4,22 @@
  * empuje los items al servidor cuando finalice.
  */
 
+/**
+ * Marca individual de un item (1..N por item).
+ * Si el item tiene N marcas, los campos planos markingPositionId/TechniqueCode/
+ * Colours son ESPEJO del primer elemento de `markings[]`. Mantenidos durante
+ * la transición para no romper código viejo que lee el shape plano.
+ */
+export type CartItemMarking = {
+  positionId: string;
+  positionLabel?: string | null;
+  techniqueCode: string;
+  techniqueName?: string | null;
+  numberOfColors: number;
+  manipulationCode?: string | null;
+  notes?: string | null;
+};
+
 export type CartItem = {
   productSlug: string;
   productRef: string;
@@ -12,11 +28,15 @@ export type CartItem = {
   quantity: number;
   variantSku?: string | null;
   colorName?: string | null;
+  // Shape plano (deprecated pero mantenido): primer marcaje
   markingTechniqueCode?: string | null;
   markingTechniqueName?: string | null;
   markingPositionId?: string | null;
   markingColours?: number | null;
   markingComplexity?: string | null;
+  // Nuevo: array completo. Si vacío o ausente, no hay marcaje.
+  // Si hay 1 elemento, debe coincidir con los campos planos.
+  markings?: CartItemMarking[];
   unitPriceClientCents?: number | null;
   totalClientCents?: number | null;
   notes?: string | null;
