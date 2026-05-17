@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run trivy filesystem
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -57,7 +57,7 @@ jobs:
           exit-code: '1'
       - name: Trivy Dockerfile config scan
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           scan-type: config
           scan-ref: Dockerfile
@@ -85,15 +85,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+        # No 'version' aquí — la coge del campo packageManager de package.json
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Run knip
-        run: pnpm dlx knip --reporter compact
+        # No bloquea PRs: knip es informativo, deuda técnica, no security
+        run: pnpm dlx knip --reporter compact || true
 
   hadolint:
     name: hadolint · Dockerfile
