@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { ProofActions } from "@/components/ProofActions";
 
 export const metadata: Metadata = {
@@ -70,9 +71,9 @@ export default async function ProofPage({ params }: { params: Promise<{ token: s
               <ul className="mt-3 space-y-2 text-sm">
                 {proof.cart.items.map((it, i) => (
                   <li key={i} className="flex items-start gap-3 rounded-xl bg-bone-soft p-3">
-                    {it.primaryImageUrl && (
+                    {proxyImageUrl(it.primaryImageUrl) && (
                       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-bone">
-                        <Image src={it.primaryImageUrl} alt="" fill sizes="48px" className="object-contain p-1" />
+                        <Image src={proxyImageUrl(it.primaryImageUrl)!} alt="" fill sizes="48px" className="object-contain p-1" />
                       </div>
                     )}
                     <div className="min-w-0 flex-1">

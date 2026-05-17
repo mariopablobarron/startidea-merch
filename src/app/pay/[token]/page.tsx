@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { ExpressCheckoutPay } from "@/components/ExpressCheckoutPay";
 
 export const metadata: Metadata = {
@@ -85,9 +86,9 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
             <ul className="mt-3 space-y-2">
               {cart.items.map((it, i) => (
                 <li key={i} className="flex items-center gap-3 rounded-xl bg-bone-soft p-3 text-sm">
-                  {it.primaryImageUrl && (
+                  {proxyImageUrl(it.primaryImageUrl) && (
                     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-bone">
-                      <Image src={it.primaryImageUrl} alt="" fill sizes="48px" className="object-contain p-1" />
+                      <Image src={proxyImageUrl(it.primaryImageUrl)!} alt="" fill sizes="48px" className="object-contain p-1" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">

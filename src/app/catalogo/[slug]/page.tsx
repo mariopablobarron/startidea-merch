@@ -16,7 +16,7 @@ import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
 import { displayPositionId } from "@/lib/marking-position-display";
-import { proxyImageUrl } from "@/lib/proxy-image";
+import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
 import { JsonLd } from "@/components/JsonLd";
 import { productJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 
@@ -50,8 +50,8 @@ export async function generateMetadata({
     title,
     description,
     openGraph: {
-      images: proxyImageUrl(p.primaryImageUrl)
-        ? [{ url: proxyImageUrl(p.primaryImageUrl)! }]
+      images: absoluteProxyImageUrl(p.primaryImageUrl)
+        ? [{ url: absoluteProxyImageUrl(p.primaryImageUrl)! }]
         : [],
     },
   };
@@ -162,7 +162,8 @@ export default async function ProductDetailPage({
     slug: product.slug,
     name: displayName,
     description: displayDescription || displayShortDescription,
-    primaryImageUrl: product.primaryImageUrl,
+    // JSON-LD usa siempre URL absoluta vía /api/m/<hash> — nunca CDN proveedor
+    primaryImageUrl: absoluteProxyImageUrl(product.primaryImageUrl),
     productRef: displayRef, // Ref pública Startidea (nunca supplierRef)
     priceCents: minPriceCents,
     category: product.category?.name ?? null,

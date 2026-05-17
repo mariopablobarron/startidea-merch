@@ -7,6 +7,7 @@ import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { prisma } from "@/lib/prisma";
 import { estimateBaseCentsFromName, defaultTiersFromBase, formatMoney, pickTier } from "@/lib/pricing";
 import { publicRef } from "@/lib/internal-ref";
+import { proxyImageUrl } from "@/lib/proxy-image";
 
 export const metadata: Metadata = {
   title: "Comparar productos · Decide entre 2 ó 3 referencias",
@@ -103,9 +104,9 @@ function ComparatorTable({ products }: { products: ComparatorProduct[] }) {
         label: "",
         render: (p) => (
           <div className="relative aspect-square overflow-hidden rounded-2xl bg-bone-soft">
-            {p.primaryImageUrl ? (
+            {proxyImageUrl(p.primaryImageUrl) ? (
               <Image
-                src={p.primaryImageUrl}
+                src={proxyImageUrl(p.primaryImageUrl)!}
                 alt={p.name}
                 fill
                 sizes="33vw"

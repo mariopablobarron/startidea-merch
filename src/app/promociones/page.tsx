@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { BannerSlot } from "@/components/BannerSlot";
 import { prisma } from "@/lib/prisma";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { mergeMetadata, getPageSeo } from "@/lib/page-seo";
 
 const BASE_METADATA: Metadata = {
@@ -138,9 +139,9 @@ export default async function PromocionesPage() {
                         </div>
                       )}
                       <div className="relative aspect-square overflow-hidden rounded-2xl bg-bone">
-                        {p.primaryImageUrl ? (
+                        {proxyImageUrl(p.primaryImageUrl) ? (
                           <Image
-                            src={p.primaryImageUrl}
+                            src={proxyImageUrl(p.primaryImageUrl)!}
                             alt={displayName}
                             fill
                             sizes="(max-width:768px) 50vw, 25vw"
