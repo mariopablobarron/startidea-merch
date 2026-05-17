@@ -1,0 +1,29 @@
+package.json
+  s_65877aa637ec34::t_10363bdc74de18 16-17
+.github/workflows/security-audit.yml
+  s_65877aa637ec34::t_a3a28962978497 76-77
+  s_65877aa637ec34::t_906224f56aced0 1-75,78-109
+docs/deploy-vps.md
+  s_65877aa637ec34::t_9ffc2b93f46f16 130-133,135-136
+.gitleaksignore
+  s_65877aa637ec34::t_3f2225e0dc1877 1-15
+scripts/audit-security.ts
+  s_65877aa637ec34::t_4a2748a32663ab 86,89-94,99
+  s_65877aa637ec34::t_38c02a8f681b26 1-85,87-88,95-98,100-161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "0c82acb6cf13932b07090335d1a59ab9f047b56c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
