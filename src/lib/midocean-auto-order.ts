@@ -47,7 +47,10 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
 
   const cart = await prisma.cartQuote.findUnique({
     where: { id: cartId },
-    include: { items: { include: { markings: { orderBy: { order: "asc" } } } } },
+    include: {
+      items: { include: { markings: { orderBy: { order: "asc" } } } },
+      purchaseOrders: true,
+    },
   });
   if (!cart) return { ok: false, error: "Cart no encontrado" };
 
@@ -56,6 +59,18 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
   }
   if (cart.items.length === 0) {
     return { skipped: true, reason: "Cart vacío" };
+  }
+
+  // Si hay PurchaseOrders (split aplicado), procesar SOLO el PO MidOcean.
+  // Si no hay POs, procesar todos los items del cart (caso legacy o cart
+  // que solo tiene MidOcean).
+  const midoceanPO = cart.purchaseOrders.find((po) => po.supplier === "midocean");
+  const itemsToProcess = midoceanPO
+    ? cart.items.filter((it) => it.purchaseOrderId === midoceanPO.id)
+    : cart.items;
+
+  if (itemsToProcess.length === 0) {
+    return { skipped: true, reason: "No hay items MidOcean en este cart" };
   }
 
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
@@ -68,7 +83,7 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
 
   const customerOrderRef = `merch-${cart.id.slice(0, 8)}`;
 
-  const items: MidoceanOrderItem[] = cart.items.map((it) => {
+  const items: MidoceanOrderItem[] = itemsToProcess.map((it) => {
     // Si el cliente subió logo, lo enviamos a MidOcean como URL pública
     // absoluta para que ellos puedan descargarlo y producir con el artwork
     // correcto. Si la URL ya es absoluta (http/https), la usamos tal cual;
@@ -136,6 +151,16 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
   }
 
   if (!result.ok) {
+    // Marcar PO como FAILED para que admin lo vea
+    if (midoceanPO) {
+      await prisma.purchaseOrder.update({
+        where: { id: midoceanPO.id },
+        data: {
+          status: "FAILED",
+          errorMessage: (result.error || "MidOcean error").slice(0, 4000),
+        },
+      }).catch(() => {});
+    }
     await notifyTelegram(
       `❌ <b>MidOcean rechazó el pedido</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nStatus ${result.status} — ${(result.error || "").slice(0, 200)}`,
     ).catch(() => {});
@@ -153,6 +178,19 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
       orderedAt: new Date(),
     },
   });
+
+  // Marcar PO MidOcean como PLACED (si hubo split)
+  if (midoceanPO) {
+    await prisma.purchaseOrder.update({
+      where: { id: midoceanPO.id },
+      data: {
+        status: "PLACED",
+        supplierOrderRef: result.orderId,
+        placedAt: new Date(),
+        errorMessage: null,
+      },
+    });
+  }
 
   await notifyTelegram(
     `📦 <b>Pedido enviado a MidOcean</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nMidOcean order: <code>${result.orderId}</code>`,

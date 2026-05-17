@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { OrderTimeline, type TimelineEvent } from "@/components/OrderTimeline";
+import { PurchaseOrdersBlock } from "@/components/admin/PurchaseOrdersBlock";
 
 type CartItem = {
   id: string;
@@ -46,6 +47,22 @@ type Cart = {
   proofs?: { status: string; decidedAt: string | null; createdAt: string }[];
   payments?: { paidAt: string | null; amountCents: number }[];
   trackings?: { status: string | null; fetchedAt: string; trackingCode: string | null; carrier: string | null }[];
+  purchaseOrders?: Array<{
+    id: string;
+    supplier: string;
+    supplierOrderRef: string | null;
+    status: "PENDING" | "PLACED" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELED" | "FAILED";
+    totalClientCents: number;
+    estimatedDeliveryDate: string | null;
+    shippedAt: string | null;
+    deliveredAt: string | null;
+    trackingCarrier: string | null;
+    trackingNumber: string | null;
+    trackingUrl: string | null;
+    errorMessage: string | null;
+    internalNotes: string | null;
+    items: Array<{ id: string; quantity: number; productName: string; productRef: string }>;
+  }>;
 };
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -237,6 +254,11 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
 
         {/* Timeline */}
         <CartTimeline cart={cart} />
+
+        {/* PurchaseOrders (split por proveedor) — tracking + status + ref */}
+        {cart.purchaseOrders && cart.purchaseOrders.length > 0 && (
+          <PurchaseOrdersBlock purchaseOrders={cart.purchaseOrders} />
+        )}
 
         {/* PDF de propuesta */}
         <ProposalPdfButton cartId={id} secret={secret} />

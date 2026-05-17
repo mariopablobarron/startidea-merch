@@ -46,6 +46,24 @@ export default async function CustomerPortalPage() {
         orderBy: { fetchedAt: "desc" },
         take: 1,
       },
+      // Si el cart se dividió en N PurchaseOrders (multi-proveedor), los mostramos
+      // como "envíos" en el dashboard. NO exponemos el supplier al cliente —
+      // solo "envío 1, envío 2…" + plazo y tracking propios.
+      purchaseOrders: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          status: true,
+          estimatedDeliveryDate: true,
+          shippedAt: true,
+          deliveredAt: true,
+          trackingCarrier: true,
+          trackingNumber: true,
+          trackingUrl: true,
+          totalClientCents: true,
+          items: { select: { quantity: true, productName: true } },
+        },
+      },
     },
   });
 
@@ -248,6 +266,63 @@ export default async function CustomerPortalPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Envíos: si el pedido se divide en 2+ POs (multi-proveedor),
+                        mostramos cada envío con su plazo y tracking. Si hay 1 solo PO
+                        o ninguno, omitimos esta sección (UX sin cambios). */}
+                    {c.purchaseOrders.length > 1 && (
+                      <div className="mt-4 rounded-xl border border-accent/20 bg-accent/5 p-3">
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-accent-deep">
+                          Este pedido viene en {c.purchaseOrders.length} envíos
+                        </p>
+                        <ul className="mt-2 space-y-2">
+                          {c.purchaseOrders.map((po, idx) => {
+                            const poUnits = po.items.reduce((s, it) => s + it.quantity, 0);
+                            return (
+                              <li key={po.id} className="rounded-lg bg-white px-3 py-2 text-xs">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <span className="font-semibold text-ink">
+                                    Envío {idx + 1}
+                                    <span className="ml-2 rounded-full bg-bone-soft px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink/60">
+                                      {po.status === "PENDING" ? "preparando" :
+                                       po.status === "PLACED" ? "en producción" :
+                                       po.status === "IN_PRODUCTION" ? "en producción" :
+                                       po.status === "SHIPPED" ? "enviado" :
+                                       po.status === "DELIVERED" ? "entregado ✓" :
+                                       po.status.toLowerCase()}
+                                    </span>
+                                  </span>
+                                  {po.estimatedDeliveryDate && po.status !== "DELIVERED" && (
+                                    <span className="text-ink/55">
+                                      llegada estimada{" "}
+                                      {new Date(po.estimatedDeliveryDate).toLocaleDateString("es-ES", { day: "2-digit", month: "long" })}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="mt-1 text-ink/60">
+                                  {poUnits} uds · {po.items.length} producto{po.items.length !== 1 ? "s" : ""}
+                                  {po.totalClientCents > 0 ? ` · ${EUR.format(po.totalClientCents / 100)}` : ""}
+                                </p>
+                                {po.trackingNumber && (
+                                  <a
+                                    href={po.trackingUrl || "#"}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-1 inline-block text-accent underline-offset-2 hover:underline"
+                                  >
+                                    📦 {po.trackingCarrier || "Envío"} · {po.trackingNumber}
+                                  </a>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <p className="mt-2 text-[10px] text-ink/45">
+                          Cada envío llega independiente para no demorar los productos listos
+                          esperando a los que tardan más.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Timeline visual del progreso */}
                     {(c.payments.length > 0 || c.status !== "NEW") && (

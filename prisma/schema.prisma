@@ -192,6 +192,61 @@ model VoiceSession {
   @@index([resultingCartId])
 }
 
+/// Subdivisión interna del CartQuote por proveedor. Un cliente paga 1 cart,
+/// pero internamente se divide en N PurchaseOrder (uno por supplier). Cada
+/// PO se procesa con su adaptador (MidOcean auto, Makito email manual, …),
+/// tiene su propio plazo, tracking y status. El cliente ve "tu pedido viene
+/// en N envíos" sin saber qué proveedor hay detrás.
+///
+/// Permite escalar a 3, 4, N proveedores sin reescribir nada.
+model PurchaseOrder {
+  id                    String              @id @default(cuid())
+  cart                  CartQuote           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId                String
+  supplier              SupplierCode
+
+  // Referencia que devuelve el proveedor al confirmar pedido
+  supplierOrderRef      String?
+  status                PurchaseOrderStatus @default(PENDING)
+
+  // Items que pertenecen a este PO (subset del cart)
+  items                 CartQuoteItem[]
+
+  // Snapshot del total cliente de este PO (suma de items)
+  totalClientCents      Int                 @default(0)
+
+  // Envío al cliente final
+  estimatedDeliveryDate DateTime?
+  shippedAt             DateTime?
+  deliveredAt           DateTime?
+  trackingCarrier       String?
+  trackingNumber        String?
+  trackingUrl           String?
+
+  // Trazabilidad del proceso interno
+  placedAt              DateTime?
+  errorMessage          String?             @db.Text
+  internalNotes         String?             @db.Text
+
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([cartId])
+  @@index([supplier])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}
+
+enum PurchaseOrderStatus {
+  PENDING          // creado, sin enviar al proveedor todavía
+  PLACED           // enviado al proveedor con orderRef confirmado
+  IN_PRODUCTION    // proveedor confirmó producción
+  SHIPPED          // proveedor envió al cliente
+  DELIVERED        // cliente confirmó recibido
+  CANCELED         // cancelado (cliente o proveedor)
+  FAILED           // error procesando con proveedor (necesita admin)
+}
+
 /// Mini-CRM para outbound manual (LinkedIn, email, eventos). Trackea
 /// cada lead desde "lo añadí a la lista" hasta "cerró pedido" o "descartado".
 /// No es para reemplazar HubSpot — es para que Mario lleve su pipeline
@@ -862,6 +917,7 @@ model CartQuote {
   reviews     Review[]
   redemption  CouponRedemption?
   voiceSessions VoiceSession[]
+  purchaseOrders PurchaseOrder[]
 
   // Carritos abandonados — sistema de recuperación con recordatorios
   reminderSentAt DateTime? // última vez que se envió recordatorio (manual o auto)
@@ -927,7 +983,13 @@ model CartQuoteItem {
   // existentes (drips, dashboard, midocean-auto-order legacy).
   markings        CartQuoteItemMarking[]
 
+  // PurchaseOrder al que pertenece este item (asignado en el split tras pago).
+  // Null mientras el cart no ha sido pagado o no se ha hecho split todavía.
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  purchaseOrderId String?
+
   @@index([cartId])
+  @@index([purchaseOrderId])
 }
 
 /// Marca adicional de un CartQuoteItem (textil con pecho + manga + espalda).

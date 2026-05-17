@@ -28,6 +28,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         select: { status: true, fetchedAt: true, trackingCode: true, carrier: true },
         orderBy: { fetchedAt: "desc" },
       },
+      // PurchaseOrders: lista de pedidos al proveedor (1 por supplier tras split)
+      purchaseOrders: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          items: { select: { id: true, quantity: true, productName: true, productRef: true } },
+        },
+      },
     },
   });
   if (!cart) return NextResponse.json({ error: "Not found" }, { status: 404 });

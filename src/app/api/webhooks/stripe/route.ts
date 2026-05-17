@@ -7,6 +7,7 @@ import { emitWebhook } from "@/lib/webhooks";
 import { notifyTelegram } from "@/lib/telegram";
 import { markReferralEarned } from "@/lib/referral";
 import { autoPlaceMidoceanOrder } from "@/lib/midocean-auto-order";
+import { createPurchaseOrdersFromCart } from "@/lib/purchase-orders";
 import { createPostPaymentMagicLink } from "@/lib/customer-portal-magic";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
@@ -295,12 +296,21 @@ async function postPaymentAutoflow(args: {
     via,
   });
 
-  // Auto-place a MidOcean (fire-and-forget; resultado va a Telegram)
-  void autoPlaceMidoceanOrder(cartId)
-    .then((res) => {
-      console.log("[stripe webhook] autoPlaceMidocean", cartId, res);
+  // 1) Split del cart en PurchaseOrders (idempotente · 1 PO por supplier)
+  void createPurchaseOrdersFromCart(cartId)
+    .then((pos) => {
+      console.log("[stripe webhook] purchaseOrders created", cartId, pos.map((p) => `${p.supplier}:${p.id}`));
+      // 2) Auto-place MidOcean: solo se dispara para el PO MidOcean
+      // (el adaptador internamente filtra los items que pertenecen al PO).
+      // El resto de POs (makito, etc.) los procesa admin manualmente —
+      // por ahora no hay integración auto para ellos.
+      void autoPlaceMidoceanOrder(cartId)
+        .then((res) => {
+          console.log("[stripe webhook] autoPlaceMidocean", cartId, res);
+        })
+        .catch((err) => console.error("[stripe webhook autoPlace]", err));
     })
-    .catch((err) => console.error("[stripe webhook autoPlace]", err));
+    .catch((err) => console.error("[stripe webhook purchaseOrders]", err));
 
   // Magic link al portal para que el cliente vea estado del pedido
   let portalLink: string | null = null;
