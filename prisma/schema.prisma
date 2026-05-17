@@ -164,6 +164,34 @@ model Product {
   @@index([syncedAt])
 }
 
+/// Sesión del agente de voz (ElevenLabs Conversational AI). Cada
+/// conversación abierta desde la web queda registrada aquí para:
+///   - Tracking de uso / coste (~$0.08/min)
+///   - Análisis de qué se pregunta (mejorar prompt / catálogo)
+///   - Atribución: ¿llevó a CartQuote? ¿qué productos se cotizaron?
+///
+/// elevenLabsConversationId: id devuelto por ElevenLabs al iniciar sesión.
+/// toolsCalled: histórico de tools que invocó el agente (search, quote, …).
+/// resultingCartId: si la sesión acabó creando cotización, FK al CartQuote.
+model VoiceSession {
+  id                         String     @id @default(cuid())
+  elevenLabsConversationId   String?    @unique
+  visitorAnonId              String?    // cookie/sessionStorage id (no PII)
+  startedAt                  DateTime   @default(now())
+  endedAt                    DateTime?
+  durationSec                Int?
+  estimatedCostCents         Int?       // estimated cost in EUR cents
+  toolsCalled                Json?      // [{tool, args, ok, at}]
+  productSlugsDiscussed      String[]   @default([])
+  resultingCart              CartQuote? @relation(fields: [resultingCartId], references: [id], onDelete: SetNull)
+  resultingCartId            String?
+  userAgent                  String?
+  sourceUrl                  String?
+
+  @@index([startedAt(sort: Desc)])
+  @@index([resultingCartId])
+}
+
 /// Mini-CRM para outbound manual (LinkedIn, email, eventos). Trackea
 /// cada lead desde "lo añadí a la lista" hasta "cerró pedido" o "descartado".
 /// No es para reemplazar HubSpot — es para que Mario lleve su pipeline
@@ -833,6 +861,7 @@ model CartQuote {
   payments    Payment[]
   reviews     Review[]
   redemption  CouponRedemption?
+  voiceSessions VoiceSession[]
 
   // Carritos abandonados — sistema de recuperación con recordatorios
   reminderSentAt DateTime? // última vez que se envió recordatorio (manual o auto)

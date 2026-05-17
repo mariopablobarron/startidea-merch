@@ -13,6 +13,7 @@ import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { AdsPixels } from "@/components/AdsPixels";
 import { CookieBanner } from "@/components/CookieBanner";
 import { EmailCapturePopup } from "@/components/EmailCapturePopup";
+import { VoiceAgentGate } from "@/components/VoiceAgentGate";
 
 // Tipografía oficial Manual de identidad Startidea v1.0
 // Montserrat para todo el sistema · Alternates solo display (h1, citas).
@@ -84,6 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <CookieBanner />
         <EmailCapturePopup />
+        <VoiceAgentGate />
       </body>
     </html>
   );
