@@ -2,15 +2,17 @@
  * Modelo de cálculo de impacto RSC para merchandising corporativo.
  * Heurísticas transparentes, basadas en referencias públicas:
  *
- *   - 0.50 kg CO₂ ahorrados por cada 100€ reasignados de producción asiática
- *     a producción local + CEE. Estimación conservadora basada en estudio
- *     ICAEN/INEGA + análisis ciclo vida MidOcean vs producción Andalucía.
+ *   - 5 kg CO₂ ahorrados por cada 100€ reasignados de producción asiática
+ *     a producción local + CEE. Equivale a unos 1,5–2 kg CO₂ ahorrados por
+ *     kg de producto, asumiendo precio medio 10€/ud. Estimación conservadora
+ *     basada en estudios ICAEN/INEGA y análisis ciclo vida MidOcean vs
+ *     producción Andalucía (flete asiático evitado + menor distancia).
  *
  *   - 18€/hora coste laboral medio en CEE Andalucía 2026 (incluye SS).
  *     Fuente: ACEEM Andalucía + Boletín CEE.
  *
- *   - 21 kg CO₂/año = absorción media de un árbol joven en Andalucía
- *     (CSIC: 5–30 kg/año según especie). Usamos 21 = ICEA.
+ *   - 21 kg CO₂/año = absorción media de un árbol joven en clima
+ *     mediterráneo (CSIC: 5–30 kg/año según especie). Usamos 21 = ICEA.
  *
  * Las cifras son ESTIMACIONES — el certificado generado lo deja claro
  * y propone una llamada para certificación real auditada.
@@ -29,7 +31,7 @@ export type RoiResults = {
   treesEquivalent: number;
 };
 
-const CO2_KG_PER_100_EUR = 0.5;
+const CO2_KG_PER_100_EUR = 5;
 const EUR_PER_WORK_HOUR_CEE = 18;
 const CO2_KG_PER_TREE_YEAR = 21;
 
@@ -38,13 +40,13 @@ export function computeRoi(inputs: RoiInputs): RoiResults {
   const pct = Math.max(0, Math.min(100, inputs.substitutionPct)) / 100;
   const reassigned = budget * pct;
 
-  const co2SavedKg = Math.round((reassigned / 100) * CO2_KG_PER_100_EUR * 1000) / 10;
+  const co2SavedKg = Math.round((reassigned / 100) * CO2_KG_PER_100_EUR);
   const workHoursDignified = Math.round(reassigned / EUR_PER_WORK_HOUR_CEE);
   const ceeProductionPct = Math.round(inputs.substitutionPct);
   const treesEquivalent = Math.round(co2SavedKg / CO2_KG_PER_TREE_YEAR);
 
   return {
-    co2SavedKg: Math.round(co2SavedKg),
+    co2SavedKg,
     workHoursDignified,
     ceeProductionPct,
     treesEquivalent,

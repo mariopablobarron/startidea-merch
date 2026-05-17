@@ -89,11 +89,12 @@ export function RoiCertificatePDF({ calc }: { calc: RoiCalculation }) {
           <View style={styles.divider} />
 
           <Text style={styles.footnote}>
-            Estimación basada en: 0,5 kg CO₂ ahorrados por cada 100 € reasignados
-            (estudios ICAEN/INEGA + análisis ciclo vida MidOcean vs producción Andalucía);
-            18 €/h coste laboral CEE Andalucía 2026 (ACEEM); 21 kg CO₂/año por árbol
-            joven en clima mediterráneo (CSIC). Cifras orientativas — si lanzas pedido,
-            te emitimos certificado auditado con datos reales de producción.
+            Estimación basada en: 5 kg CO₂ ahorrados por cada 100 € reasignados
+            (~1,5-2 kg por kg de producto, principalmente flete asiático evitado);
+            18 €/h coste laboral CEE Andalucía 2026 (ACEEM); 21 kg CO₂/año por
+            árbol joven en clima mediterráneo (CSIC). Cifras orientativas — si
+            lanzas pedido, te emitimos certificado auditado con datos reales de
+            producción.
           </Text>
 
           <Text style={styles.signLine}>

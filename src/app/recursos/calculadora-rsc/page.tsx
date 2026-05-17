@@ -54,10 +54,12 @@ export default function CalculadoraRscPage() {
             </summary>
             <div className="mt-4 space-y-3 text-sm text-ink/70 leading-relaxed">
               <p>
-                <strong>kg CO₂ ahorrados</strong>: estimación conservadora de 0,50 kg
-                CO₂ por cada 100 € reasignados de producción asiática a producción
-                local + CEE. Basado en análisis de ciclo de vida MidOcean vs producción
-                Andalucía y estudios ICAEN/INEGA.
+                <strong>kg CO₂ ahorrados</strong>: estimación de 5 kg CO₂ por cada
+                100 € reasignados de producción asiática a producción local + CEE
+                (equivale a ~1,5-2 kg CO₂ por kg de producto en pedidos medios).
+                Basado en análisis de ciclo de vida MidOcean vs producción
+                Andalucía y estudios ICAEN/INEGA — principalmente flete asiático
+                evitado.
               </p>
               <p>
                 <strong>Horas de trabajo digno</strong>: coste laboral medio CEE
