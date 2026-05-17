@@ -1,0 +1,20 @@
+src/app/api/admin/cron-health/route.ts
+  s_65877aa637ec34::t_9a27f612970f15 1-119,121-328
+  s_65877aa637ec34::t_b90557ce81cc74 120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "70718d3e9312b93e2f0504f6115fd26143c3a671",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
