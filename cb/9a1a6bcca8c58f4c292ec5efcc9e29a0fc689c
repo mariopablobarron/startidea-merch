@@ -1,0 +1,35 @@
+.github/dependabot.yml
+  s_65877aa637ec34::t_82960437857d00 1-67
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_5b891d9ba5d56f 60-64
+  s_65877aa637ec34::t_006a595b17ec39 10
+src/app/api/mockup-request/route.ts
+  s_65877aa637ec34::t_1b0c80a647179f 39-42
+  s_65877aa637ec34::t_a9bdc566ef3947 7
+src/app/api/quote-request/route.ts
+  s_65877aa637ec34::t_0de480354e9ed4 27-30
+  s_65877aa637ec34::t_901a9ccbd1b705 8
+src/app/api/health/route.ts
+  s_65877aa637ec34::t_0c925da492692e 2,7-12,14-36
+src/lib/rate-limit.ts
+  s_65877aa637ec34::t_1e8b77cdd9676a 1-115
+src/app/api/clientes/auth/magic-link/route.ts
+  s_65877aa637ec34::t_63b377f7864afa 7
+  s_65877aa637ec34::t_6609445fb02be1 22-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "cb9a1a6bcca8c58f4c292ec5efcc9e29a0fc689c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
