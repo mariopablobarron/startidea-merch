@@ -58,7 +58,10 @@ export async function POST(req: Request) {
       ...(category
         ? { category: { name: { contains: category, mode: "insensitive" as const } } }
         : {}),
-      override: { is: { hidden: false } },
+      // NOT { hidden: true } cubre productos sin override (la mayoría) Y
+      // productos con override.hidden=false. El filtro anterior con is: {}
+      // exigía relación NOT NULL → excluía todo el catálogo.
+      NOT: { override: { hidden: true } },
     },
     take: max_results,
     orderBy: [{ fromPriceCents: "asc" }, { name: "asc" }],
