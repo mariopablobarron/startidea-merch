@@ -1,0 +1,22 @@
+src/lib/cron-catalog.ts
+  s_65877aa637ec34::t_3f84e40a5a42db 25-26,34-36
+  s_65877aa637ec34::t_ceedb3a50a8f96 115-116,124,127,133-134
+  s_65877aa637ec34::t_59c6f2c1eb4495 61-63
+  s_65877aa637ec34::t_c76854bb9d26ce 88-89,97-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b3cd920f28f3d4aa01f1711bb344ac9aa3f7caef",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
