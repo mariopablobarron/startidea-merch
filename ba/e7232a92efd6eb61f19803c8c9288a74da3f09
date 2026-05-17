@@ -1,0 +1,38 @@
+src/app/api/partners/apply/route.ts
+  s_65877aa637ec34::t_84e57f8b051b9a 1-91
+prisma/schema.prisma
+  s_65877aa637ec34::t_c13c3f5601b421 604
+  s_65877aa637ec34::t_37f3b71fc7f33b 167-195
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_a4ac149513dfa0 107
+prisma/migrations/20260517140000_partner_application/migration.sql
+  s_65877aa637ec34::t_cb4043dfd6c592 1-34
+src/app/api/admin/partners/applications/route.ts
+  s_65877aa637ec34::t_79bfea163dac13 1-19
+src/app/api/admin/partners/applications/[id]/route.ts
+  s_65877aa637ec34::t_6c8f861f4b4e08 1-165
+src/app/partners/programa/PartnerApplicationForm.tsx
+  s_65877aa637ec34::t_bcb99bf36125cb 1-148
+src/app/partners/programa/page.tsx
+  s_65877aa637ec34::t_4e6c4c32c282dd 1-149
+src/app/admin/marketing/partners/page.tsx
+  s_65877aa637ec34::t_0deeda94d726ba 1-192
+src/app/partners/[slug]/page.tsx
+  s_65877aa637ec34::t_18a2f2fc5daab7 1-202
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "bae7232a92efd6eb61f19803c8c9288a74da3f09",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
