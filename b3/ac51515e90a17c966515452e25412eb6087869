@@ -1,0 +1,24 @@
+next.config.ts
+  s_65877aa637ec34::t_2fe11b8dc45349 61-65
+  s_65877aa637ec34::t_c9275c941532f6 3-30,33-34
+package.json
+  s_65877aa637ec34::t_c4fa851683293e 17-18
+scripts/audit-security-headers.ts
+  s_65877aa637ec34::t_28b9c1b6b937da 1-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b3ac51515e90a17c966515452e25412eb6087869",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
