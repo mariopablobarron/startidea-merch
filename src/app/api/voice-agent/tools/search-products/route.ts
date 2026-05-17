@@ -28,22 +28,40 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos", issues: parsed.error.flatten() }, { status: 400 });
   const { query, category, max_results } = parsed.data;
 
-  // Búsqueda básica: name OR shortDescription OR category.name CONTAINS query (insensitive)
-  const q = query.trim();
+  // Tokenizamos: cada token genera condiciones OR a través de 5 campos.
+  // El agente envía a menudo conceptos genéricos ("botella", "tote bag",
+  // "regalo navidad"); los nombres comerciales del catálogo no los
+  // contienen literal — necesitamos buscar también en descripciones largas
+  // y en el path de categoría.
+  const tokens = query
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length >= 3)
+    .slice(0, 6);
+
+  const tokenConditions = tokens.length > 0 ? tokens : [query.trim()];
+
   const products = await prisma.product.findMany({
     where: {
       active: true,
-      OR: [
-        { name: { contains: q, mode: "insensitive" } },
-        { shortDescription: { contains: q, mode: "insensitive" } },
-        { category: { name: { contains: q, mode: "insensitive" } } },
-      ],
+      AND: tokenConditions.map((t) => ({
+        OR: [
+          { name: { contains: t, mode: "insensitive" as const } },
+          { shortDescription: { contains: t, mode: "insensitive" as const } },
+          { longDescription: { contains: t, mode: "insensitive" as const } },
+          { enhancedShortDescription: { contains: t, mode: "insensitive" as const } },
+          { category: { name: { contains: t, mode: "insensitive" as const } } },
+          { tags: { has: t } },
+        ],
+      })),
       ...(category
-        ? { category: { name: { contains: category, mode: "insensitive" } } }
+        ? { category: { name: { contains: category, mode: "insensitive" as const } } }
         : {}),
       override: { is: { hidden: false } },
     },
     take: max_results,
+    orderBy: [{ fromPriceCents: "asc" }, { name: "asc" }],
     select: {
       id: true,
       slug: true,
@@ -51,6 +69,7 @@ export async function POST(req: Request) {
       name: true,
       brand: true,
       shortDescription: true,
+      enhancedShortDescription: true,
       fromPriceCents: true,
       category: { select: { name: true } },
     },
@@ -63,10 +82,14 @@ export async function POST(req: Request) {
       slug: p.slug,
       name: p.name,
       brand: publicBrand(p.brand),
-      short_description: p.shortDescription?.slice(0, 200) || null,
+      short_description: p.enhancedShortDescription?.slice(0, 200) || p.shortDescription?.slice(0, 200) || null,
       category: p.category?.name || null,
       from_price_eur: p.fromPriceCents ? p.fromPriceCents / 100 : null,
       product_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es"}/catalogo/${p.slug}`,
     })),
+    note:
+      products.length === 0
+        ? `No encontré productos para "${query}". Pide al usuario que reformule (ej: 'termos', 'tote bag', 'libreta')`
+        : null,
   });
 }

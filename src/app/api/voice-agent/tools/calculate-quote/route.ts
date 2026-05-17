@@ -52,14 +52,30 @@ export async function POST(req: Request) {
   }
 
   const json = await internalRes.json();
+  const unit = json.clientUnitPrice?.value ?? null;
+  const total = json.clientTotal?.value ?? null;
 
-  // Optimizamos respuesta para que Alma la lea fácilmente
+  // Optimizamos respuesta para que Alma la lea fácilmente. Si no hay precio
+  // (producto sin tier configurado), devolvemos mensaje claro que Alma puede
+  // narrar al usuario en vez de quedarse en silencio.
+  if (unit == null && total == null) {
+    return NextResponse.json({
+      product_slug: d.slug,
+      quantity: d.quantity,
+      unit_price_eur: null,
+      total_eur: null,
+      no_price_available: true,
+      notes:
+        "Este producto aún no tiene precio orientativo automático. Ofrécele al usuario crear una cotización formal con submit_quote para que el equipo le pase precio cerrado en menos de 24h laborables.",
+    });
+  }
+
   return NextResponse.json({
     product_slug: d.slug,
     quantity: d.quantity,
-    unit_price_eur: json.clientUnitPrice ? json.clientUnitPrice.value : null,
-    marking_unit_price_eur: json.clientMarkingPerUnit ? json.clientMarkingPerUnit.value : null,
-    total_eur: json.clientTotal ? json.clientTotal.value : null,
+    unit_price_eur: unit,
+    marking_unit_price_eur: json.clientMarkingPerUnit?.value ?? null,
+    total_eur: total,
     valid_for_days: 30,
     notes:
       "Precio orientativo. Cotización cerrada se confirma en menos de 24h con mockup técnico incluido.",
