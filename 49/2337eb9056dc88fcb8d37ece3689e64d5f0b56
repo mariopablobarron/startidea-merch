@@ -1,0 +1,23 @@
+src/lib/roi-calc.ts
+  s_65877aa637ec34::t_fb36c38360c345 5-9,14-15,34,43,49
+src/app/api/calculadora-rsc/pdf/RoiCertificatePDF.tsx
+  s_65877aa637ec34::t_3b18be7b0005ba 92-97
+src/app/recursos/calculadora-rsc/page.tsx
+  s_65877aa637ec34::t_56bcc9eb0b7442 57-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "492337eb9056dc88fcb8d37ece3689e64d5f0b56",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
