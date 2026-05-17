@@ -1,0 +1,28 @@
+src/app/comparar/page.tsx
+  s_65877aa637ec34::t_efe38d2a08898f 67,302
+scripts/cron-stats.ts
+  s_65877aa637ec34::t_4ca129daed8cf4 1-93,98-107
+  s_65877aa637ec34::t_aa8646a1782735 94-97
+scripts/audit-supplier-leaks.ts
+  s_65877aa637ec34::t_22b26d44063cba 1-94
+package.json
+  s_65877aa637ec34::t_3796fae7a8aae7 14-16
+tsconfig.json
+  s_65877aa637ec34::t_01ec0d254441c9 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "4b0c74494840e0d28c4124794c65883b881ec5b3",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
