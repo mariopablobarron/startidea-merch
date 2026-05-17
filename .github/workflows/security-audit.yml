@@ -16,6 +16,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Audit semanal · lunes 09:00 UTC (10:00 hora España invierno, 11:00 verano)
+  schedule:
+    - cron: '0 9 * * 1'
   workflow_dispatch: {}
 
 # Solo una corrida a la vez por rama para no malgastar runners
@@ -107,3 +110,69 @@ jobs:
           failure-threshold: warning
           # Ignora pin-versions menores para Alpine (no práctico mantener)
           ignore: DL3018
+
+  # Resumen a Telegram. Corre tras todos los jobs y reporta el resultado
+  # consolidado al bot @Merchandisingstartideabot. Útil sobre todo en el cron
+  # semanal — el aviso te llega al móvil sin que tengas que abrir GitHub.
+  notify:
+    name: notify · Telegram
+    needs: [gitleaks, trivy, semgrep, knip, hadolint]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram summary
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          R_GITLEAKS: ${{ needs.gitleaks.result }}
+          R_TRIVY: ${{ needs.trivy.result }}
+          R_SEMGREP: ${{ needs.semgrep.result }}
+          R_KNIP: ${{ needs.knip.result }}
+          R_HADOLINT: ${{ needs.hadolint.result }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          python3 <<'PY'
+          import json, os, urllib.request, urllib.error
+
+          def icon(r):
+              return {"success":"✅","failure":"❌","cancelled":"⏹","skipped":"⊘"}.get(r,"❓")
+
+          checks = [
+              ("gitleaks  · secrets",         os.environ["R_GITLEAKS"]),
+              ("trivy     · CVE + Dockerfile",os.environ["R_TRIVY"]),
+              ("semgrep   · SAST",            os.environ["R_SEMGREP"]),
+              ("knip      · código muerto",   os.environ["R_KNIP"]),
+              ("hadolint  · Dockerfile",      os.environ["R_HADOLINT"]),
+          ]
+          any_fail = any(r == "failure" for _, r in checks)
+          head = "🔴 <b>Security audit FALLÓ</b>" if any_fail else "🟢 <b>Security audit OK</b>"
+          sha = os.environ["SHA"][:7]
+          body = head + f"\n<i>{os.environ['EVENT']}</i> · <code>{sha}</code>\n"
+          body += "\n".join(f"{icon(r)} {name}" for name, r in checks)
+          body += f"\n\n<a href=\"https://github.com/{os.environ['REPO']}/actions/runs/{os.environ['RUN_ID']}\">Ver detalle →</a>"
+
+          tok = os.environ.get("TG_TOKEN") or ""
+          chat = os.environ.get("TG_CHAT") or ""
+          if not tok or not chat:
+              print("Sin TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID — skipping notify")
+              raise SystemExit(0)
+
+          req = urllib.request.Request(
+              f"https://api.telegram.org/bot{tok}/sendMessage",
+              data=json.dumps({
+                  "chat_id": int(chat),
+                  "text": body,
+                  "parse_mode": "HTML",
+                  "disable_web_page_preview": True,
+              }).encode(),
+              headers={"Content-Type":"application/json"},
+          )
+          try:
+              print(urllib.request.urlopen(req, timeout=10).read().decode()[:300])
+          except urllib.error.HTTPError as e:
+              print("Telegram HTTP", e.code, e.read().decode()[:300])
+              raise SystemExit(1)
+          PY
