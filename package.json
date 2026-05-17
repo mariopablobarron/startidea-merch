@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "scripts:cron-stats": "bun scripts/cron-stats.ts",
-    "scripts:audit-leaks": "bun scripts/audit-supplier-leaks.ts"
+    "scripts:audit-leaks": "bun scripts/audit-supplier-leaks.ts",
+    "scripts:audit-security": "bun scripts/audit-security.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
@@ -26,7 +27,7 @@
     "jose": "^6.2.3",
     "lucide-react": "^0.469.0",
     "marked": "^18.0.3",
-    "next": "15.1.6",
+    "next": "15.5.18",
     "prisma": "^6.2.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -46,7 +47,7 @@
     "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.18.0",
-    "eslint-config-next": "15.1.6",
+    "eslint-config-next": "15.5.18",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3"

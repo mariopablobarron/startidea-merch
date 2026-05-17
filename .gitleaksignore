@@ -1,0 +1,15 @@
+# Falsos positivos / hallazgos auditados.
+#
+# Formato: <commit-sha>:<file-path>:<rule-id>:<line-number>
+# (es el campo "Fingerprint" que devuelve `gitleaks detect --report-format=json`)
+#
+# Pre-2026-05-17: secret antiguo del CRON_SECRET en docs/deploy-vps.md.
+# Auditado: el valor ya NO está en uso (CRON_SECRET actual rotado).
+# El ejemplo se sustituyó por <CRON_SECRET> en el commit que limpia esa doc.
+f7581da7015525f2e23e030bebc870254c96a0fd:docs/deploy-vps.md:generic-api-key:134
+
+# Placeholders pedagógicos "merch_live_XXXXXXXX_YYYY..." en la doc pública de
+# la API REST. No son secretos reales, son ejemplos de header Authorization.
+974f4eb7c95c5ef0b7c0eb5d27530ea8deea5d06:src/app/docs/api/page.tsx:curl-auth-header:72
+974f4eb7c95c5ef0b7c0eb5d27530ea8deea5d06:src/app/docs/api/page.tsx:curl-auth-header:113
+974f4eb7c95c5ef0b7c0eb5d27530ea8deea5d06:src/app/docs/api/page.tsx:curl-auth-header:158

@@ -127,14 +127,13 @@ Si la firma es válida, devuelve 200. Si dice `Invalid signature`, revisar que `
 
 ## 8. Crons opcionales
 
-Si se quiere backup diario de BD a Telegram:
+Los crons del merch viven en root crontab del VPS y disparan vía
+`/usr/local/bin/merch-cron-runner.sh <label> <method> <path>`. Ese wrapper
+**lee el `CRON_SECRET` del container `merch-app` en runtime**, así que el
+secret no aparece en `crontab -e` ni en docs.
 
-```bash
-# crontab -e en root del VPS
-0 4 * * * curl -sX POST 'https://merchandising.hubstartidea.es/api/cron/backup-db?secret=8Qx9Osl0VEvWmVktSZYZUD2UADqn' >> /var/log/merch-backup.log 2>&1
-```
-
-(Reemplazar el secret por el real del `.env`.)
+Ver `~/.claude/memory/infra-startidea.md` para el inventario completo de crons
+(o `GET /api/admin/crons` desde la UI).
 
 ## Rollback
 

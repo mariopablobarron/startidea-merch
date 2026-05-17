@@ -1,0 +1,109 @@
+name: Security audit
+
+# Corre las 5 capas de auditoría en paralelo en cada push a main + en PRs.
+# Cada herramienta sube su reporte como artifact y, si encuentra hallazgos
+# críticos, marca el commit en rojo. Tiempo total típico: 2-3 min.
+#
+# Herramientas:
+#   gitleaks   secrets en código + historial
+#   trivy      CVE en deps npm + secret scan en filesystem
+#   semgrep    SAST (OWASP top 10, Next.js, React, Prisma)
+#   knip       código muerto, exports huérfanos, devDeps no usadas
+#   hadolint   linter del Dockerfile
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Solo una corrida a la vez por rama para no malgastar runners
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write   # para SARIF si lo añadimos en el futuro
+
+jobs:
+  gitleaks:
+    name: gitleaks · secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # historial completo para escanear todos los commits
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+
+  trivy:
+    name: trivy · CVE + secrets filesystem
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run trivy filesystem
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          skip-dirs: node_modules,.next
+          format: table
+          exit-code: '1'
+      - name: Trivy Dockerfile config scan
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: Dockerfile
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: table
+
+  semgrep:
+    name: semgrep · SAST OWASP + Next.js
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run semgrep
+        # Solo bloquea PRs si encuentra ERROR/WARNING. INFO suele ser heurístico.
+        run: semgrep scan --config=auto --exclude=node_modules --exclude=.next --severity=ERROR --severity=WARNING --error
+        env:
+          # Si en el futuro conectas Semgrep Cloud: añadir secret SEMGREP_APP_TOKEN
+          SEMGREP_RULES: p/owasp-top-ten p/nextjs p/typescript p/react p/javascript
+
+  knip:
+    name: knip · código muerto
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run knip
+        run: pnpm dlx knip --reporter compact
+
+  hadolint:
+    name: hadolint · Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          # Permitir avisos pero fallar en errores
+          failure-threshold: warning
+          # Ignora pin-versions menores para Alpine (no práctico mantener)
+          ignore: DL3018
