@@ -455,6 +455,29 @@ function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
     }
   }
 
+  async function simulatePayment() {
+    if (!confirm(
+      "¿Simular pago confirmado para este cart?\n\n" +
+      "Esto NO cobra dinero. NO toca Stripe. NO envía pedido a MidOcean.\n" +
+      "Sí marca el cart como ORDERED, crea Payment fake, dispara split en POs y envía email [TEST] al cliente."
+    )) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/cart-quotes/${cartId}/simulate-payment`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "X-Admin-Secret": secret },
+      });
+      const data = await res.json();
+      setResult(data);
+      if (res.ok && data.ok) {
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function loadTracking() {
     setBusy(true);
     try {
@@ -530,6 +553,23 @@ function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
             Consultar tracking
           </button>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
+        <p className="text-xs font-medium uppercase tracking-wider text-accent-deep">🧪 Simulación (gratis)</p>
+        <p className="mt-1 text-xs text-ink/65">
+          Dispara TODO el flow post-pago (split en POs · email cliente · alerta TG)
+          SIN cobrar nada y SIN mandar pedido a MidOcean. Idempotente: si el cart ya
+          tiene Payment PAID, no vuelve a simular.
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={simulatePayment}
+          className="mt-3 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-40"
+        >
+          🧪 Simular pago confirmado
+        </button>
       </div>
 
       <div className="rounded-2xl border border-line bg-bone p-5">
