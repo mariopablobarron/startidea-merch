@@ -1,0 +1,35 @@
+src/app/api/admin/mockup-requests/route.ts
+  s_65877aa637ec34::t_f61331c3b9f577 1-51
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_34ba8407f12ff5 52-57
+src/components/MockupGenerator.tsx
+  s_65877aa637ec34::t_5247739b150d99 28-70
+  s_65877aa637ec34::t_4d9c0dda4ab74e 248-378
+prisma/schema.prisma
+  s_65877aa637ec34::t_ab9240b3ccf399 159
+  s_65877aa637ec34::t_a48f008b3529ff 167-201
+prisma/migrations/20260517100000_mockup_request/migration.sql
+  s_65877aa637ec34::t_08148e5e689444 1-39
+src/app/api/mockup-request/route.ts
+  s_65877aa637ec34::t_e19f8621362331 1-170
+src/app/admin/mockup-requests/page.tsx
+  s_65877aa637ec34::t_65f713d4e22209 1-168
+src/app/api/admin/mockup-requests/[id]/route.ts
+  s_65877aa637ec34::t_e1fe8cd215d49a 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "e9181d8c97f13bf1fa7a10e4ad117bc3be0d88d0",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
