@@ -164,6 +164,45 @@ model Product {
   @@index([syncedAt])
 }
 
+/// Mini-CRM para outbound manual (LinkedIn, email, eventos). Trackea
+/// cada lead desde "lo añadí a la lista" hasta "cerró pedido" o "descartado".
+/// No es para reemplazar HubSpot — es para que Mario lleve su pipeline
+/// personal sin abrir 3 apps.
+model OutboundLead {
+  id              String              @id @default(cuid())
+  name            String
+  company         String?
+  role            String?             // Marketing Manager, RSC Manager…
+  email           String?
+  linkedinUrl     String?
+  phone           String?
+  segment         String?             // tech, events, rsc, freelance, etc.
+  source          String?             // sales-navigator, evento-xxx, referido-fulanito
+  status          OutboundLeadStatus  @default(NEW)
+  lastContactAt   DateTime?
+  nextActionAt    DateTime?           // cuándo tocar al lead de nuevo
+  notes           String?             @db.Text
+  ownerEmail      String?             // admin que lo gestiona
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([status, nextActionAt])
+  @@index([createdAt(sort: Desc)])
+}
+
+enum OutboundLeadStatus {
+  NEW              // lo añadí, sin contactar
+  INVITED          // mandé conexión LinkedIn
+  CONNECTED        // aceptó conexión
+  MESSAGED         // mandé primer mensaje
+  REPLIED          // me respondió
+  MEETING_BOOKED   // agendamos llamada/visita
+  PROPOSAL_SENT    // mandé propuesta cerrada
+  WON              // cerró pedido (cliente)
+  LOST             // descartado (no encaja, no responde, dijo que no)
+  NURTURING        // larga distancia, mantener contacto
+}
+
 /// Solicitudes de partners para entrar al programa de afiliados.
 /// Pipeline: PENDING → admin revisa → APPROVED (se crea AffiliatePartner)
 /// o REJECTED (con motivo opcional). Mantenemos histórico siempre.

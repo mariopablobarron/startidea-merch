@@ -105,6 +105,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                       { href: "/admin/marketing/blog", label: "Blog SEO" },
                       { href: "/admin/marketing/lead-magnets", label: "Recursos / lead magnets" },
                       { href: "/admin/marketing/partners", label: "Partners 🤝", title: "Programa de afiliados — aprobar solicitudes" },
+                      { href: "/admin/marketing/outbound", label: "CRM outbound", title: "Pipeline manual de leads (LinkedIn, eventos)" },
                       { href: "/admin/marketing/seo", label: "SEO por página" },
                       { href: "/admin/marketing/cotizador", label: "Cotizador (settings)" },
                     ]}
