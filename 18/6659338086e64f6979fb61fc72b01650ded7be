@@ -1,0 +1,51 @@
+prisma/schema.prisma
+  s_65877aa637ec34::t_cb43db8244a87a 167-194
+  s_65877aa637ec34::t_38aea99256f15f 864
+src/components/VoiceAgentGate.tsx
+  s_65877aa637ec34::t_bfe53bbe552638 1-22
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_1843a29f58ac6a 109
+src/app/api/voice-agent/tools/submit-quote/route.ts
+  s_65877aa637ec34::t_4c848723415950 1-123
+src/app/api/voice-agent/tools/product-details/route.ts
+  s_65877aa637ec34::t_c9957f757ae8f2 1-79
+src/app/api/voice-agent/tools/search-products/route.ts
+  s_65877aa637ec34::t_fae251d63e3fa7 1-72
+src/app/api/voice-agent/session-end/route.ts
+  s_65877aa637ec34::t_0e6ace75dfc70d 1-48
+src/lib/voice-agent-auth.ts
+  s_65877aa637ec34::t_47a49ada566129 1-28
+src/app/api/admin/voice-agent/route.ts
+  s_65877aa637ec34::t_bf925ccdc32049 1-38
+docs/voice-agent-setup.md
+  s_65877aa637ec34::t_8919b24997a0ac 1-141
+src/app/layout.tsx
+  s_65877aa637ec34::t_206130da73e58c 16
+  s_65877aa637ec34::t_f8ebb41a65a8e2 88
+src/app/api/voice-agent/signed-url/route.ts
+  s_65877aa637ec34::t_42e7aa411d37ea 1-81
+src/app/admin/marketing/voice-agent/page.tsx
+  s_65877aa637ec34::t_570778bd7fbedd 1-160
+prisma/migrations/20260517160000_voice_session/migration.sql
+  s_65877aa637ec34::t_c52771253fcc6a 1-31
+src/components/VoiceAgentWidget.tsx
+  s_65877aa637ec34::t_bbcd00b246641a 1-294
+src/app/api/voice-agent/tools/calculate-quote/route.ts
+  s_65877aa637ec34::t_ef23adf9291457 1-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "186659338086e64f6979fb61fc72b01650ded7be",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
