@@ -1,7 +1,37 @@
 import type { NextConfig } from "next";
 
+// ── Headers de seguridad HTTP ────────────────────────────────────────────
+// Aplica a TODA la respuesta de la app. Auditado con Mozilla Observatory.
+//
+// Decisiones tomadas:
+//  - Sin Content-Security-Policy todavía: una CSP estricta requiere testing
+//    exhaustivo con Stripe Checkout (iframes) y los scripts inline que Next
+//    inyecta. Pendiente sprint específico.
+//  - HSTS 2 años + includeSubDomains + preload: el dominio sólo sirve HTTPS.
+//  - Frame-Options DENY: la app no se embebe en iframes externos.
+//  - Permissions-Policy denyall: no usamos camera/mic/geo, sí payment (Stripe).
+//  - Cross-Origin-Opener-Policy same-origin: aísla pestañas con window.open.
+//  - X-Powered-By deshabilitado (poweredByHeader: false abajo).
+const SECURITY_HEADERS = [
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Permissions-Policy",
+    value:
+      "camera=(), microphone=(), geolocation=(), payment=(self), interest-cohort=(), browsing-topics=()",
+  },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+];
+
 const config: NextConfig = {
   output: "standalone",
+  // Quita la cabecera "x-powered-by: Next.js" — info técnica innecesaria.
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       // MidOcean CDN: cdn.midocean.com, cdn1.midocean.com, cdn2…
@@ -26,6 +56,11 @@ const config: NextConfig = {
       // Alias legacy → ruta canónica española
       { source: "/cart", destination: "/carrito", permanent: true },
       { source: "/cart/:path*", destination: "/carrito/:path*", permanent: true },
+    ];
+  },
+  async headers() {
+    return [
+      { source: "/:path*", headers: SECURITY_HEADERS },
     ];
   },
 };

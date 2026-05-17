@@ -14,7 +14,8 @@
     "db:studio": "prisma studio",
     "scripts:cron-stats": "bun scripts/cron-stats.ts",
     "scripts:audit-leaks": "bun scripts/audit-supplier-leaks.ts",
-    "scripts:audit-security": "bun scripts/audit-security.ts"
+    "scripts:audit-security": "bun scripts/audit-security.ts",
+    "scripts:audit-headers": "bun scripts/audit-security-headers.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
