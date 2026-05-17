@@ -7,6 +7,7 @@ import { notifyAdmins } from "@/lib/notify-admin";
 import { validateCoupon, applyCoupon } from "@/lib/coupons";
 import { notifyTelegram } from "@/lib/telegram";
 import { readPartnerSlug, attachReferral } from "@/lib/referral";
+import { rateLimit } from "@/lib/rate-limit";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
 
@@ -56,6 +57,11 @@ const EUR = new Intl.NumberFormat("es-ES", {
 });
 
 export async function POST(req: Request) {
+  // Anti-spam: 10 leads/5 min por IP (suficiente para un equipo legítimo
+  // navegando entre productos, prohibitivo para un bot enviando masivamente).
+  const rl = rateLimit(req, { key: "cart-quote", max: 10, windowMs: 5 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   let body: unknown;
   try {
     body = await req.json();

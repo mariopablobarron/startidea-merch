@@ -5,6 +5,7 @@ import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { autoresponseQuoteEmail, internalQuoteEmail, type QuoteEmailData } from "@/lib/email-templates";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { getQuoteSettings } from "@/lib/quote-settings";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,10 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Anti-spam: 10 cotizaciones/5 min por IP.
+  const rl = rateLimit(req, { key: "quote-request", max: 10, windowMs: 5 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   let body: unknown;
   try {
     body = await req.json();

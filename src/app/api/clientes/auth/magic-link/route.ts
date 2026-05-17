@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { findOrCreateCustomerByEmail } from "@/lib/customer-auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,10 @@ const Schema = z.object({ email: z.string().email() });
  * llamador (responde igual exista o no, anti-enum).
  */
 export async function POST(req: Request) {
+  // Anti-brute force / anti-enumeración: 5 intentos/15 min por IP.
+  const rl = rateLimit(req, { key: "magic-link", max: 5, windowMs: 15 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   let body: unknown;
   try {
     body = await req.json();

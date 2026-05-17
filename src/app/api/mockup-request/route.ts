@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/resend";
 import { notifyTelegram } from "@/lib/telegram";
 import { displayPositionId } from "@/lib/marking-position-display";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +36,10 @@ const RequestSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Anti-spam: 5 peticiones de mockup/5 min por IP.
+  const rl = rateLimit(req, { key: "mockup-request", max: 5, windowMs: 5 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   let body: unknown;
   try {
     body = await req.json();
