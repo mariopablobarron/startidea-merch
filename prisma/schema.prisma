@@ -164,6 +164,35 @@ model Product {
   @@index([syncedAt])
 }
 
+/// Solicitudes de partners para entrar al programa de afiliados.
+/// Pipeline: PENDING → admin revisa → APPROVED (se crea AffiliatePartner)
+/// o REJECTED (con motivo opcional). Mantenemos histórico siempre.
+model PartnerApplication {
+  id                String                   @id @default(cuid())
+  name              String
+  email             String
+  company           String?
+  role              String?                  // ej. "Agencia eventos", "Consultora RSC"
+  audience          String?                  // a quién promocionaría
+  message           String?                  @db.Text
+  status            PartnerApplicationStatus @default(PENDING)
+  reviewedAt        DateTime?
+  reviewedBy        String?                  // email del admin
+  rejectionReason   String?
+  approvedPartnerId String?                  @unique
+  approvedPartner   AffiliatePartner?        @relation(fields: [approvedPartnerId], references: [id], onDelete: SetNull)
+  createdAt         DateTime                 @default(now())
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}
+
+enum PartnerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 /// Cálculos guardados de la calculadora ROI RSC. Sirve doble propósito:
 ///   1. Lead capture: cliente deja email para descargar certificado PDF.
 ///   2. Visibilidad comercial: el admin ve quién está calculando qué tamaño.
@@ -572,6 +601,7 @@ model AffiliatePartner {
   createdAt     DateTime  @default(now())
 
   referrals     Referral[]
+  application   PartnerApplication?
 
   @@index([active])
 }
