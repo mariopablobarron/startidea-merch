@@ -34,6 +34,22 @@ export async function POST(req: Request) {
     );
   }
 
+  // ── Idempotencia: Stripe garantiza at-least-once, así que el mismo
+  // evt_xxx puede llegar 2+ veces. Intentamos crear la fila ANTES de
+  // procesar; si la unique constraint salta (P2002), ya se procesó y
+  // respondemos 200 sin duplicar pedido / email / referral.
+  try {
+    await prisma.processedStripeEvent.create({
+      data: { eventId: event.id, eventType: event.type },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("Unique constraint") || msg.includes("P2002")) {
+      return NextResponse.json({ received: true, duplicate: true, eventId: event.id });
+    }
+    throw err;
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed":

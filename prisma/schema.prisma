@@ -164,6 +164,22 @@ model Product {
   @@index([syncedAt])
 }
 
+/// Idempotencia de webhooks de Stripe. Stripe garantiza "at-least-once"
+/// delivery — un mismo evt_xxx puede llegar 2+ veces (ej. nuestro server
+/// respondió tarde a la primera entrega). Sin esta tabla, procesar duplicado
+/// = duplicar email + duplicar pedido a MidOcean + duplicar referral.
+///
+/// El webhook intenta `create` antes de procesar. Si la constraint unique
+/// salta (P2002), sabemos que el evento ya se procesó → respondemos 200
+/// sin hacer nada.
+model ProcessedStripeEvent {
+  eventId     String   @id              // evt_xxx (Stripe event id)
+  eventType   String                    // checkout.session.completed, etc.
+  processedAt DateTime @default(now())
+
+  @@index([processedAt(sort: Desc)])
+}
+
 /// Histórico de ejecuciones de los crons del sistema. Cada fila es una
 /// invocación (programada por el VPS o lanzada manualmente desde admin).
 /// Sirve para diagnóstico y auditoría — la página /admin/system/crons lo lee.
