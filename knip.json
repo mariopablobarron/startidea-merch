@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/app/**/{page,layout,route,not-found,error,loading,template,default}.{ts,tsx}",
+    "src/app/**/{opengraph-image,icon,sitemap,robots}.{ts,tsx}",
+    "src/middleware.ts",
+    "next.config.ts",
+    "scripts/**/*.{ts,mjs}"
+  ],
+  "ignore": [
+    "public/sw.js",
+    "scripts/blog-drafts.mjs",
+    "src/components/OnboardingTour.tsx",
+    "src/components/PriceTierTable.tsx",
+    "src/components/QuantityConfigurator.tsx"
+  ],
+  "ignoreDependencies": [
+    "@types/bcryptjs",
+    "eslint",
+    "eslint-config-next"
+  ]
+}
