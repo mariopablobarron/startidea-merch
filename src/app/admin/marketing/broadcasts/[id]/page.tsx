@@ -28,56 +28,76 @@ type Broadcast = {
   createdBy: string | null;
 };
 
+// Plantillas-arranque: el envío aplica automáticamente el wrap Startidea
+// (crema + card blanca + footer oscuro). Aquí sólo el cuerpo editable.
 const TEMPLATES = {
   blank: { subject: "", html: "" },
   promo: {
-    subject: "🎁 Promoción exclusiva para ti",
-    html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;margin:0 auto;color:#0a0a0b;">
-  <h2 style="font-family:Georgia,serif;font-size:28px;">Hola {{firstName}},</h2>
-  <p style="font-size:16px;">Esta semana lanzamos una promoción que pensamos te va a interesar:</p>
-
-  <div style="margin:24px 0;padding:24px;background:linear-gradient(135deg,#ff6b35 0%,#ff8a5b 100%);color:#fff;border-radius:16px;text-align:center;">
-    <p style="margin:0;font-size:13px;letter-spacing:2px;opacity:.85;">DESCUENTO POR VOLUMEN</p>
-    <p style="margin:8px 0;font-family:Georgia,serif;font-size:42px;font-weight:600;">-15%</p>
-    <p style="margin:0;font-size:14px;opacity:.9;">en pedidos de más de 250 unidades · cupón VOLUMEN15</p>
-  </div>
-
-  <p style="margin-top:24px;text-align:center;">
-    <a href="https://merchandising.hubstartidea.es/catalogo" style="display:inline-block;background:#ff6b35;color:#fff;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;">Ver catálogo →</a>
-  </p>
-</div>`,
+    subject: "Promoción por volumen para tu próximo pedido",
+    html: `<p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Promoción activa</p>
+<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+  Hola {{firstName}}.<br>
+  <span style="color:#E63E73;">-15% por volumen este mes.</span>
+</h1>
+<p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
+  Si tienes evento, lanzamiento o cierre de Q a la vista, aplicamos un -15% sobre
+  cualquier pedido superior a 250 unidades. Cotización cerrada en menos de 24h.
+</p>
+<div style="margin:24px 0;background:#FBDFE9;border:2px dashed #E63E73;padding:20px;text-align:center;border-radius:12px;">
+  <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Tu cupón este mes</p>
+  <p style="margin:8px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#E63E73;letter-spacing:0.05em;">VOLUMEN15</p>
+  <p style="margin:8px 0 0;font-size:12px;color:#6b6b6b;">Válido en pedidos &gt; 250 uds · este mes</p>
+</div>
+<p style="margin:24px 0;text-align:center;">
+  <a href="https://merchandising.hubstartidea.es/catalogo" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver catálogo →</a>
+</p>`,
   },
   novedad: {
-    subject: "👀 Tienes que ver esto: novedades en TodoMerchandising",
-    html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;margin:0 auto;color:#0a0a0b;">
-  <h2 style="font-family:Georgia,serif;font-size:28px;">Hola {{firstName}},</h2>
-  <p>Hemos sumado al catálogo productos nuevos que pueden encajar con vuestra próxima campaña:</p>
-
-  <ul style="line-height:1.8;font-size:15px;">
-    <li><b>Termos térmicos de doble pared</b> — láser hasta 4 colores, desde 4,50€/ud</li>
-    <li><b>Mochilas RPET reciclado</b> — capacidad 18L, etiqueta GRS, desde 8€/ud</li>
-    <li><b>Polos técnicos algodón orgánico</b> — bordado o DTF, desde 9€/ud</li>
-  </ul>
-
-  <p style="margin:24px 0;text-align:center;">
-    <a href="https://merchandising.hubstartidea.es/catalogo?sort=recent" style="display:inline-block;background:#ff6b35;color:#fff;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;">Ver novedades →</a>
-  </p>
-</div>`,
+    subject: "Novedades en catálogo que pueden encajar con vuestra próxima campaña",
+    html: `<p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Nuevos en catálogo</p>
+<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+  Hola {{firstName}}.<br>
+  <span style="color:#E63E73;">Hemos sumado tres referencias.</span>
+</h1>
+<p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
+  Tres productos nuevos que pueden encajar con vuestra próxima campaña corporativa:
+</p>
+<table style="width:100%;border-collapse:separate;border-spacing:0 8px;margin:16px 0 0;">
+  <tr><td style="background:#F4EFE6;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.5;color:#2A2A2A;">
+    <strong>Termos térmicos doble pared</strong><br>
+    <span style="color:#6b6b6b;font-size:13px;">Láser hasta 4 colores · desde 4,50 €/ud</span>
+  </td></tr>
+  <tr><td style="background:#F4EFE6;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.5;color:#2A2A2A;">
+    <strong>Mochilas RPET reciclado</strong><br>
+    <span style="color:#6b6b6b;font-size:13px;">Capacidad 18 L · etiqueta GRS · desde 8 €/ud</span>
+  </td></tr>
+  <tr><td style="background:#F4EFE6;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.5;color:#2A2A2A;">
+    <strong>Polos técnicos algodón orgánico</strong><br>
+    <span style="color:#6b6b6b;font-size:13px;">Bordado o DTF · desde 9 €/ud</span>
+  </td></tr>
+</table>
+<p style="margin:24px 0;text-align:center;">
+  <a href="https://merchandising.hubstartidea.es/catalogo?sort=recent" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver novedades →</a>
+</p>`,
   },
   recordatorio: {
-    subject: "Una pregunta rápida sobre vuestro merchandising",
-    html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;margin:0 auto;color:#0a0a0b;">
-  <h2 style="font-family:Georgia,serif;font-size:24px;">Hola {{firstName}},</h2>
-  <p>Hace unos meses miraste catálogo en TodoMerchandising. ¿Surgió alguna campaña que necesite producción?</p>
-
-  <p>Si tienes una idea o un evento próximo, te cerramos cotización con tarifas en menos de 24h.</p>
-
-  <p style="margin:24px 0;text-align:center;">
-    <a href="https://merchandising.hubstartidea.es/cotizar" style="display:inline-block;background:#ff6b35;color:#fff;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;">Pedir cotización →</a>
-  </p>
-
-  <p style="font-size:13px;color:#666;">Si prefieres hablar antes, responde a este email y te marcamos.</p>
-</div>`,
+    subject: "Una pregunta rápida sobre vuestro próximo merchandising",
+    html: `<p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Hace tiempo que no hablamos</p>
+<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+  Hola {{firstName}}.<br>
+  <span style="color:#a09e98;">¿Hay próxima campaña en mente?</span>
+</h1>
+<p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
+  Hace unos meses miraste catálogo en TodoMerchandising. Si surgió evento,
+  onboarding o cierre de Q que necesite producción, te cerramos cotización con
+  tarifas en menos de 24h laborables.
+</p>
+<p style="margin:24px 0;text-align:center;">
+  <a href="https://merchandising.hubstartidea.es/cotizar" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Pedir cotización →</a>
+</p>
+<p style="margin:16px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;text-align:center;">
+  Si prefieres hablar antes, responde a este email y te marcamos.
+</p>`,
   },
 };
 
@@ -436,10 +456,10 @@ export default function BroadcastEditorPage({
             )}
           </section>
 
-          {/* DERECHA — preview */}
+          {/* DERECHA — preview con wrap Startidea aplicado */}
           <section className="lg:sticky lg:top-20 lg:self-start">
             <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink/50">
-              Preview
+              Preview · así llega al buzón
             </p>
             <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
               <div className="border-b border-line bg-bone-soft p-3 text-xs">
@@ -447,17 +467,48 @@ export default function BroadcastEditorPage({
                 {preheader && <p className="mt-0.5 text-ink/60">{preheader}</p>}
               </div>
               <div
-                className="max-h-[700px] overflow-auto p-4"
+                className="max-h-[700px] overflow-auto"
                 dangerouslySetInnerHTML={{
-                  __html: html.replace(/\{\{firstName\}\}/g, "Mario").replace(/\{\{name\}\}/g, "Mario Pablo"),
+                  __html: previewWithStartideaWrap(
+                    html.replace(/\{\{firstName\}\}/g, "Mario").replace(/\{\{name\}\}/g, "Mario Pablo"),
+                  ),
                 }}
               />
             </div>
+            <p className="mt-2 text-[11px] text-ink/50 leading-relaxed">
+              El cuerpo se envuelve automáticamente en el template Startidea (crema,
+              card blanca, footer con marca y baja). Si quieres mandar HTML 100% custom,
+              escribe el doc completo empezando por <code>&lt;!doctype html&gt;</code>.
+            </p>
           </section>
         </div>
       </div>
     </main>
   );
+}
+
+/**
+ * Envuelve el cuerpo del broadcast con el template Startidea para que el
+ * preview enseñe lo mismo que se envía. Espejo (front-only) de applyFooter()
+ * en /api/admin/broadcasts/[id]/send/route.ts.
+ */
+function previewWithStartideaWrap(bodyHtml: string): string {
+  const trimmed = bodyHtml.trim();
+  const isFullDoc = /^<!doctype/i.test(trimmed) || /^<html[\s>]/i.test(trimmed);
+  if (isFullDoc) return bodyHtml;
+  return `
+<div style="background:#F4EFE6;padding:24px 16px;font-family:Helvetica,Arial,sans-serif;color:#2A2A2A;">
+  <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;">
+    <div style="padding:32px 32px 8px;">
+${bodyHtml}
+    </div>
+    <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+      <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+      <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
+      <p style="margin:6px 0 0;color:rgba(244,239,230,0.5);">Darme de baja</p>
+    </div>
+  </div>
+</div>`;
 }
 
 function Field({

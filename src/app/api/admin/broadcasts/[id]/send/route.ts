@@ -52,7 +52,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const result = await sendEmail({
       to: parsed.data.testEmail,
       subject: `[TEST] ${broadcast.subject}`,
-      html: applyFooter(broadcast.html, `${SITE_URL}/api/newsletter/unsubscribe?token=test`),
+      html: applyFooter(
+        broadcast.html,
+        `${SITE_URL}/api/newsletter/unsubscribe?token=test`,
+        broadcast.preheader,
+      ),
       context: `broadcast test · ${broadcast.id}`,
     });
     if (!result.ok) {
@@ -88,7 +92,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         from: RESEND_FROM,
         to: r.email,
         subject: broadcast.subject,
-        html: applyFooter(personalize(broadcast.html, r.name || ""), unsubscribeUrl),
+        html: applyFooter(personalize(broadcast.html, r.name || ""), unsubscribeUrl, broadcast.preheader),
         text: broadcast.text || stripHtml(broadcast.html),
         headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` },
       });
@@ -163,16 +167,57 @@ function personalize(html: string, name: string): string {
   return html.replace(/\{\{name\}\}/g, name).replace(/\{\{firstName\}\}/g, firstName);
 }
 
-function applyFooter(html: string, unsubscribeUrl: string): string {
-  // Solo añadir footer si el HTML no lo trae ya
-  if (html.includes("unsubscribe") || html.includes("List-Unsubscribe")) return html;
-  const footer = `
-<hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-<p style="color:#888;font-size:11px;font-family:sans-serif;text-align:center;margin:0;">
-  STARTIDEA MALAGA SL · CIF B19583632 · Málaga, España<br>
+/**
+ * Envuelve el contenido del broadcast en el template Startidea
+ * (crema, card blanca, footer oscuro con marca y baja).
+ *
+ * Si el HTML ya viene como documento completo (`<!doctype` o `<html>`),
+ * sólo asegura la baja legal — Mario puede mandar HTML totalmente custom
+ * cuando lo necesite.
+ */
+function applyFooter(html: string, unsubscribeUrl: string, preheader?: string | null): string {
+  const trimmed = html.trim();
+  const isFullDoc = /^<!doctype/i.test(trimmed) || /^<html[\s>]/i.test(trimmed);
+
+  if (isFullDoc) {
+    // Si ya es doc completo, sólo añadimos baja si falta
+    if (trimmed.includes("unsubscribe") || trimmed.includes("List-Unsubscribe")) return html;
+    const footer = `
+<p style="color:#888;font-size:11px;font-family:sans-serif;text-align:center;margin:24px 0;">
+  STARTIDEA MALAGA SL · CIF B19583632 · Granada<br>
   <a href="${unsubscribeUrl}" style="color:#888;">Darme de baja</a>
 </p>`;
-  return html + footer;
+    return html.replace(/<\/body>/i, `${footer}</body>`);
+  }
+
+  // Wrap completo con brand Startidea
+  const preheaderHtml = preheader
+    ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">${preheader.replace(/[<>&]/g, "")}</div>`
+    : "";
+
+  return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>todomerchandising</title>
+</head>
+<body style="margin:0;padding:0;background:#F4EFE6;font-family:Helvetica,Arial,sans-serif;color:#2A2A2A;">
+${preheaderHtml}
+<div style="background:#F4EFE6;padding:32px 16px;">
+  <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;">
+    <div style="padding:32px 32px 8px;">
+${html}
+    </div>
+    <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+      <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+      <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
+      <p style="margin:6px 0 0;"><a href="${unsubscribeUrl}" style="color:rgba(244,239,230,0.7);text-decoration:underline;">Darme de baja</a></p>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
 }
 
 function stripHtml(html: string): string {
