@@ -1,0 +1,31 @@
+src/lib/cron-catalog.ts
+  s_65877aa637ec34::t_44dabf781b24e6 1-142
+src/app/api/admin/crons/trigger/[name]/route.ts
+  s_65877aa637ec34::t_39810aae0351ee 1-104
+prisma/schema.prisma
+  s_65877aa637ec34::t_73274d99b7b5f6 167-185
+prisma/migrations/20260517110000_cron_run_log/migration.sql
+  s_65877aa637ec34::t_5c98c84d7a86d2 1-19
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_66fc2ff206d918 130
+src/app/api/admin/crons/route.ts
+  s_65877aa637ec34::t_d6c43ae5bff0e5 1-58
+src/app/admin/system/crons/page.tsx
+  s_65877aa637ec34::t_50ae11984c6353 1-233
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "071ced05a21e353741b89078497397e6f6ef40cf",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
