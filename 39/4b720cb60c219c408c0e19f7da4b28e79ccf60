@@ -1,0 +1,20 @@
+.github/workflows/security-audit.yml
+  s_65877aa637ec34::t_dcabd7ce298f36 49,60
+  s_65877aa637ec34::t_c3e217faced57d 88,95-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "394b720cb60c219c408c0e19f7da4b28e79ccf60",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
