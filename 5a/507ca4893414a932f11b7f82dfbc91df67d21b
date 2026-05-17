@@ -1,0 +1,22 @@
+src/app/api/cron/review-invite/route.ts
+  s_65877aa637ec34::t_105865a7fb4ed0 44,46-89
+  s_65877aa637ec34::t_9f04d13edd2ec6 4
+knip.json
+  s_65877aa637ec34::t_4a81f5546d853a 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "5a507ca4893414a932f11b7f82dfbc91df67d21b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
