@@ -64,7 +64,7 @@ export default async function CompararPage({
             <p className="mt-4 max-w-3xl text-lg text-ink/70">
               Stock, dimensiones, técnicas de marcaje y precio orientativo a 100 unidades. Si
               llegas a esta página vacía, abre fichas y pulsa &quot;Añadir a comparador&quot; (próximamente)
-              o pásame los slugs en la URL: <code className="rounded bg-bone-soft px-1.5 py-0.5 text-xs">?slugs=atoll-100-mo2763,tyvek-mo8942</code>.
+              o pásame los slugs en la URL: <code className="rounded bg-bone-soft px-1.5 py-0.5 text-xs">?slugs=atoll-100,tyvek</code>.
             </p>
           </div>
         </section>
@@ -299,7 +299,7 @@ function EmptyState() {
         Pasa los slugs en la URL separados por coma. Ejemplo:
       </p>
       <p className="mt-4 inline-block rounded-full bg-bone-soft px-4 py-1.5 font-mono text-xs">
-        /comparar?slugs=atoll-100-mo2763,tyvek-mo8942
+        /comparar?slugs=atoll-100,tyvek
       </p>
       <Link
         href="/catalogo"

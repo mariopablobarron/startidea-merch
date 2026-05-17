@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "scripts:cron-stats": "bun scripts/cron-stats.ts",
+    "scripts:audit-leaks": "bun scripts/audit-supplier-leaks.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
