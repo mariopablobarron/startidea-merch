@@ -55,8 +55,8 @@ export async function POST(req: Request) {
   const unit = json.clientUnitPrice?.value ?? null;
   const total = json.clientTotal?.value ?? null;
 
-  // Optimizamos respuesta para que Carmen la lea fácilmente. Si no hay precio
-  // (producto sin tier configurado), devolvemos mensaje claro que Carmen puede
+  // Optimizamos respuesta para que Alma la lea fácilmente. Si no hay precio
+  // (producto sin tier configurado), devolvemos mensaje claro que Alma puede
   // narrar al usuario en vez de quedarse en silencio.
   if (unit == null && total == null) {
     return NextResponse.json({

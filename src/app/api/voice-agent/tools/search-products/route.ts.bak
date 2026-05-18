@@ -16,8 +16,8 @@ const Schema = z.object({
 
 /**
  * Tool: search_products
- * El agente Carmen la usa cuando el usuario pregunta "¿tenéis bolígrafos?".
- * Devuelve lista corta optimizada para que Carmen la lea al usuario por voz.
+ * El agente Alma la usa cuando el usuario pregunta "¿tenéis bolígrafos?".
+ * Devuelve lista corta optimizada para que Alma la lea al usuario por voz.
  */
 export async function POST(req: Request) {
   const auth = requireVoiceAgentToolSecret(req);

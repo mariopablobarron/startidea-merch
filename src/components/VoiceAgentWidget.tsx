@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 
 /**
- * Widget flotante del agente de voz Alma (ElevenLabs Conversational AI).
+ * Widget flotante del agente de voz Carmen (ElevenLabs Conversational AI).
  * Estados visuales:
  *   - idle: pildora compacta con micro
  *   - connecting: spinner + "Conectando…"
@@ -28,7 +28,7 @@ function VoiceAgentInner() {
   const [open, setOpen] = useState(false);
   const [bootingError, setBootingError] = useState<string | null>(null);
   const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
-  const [agentName, setAgentName] = useState("Alma");
+  const [agentName, setAgentName] = useState("Carmen");
   const [messages, setMessages] = useState<Message[]>([]);
   const [productSlugsDiscussed, setProductSlugsDiscussed] = useState<Set<string>>(new Set());
   const startedAtRef = useRef<number | null>(null);
@@ -164,7 +164,7 @@ function VoiceAgentInner() {
             setOpen(true);
             start();
           }}
-          aria-label="Hablar con Alma, asistente de voz"
+          aria-label="Hablar con Carmen, asistente de voz"
           className="fixed bottom-6 left-6 z-40 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-semibold text-bone shadow-lg hover:bg-accent"
         >
           <MicIcon className="h-4 w-4" />

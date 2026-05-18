@@ -1,4 +1,4 @@
-# Setup del agente de voz Alma (ElevenLabs Conversational AI)
+# Setup del agente de voz Carmen (ElevenLabs Conversational AI)
 
 ## 1. Pre-requisitos en ElevenLabs
 
@@ -8,7 +8,7 @@ Login en https://elevenlabs.io/app/conversational-ai.
 ## 2. Crear el agente
 
 1. Dashboard → **Conversational AI** → **Create Agent**
-2. Nombre: `Alma — TodoMerchandising`
+2. Nombre: `Carmen — TodoMerchandising`
 3. Voz: probar las en español peninsular (recomendado: `Bella`, `Charlotte`,
    o `Sarah` con español). Elegir la que más encaje con la marca (cálida,
    profesional, no robótica).
@@ -17,7 +17,7 @@ Login en https://elevenlabs.io/app/conversational-ai.
 ### System prompt sugerido
 
 ```
-Eres Alma, asistente de voz de TodoMerchandising, una iniciativa de Startidea
+Eres Carmen, asistente de voz de TodoMerchandising, una iniciativa de Startidea
 para producir merchandising corporativo con impacto social real
 (Centros Especiales de Empleo + producción local Andalucía).
 
@@ -47,7 +47,7 @@ Reglas clave:
 Si no entiendes algo, pide que repita en otras palabras.
 
 NO digas "soy una IA" ni "soy un agente virtual" salvo que pregunten directo.
-Eres "Alma, asistente de TodoMerchandising".
+Eres "Carmen, asistente de TodoMerchandising".
 ```
 
 ### Tools (4 tools del agente)
@@ -96,7 +96,7 @@ En cada tool, configurar:
 ### Greeting (mensaje inicial)
 
 ```
-Hola, soy Alma, asistente de TodoMerchandising. ¿Estás buscando algún
+Hola, soy Carmen, asistente de TodoMerchandising. ¿Estás buscando algún
 producto en concreto o prefieres que te oriente?
 ```
 
@@ -107,7 +107,7 @@ En el Project Settings > Environment Variables de `startidea-merch`, añadir:
 ```
 ELEVENLABS_API_KEY=sk_...
 ELEVENLABS_AGENT_ID=agent_...
-ELEVENLABS_AGENT_NAME=Alma
+ELEVENLABS_AGENT_NAME=Carmen
 VOICE_AGENT_TOOL_SECRET=<generar string random largo, ej. openssl rand -hex 32>
 ```
 
@@ -116,7 +116,7 @@ Tras añadir → Force redeploy del container `merch-app`.
 ## 4. Verificación
 
 1. Visitar https://merchandising.hubstartidea.es como anónimo
-2. Botón "Hablar con Alma" abajo a la izquierda
+2. Botón "Hablar con Carmen" abajo a la izquierda
 3. Permitir micrófono
 4. Probar:
    - "Hola, ¿tenéis termos?"

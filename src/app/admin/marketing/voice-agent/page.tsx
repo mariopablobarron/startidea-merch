@@ -56,7 +56,7 @@ export default function VoiceAgentAdminPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">— Marketing</p>
-      <h1 className="mt-2 font-display text-3xl font-semibold text-ink">Agente de voz (Alma)</h1>
+      <h1 className="mt-2 font-display text-3xl font-semibold text-ink">Agente de voz (Carmen)</h1>
       <p className="mt-2 text-sm text-ink/65">
         Conversaciones del agente ElevenLabs Conversational AI integrado en el
         widget de la web. Coste estimado a ~7,4 cts/min (ElevenLabs tier inicial).

@@ -39,7 +39,7 @@ const Schema = z.object({
 
 /**
  * Tool: submit_quote
- * Carmen la llama tras confirmar verbalmente con el usuario que quiere cotización
+ * Alma la llama tras confirmar verbalmente con el usuario que quiere cotización
  * formal. Necesita: nombre, email, empresa, y al menos 1 producto.
  *
  * Reutiliza el endpoint público /api/cart-quote para que TODO el flow
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
       company: data.company,
       phone: data.phone,
       items: itemsPayload,
-      message: (data.notes ? `${data.notes}\n\n` : "") + "[Cotización originada por agente de voz Carmen]",
+      message: (data.notes ? `${data.notes}\n\n` : "") + "[Cotización originada por agente de voz Alma]",
       source: "voice-agent",
     }),
   });
