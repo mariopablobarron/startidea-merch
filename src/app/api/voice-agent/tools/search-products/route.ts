@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
+import { semanticSearch } from "@/lib/embeddings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,11 +29,23 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos", issues: parsed.error.flatten() }, { status: 400 });
   const { query, category, max_results } = parsed.data;
 
-  // Tokenizamos: cada token genera condiciones OR a través de 5 campos.
-  // El agente envía a menudo conceptos genéricos ("botella", "tote bag",
-  // "regalo navidad"); los nombres comerciales del catálogo no los
-  // contienen literal — necesitamos buscar también en descripciones largas
-  // y en el path de categoría.
+  // Estrategia híbrida:
+  // 1) Intentamos semantic search (cosine sim sobre embeddings text-embedding-3-small).
+  //    Si devuelve resultados → los usamos (mucho mejor recall que keyword match).
+  // 2) Fallback a búsqueda LIKE tokenizada por si los embeddings aún no se
+  //    han generado (cron embeddings-sync se ejecuta diario; primer run puede
+  //    tardar varios batches en cubrir el catálogo entero).
+  let semanticIds: string[] | null = null;
+  try {
+    const ranked = await semanticSearch(prisma, query, { topK: max_results, category });
+    if (ranked.length > 0 && ranked[0].score > 0.2) {
+      semanticIds = ranked.map((r) => r.productId);
+    }
+  } catch {
+    semanticIds = null;
+  }
+
+  // Tokenizamos para fallback LIKE
   const tokens = query
     .trim()
     .toLowerCase()
@@ -43,28 +56,31 @@ export async function POST(req: Request) {
   const tokenConditions = tokens.length > 0 ? tokens : [query.trim()];
 
   const products = await prisma.product.findMany({
-    where: {
-      active: true,
-      AND: tokenConditions.map((t) => ({
-        OR: [
-          { name: { contains: t, mode: "insensitive" as const } },
-          { shortDescription: { contains: t, mode: "insensitive" as const } },
-          { longDescription: { contains: t, mode: "insensitive" as const } },
-          { enhancedShortDescription: { contains: t, mode: "insensitive" as const } },
-          { category: { name: { contains: t, mode: "insensitive" as const } } },
-          { tags: { has: t } },
-        ],
-      })),
-      ...(category
-        ? { category: { name: { contains: category, mode: "insensitive" as const } } }
-        : {}),
-      // NOT { hidden: true } cubre productos sin override (la mayoría) Y
-      // productos con override.hidden=false. El filtro anterior con is: {}
-      // exigía relación NOT NULL → excluía todo el catálogo.
-      NOT: { override: { hidden: true } },
-    },
+    where: semanticIds
+      ? {
+          id: { in: semanticIds },
+          active: true,
+          NOT: { override: { hidden: true } },
+        }
+      : {
+          active: true,
+          AND: tokenConditions.map((t) => ({
+            OR: [
+              { name: { contains: t, mode: "insensitive" as const } },
+              { shortDescription: { contains: t, mode: "insensitive" as const } },
+              { longDescription: { contains: t, mode: "insensitive" as const } },
+              { enhancedShortDescription: { contains: t, mode: "insensitive" as const } },
+              { category: { name: { contains: t, mode: "insensitive" as const } } },
+              { tags: { has: t } },
+            ],
+          })),
+          ...(category
+            ? { category: { name: { contains: category, mode: "insensitive" as const } } }
+            : {}),
+          NOT: { override: { hidden: true } },
+        },
     take: max_results,
-    orderBy: [{ fromPriceCents: "asc" }, { name: "asc" }],
+    orderBy: semanticIds ? undefined : [{ fromPriceCents: "asc" }, { name: "asc" }],
     select: {
       id: true,
       slug: true,
@@ -78,9 +94,17 @@ export async function POST(req: Request) {
     },
   });
 
+  // Si fue semantic, preservar el orden devuelto por similitud
+  const productsOrdered = semanticIds
+    ? semanticIds
+        .map((id) => products.find((p) => p.id === id))
+        .filter((p): p is (typeof products)[number] => p != null)
+    : products;
+
   return NextResponse.json({
-    count: products.length,
-    products: products.map((p) => ({
+    count: productsOrdered.length,
+    search_mode: semanticIds ? "semantic" : "keyword",
+    products: productsOrdered.map((p) => ({
       ref: publicRef(p),
       slug: p.slug,
       name: p.name,
