@@ -1,0 +1,23 @@
+src/lib/embeddings.ts
+  s_65877aa637ec34::t_e2ab6cf1e80be1 4-6,13,15,20,22-67,69-103
+src/app/api/voice-agent/tools/search-products/route.ts
+  s_65877aa637ec34::t_f51cc4bcc40ac7 32-48,59-81,83
+  s_65877aa637ec34::t_e22487e374c141 97-103,105-107
+  s_65877aa637ec34::t_30d56abfb21b3c 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "31cef5d4049d07c9f16f4c564412bfdc68defa4e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
