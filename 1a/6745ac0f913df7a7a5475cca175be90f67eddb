@@ -1,0 +1,29 @@
+docker-compose.yml
+  s_65877aa637ec34::t_4e8b8cc5be1d59 53,56,58-60
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_50ef5e7e83fd90 109
+src/app/admin/marketing/voice-agent/page.tsx
+  s_65877aa637ec34::t_940d6cb6377245 59
+src/app/api/voice-agent/signed-url/route.ts
+  s_65877aa637ec34::t_e88adad859e69c 79
+src/components/VoiceAgentWidget.tsx
+  s_65877aa637ec34::t_5ce44fe15b4c19 7
+  s_65877aa637ec34::t_9a9a087d509e1d 31
+  s_65877aa637ec34::t_2697010564114b 167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "1a6745ac0f913df7a7a5475cca175be90f67eddb",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
