@@ -98,8 +98,8 @@ export default function SobrePage() {
               <span className="text-bone/50">que quiere merchandising con sentido?</span>
             </h2>
             <p className="mt-8 text-lg text-bone/70">
-              Cuéntanos qué necesitas y te respondemos con cotización cerrada en 24h. Sin
-              compromiso, sin coste, sin letra pequeña.
+              Entra al catálogo, configura cantidad y marcaje, y verás precio al instante.
+              Sin formularios, sin esperar.
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
               <Link

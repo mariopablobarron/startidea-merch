@@ -715,7 +715,7 @@ function EmptyState({ q }: { q: string }) {
         {q ? `Nada para «${q}» todavía.` : "Catálogo aún sincronizando."}
       </p>
       <p className="mx-auto mt-3 max-w-md text-ink/60">
-        Cuéntanos qué buscas y lo cotizamos directamente en 24h.
+        Cuéntanos qué buscas y te orientamos al catálogo correcto.
       </p>
       <Link
         href="/#cotizar"

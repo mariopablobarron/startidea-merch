@@ -107,8 +107,9 @@ export default function ApiDocsPage() {
               </p>
               <p className="mt-3 text-[15px] text-ink/75">
                 Crea una nueva cotización con uno o más productos. Te devuelve el ID y un
-                mensaje. Un humano del equipo procesa la cotización y responde por email
-                en menos de 24 horas con presupuesto cerrado.
+                mensaje. Si configuras cantidad y marcaje, el precio del item se calcula
+                al instante en el response; para condiciones especiales o mockup técnico,
+                un humano cierra el presupuesto en menos de 24h laborables.
               </p>
               <Code>{`curl -X POST "${SITE}/api/v1/quotes" \\
   -H "Authorization: Bearer merch_live_XXXXXXXX_YYYY..." \\

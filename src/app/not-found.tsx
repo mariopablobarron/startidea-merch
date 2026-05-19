@@ -15,8 +15,8 @@ export default function NotFound() {
             No hemos producido esta página todavía.
           </h1>
           <p className="mx-auto mt-4 max-w-md text-ink/60">
-            Quizá pediste algo que aún no tenemos en el catálogo. Cuéntanos qué buscas y lo
-            cotizamos en 24h.
+            Quizá pediste algo que aún no tenemos en el catálogo. Búscalo desde el catálogo —
+            verás precio al instante.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Link

@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 export const metadata: Metadata = {
   title: "Recomendador inteligente · Encuentra el merchandising perfecto",
   description:
-    "Cuéntanos qué necesitas y nuestro asistente IA recomienda 3-5 productos en segundos. Brief libre, presupuesto, cantidad y filtro eco. Cotización humana en 24h.",
+    "Cuéntanos qué necesitas y nuestro asistente IA recomienda 3-5 productos en segundos. Brief libre, presupuesto, cantidad y filtro eco. Precio al instante en cada ficha.",
 };
 
 export const dynamic = "force-dynamic";
@@ -47,8 +47,7 @@ export default async function RecomendadorPage() {
             <p className="mt-4 max-w-3xl text-lg text-ink/70">
               Te quitamos el trabajo de filtrar {countLabel} productos. Cuéntanos público,
               cantidad, presupuesto y valores que quieres transmitir, y nuestro asistente
-              elige los que mejor encajan. Después, un humano cierra la cotización en menos
-              de 24 horas.
+              elige los que mejor encajan. Tras elegir, ves precio al instante en cada ficha.
             </p>
           </div>
         </section>
@@ -78,8 +77,8 @@ export default async function RecomendadorPage() {
               />
               <Step
                 num="3"
-                title="Cotización humana en 24 h"
-                text="Si te gusta una recomendación, pides cotización con un clic. Un humano cierra el precio final con marcaje, plazo y mockup."
+                title="Precio al instante"
+                text="Click en la recomendación → eliges cantidad y marcaje → ves el total exacto. Si quieres cotización formal con mockup técnico, la pides también con un clic."
               />
             </ol>
           </div>

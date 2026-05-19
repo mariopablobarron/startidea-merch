@@ -476,7 +476,7 @@ export default async function ProductDetailPage({
 
               <div className="mt-5 grid gap-2 text-sm text-ink/70">
                 <Trust>Producción en Centros Especiales de Empleo o talleres locales</Trust>
-                <Trust>Cotización cerrada en 24 horas laborables</Trust>
+                <Trust>Precio al instante · cotización formal opcional</Trust>
                 <Trust>Sin compromiso · Sin coste · Sin letra pequeña</Trust>
               </div>
             </aside>

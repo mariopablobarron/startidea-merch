@@ -138,11 +138,11 @@ export default async function BlogPostPage({
               ¿Lo aplicas a tu próximo pedido?
             </p>
             <h2 className="mt-2 font-display text-2xl font-semibold text-ink">
-              Cotización en 24h
+              Precio al instante
             </h2>
             <p className="mt-3 text-sm text-ink/70">
-              Si tu campaña encaja con lo que acabas de leer, cuéntanos qué necesitas
-              y cerramos cotización en menos de un día laborable.
+              Si tu campaña encaja con lo que acabas de leer, entra al catálogo,
+              configura cantidad y marcaje, y verás precio al instante.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link

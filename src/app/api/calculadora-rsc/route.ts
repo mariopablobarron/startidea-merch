@@ -97,8 +97,9 @@ export async function POST(req: Request) {
         <div style="padding:8px 32px 24px;text-align:center;">
           <a href="${pdfUrl}" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Descargar certificado PDF →</a>
           <p style="margin:14px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;">
-            ¿Quieres que pasemos del cálculo a la propuesta real?<br>
-            Responde a este email con dos líneas de brief y te cerramos cotización en 24h.
+            ¿Quieres pasar del cálculo a un pedido real?<br>
+            Entra en <a href="https://merchandising.hubstartidea.es/catalogo" style="color:#E63E73;">nuestro catálogo</a>
+            y verás precio al instante por producto.
           </p>
         </div>
         <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">

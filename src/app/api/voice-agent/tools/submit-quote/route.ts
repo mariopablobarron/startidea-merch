@@ -148,6 +148,6 @@ export async function POST(req: Request) {
     ok: true,
     cart_id: cartId || null,
     message:
-      "Cotización registrada. Recibirás email de confirmación en menos de 1 minuto. Te enviamos cotización cerrada (con mockup técnico) en menos de 24 horas laborables.",
+      "Cotización registrada. Recibirás email de confirmación en menos de 1 minuto. Si pediste mockup técnico o condiciones especiales, te lo cerramos en menos de 24h laborables.",
   });
 }

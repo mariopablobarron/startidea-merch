@@ -55,8 +55,8 @@ export default function MerchandisingProducidoEspanaPage() {
           "Ganas: control de calidad, capacidad de iterar, trazabilidad, métricas RSC reportables. Pierdes: economía de escala extrema (5.000+ ud del mismo producto).",
         ]}
         faqs={FAQS}
-        ctaTitle="Cotización local en menos de 24h."
-        ctaSubtitle="Dinos qué necesitas (producto + cantidad + fecha) y te enviamos cotización cerrada con plazo, técnica de marcaje, precio final y certificado de origen incluido."
+        ctaTitle="Precio al instante en el catálogo."
+        ctaSubtitle="Entra, elige cantidad y marcaje, y verás el total exacto. Si necesitas mockup técnico, plazo cerrado o certificado de origen, los emitimos en 24h laborables."
       >
         <h2 id="cuando-local">Cuándo producción local es la decisión correcta</h2>
         <p>

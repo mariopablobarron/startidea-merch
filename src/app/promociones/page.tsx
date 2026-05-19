@@ -12,7 +12,7 @@ import { mergeMetadata, getPageSeo } from "@/lib/page-seo";
 const BASE_METADATA: Metadata = {
   title: "Promociones · TodoMerchandising",
   description:
-    "Productos destacados, novedades y ofertas activas en merchandising corporativo personalizable. Cotización en 24h.",
+    "Productos destacados, novedades y ofertas activas en merchandising corporativo personalizable. Precio al instante en cada ficha.",
 };
 
 export async function generateMetadata(): Promise<Metadata> {

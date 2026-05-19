@@ -102,7 +102,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   <p style="margin:24px 0;">
     <a href="${magnet.fileUrl}" style="display:inline-block;background:#E63E73;color:#fff;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;">Descargar PDF →</a>
   </p>
-  <p style="color:#666;font-size:14px;">¿Te gustó? Cuando estés listo, podemos cotizar tu próximo merchandising en 24h.</p>
+  <p style="color:#666;font-size:14px;">¿Te gustó? Entra al catálogo cuando quieras — verás precio al instante en cada producto.</p>
   <p style="margin:20px 0;">
     <a href="${SITE_URL}/catalogo" style="color:#E63E73;">Ver catálogo</a> ·
     <a href="${SITE_URL}/#cotizar" style="color:#E63E73;">Pedir cotización</a>

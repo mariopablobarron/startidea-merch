@@ -131,7 +131,7 @@ export async function POST(req: Request) {
       id: cart.id,
       itemsCount: cart.items.length,
       message:
-        "Cotización recibida. Te responderemos por email en menos de 24 horas laborables con el presupuesto cerrado.",
+        "Cotización recibida. Si configuraste cantidad y marcaje, el precio ya está calculado en cada item. Para condiciones especiales o mockup técnico, te respondemos en menos de 24h laborables.",
     },
     { status: 201 },
   );

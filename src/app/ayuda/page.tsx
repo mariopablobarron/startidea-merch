@@ -7,7 +7,7 @@ import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 export const metadata: Metadata = {
   title: "Centro de ayuda · Cómo funciona TodoMerchandising",
   description:
-    "Resolvemos las dudas más frecuentes sobre cotizaciones, plazos, métodos de personalización, materiales, devoluciones y producción social. Atención humana en 24h.",
+    "Resolvemos las dudas más frecuentes sobre precio instantáneo, plazos, métodos de personalización, materiales, devoluciones y producción social.",
 };
 
 const SECTIONS = [
@@ -16,8 +16,8 @@ const SECTIONS = [
     title: "Cotización y pedidos",
     items: [
       {
-        q: "¿Cómo pido una cotización?",
-        a: "Tienes dos vías: (1) desde la home rellena el formulario \"Pedir cotización en 24 h\" con tu brief y producto orientativo; o (2) entra al producto concreto en /catalogo, selecciona la cantidad y pulsa \"Configurar y cotizar\" — el formulario se prefilla con la referencia. En ambos casos un humano lee tu brief y te responde con precio cerrado, mockup y plazo en menos de 24 horas laborables.",
+        q: "¿Cómo veo el precio?",
+        a: "Es instantáneo. Entra al producto en /catalogo, elige cantidad y opciones de marcaje (técnica, posición, colores) y verás el total exacto en pantalla. Para productos sin precio directo o si necesitas mockup técnico, plazo cerrado o condiciones especiales, pides cotización formal y la cerramos en menos de 24 horas laborables.",
       },
       {
         q: "¿Tengo que pagar algo por la cotización?",
@@ -153,7 +153,7 @@ export default function AyudaPage() {
               <a href="mailto:pedidos@startidea.es" className="font-medium text-accent underline-offset-4 hover:underline">
                 pedidos@startidea.es
               </a>{" "}
-              o pide cotización con tu brief — lo leemos y te respondemos en 24 horas.
+              o usa el catálogo para ver precio al instante.
             </p>
           </div>
         </section>
@@ -184,7 +184,8 @@ export default function AyudaPage() {
                     ¿Algo que no aparece?
                   </p>
                   <p className="mt-2 text-ink/60">
-                    Tu brief libre vale más que mil FAQs. Cuéntanoslo y respondemos en 24h.
+                    Tu brief libre vale más que mil FAQs. Cuéntanoslo o usa el catálogo
+                    para ver precio al instante.
                   </p>
                   <Link
                     href="/#cotizar"
