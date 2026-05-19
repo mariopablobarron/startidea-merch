@@ -1,0 +1,52 @@
+src/app/recursos/merchandising-producido-espana/page.tsx
+  s_65877aa637ec34::t_807ab290f18ff3 58-59
+src/app/blog/[slug]/page.tsx
+  s_65877aa637ec34::t_81d50991c8dadf 141,144-145
+src/app/recomendador/page.tsx
+  s_65877aa637ec34::t_dd1b1ee4a04404 50
+  s_65877aa637ec34::t_72bf199e115f97 80-81
+  s_65877aa637ec34::t_fefa7992f835ab 11
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_a6b9600accd264 479
+src/app/api/v1/quotes/route.ts
+  s_65877aa637ec34::t_68096570f42ea2 134
+src/app/sobre/page.tsx
+  s_65877aa637ec34::t_79884cdbb65fde 101-102
+src/app/api/admin/cart-quotes/[id]/remind/route.ts
+  s_65877aa637ec34::t_4df6552b6e9bd0 145-146
+src/app/api/lead-magnets/[slug]/download/route.ts
+  s_65877aa637ec34::t_3116ebfe1775da 105
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_4525ee082c2404 718
+src/app/api/calculadora-rsc/route.ts
+  s_65877aa637ec34::t_78b9d41fe9cf8f 100-102
+src/app/ayuda/page.tsx
+  s_65877aa637ec34::t_a392896d9e2e1c 187-188
+  s_65877aa637ec34::t_019ace805787e8 156
+  s_65877aa637ec34::t_56af6a791dd20a 10
+  s_65877aa637ec34::t_1a43f2d84d066e 19-20
+src/app/docs/api/page.tsx
+  s_65877aa637ec34::t_9326545f120bbf 110-112
+src/app/not-found.tsx
+  s_65877aa637ec34::t_77ee3beeca10ae 18-19
+src/app/promociones/page.tsx
+  s_65877aa637ec34::t_76f55823cc38f4 15
+src/app/api/voice-agent/tools/submit-quote/route.ts
+  s_65877aa637ec34::t_f1235736b0dc3c 151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "9ad9225d28f23f7b276d5eb887127be143cbccbf",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
