@@ -10,8 +10,8 @@ const STEPS = [
   },
   {
     n: "02",
-    title: "Cotización en 24h",
-    body: "Catálogo de +10.000 referencias con precio cerrado. Marcaje incluido (serigrafía, bordado, láser, DTF).",
+    title: "Precio al instante",
+    body: "Configura cantidad y marcaje (serigrafía, bordado, láser, DTF) y ves el total exacto. Sin esperar.",
   },
   {
     n: "03",

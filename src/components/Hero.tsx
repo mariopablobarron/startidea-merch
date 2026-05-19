@@ -37,7 +37,7 @@ export function Hero({
   badge = "Servicios / Merchandising corporativo",
   h1Prefix = "Merchandising con cabeza,",
   h1Accent = "desde {price} €/ud",
-  subhead = "Te ayudamos a vestir tus equipos, presentar tu marca y crear regalos corporativos con sentido. Cotización en 24h. Producción en Centros Especiales de Empleo.",
+  subhead = "Te ayudamos a vestir tus equipos, presentar tu marca y crear regalos corporativos con sentido. Precio al instante en cada producto. Producción en Centros Especiales de Empleo.",
   ctaPrimary = { label: "Ver catálogo →", href: "/catalogo" },
   ctaSecondary = { label: "Cuéntanos tu proyecto", href: "#cotizar" },
 }: HeroProps) {
@@ -114,10 +114,12 @@ export function Hero({
           <Stat label="Productos">
             <Counter value={products} prefix="+" />
           </Stat>
-          <Stat label="Cotización">
-            <Counter value={24} suffix="h" />
+          <Stat label="Precio">
+            <span className="font-display text-5xl font-semibold tracking-tight text-ink lg:text-6xl">
+              al instante
+            </span>
           </Stat>
-          <Stat label="Impacto social">
+          <Stat label="Producción en CEE">
             <Counter value={100} suffix="%" />
           </Stat>
         </motion.dl>
