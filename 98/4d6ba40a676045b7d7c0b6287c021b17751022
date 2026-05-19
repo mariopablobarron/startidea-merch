@@ -1,0 +1,28 @@
+src/app/cookies/page.tsx
+  s_65877aa637ec34::t_da8f432b7ea0d4 11,21-22,25-29,31-48,51-110,112-116,121-123
+src/components/Hero.tsx
+  s_65877aa637ec34::t_4493e39a45ab59 117-120,122
+  s_65877aa637ec34::t_ec3941840d01fc 40
+src/components/Process.tsx
+  s_65877aa637ec34::t_439de724567906 13-14
+src/app/privacidad/page.tsx
+  s_65877aa637ec34::t_16bcf53811f921 31-35,39-40
+  s_65877aa637ec34::t_9a2b30ee244585 58-63,65-115,117-121
+  s_65877aa637ec34::t_ec9e0b33f95002 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "984d6ba40a676045b7d7c0b6287c021b17751022",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
