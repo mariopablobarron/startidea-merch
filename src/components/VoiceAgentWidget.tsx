@@ -84,7 +84,9 @@ function VoiceAgentInner() {
       const j = await r.json();
       setVoiceSessionId(j.voiceSessionId);
       if (j.agentName) setAgentName(j.agentName);
-      c.startSession({ signedUrl: j.signedUrl, connectionType: "webrtc" });
+      // signedUrl SOLO soporta websocket (la API de ElevenLabs lo exige).
+      // WebRTC sería con conversationToken, no aplica aquí.
+      c.startSession({ signedUrl: j.signedUrl, connectionType: "websocket" });
     } catch (err) {
       setBootingError(err instanceof Error ? err.message : String(err));
     }
