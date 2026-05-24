@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
+import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,6 +75,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Resend no configurado" }, { status: 503 });
   }
 
+  // Cargar promos activas una vez para toda la tanda. Si hay alguna con
+  // scope=ALL la usamos como gancho universal en cada email. Otras scopes
+  // (categoría/producto) requerirían cruzar con los items, lo cual encarece
+  // el cron — se queda para una iteración posterior si hace falta.
+  const activePromos = await loadActivePromotions();
+  const universalPromo = activePromos.find(
+    (p) => p.scope === "ALL" && p.displayInList,
+  );
+  const universalPromoBlock = universalPromo
+    ? `
+  <div style="margin-top:24px;padding:16px;border:1px solid ${
+    universalPromo.badgeColor || "#E63E73"
+  }33;background:${universalPromo.badgeColor || "#E63E73"}10;border-radius:12px;">
+    <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.05em;">Promoción activa</p>
+    <p style="margin:4px 0 0;font-size:18px;font-weight:600;color:#2A2A2A;">
+      <span style="display:inline-block;background:${universalPromo.badgeColor || "#E63E73"};color:#fff;padding:2px 10px;border-radius:999px;font-size:12px;margin-right:8px;">${getBadgeText(universalPromo)}</span>
+      ${universalPromo.name}
+    </p>
+    ${universalPromo.endsAt ? `<p style="margin:8px 0 0;font-size:13px;color:#666;">Válida hasta el ${new Date(universalPromo.endsAt).toLocaleDateString("es-ES", { day: "numeric", month: "long" })}. Se aplica automáticamente al retomar tu cotización.</p>` : ""}
+  </div>`
+    : "";
+
   let sent = 0;
   let failed = 0;
   const errors: Array<{ cartId: string; error: string }> = [];
@@ -111,6 +134,7 @@ export async function POST(req: Request) {
   <p style="font-size:16px;color:#444;">${intro}</p>
   <table style="width:100%;margin-top:20px;font-size:14px;">${itemsHtml}</table>
   ${totalLine}
+  ${universalPromoBlock}
   <p style="margin-top:24px;">Podemos cerrarte la cotización con tarifas finales en <strong>menos de 24h</strong>. Solo necesitamos confirmar cantidades y marcaje.</p>
   <div style="margin:32px 0;">
     <a href="${recoverUrl}" style="display:inline-block;background:#E63E73;color:#fff;text-decoration:none;padding:14px 28px;border-radius:999px;font-weight:600;font-size:15px;">Retomar mi cotización →</a>
