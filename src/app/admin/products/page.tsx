@@ -51,6 +51,10 @@ export default function AdminProductsPage() {
   const [filter, setFilter] = useState<Filter>("active");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Bulk selection — set de productIds marcados
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -114,6 +118,66 @@ export default function AdminProductsPage() {
       // En error, revertir recargando
       load();
     }
+  }
+
+  // ─── Bulk: aplicar margen % a múltiples productos ─────────────────────────
+  async function applyBulkMargin(marginPct: number | null) {
+    if (selected.size === 0) return;
+    const label =
+      marginPct == null
+        ? `Quitar margen % de ${selected.size} productos seleccionados? (vuelven al precio del proveedor)`
+        : `Aplicar margen ${marginPct >= 0 ? "+" : ""}${marginPct}% a ${selected.size} productos seleccionados?`;
+    if (!confirm(label)) return;
+    setBulkBusy(true);
+    setBulkMsg(null);
+    try {
+      const r = await fetch("/api/admin/products/bulk-margin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          productIds: [...selected],
+          marginPct,
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        setBulkMsg(`⚠ ${data.error || `Error ${r.status}`}`);
+        return;
+      }
+      setBulkMsg(
+        `✓ ${data.updated} producto${data.updated === 1 ? "" : "s"} actualizado${data.updated === 1 ? "" : "s"}` +
+          (data.missing?.length ? ` (${data.missing.length} no encontrados)` : ""),
+      );
+      setSelected(new Set());
+      await load();
+    } catch (e) {
+      setBulkMsg(`⚠ ${e instanceof Error ? e.message : "Error de red"}`);
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllOnPage() {
+    setSelected((prev) => {
+      const allOnPage = items.every((p) => prev.has(p.id));
+      const next = new Set(prev);
+      if (allOnPage) {
+        items.forEach((p) => next.delete(p.id));
+      } else {
+        items.forEach((p) => next.add(p.id));
+      }
+      return next;
+    });
   }
 
   // ─── Edición rápida inline del precio ─────────────────────────────────────
@@ -216,6 +280,57 @@ export default function AdminProductsPage() {
           <p className="mb-4 rounded-lg bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>
         )}
 
+        {/* Barra de acción bulk — solo aparece cuando hay selección */}
+        {selected.size > 0 && (
+          <div className="sticky top-12 z-20 mb-3 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/40 bg-accent-wash px-4 py-2.5 shadow-sm">
+            <span className="text-sm font-medium text-accent-deep">
+              {selected.size} seleccionado{selected.size === 1 ? "" : "s"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              className="text-xs text-ink/60 hover:text-ink"
+            >
+              Limpiar
+            </button>
+            <div className="flex flex-1 flex-wrap items-center justify-end gap-1.5">
+              <span className="text-xs text-ink/55">Aplicar margen:</span>
+              <BulkMarginButton onClick={() => applyBulkMargin(-20)} disabled={bulkBusy}>
+                −20%
+              </BulkMarginButton>
+              <BulkMarginButton onClick={() => applyBulkMargin(-10)} disabled={bulkBusy}>
+                −10%
+              </BulkMarginButton>
+              <BulkMarginButton onClick={() => applyBulkMargin(20)} disabled={bulkBusy}>
+                +20%
+              </BulkMarginButton>
+              <BulkMarginButton onClick={() => applyBulkMargin(35)} disabled={bulkBusy}>
+                +35%
+              </BulkMarginButton>
+              <BulkMarginButton onClick={() => applyBulkMargin(60)} disabled={bulkBusy}>
+                +60%
+              </BulkMarginButton>
+              <BulkMarginCustom onApply={applyBulkMargin} disabled={bulkBusy} />
+              <button
+                type="button"
+                onClick={() => applyBulkMargin(null)}
+                disabled={bulkBusy}
+                className="ml-2 rounded-full border border-line bg-bone px-3 py-1 text-xs text-ink/60 hover:border-accent hover:text-ink disabled:opacity-50"
+                title="Vuelve al precio original del proveedor"
+              >
+                Reset
+              </button>
+            </div>
+            {bulkMsg && (
+              <p
+                className={`w-full text-xs ${bulkMsg.startsWith("✓") ? "text-social" : "text-accent-deep"}`}
+              >
+                {bulkMsg}
+              </p>
+            )}
+          </div>
+        )}
+
         {loading ? (
           <p className="text-sm text-ink/60">Cargando…</p>
         ) : items.length === 0 ? (
@@ -228,6 +343,22 @@ export default function AdminProductsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-bone-soft text-left text-xs uppercase tracking-wider text-ink/60">
                   <tr>
+                    <th className="p-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={items.length > 0 && items.every((p) => selected.has(p.id))}
+                        ref={(el) => {
+                          if (el) {
+                            const some = items.some((p) => selected.has(p.id));
+                            const all = items.every((p) => selected.has(p.id));
+                            el.indeterminate = some && !all;
+                          }
+                        }}
+                        onChange={toggleAllOnPage}
+                        className="h-4 w-4 cursor-pointer rounded border-line accent-accent"
+                        title="Seleccionar todos en esta página"
+                      />
+                    </th>
                     <th className="p-3"></th>
                     <th className="p-3">Producto</th>
                     <th className="p-3">Categoría</th>
@@ -252,7 +383,21 @@ export default function AdminProductsPage() {
                     );
 
                     return (
-                      <tr key={p.id} className="border-t border-line align-middle hover:bg-bone-soft">
+                      <tr
+                        key={p.id}
+                        className={`border-t border-line align-middle hover:bg-bone-soft ${
+                          selected.has(p.id) ? "bg-accent/5" : ""
+                        }`}
+                      >
+                        <td className="w-10 p-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(p.id)}
+                            onChange={() => toggleSelected(p.id)}
+                            className="h-4 w-4 cursor-pointer rounded border-line accent-accent"
+                            aria-label={`Seleccionar ${p.name}`}
+                          />
+                        </td>
                         <td className="w-16 p-2">
                           <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-bone-soft">
                             {p.primaryImageUrl && (
@@ -384,6 +529,62 @@ function ToggleSwitch({
         }`}
       />
     </button>
+  );
+}
+
+function BulkMarginButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-full bg-bone px-3 py-1 text-xs font-semibold text-ink hover:bg-accent hover:text-bone disabled:opacity-50"
+    >
+      {children}
+    </button>
+  );
+}
+
+function BulkMarginCustom({
+  onApply,
+  disabled,
+}: {
+  onApply: (pct: number) => void;
+  disabled: boolean;
+}) {
+  const [val, setVal] = useState("");
+  return (
+    <div className="inline-flex items-center gap-1">
+      <input
+        type="number"
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        placeholder="±%"
+        min={-90}
+        max={500}
+        className="w-16 rounded-full border border-line bg-bone px-2 py-1 text-center text-xs outline-none focus:border-accent"
+        disabled={disabled}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          const n = parseInt(val, 10);
+          if (Number.isFinite(n)) onApply(n);
+        }}
+        disabled={disabled || !val.trim()}
+        className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
+      >
+        Aplicar
+      </button>
+    </div>
   );
 }
 
