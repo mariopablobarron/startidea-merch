@@ -143,12 +143,12 @@ export default function MerchandisingSostenibleEmpresasPage() {
             <tr>
               <td>Material</td>
               <td>Certificado (GRS, GOTS, FSC...) con número</td>
-              <td>"Hecho con materiales reciclados" sin documento</td>
+              <td>&quot;Hecho con materiales reciclados&quot; sin documento</td>
             </tr>
             <tr>
               <td>Origen</td>
               <td>Documentado (fábrica, país, CEE)</td>
-              <td>"Producción europea" sin detalle</td>
+              <td>&quot;Producción europea&quot; sin detalle</td>
             </tr>
             <tr>
               <td>Certificado por pedido</td>

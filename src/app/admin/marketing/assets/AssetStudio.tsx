@@ -268,7 +268,7 @@ function UpscaleForm({
         IA. Asíncrono — la tarea se procesa en ~30-90 segundos.
         <span className="block mt-1 text-[10px] text-ink/40">
           La URL debe ser pública y resolverse sin redirects. Si Magnific no puede
-          descargarla, devolverá "Unable to resolve image".
+          descargarla, devolverá &quot;Unable to resolve image&quot;.
         </span>
       </p>
       <Field label="URL de la imagen">
@@ -341,8 +341,8 @@ function RemoveBgForm() {
       <ul className="space-y-2 text-sm text-ink/70">
         <li className="rounded-xl border border-line bg-bone-soft p-3">
           <strong>· Mystic con prompt específico</strong>: pídele que regenere el producto
-          sobre fondo plano blanco o transparente, ej. "Bolsa tote blanca sobre fondo
-          transparente, vista frontal, sin sombras".
+          sobre fondo plano blanco o transparente, ej. &quot;Bolsa tote blanca sobre fondo
+          transparente, vista frontal, sin sombras&quot;.
         </li>
         <li className="rounded-xl border border-line bg-bone-soft p-3">
           <strong>· Herramientas alternativas gratuitas</strong>:{" "}

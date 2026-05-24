@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function CustomerLoginPage() {
   const [email, setEmail] = useState("");
@@ -71,7 +72,7 @@ export default function CustomerLoginPage() {
 
         <p className="mt-6 text-center text-[11px] text-ink/40">
           Para crear primera cotización, vuelve al{" "}
-          <a href="/catalogo" className="text-accent hover:underline">catálogo</a>.
+          <Link href="/catalogo" className="text-accent hover:underline">catálogo</Link>.
         </p>
       </div>
     </main>

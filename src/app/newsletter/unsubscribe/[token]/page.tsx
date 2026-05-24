@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
@@ -29,9 +30,9 @@ export default async function UnsubscribePage({ params }: { params: Promise<{ to
         <p className="mt-3 text-ink/70">
           Si fue un error, vuelve a suscribirte desde la home cuando quieras. Sin rencores.
         </p>
-        <a href="/" className="mt-6 inline-block rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-bone hover:bg-accent">
+        <Link href="/" className="mt-6 inline-block rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-bone hover:bg-accent">
           Volver a la web
-        </a>
+        </Link>
       </div>
     </main>
   );

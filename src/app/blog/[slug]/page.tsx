@@ -59,8 +59,6 @@ export default async function BlogPostPage({
   const html = mdToHtml(post.bodyMd);
   const faq = (post.schemaJson as { faq?: Array<{ q: string; a: string }> } | null)?.faq;
   const schema = buildBlogSchema(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
     {
       title: post.title,
       slug: post.slug,

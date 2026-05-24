@@ -220,7 +220,7 @@ export function SeoContent() {
           </h3>
           <p>
             El proceso es directo y sin compromiso: explora el catálogo (más de 2.000 productos
-            con precio "desde" visible en cada tarjeta), añade los que te interesan al
+            con precio &quot;desde&quot; visible en cada tarjeta), añade los que te interesan al
             configurador, indica cantidad y técnica de marcaje. Te devolvemos cotización
             cerrada en menos de 24 horas laborables con depósito flexible (50 % al confirmar,
             50 % antes del envío) y condiciones de pago adaptadas a tu departamento contable
@@ -230,7 +230,7 @@ export function SeoContent() {
           </p>
           <p>
             Si prefieres hablar antes con una persona —porque tienes un brief complejo, varias
-            categorías o un evento con deadline duro— pulsa el botón "Pedir cotización" en la
+            categorías o un evento con deadline duro— pulsa el botón &quot;Pedir cotización&quot; en la
             cabecera y descríbenos brevemente el proyecto. Un asesor humano te marca en 1 hora
             laborable y resolvemos todo de viva voz.
           </p>

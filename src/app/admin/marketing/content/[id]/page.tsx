@@ -201,7 +201,7 @@ export default function ContentEditorPage({
     }
   }
 
-  function useVariation(v: Variation) {
+  function applyVariation(v: Variation) {
     setCopy(v.copy);
     setHashtagsText(v.hashtags.join(", "));
     setShowGenerator(false);
@@ -373,7 +373,7 @@ export default function ContentEditorPage({
                         )}
                         <button
                           type="button"
-                          onClick={() => useVariation(v)}
+                          onClick={() => applyVariation(v)}
                           className="mt-2 rounded-full bg-ink px-3 py-1 text-xs font-semibold text-bone hover:bg-accent"
                         >
                           Usar esta variación →

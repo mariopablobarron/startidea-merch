@@ -280,7 +280,7 @@ export default function PortfolioAdminPage() {
                       onChange={(e) => setForm({ ...form, featured: e.target.checked })}
                       className="h-4 w-4 accent-accent"
                     />
-                    Destacar en home (aparece en la sección "Trabajos realizados" de portada)
+                    Destacar en home (aparece en la sección &quot;Trabajos realizados&quot; de portada)
                   </label>
                   <label className="inline-flex cursor-pointer items-center gap-2">
                     <input
