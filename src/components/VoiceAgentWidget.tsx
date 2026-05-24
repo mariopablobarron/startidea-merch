@@ -126,7 +126,17 @@ function VoiceAgentInner() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [isActive, stop]);
 
-  // Visualización de onda
+  // Visualización de onda — Carmen viva.
+  //
+  // Mejoras 2026-05-24 (Design Spell B1):
+  // - Color y amplitud TRANSICIONAN suavemente entre hablar↔escuchar (no salto
+  //   brusco). Cuando Carmen habla → magenta vibrante con amplitud alta. Cuando
+  //   escucha → gris suave con amplitud baja.
+  // - Gradiente vertical por barra (más oscuro al centro, más claro arriba/abajo)
+  //   para sensación orgánica.
+  // - Suavizado temporal: cada frame interpola hacia el target real → onda fluida
+  //   en lugar de "saltos" cuando llega un buffer nuevo del WebAudio.
+  // - Bordes redondeados con `roundRect` (Chrome 99+, Safari 16+, FF 109+).
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!isActive) return;
@@ -137,19 +147,75 @@ function VoiceAgentInner() {
     if (!ctx) return;
     const w = canvas.width;
     const h = canvas.height;
+    const slices = 36;
+    const sliceW = w / slices;
+
+    // Estado animado: cada barra tiene su "altura actual" que persigue al target
+    const heights = new Float32Array(slices);
+    // Modo animado: 1 = hablando, 0 = escuchando. Interpola entre ambos.
+    let mode = 0;
+
+    // Helper RGB lerp
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const colorIdle = { r: 0xa0, g: 0x9e, b: 0x98 }; // gris brand
+    const colorActive = { r: 0xe6, g: 0x3e, b: 0x73 }; // magenta brand
+
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
-      const data = c.isSpeaking ? c.getOutputByteFrequencyData() : c.getInputByteFrequencyData();
-      const slices = 32;
-      const sliceW = w / slices;
-      ctx.fillStyle = c.isSpeaking ? "#E63E73" : "#a09e98";
+
+      // Suavizado de modo: ataque rápido (0.18), liberación lenta (0.08)
+      const targetMode = c.isSpeaking ? 1 : 0;
+      const ease = targetMode > mode ? 0.18 : 0.08;
+      mode += (targetMode - mode) * ease;
+
+      const data = c.isSpeaking
+        ? c.getOutputByteFrequencyData()
+        : c.getInputByteFrequencyData();
       const sample = data || new Uint8Array(slices);
+
+      // Color interpolado entre idle ↔ active
+      const r = Math.round(lerp(colorIdle.r, colorActive.r, mode));
+      const g = Math.round(lerp(colorIdle.g, colorActive.g, mode));
+      const b = Math.round(lerp(colorIdle.b, colorActive.b, mode));
+
+      // Amplitud máxima escala con mode: escuchando 35% h, hablando 95% h
+      const maxScale = lerp(0.35, 0.95, mode);
+
       for (let i = 0; i < slices; i++) {
         const idx = Math.floor((i / slices) * sample.length);
         const v = (sample[idx] || 0) / 255;
-        const barH = Math.max(2, v * h);
-        ctx.fillRect(i * sliceW + 1, (h - barH) / 2, sliceW - 2, barH);
+
+        // Atenuación leve a los extremos (curva en U invertida) para "sonrisa"
+        const positional = 1 - Math.pow((i / (slices - 1)) * 2 - 1, 2) * 0.25;
+        const target = Math.max(0.04, v * maxScale * positional);
+
+        // Suavizado por barra (subida 0.35, bajada 0.18) → menos parpadeo
+        const prev = heights[i] ?? 0;
+        const followEase = target > prev ? 0.35 : 0.18;
+        heights[i] = prev + (target - prev) * followEase;
+
+        const barH = Math.max(2, heights[i]! * h);
+        const x = i * sliceW + 1.5;
+        const y = (h - barH) / 2;
+        const bw = Math.max(1, sliceW - 3);
+        const radius = Math.min(bw / 2, 3);
+
+        // Gradiente vertical sutil — más opaco en el centro de la barra
+        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+        grad.addColorStop(0, `rgba(${r},${g},${b},0.85)`);
+        grad.addColorStop(0.5, `rgba(${r},${g},${b},1)`);
+        grad.addColorStop(1, `rgba(${r},${g},${b},0.85)`);
+        ctx.fillStyle = grad;
+
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(x, y, bw, barH, radius);
+        } else {
+          ctx.rect(x, y, bw, barH);
+        }
+        ctx.fill();
       }
+
       raf = requestAnimationFrame(draw);
     };
     draw();

@@ -11,6 +11,8 @@ import {
 import { addItem, type CartItemMarking } from "@/lib/cart-storage";
 import { trackEvent } from "@/lib/track";
 import { trackAddToCart } from "@/lib/ads-events";
+import { spellConfetti } from "@/lib/spells/confetti";
+import { AnimatedPrice } from "@/lib/spells/animated-price";
 import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 import { ExtraMarkingsPanel, type ExtraMarking } from "./ExtraMarkingsPanel";
 
@@ -276,7 +278,11 @@ export function ProductOrderForm({
   }, [addedAt]);
   const recentlyAdded = addedAt != null && Date.now() - addedAt < 2500;
 
-  function onAddToCart() {
+  function onAddToCart(e?: React.MouseEvent<HTMLButtonElement>) {
+    // Spell A1 — confetti desde el botón pulsado (desktop o sticky mobile)
+    const btn = e?.currentTarget;
+    if (btn instanceof HTMLElement) spellConfetti(btn, { count: 70 });
+
     trackEvent({
       type: "addToCart",
       productSlug,
@@ -656,11 +662,11 @@ export function ProductOrderForm({
             {withMarking ? " · con marcaje" : " · sin marcaje"}
           </p>
           <p className="mt-1 font-display text-3xl font-semibold tabular-nums text-ink">
-            {loadingCalc
-              ? "…"
-              : totalCents != null
-                ? formatMoney(totalCents).formatted
-                : "—"}
+            {loadingCalc ? (
+              "…"
+            ) : (
+              <AnimatedPrice cents={totalCents} format={(c) => formatMoney(c).formatted} />
+            )}
           </p>
         </div>
         {unitCents != null && (
@@ -705,7 +711,7 @@ export function ProductOrderForm({
                 {finalQty.toLocaleString("es-ES")} uds {withMarking ? "· con marcaje" : ""}
               </p>
               <p className="font-display text-lg font-semibold tabular-nums text-ink">
-                {formatMoney(totalCents).formatted}
+                <AnimatedPrice cents={totalCents} format={(c) => formatMoney(c).formatted} />
               </p>
             </div>
             <button

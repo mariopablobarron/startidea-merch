@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { UndoToastHost, useUndoToast } from "@/lib/spells/undo-toast";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   minimumFractionDigits: 2,
@@ -102,6 +103,15 @@ function dtFromIso(iso: string | null): string {
 }
 
 export default function AdminPromotionsPage() {
+  return (
+    <UndoToastHost>
+      <PromotionsView />
+    </UndoToastHost>
+  );
+}
+
+function PromotionsView() {
+  const { showUndoToast } = useUndoToast();
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [lookup, setLookup] = useState<Lookup>({ categories: {}, products: {} });
   const [scopeOpts, setScopeOpts] = useState<ScopeOptions>({
@@ -144,29 +154,45 @@ export default function AdminPromotionsPage() {
     load();
   }, [load]);
 
-  async function togglePromo(id: string, active: boolean) {
-    setPromotions((prev) => prev.map((p) => (p.id === id ? { ...p, active } : p)));
-    await fetch(`/api/admin/promotions/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ active }),
+  // Spell C2 — togglePromo con undo. Optimistic UI + commit diferido tras 7s.
+  // Si el usuario pulsa "Deshacer" antes, revertimos y NO llamamos al backend.
+  function togglePromo(id: string, active: boolean) {
+    const prev = promotions;
+    setPromotions((p) => p.map((x) => (x.id === id ? { ...x, active } : x)));
+    showUndoToast({
+      message: active ? "Promoción activada" : "Promoción pausada",
+      onUndo: () => setPromotions(prev),
+      onCommit: async () => {
+        await fetch(`/api/admin/promotions/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ active }),
+        });
+      },
     });
   }
 
-  async function deletePromo(id: string, name: string) {
-    if (!confirm(`Eliminar "${name}"? Acción irreversible.`)) return;
-    const r = await fetch(`/api/admin/promotions/${id}`, {
-      method: "DELETE",
-      credentials: "include",
+  // Spell C2 — deletePromo con undo. Quitamos visualmente + commit DELETE tras 7s.
+  // (Sin confirm() — el undo toast YA es la confirmación, más rápido y menos hostil.)
+  function deletePromo(id: string, name: string) {
+    const prev = promotions;
+    setPromotions((p) => p.filter((x) => x.id !== id));
+    showUndoToast({
+      message: `Promoción "${name}" eliminada`,
+      duration: 9000, // un pelín más para borrados
+      onUndo: () => setPromotions(prev),
+      onCommit: async () => {
+        const r = await fetch(`/api/admin/promotions/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        if (!r.ok) {
+          // Si falla el commit, recargamos para sincronizar con BD real
+          load();
+        }
+      },
     });
-    if (r.ok) {
-      setFeedback({ ok: true, msg: "Promoción eliminada." });
-      load();
-    } else {
-      const d = await r.json().catch(() => ({}));
-      setFeedback({ ok: false, msg: d.error || `Error ${r.status}` });
-    }
   }
 
   return (
