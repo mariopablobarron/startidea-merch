@@ -22,6 +22,7 @@ export type MidoceanSyncResult = {
   variantsUpserted: number;
   positionsUpserted: number;
   stockUpdated: number;
+  fromPriceRefreshed: number; // productos cuyo fromPriceCents se recalculó tras el sync de tiers
   durationMs: number;
   errors: Array<{ ref: string; message: string }>;
 };
@@ -126,6 +127,31 @@ export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
     stockUpdated += chunk.length;
   }
 
+  // 7. Refresh Product.fromPriceCents desde el MIN(unitPriceCents) de sus PriceTier.
+  //
+  // El campo Product.fromPriceCents es denormalizado: lo usan cards de catálogo
+  // y listados rápidos para mostrar "Desde X €" sin tener que JOIN a variants→tiers.
+  // El sync de products de MidOcean NO trae precio (eso viene del pricelist sync
+  // separado, que actualiza PriceTier). Si no recalculamos aquí, fromPriceCents
+  // queda en 0 y los listings cargan vacío o caen a fallbacks (incidente detectado
+  // 2026-05-24: 0/2.409 productos midocean con fromPriceCents > 0 pese a tener
+  // 14.644 tiers en BD).
+  //
+  // Bulk update con SQL crudo — 2.409 productos en 1 query vs 2.409 queries.
+  const fromPriceRefreshed = await prisma.$executeRaw`
+    UPDATE "Product" p
+    SET "fromPriceCents" = sub.min_price
+    FROM (
+      SELECT pv."productId" AS product_id, MIN(pt."unitPriceCents") AS min_price
+      FROM "PriceTier" pt
+      JOIN "ProductVariant" pv ON pv.id = pt."variantId"
+      GROUP BY pv."productId"
+    ) sub
+    WHERE p.id = sub.product_id
+      AND p.supplier = 'midocean'
+      AND (p."fromPriceCents" IS NULL OR p."fromPriceCents" != sub.min_price)
+  `;
+
   const finishedAt = new Date();
   const result: MidoceanSyncResult = {
     startedAt: startedAt.toISOString(),
@@ -136,6 +162,7 @@ export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
     variantsUpserted,
     positionsUpserted,
     stockUpdated,
+    fromPriceRefreshed: Number(fromPriceRefreshed),
     durationMs: finishedAt.getTime() - startedAt.getTime(),
     errors: errors.slice(0, 50),
   };
