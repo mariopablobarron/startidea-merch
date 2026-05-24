@@ -1,0 +1,38 @@
+src/app/admin/marketing/portfolio/page.tsx
+  s_b9e69e66ce2321::t_43b066db7ac5ac 283
+src/components/SeoContent.tsx
+  s_b9e69e66ce2321::t_65519c17bbc07d 223
+  s_b9e69e66ce2321::t_8d67f25d7ac957 233
+src/app/clientes/login/page.tsx
+  s_b9e69e66ce2321::t_f37585dbcd8f67 75
+  s_b9e69e66ce2321::t_6c261acec3239c 4
+src/app/newsletter/unsubscribe/[token]/page.tsx
+  s_b9e69e66ce2321::t_b07cd2b72a8c0a 33,35
+  s_b9e69e66ce2321::t_14561116638b3a 3
+src/app/admin/marketing/assets/AssetStudio.tsx
+  s_b9e69e66ce2321::t_cbd225972746ba 344-345
+  s_b9e69e66ce2321::t_8704f32fd78449 271
+.eslintrc.json
+  s_b9e69e66ce2321::t_eb69ece0407182 1-3
+src/app/recursos/merchandising-sostenible-empresas/page.tsx
+  s_b9e69e66ce2321::t_8006ec6cabe379 146
+  s_b9e69e66ce2321::t_15804c7f511f47 151
+src/app/admin/marketing/content/[id]/page.tsx
+  s_b9e69e66ce2321::t_e20a8c8f40ab33 204,376
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "915a3876aa6b22ffa45e4d7243bc3c4e70588fec",
+  "prompts": {},
+  "sessions": {
+    "s_b9e69e66ce2321": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8fb92f5a-e8b1-4d1f-a111-bdf0825f704e",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
