@@ -1,0 +1,21 @@
+src/app/api/cron/abandoned-reminders/route.ts
+  s_65877aa637ec34::t_de99e4f3a69607 137
+  s_65877aa637ec34::t_d41d2377ba40d6 78-99
+  s_65877aa637ec34::t_9087e6f8cbcd4b 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "c353e5b09ec7721f492fe0c9b8a8d48cc8376883",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
