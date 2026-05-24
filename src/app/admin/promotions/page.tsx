@@ -594,23 +594,73 @@ function PromotionForm({
           </div>
 
           {/* Vigencia */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <FormField label="Empieza*">
-              <input
-                type="datetime-local"
-                value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
-                className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+          <div className="rounded-2xl border border-line bg-bone-soft p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink/60">
+              Vigencia
+            </p>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              <DateShortcut
+                label="Empieza ya"
+                onClick={() => {
+                  setStartsAt(dtLocalNow(0));
+                }}
               />
-            </FormField>
-            <FormField label="Termina" help="Vacío = sin fecha de fin (mientras esté activa).">
-              <input
-                type="datetime-local"
-                value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
-                className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+              <DateShortcut
+                label="Fin de semana"
+                onClick={() => {
+                  // viernes 00:00 → domingo 23:59
+                  const fri = nextWeekday(5);
+                  fri.setHours(0, 0, 0, 0);
+                  const sun = new Date(fri);
+                  sun.setDate(sun.getDate() + 2);
+                  sun.setHours(23, 59, 0, 0);
+                  setStartsAt(dtToLocal(fri));
+                  setEndsAt(dtToLocal(sun));
+                }}
               />
-            </FormField>
+              <DateShortcut
+                label="7 días"
+                onClick={() => {
+                  const now = new Date();
+                  const end = new Date(now);
+                  end.setDate(end.getDate() + 7);
+                  setStartsAt(dtToLocal(now));
+                  setEndsAt(dtToLocal(end));
+                }}
+              />
+              <DateShortcut
+                label="1 mes"
+                onClick={() => {
+                  const now = new Date();
+                  const end = new Date(now);
+                  end.setMonth(end.getMonth() + 1);
+                  setStartsAt(dtToLocal(now));
+                  setEndsAt(dtToLocal(end));
+                }}
+              />
+              <DateShortcut
+                label="Sin fecha de fin"
+                onClick={() => setEndsAt("")}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField label="Empieza*">
+                <input
+                  type="datetime-local"
+                  value={startsAt}
+                  onChange={(e) => setStartsAt(e.target.value)}
+                  className="w-full rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </FormField>
+              <FormField label="Termina" help="Vacío = mientras esté activa.">
+                <input
+                  type="datetime-local"
+                  value={endsAt}
+                  onChange={(e) => setEndsAt(e.target.value)}
+                  className="w-full rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </FormField>
+            </div>
           </div>
 
           {/* Badge */}
@@ -955,6 +1005,31 @@ function KindButton({
       {children}
     </button>
   );
+}
+
+function DateShortcut({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full border border-line bg-bone px-3 py-1 text-xs text-ink/70 hover:border-accent hover:text-ink"
+    >
+      {label}
+    </button>
+  );
+}
+
+function nextWeekday(day: number): Date {
+  // day: 0=domingo … 6=sábado
+  const d = new Date();
+  const diff = (day - d.getDay() + 7) % 7 || 7;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function dtToLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function Check({

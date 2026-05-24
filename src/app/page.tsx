@@ -1,5 +1,6 @@
 import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
+import { ActivePromotionBar } from "@/components/ActivePromotionBar";
 import { BannerSlot } from "@/components/BannerSlot";
 import { ClientLogos } from "@/components/ClientLogos";
 import { PortfolioGrid } from "@/components/PortfolioGrid";
@@ -60,6 +61,7 @@ export default async function HomePage() {
     <>
       <JsonLd data={[ORGANIZATION_JSONLD, WEBSITE_JSONLD, FAQ_JSONLD]} />
       <Nav />
+      <ActivePromotionBar />
       <main>
         <Hero
           priceFromCents={hero.priceFromCents}
