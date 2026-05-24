@@ -1,0 +1,42 @@
+src/lib/spells/animated-price.tsx
+  s_65877aa637ec34::t_a9dfa7f13f75ba 1-108
+src/app/api/admin/search/route.ts
+  s_65877aa637ec34::t_a2c80b12c38213 1-244
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_20860e12684202 6
+  s_65877aa637ec34::t_0130824e24ef8a 159-160
+src/lib/spells/confetti.ts
+  s_65877aa637ec34::t_37330a7aadc559 1-178
+src/components/admin/CommandPalette.tsx
+  s_65877aa637ec34::t_a0e0bcdd42ede3 1-212
+src/app/admin/promotions/page.tsx
+  s_65877aa637ec34::t_51a683932db72c 157-172,176-194
+  s_65877aa637ec34::t_f427f5b518b17f 5
+  s_65877aa637ec34::t_9dcb4f24dd8c33 106-114
+src/components/VoiceAgentWidget.tsx
+  s_65877aa637ec34::t_444480d0305e79 129-139,150-162,165-173,175-183,187-216,218
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_5576f3d4b5aac2 15
+  s_65877aa637ec34::t_7b5f9a8a5147c5 665-669
+  s_65877aa637ec34::t_5181494d904cad 14
+  s_65877aa637ec34::t_a176113f9db2da 281-285
+  s_65877aa637ec34::t_36cd4699fd2933 714
+src/lib/spells/undo-toast.tsx
+  s_65877aa637ec34::t_e3588190d18739 1-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "8ae835ac8db97b81e9c49826f6d9e521b6925eaa",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
