@@ -1,0 +1,49 @@
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_dcfba2fad3ed35 99
+src/app/admin/promotions/page.tsx
+  s_65877aa637ec34::t_5635c0722e702d 1-985
+src/app/api/admin/promotions/scope-options/route.ts
+  s_65877aa637ec34::t_4c38041443eb78 1-62
+prisma/schema.prisma
+  s_65877aa637ec34::t_41cc3e887cf6cb 1725-1793
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_7c9f58b972108f 16-21
+  s_65877aa637ec34::t_72ba428aad55d1 438-460,486-512
+  s_65877aa637ec34::t_4c02d79551d645 134,141-169,172
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_83bf6eefb06634 167
+  s_65877aa637ec34::t_ea6c5a7a986e21 531,537-551
+  s_65877aa637ec34::t_6e4cd74ae780d0 614-616,618,629-637
+  s_65877aa637ec34::t_24e053f80c57c1 562,564-574
+  s_65877aa637ec34::t_a7688f51a23cfc 15-19
+  s_65877aa637ec34::t_41f0c6b1681f58 227-228
+  s_65877aa637ec34::t_afc2a084f08faa 182
+src/app/api/admin/promotions/route.ts
+  s_65877aa637ec34::t_e1641d14745dc4 1-164
+src/lib/promotions.ts
+  s_65877aa637ec34::t_020f974d7ceccf 1-218
+prisma/migrations/20260524170000_promotion/migration.sql
+  s_65877aa637ec34::t_20d5b48dc88e65 1-48
+src/app/api/admin/promotions/[id]/route.ts
+  s_65877aa637ec34::t_d788dfcbc8731e 1-85
+src/app/admin/products/page.tsx
+  s_65877aa637ec34::t_590ae524271210 389-508
+  s_65877aa637ec34::t_de56b3760f1cf7 119-169
+  s_65877aa637ec34::t_718773d192e3e4 289-293
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "27dfa03521cf66c7d8551689295b1b70486b35b8",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
