@@ -116,6 +116,57 @@ export default function AdminProductsPage() {
     }
   }
 
+  // ─── Edición rápida inline del precio ─────────────────────────────────────
+  // Permite editar customFromPriceCents directamente desde la lista sin
+  // entrar al detalle. Si el input se deja vacío, se elimina el override
+  // (vuelve al precio original).
+  async function savePrice(id: string, priceEurStr: string): Promise<string | null> {
+    const trimmed = priceEurStr.trim().replace(",", ".");
+    let customFromPriceCents: number | null = null;
+    if (trimmed) {
+      const num = parseFloat(trimmed);
+      if (!Number.isFinite(num) || num < 0) return "Precio inválido";
+      customFromPriceCents = Math.round(num * 100);
+    }
+    // Optimistic update
+    setItems((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? {
+              ...p,
+              override: {
+                customName: p.override?.customName ?? null,
+                customFromPriceCents,
+                marginPct: p.override?.marginPct ?? null,
+                featured: p.override?.featured ?? false,
+                hidden: p.override?.hidden ?? false,
+                marketingTags: p.override?.marketingTags ?? [],
+                extraImages: p.override?.extraImages ?? [],
+                updatedAt: new Date().toISOString(),
+              },
+            }
+          : p,
+      ),
+    );
+    try {
+      const r = await fetch(`/api/admin/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ customFromPriceCents }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        load();
+        return d.error || `Error ${r.status}`;
+      }
+      return null;
+    } catch (e) {
+      load();
+      return e instanceof Error ? e.message : "Error de red";
+    }
+  }
+
   return (
     <main className="min-h-screen bg-bone-soft p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
@@ -190,7 +241,6 @@ export default function AdminProductsPage() {
                   {items.map((p) => {
                     const ov = p.override;
                     const displayName = ov?.customName || p.name;
-                    const displayPrice = ov?.customFromPriceCents ?? p.fromPriceCents;
                     const isOverridden = !!ov && (
                       ov.customName ||
                       ov.customFromPriceCents != null ||
@@ -236,16 +286,11 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="p-3 text-xs text-ink/60">{p.category?.name || "—"}</td>
                         <td className="p-3 text-right">
-                          {displayPrice != null ? (
-                            <span className="font-medium tabular-nums">
-                              {EUR.format(displayPrice / 100)} €
-                              {ov?.customFromPriceCents != null && (
-                                <span className="ml-1 text-[10px] text-accent">·</span>
-                              )}
-                            </span>
-                          ) : (
-                            <span className="text-ink/30">—</span>
-                          )}
+                          <PriceCell
+                            originalCents={p.fromPriceCents}
+                            overrideCents={ov?.customFromPriceCents ?? null}
+                            onSave={(val) => savePrice(p.id, val)}
+                          />
                         </td>
                         <td className="p-3 text-center">
                           <ToggleSwitch
@@ -338,6 +383,126 @@ function ToggleSwitch({
           checked ? "translate-x-4" : "translate-x-0.5"
         }`}
       />
+    </button>
+  );
+}
+
+/**
+ * Celda de precio editable inline.
+ *   - Vista normal: muestra el precio efectivo (override si existe, original
+ *     si no). Si hay override, el original aparece tachado al lado en gris.
+ *   - Click → modo edición con input. Enter o blur guarda. Esc cancela.
+ *   - Vaciar el input + guardar → elimina el override (vuelve al original).
+ */
+function PriceCell({
+  originalCents,
+  overrideCents,
+  onSave,
+}: {
+  originalCents: number | null;
+  overrideCents: number | null;
+  onSave: (val: string) => Promise<string | null>;
+}) {
+  const display = overrideCents ?? originalCents;
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function startEdit() {
+    setVal(overrideCents != null ? (overrideCents / 100).toFixed(2) : "");
+    setErr(null);
+    setEditing(true);
+  }
+
+  async function commit() {
+    setSaving(true);
+    const error = await onSave(val);
+    setSaving(false);
+    if (error) {
+      setErr(error);
+      return;
+    }
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="inline-flex items-center justify-end gap-1">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") {
+              setEditing(false);
+              setErr(null);
+            }
+          }}
+          autoFocus
+          placeholder={
+            originalCents != null ? (originalCents / 100).toFixed(2) : "0.00"
+          }
+          className="w-20 rounded border border-accent bg-bone px-2 py-1 text-right text-sm tabular-nums outline-none"
+          disabled={saving}
+        />
+        <span className="text-xs text-ink/60">€</span>
+        <button
+          type="button"
+          onClick={commit}
+          disabled={saving}
+          className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-social hover:bg-social/10 disabled:opacity-50"
+          title="Guardar (Enter)"
+        >
+          ✓
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEditing(false);
+            setErr(null);
+          }}
+          disabled={saving}
+          className="rounded px-1.5 py-0.5 text-[10px] text-ink/50 hover:bg-bone-soft"
+          title="Cancelar (Esc)"
+        >
+          ✕
+        </button>
+        {err && (
+          <span className="ml-1 text-[10px] text-accent" title={err}>
+            ⚠
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={startEdit}
+      className="group inline-flex items-baseline justify-end gap-1 rounded px-1.5 py-0.5 text-right hover:bg-accent/5"
+      title="Click para editar precio"
+    >
+      {display != null ? (
+        <span
+          className={`font-medium tabular-nums ${
+            overrideCents != null ? "text-accent" : "text-ink"
+          }`}
+        >
+          {EUR.format(display / 100)} €
+        </span>
+      ) : (
+        <span className="text-ink/30">—</span>
+      )}
+      {overrideCents != null && originalCents != null && overrideCents !== originalCents && (
+        <span className="font-mono text-[10px] tabular-nums text-ink/35 line-through">
+          {EUR.format(originalCents / 100)}€
+        </span>
+      )}
+      <span className="invisible text-[10px] text-ink/40 group-hover:visible">✎</span>
     </button>
   );
 }

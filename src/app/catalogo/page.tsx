@@ -12,6 +12,11 @@ import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { SortSelect } from "@/components/SortSelect";
 import { CompareBadge } from "@/components/CatalogCardActions";
+import {
+  loadActivePromotions,
+  applyBestPromotion,
+  getBadgeText,
+} from "@/lib/promotions";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { getPageSeo, mergeMetadata } = await import("@/lib/page-seo");
@@ -159,7 +164,7 @@ export default async function CatalogoPage({
         : { name: "asc" },
   ];
 
-  const [products, total, topCategories, subCategories, colorGroups, materials] =
+  const [products, total, topCategories, subCategories, colorGroups, materials, activePromos] =
     await Promise.all([
       prisma.product.findMany({
         where,
@@ -174,6 +179,7 @@ export default async function CatalogoPage({
           internalRef: true,
           primaryImageUrl: true,
           fromPriceCents: true,
+          categoryId: true,
           category: { select: { name: true } },
           variants: { take: 1, select: { stockQty: true } },
           override: {
@@ -218,6 +224,8 @@ export default async function CatalogoPage({
         orderBy: { material: "asc" },
         take: 12,
       }),
+      // Promociones activas — se aplican a card price + badge
+      loadActivePromotions(),
     ]);
 
   // Fallback inteligente: si el usuario buscó algo (q) y NO hay resultados,
@@ -520,12 +528,27 @@ export default async function CatalogoPage({
                         // Aplicar overrides admin si existen
                         const ov = p.override;
                         const displayName = ov?.customName || p.name;
-                        const displayPriceCents =
+                        const basePriceCents =
                           ov?.customFromPriceCents != null
                             ? ov.customFromPriceCents
                             : ov?.marginPct != null && p.fromPriceCents
                               ? Math.round((p.fromPriceCents * (100 + ov.marginPct)) / 100)
                               : p.fromPriceCents;
+                        // Aplicar mejor promoción activa (sobre el precio post-override)
+                        const promoResult = applyBestPromotion(
+                          {
+                            id: p.id,
+                            categoryId: p.categoryId,
+                            brand: p.brand,
+                            override: ov ? { marketingTags: ov.marketingTags } : null,
+                          },
+                          basePriceCents ?? 0,
+                          activePromos,
+                        );
+                        const displayPriceCents = promoResult.promo
+                          ? promoResult.finalCents
+                          : basePriceCents;
+                        const hasPromo = !!promoResult.promo;
                         const isFeatured = ov?.featured ?? false;
                         const tags = ov?.marketingTags ?? [];
 
@@ -536,8 +559,19 @@ export default async function CatalogoPage({
                             className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-5 transition hover:border-accent/40"
                           >
                             {/* Badges de marketing arriba a la izquierda */}
-                            {(isFeatured || tags.length > 0) && (
+                            {(isFeatured || tags.length > 0 || hasPromo) && (
                               <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1">
+                                {hasPromo && promoResult.promo && (
+                                  <span
+                                    className="rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-bone shadow"
+                                    style={{
+                                      background:
+                                        promoResult.promo.badgeColor || "#E63E73",
+                                    }}
+                                  >
+                                    {getBadgeText(promoResult.promo)}
+                                  </span>
+                                )}
                                 {isFeatured && (
                                   <span className="rounded-full bg-accent px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-bone shadow">
                                     ★ Destacado
@@ -577,11 +611,11 @@ export default async function CatalogoPage({
                                 {publicRef({ id: p.id, internalRef: p.internalRef })}
                               </span>
                             </p>
-                            {/* Precio "desde" — usa override si existe, si no del proveedor.
-                                Se muestra prominente para que el visitante decida en 3s
-                                si está en su rango (criterio garrampa.es). */}
+                            {/* Precio "desde" — override admin > promo activa > proveedor.
+                                Cuando hay promo, mostramos el precio anterior tachado al lado
+                                para que el descuento se perciba visualmente. */}
                             {displayPriceCents && displayPriceCents > 0 ? (
-                              <p className="mt-3 flex items-baseline gap-1 text-ink">
+                              <p className="mt-3 flex flex-wrap items-baseline gap-1 text-ink">
                                 <span className="text-[11px] uppercase tracking-wider text-ink/50">
                                   Desde
                                 </span>
@@ -592,6 +626,15 @@ export default async function CatalogoPage({
                                   })}{" "}
                                   €
                                 </span>
+                                {hasPromo && basePriceCents && basePriceCents > displayPriceCents && (
+                                  <span className="font-mono text-[11px] tabular-nums text-ink/40 line-through">
+                                    {(basePriceCents / 100).toLocaleString("es-ES", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
+                                    €
+                                  </span>
+                                )}
                                 <span className="text-[11px] text-ink/50">/ud</span>
                               </p>
                             ) : (

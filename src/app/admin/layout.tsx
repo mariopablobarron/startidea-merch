@@ -96,6 +96,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   <NavDropdown
                     label="Marketing"
                     items={[
+                      { href: "/admin/promotions", label: "Promociones 🏷", title: "Descuentos automáticos programados (sin código)" },
                       { href: "/admin/marketing/content", label: "Content Studio ✨", title: "Content Studio — IA copy + workflow aprobación" },
                       { href: "/admin/marketing/site", label: "Copy (CMS home)" },
                       { href: "/admin/marketing/banners", label: "Banners promocionales" },

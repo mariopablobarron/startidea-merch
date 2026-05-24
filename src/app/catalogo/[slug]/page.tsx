@@ -13,6 +13,12 @@ import { CompareToggle } from "@/components/CompareToggle";
 import { MockupGenerator } from "@/components/MockupGenerator";
 import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
+import {
+  loadActivePromotions,
+  applyBestPromotion,
+  applyBestPromotionToTiers,
+  getBadgeText,
+} from "@/lib/promotions";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
 import { displayPositionId } from "@/lib/marking-position-display";
@@ -125,16 +131,45 @@ export default async function ProductDetailPage({
   const variantWithTiers = adminOverridesPrice
     ? null
     : product.variants.find((v) => v.priceTiers.length > 0);
-  const tiers: PriceTier[] | undefined = variantWithTiers
+  const rawTiers: PriceTier[] | undefined = variantWithTiers
     ? variantWithTiers.priceTiers.map((t) => ({
         minQty: t.minQty,
         unitPriceCents: t.unitPriceCents,
         source: "PROVIDER" as const,
       }))
     : undefined;
+
+  // Aplicar promoción activa si la hay (sobre override + sobre cada tier)
+  const activePromos = await loadActivePromotions();
+  const promoMatchInput = {
+    id: product.id,
+    categoryId: product.categoryId,
+    brand: product.brand,
+    override: ov ? { marketingTags: ov.marketingTags } : null,
+  };
+  const promoForDisplayPrice =
+    displayFromPriceCents != null
+      ? applyBestPromotion(promoMatchInput, displayFromPriceCents, activePromos)
+      : null;
+  const activePromo = promoForDisplayPrice?.promo ?? null;
+  const promoBadgeText = activePromo ? getBadgeText(activePromo) : null;
+  const promoBadgeColor = activePromo?.badgeColor || "#E63E73";
+  // displayFromPriceCents original (sin promo) lo guardamos para mostrar "antes"
+  const originalFromPriceCents = displayFromPriceCents;
+  const finalFromPriceCents = promoForDisplayPrice?.finalCents ?? displayFromPriceCents;
+
+  // Aplicar promo a cada tier para que el calculador muestre precios correctos
+  const tiers: PriceTier[] | undefined = rawTiers
+    ? applyBestPromotionToTiers(promoMatchInput, rawTiers, activePromos).map((t) => ({
+        minQty: t.minQty,
+        unitPriceCents: t.unitPriceCents,
+        source: "PROVIDER" as const,
+      }))
+    : undefined;
+
   const baseCents = tiers
     ? undefined
-    : displayFromPriceCents ?? estimateBaseCentsFromName(product.name, product.category?.name);
+    : finalFromPriceCents ?? estimateBaseCentsFromName(product.name, product.category?.name);
 
   const breadcrumbs: Array<{ name: string; href?: string }> = [{ name: "Catálogo", href: "/catalogo" }];
   if (product.category?.parent?.parent) {
@@ -400,6 +435,29 @@ export default async function ProductDetailPage({
 
             {/* DERECHA — sticky con info + configurador */}
             <aside className="lg:sticky lg:top-24 lg:self-start">
+              {/* Banda de promoción activa: aparece encima de la marca y muy visible */}
+              {activePromo && (
+                <div
+                  className="-mt-2 mb-4 rounded-xl px-3 py-2 text-bone shadow-sm"
+                  style={{ background: promoBadgeColor }}
+                >
+                  <p className="flex items-center gap-2 text-xs">
+                    <span className="rounded-full bg-bone/25 px-2 py-0.5 font-display text-[11px] font-bold tracking-wider">
+                      {promoBadgeText}
+                    </span>
+                    <span className="font-medium">{activePromo.name}</span>
+                    {activePromo.endsAt && (
+                      <span className="ml-auto text-[10px] opacity-90">
+                        hasta{" "}
+                        {new Date(activePromo.endsAt).toLocaleDateString("es-ES", {
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
               {publicBrand(product.brand) && (
                 <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
                   {publicBrand(product.brand)}
@@ -424,6 +482,34 @@ export default async function ProductDetailPage({
                 Ref. <span className="font-mono">{displayRef}</span> · Stock total:{" "}
                 <span className="tabular-nums">{totalStock.toLocaleString("es-ES")}</span>
               </p>
+
+              {/* Precio "desde" — con tachado del original si hay promo activa */}
+              {finalFromPriceCents && finalFromPriceCents > 0 && (
+                <p className="mt-4 flex flex-wrap items-baseline gap-2 text-ink">
+                  <span className="text-[11px] uppercase tracking-wider text-ink/55">
+                    Desde
+                  </span>
+                  <span className="font-display text-2xl font-semibold text-accent tabular-nums">
+                    {(finalFromPriceCents / 100).toLocaleString("es-ES", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    €
+                  </span>
+                  {activePromo &&
+                    originalFromPriceCents &&
+                    originalFromPriceCents > finalFromPriceCents && (
+                      <span className="font-mono text-xs tabular-nums text-ink/40 line-through">
+                        {(originalFromPriceCents / 100).toLocaleString("es-ES", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                        €
+                      </span>
+                    )}
+                  <span className="text-[11px] text-ink/55">/ud (sin IVA)</span>
+                </p>
+              )}
 
               {displayShortDescription && (
                 <p className="mt-5 text-base text-ink/75">{displayShortDescription}</p>

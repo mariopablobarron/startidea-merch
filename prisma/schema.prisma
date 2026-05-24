@@ -12,29 +12,29 @@ datasource db {
 // ============================================================================
 
 model QuoteRequest {
-  id           String         @id @default(cuid())
-  createdAt    DateTime       @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   // contacto
-  name         String
-  company      String?
-  email        String
-  phone        String?
+  name    String
+  company String?
+  email   String
+  phone   String?
 
   // brief
-  productHint  String?
-  productRef   String?        // ref MidOcean/Makito si vino de ficha
-  quantity     Int?
-  deadline     String?
-  budget       String?
-  message      String
+  productHint String?
+  productRef  String? // ref MidOcean/Makito si vino de ficha
+  quantity    Int?
+  deadline    String?
+  budget      String?
+  message     String
 
   // estado
-  status       QuoteStatus    @default(NEW)
-  source       String?
-  utm          Json?
+  status QuoteStatus @default(NEW)
+  source String?
+  utm    Json?
 
-  notes        QuoteNote[]
+  notes QuoteNote[]
 
   @@index([status])
   @@index([email])
@@ -42,12 +42,12 @@ model QuoteRequest {
 }
 
 model QuoteNote {
-  id         String        @id @default(cuid())
-  createdAt  DateTime      @default(now())
-  body       String
-  author     String
-  request    QuoteRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  requestId  String
+  id        String       @id @default(cuid())
+  createdAt DateTime     @default(now())
+  body      String
+  author    String
+  request   QuoteRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId String
 
   @@index([requestId])
 }
@@ -96,14 +96,14 @@ enum SupplierCode {
 }
 
 model Category {
-  id        String     @id @default(cuid())
-  slug      String     // único por padre (no global) — distintos parents pueden tener "Otros"
-  name      String
-  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
-  parentId  String?
-  children  Category[] @relation("CategoryTree")
-  level     Int        @default(1) // 1, 2, 3 según MidOcean category_levelN
-  products  Product[]
+  id       String     @id @default(cuid())
+  slug     String // único por padre (no global) — distintos parents pueden tener "Otros"
+  name     String
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  parentId String?
+  children Category[] @relation("CategoryTree")
+  level    Int        @default(1) // 1, 2, 3 según MidOcean category_levelN
+  products Product[]
 
   // unicidad por path: top-level (parentId NULL) + nested
   @@unique([parentId, slug])
@@ -112,51 +112,51 @@ model Category {
 }
 
 model Product {
-  id              String              @id @default(cuid())
+  id                       String       @id @default(cuid())
   // identificación
-  supplier        SupplierCode
-  supplierRef     String              // master_code MidOcean (NUNCA exponer al cliente)
-  internalRef     String?  @unique    // referencia propia Startidea ("STM-XXXXXX") visible al cliente
-  slug            String              @unique
-  name            String
-  brand           String?
-  shortDescription String?            @db.Text
-  longDescription  String?            @db.Text
+  supplier                 SupplierCode
+  supplierRef              String // master_code MidOcean (NUNCA exponer al cliente)
+  internalRef              String?      @unique // referencia propia Startidea ("STM-XXXXXX") visible al cliente
+  slug                     String       @unique
+  name                     String
+  brand                    String?
+  shortDescription         String?      @db.Text
+  longDescription          String?      @db.Text
   // Descripción comercial mejorada por IA (sustituye a la del proveedor en UI cuando existe)
-  enhancedShortDescription String?    @db.Text
-  enhancedAt      DateTime?
-  material        String?
+  enhancedShortDescription String?      @db.Text
+  enhancedAt               DateTime?
+  material                 String?
 
   // categoría primaria
-  category        Category?           @relation(fields: [categoryId], references: [id])
-  categoryId      String?
+  category             Category? @relation(fields: [categoryId], references: [id])
+  categoryId           String?
   supplierCategoryCode String?
 
   // dimensiones / peso (en mm y g normalizados)
-  weightG         Int?
-  lengthMm        Int?
-  widthMm         Int?
-  heightMm        Int?
+  weightG  Int?
+  lengthMm Int?
+  widthMm  Int?
+  heightMm Int?
 
   // imagen principal
   primaryImageUrl String?
 
   // metadatos
   countryOfOrigin String?
-  ecoLabels       String[]            @default([])
-  tags            String[]            @default([])
+  ecoLabels       String[] @default([])
+  tags            String[] @default([])
 
   // sincronización
-  fromPriceCents  Int?                // cents EUR — "Desde X€" calculado
-  active          Boolean             @default(true)
-  syncedAt        DateTime            @default(now())
+  fromPriceCents Int? // cents EUR — "Desde X€" calculado
+  active         Boolean  @default(true)
+  syncedAt       DateTime @default(now())
 
-  variants        ProductVariant[]
-  positions       MarkingPosition[]
-  embedding       ProductEmbedding?
-  override        ProductOverride?
-  slugRedirects   ProductSlugRedirect[] @relation("SlugRedirects")
-  mockupRequests  MockupRequest[]
+  variants       ProductVariant[]
+  positions      MarkingPosition[]
+  embedding      ProductEmbedding?
+  override       ProductOverride?
+  slugRedirects  ProductSlugRedirect[] @relation("SlugRedirects")
+  mockupRequests MockupRequest[]
 
   @@unique([supplier, supplierRef])
   @@index([categoryId])
@@ -174,19 +174,19 @@ model Product {
 /// toolsCalled: histórico de tools que invocó el agente (search, quote, …).
 /// resultingCartId: si la sesión acabó creando cotización, FK al CartQuote.
 model VoiceSession {
-  id                         String     @id @default(cuid())
-  elevenLabsConversationId   String?    @unique
-  visitorAnonId              String?    // cookie/sessionStorage id (no PII)
-  startedAt                  DateTime   @default(now())
-  endedAt                    DateTime?
-  durationSec                Int?
-  estimatedCostCents         Int?       // estimated cost in EUR cents
-  toolsCalled                Json?      // [{tool, args, ok, at}]
-  productSlugsDiscussed      String[]   @default([])
-  resultingCart              CartQuote? @relation(fields: [resultingCartId], references: [id], onDelete: SetNull)
-  resultingCartId            String?
-  userAgent                  String?
-  sourceUrl                  String?
+  id                       String     @id @default(cuid())
+  elevenLabsConversationId String?    @unique
+  visitorAnonId            String? // cookie/sessionStorage id (no PII)
+  startedAt                DateTime   @default(now())
+  endedAt                  DateTime?
+  durationSec              Int?
+  estimatedCostCents       Int? // estimated cost in EUR cents
+  toolsCalled              Json? // [{tool, args, ok, at}]
+  productSlugsDiscussed    String[]   @default([])
+  resultingCart            CartQuote? @relation(fields: [resultingCartId], references: [id], onDelete: SetNull)
+  resultingCartId          String?
+  userAgent                String?
+  sourceUrl                String?
 
   @@index([startedAt(sort: Desc)])
   @@index([resultingCartId])
@@ -200,20 +200,20 @@ model VoiceSession {
 ///
 /// Permite escalar a 3, 4, N proveedores sin reescribir nada.
 model PurchaseOrder {
-  id                    String              @id @default(cuid())
-  cart                  CartQuote           @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  cartId                String
-  supplier              SupplierCode
+  id       String       @id @default(cuid())
+  cart     CartQuote    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId   String
+  supplier SupplierCode
 
   // Referencia que devuelve el proveedor al confirmar pedido
-  supplierOrderRef      String?
-  status                PurchaseOrderStatus @default(PENDING)
+  supplierOrderRef String?
+  status           PurchaseOrderStatus @default(PENDING)
 
   // Items que pertenecen a este PO (subset del cart)
-  items                 CartQuoteItem[]
+  items CartQuoteItem[]
 
   // Snapshot del total cliente de este PO (suma de items)
-  totalClientCents      Int                 @default(0)
+  totalClientCents Int @default(0)
 
   // Envío al cliente final
   estimatedDeliveryDate DateTime?
@@ -224,12 +224,12 @@ model PurchaseOrder {
   trackingUrl           String?
 
   // Trazabilidad del proceso interno
-  placedAt              DateTime?
-  errorMessage          String?             @db.Text
-  internalNotes         String?             @db.Text
+  placedAt      DateTime?
+  errorMessage  String?   @db.Text
+  internalNotes String?   @db.Text
 
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([cartId])
   @@index([supplier])
@@ -238,13 +238,13 @@ model PurchaseOrder {
 }
 
 enum PurchaseOrderStatus {
-  PENDING          // creado, sin enviar al proveedor todavía
-  PLACED           // enviado al proveedor con orderRef confirmado
-  IN_PRODUCTION    // proveedor confirmó producción
-  SHIPPED          // proveedor envió al cliente
-  DELIVERED        // cliente confirmó recibido
-  CANCELED         // cancelado (cliente o proveedor)
-  FAILED           // error procesando con proveedor (necesita admin)
+  PENDING // creado, sin enviar al proveedor todavía
+  PLACED // enviado al proveedor con orderRef confirmado
+  IN_PRODUCTION // proveedor confirmó producción
+  SHIPPED // proveedor envió al cliente
+  DELIVERED // cliente confirmó recibido
+  CANCELED // cancelado (cliente o proveedor)
+  FAILED // error procesando con proveedor (necesita admin)
 }
 
 /// Mini-CRM para outbound manual (LinkedIn, email, eventos). Trackea
@@ -252,38 +252,38 @@ enum PurchaseOrderStatus {
 /// No es para reemplazar HubSpot — es para que Mario lleve su pipeline
 /// personal sin abrir 3 apps.
 model OutboundLead {
-  id              String              @id @default(cuid())
-  name            String
-  company         String?
-  role            String?             // Marketing Manager, RSC Manager…
-  email           String?
-  linkedinUrl     String?
-  phone           String?
-  segment         String?             // tech, events, rsc, freelance, etc.
-  source          String?             // sales-navigator, evento-xxx, referido-fulanito
-  status          OutboundLeadStatus  @default(NEW)
-  lastContactAt   DateTime?
-  nextActionAt    DateTime?           // cuándo tocar al lead de nuevo
-  notes           String?             @db.Text
-  ownerEmail      String?             // admin que lo gestiona
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id            String             @id @default(cuid())
+  name          String
+  company       String?
+  role          String? // Marketing Manager, RSC Manager…
+  email         String?
+  linkedinUrl   String?
+  phone         String?
+  segment       String? // tech, events, rsc, freelance, etc.
+  source        String? // sales-navigator, evento-xxx, referido-fulanito
+  status        OutboundLeadStatus @default(NEW)
+  lastContactAt DateTime?
+  nextActionAt  DateTime? // cuándo tocar al lead de nuevo
+  notes         String?            @db.Text
+  ownerEmail    String? // admin que lo gestiona
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   @@index([status, nextActionAt])
   @@index([createdAt(sort: Desc)])
 }
 
 enum OutboundLeadStatus {
-  NEW              // lo añadí, sin contactar
-  INVITED          // mandé conexión LinkedIn
-  CONNECTED        // aceptó conexión
-  MESSAGED         // mandé primer mensaje
-  REPLIED          // me respondió
-  MEETING_BOOKED   // agendamos llamada/visita
-  PROPOSAL_SENT    // mandé propuesta cerrada
-  WON              // cerró pedido (cliente)
-  LOST             // descartado (no encaja, no responde, dijo que no)
-  NURTURING        // larga distancia, mantener contacto
+  NEW // lo añadí, sin contactar
+  INVITED // mandé conexión LinkedIn
+  CONNECTED // aceptó conexión
+  MESSAGED // mandé primer mensaje
+  REPLIED // me respondió
+  MEETING_BOOKED // agendamos llamada/visita
+  PROPOSAL_SENT // mandé propuesta cerrada
+  WON // cerró pedido (cliente)
+  LOST // descartado (no encaja, no responde, dijo que no)
+  NURTURING // larga distancia, mantener contacto
 }
 
 /// Solicitudes de partners para entrar al programa de afiliados.
@@ -294,12 +294,12 @@ model PartnerApplication {
   name              String
   email             String
   company           String?
-  role              String?                  // ej. "Agencia eventos", "Consultora RSC"
-  audience          String?                  // a quién promocionaría
+  role              String? // ej. "Agencia eventos", "Consultora RSC"
+  audience          String? // a quién promocionaría
   message           String?                  @db.Text
   status            PartnerApplicationStatus @default(PENDING)
   reviewedAt        DateTime?
-  reviewedBy        String?                  // email del admin
+  reviewedBy        String? // email del admin
   rejectionReason   String?
   approvedPartnerId String?                  @unique
   approvedPartner   AffiliatePartner?        @relation(fields: [approvedPartnerId], references: [id], onDelete: SetNull)
@@ -321,22 +321,22 @@ enum PartnerApplicationStatus {
 ///
 /// El PDF se regenera on-demand desde estos datos (no se cachea).
 model RoiCalculation {
-  id              String   @id @default(cuid())
-  email           String
-  name            String?
-  company         String?
+  id                 String   @id @default(cuid())
+  email              String
+  name               String?
+  company            String?
   // Inputs
-  employees       Int
-  annualBudgetEur Int      // presupuesto anual en €
-  substitutionPct Int      // % del actual que migrarías (0-100)
+  employees          Int
+  annualBudgetEur    Int // presupuesto anual en €
+  substitutionPct    Int // % del actual que migrarías (0-100)
   // Outputs calculados (snapshotted para reproducibilidad del PDF)
-  co2SavedKg      Int
+  co2SavedKg         Int
   workHoursDignified Int
   ceeProductionPct   Int
   treesEquivalent    Int
   // Tracking
-  sourceUrl       String?
-  createdAt       DateTime @default(now())
+  sourceUrl          String?
+  createdAt          DateTime @default(now())
 
   @@index([email])
   @@index([createdAt(sort: Desc)])
@@ -351,8 +351,8 @@ model RoiCalculation {
 /// salta (P2002), sabemos que el evento ya se procesó → respondemos 200
 /// sin hacer nada.
 model ProcessedStripeEvent {
-  eventId     String   @id              // evt_xxx (Stripe event id)
-  eventType   String                    // checkout.session.completed, etc.
+  eventId     String   @id // evt_xxx (Stripe event id)
+  eventType   String // checkout.session.completed, etc.
   processedAt DateTime @default(now())
 
   @@index([processedAt(sort: Desc)])
@@ -362,16 +362,16 @@ model ProcessedStripeEvent {
 /// invocación (programada por el VPS o lanzada manualmente desde admin).
 /// Sirve para diagnóstico y auditoría — la página /admin/system/crons lo lee.
 model CronRunLog {
-  id           String   @id @default(cuid())
-  name         String   // ej. "backup-db", "post-order-drip"
-  startedAt    DateTime @default(now())
-  finishedAt   DateTime?
-  ok           Boolean  @default(false)
-  httpStatus   Int?
-  durationMs   Int?
-  response     String?  @db.Text   // primeros ~500 chars del body
-  error        String?  @db.Text
-  triggeredBy  String   @default("cron") // "cron" | "manual:<email>" | "test"
+  id          String    @id @default(cuid())
+  name        String // ej. "backup-db", "post-order-drip"
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  ok          Boolean   @default(false)
+  httpStatus  Int?
+  durationMs  Int?
+  response    String?   @db.Text // primeros ~500 chars del body
+  error       String?   @db.Text
+  triggeredBy String    @default("cron") // "cron" | "manual:<email>" | "test"
 
   @@index([name, startedAt(sort: Desc)])
   @@index([startedAt(sort: Desc)])
@@ -381,24 +381,24 @@ model CronRunLog {
 /// del mockup y prefiere que el equipo le mande mockup técnico real con
 /// medidas exactas y la técnica de marcaje correcta. Promesa: 4h laborables.
 model MockupRequest {
-  id           String              @id @default(cuid())
-  product      Product?            @relation(fields: [productId], references: [id], onDelete: SetNull)
-  productId    String?
-  productSlug  String              // copia textual del slug en el momento de la solicitud
-  positionId   String?             // zona elegida (FRONT DO DL, ROUNDSCREEN, etc)
-  name         String
-  email        String
-  company      String?
-  phone        String?
-  brief        String?             @db.Text
-  logoUrl      String?             // URL local /uploads/... si subió logo
-  status       MockupRequestStatus @default(NEW)
-  sourceUrl    String?             // página desde donde se solicitó
-  notes        String?             @db.Text
-  fulfilledAt  DateTime?
-  fulfilledBy  String?             // email del admin
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  id          String              @id @default(cuid())
+  product     Product?            @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId   String?
+  productSlug String // copia textual del slug en el momento de la solicitud
+  positionId  String? // zona elegida (FRONT DO DL, ROUNDSCREEN, etc)
+  name        String
+  email       String
+  company     String?
+  phone       String?
+  brief       String?             @db.Text
+  logoUrl     String? // URL local /uploads/... si subió logo
+  status      MockupRequestStatus @default(NEW)
+  sourceUrl   String? // página desde donde se solicitó
+  notes       String?             @db.Text
+  fulfilledAt DateTime?
+  fulfilledBy String? // email del admin
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
   @@index([status])
   @@index([productId])
@@ -429,55 +429,55 @@ model ProductSlugRedirect {
 /// 1:1 con Product. Si existe row, los campos no-null reemplazan al base.
 /// El sync de proveedores NUNCA toca esta tabla.
 model ProductOverride {
-  id                   String   @id @default(cuid())
-  product              Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId            String   @unique
+  id        String  @id @default(cuid())
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String  @unique
 
   // Overrides del producto base
-  customName           String?  // sustituye a name
+  customName           String? // sustituye a name
   customDescription    String?  @db.Text // sustituye a longDescription/shortDescription en UI
-  customFromPriceCents Int?     // sustituye a fromPriceCents (override de margen)
-  marginPct            Int?     // alternativa: aplicar margen % sobre fromPriceCents base
+  customFromPriceCents Int? // sustituye a fromPriceCents (override de margen)
+  marginPct            Int? // alternativa: aplicar margen % sobre fromPriceCents base
   extraImages          String[] @default([]) // URLs de imágenes custom (CDN externo o /uploads)
 
   // Estado de marketing
-  featured             Boolean  @default(false) // destacar en home / lista
-  hidden               Boolean  @default(false) // ocultar del catálogo público
-  marketingTags        String[] @default([]) // ej. ["best-seller", "eco", "novedad"]
+  featured      Boolean  @default(false) // destacar en home / lista
+  hidden        Boolean  @default(false) // ocultar del catálogo público
+  marketingTags String[] @default([]) // ej. ["best-seller", "eco", "novedad"]
 
   // SEO override
-  metaTitle            String?
-  metaDescription      String?  @db.Text
+  metaTitle       String?
+  metaDescription String? @db.Text
 
   // Notas internas para el equipo
-  internalNotes        String?  @db.Text
+  internalNotes String? @db.Text
 
-  updatedAt            DateTime @updatedAt
-  updatedBy            String?  // email del admin
+  updatedAt DateTime @updatedAt
+  updatedBy String? // email del admin
 
   @@index([featured])
   @@index([hidden])
 }
 
 model ProductVariant {
-  id              String        @id @default(cuid())
-  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId       String
-  sku             String        @unique
-  variantId       String?       // variant_id MidOcean
-  colorName       String?
-  colorGroup      String?
-  colorHex        String?
-  gtin            String?
-  size            String?
+  id             String      @id @default(cuid())
+  product        Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId      String
+  sku            String      @unique
+  variantId      String? // variant_id MidOcean
+  colorName      String?
+  colorGroup     String?
+  colorHex       String?
+  gtin           String?
+  size           String?
   // stock más reciente conocido (snapshot)
-  stockQty        Int           @default(0)
-  stockUpdatedAt  DateTime?
+  stockQty       Int         @default(0)
+  stockUpdatedAt DateTime?
   // imagen principal de esta variante
-  imageUrl        String?
-  images          String[]      @default([])
+  imageUrl       String?
+  images         String[]    @default([])
   // tramos de precio escalado por cantidad (cuando llega pricelist proveedor)
-  priceTiers      PriceTier[]
+  priceTiers     PriceTier[]
 
   @@index([productId])
   @@index([sku])
@@ -486,13 +486,13 @@ model ProductVariant {
 // Tramo de precio escalado por cantidad (e.g. 10 uds → 4,89€/ud, 25 uds → 3,12€/ud).
 // Origen: pricelist MidOcean / Makito; en su ausencia, defaults internos por categoría.
 model PriceTier {
-  id              String          @id @default(cuid())
-  variant         ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  variantId       String
-  minQty          Int             // tramo mínimo aplicable
-  unitPriceCents  Int             // precio unitario neto en céntimos EUR
-  source          PriceTierSource @default(DEFAULT_ESTIMATE)
-  updatedAt       DateTime        @default(now())
+  id             String          @id @default(cuid())
+  variant        ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId      String
+  minQty         Int // tramo mínimo aplicable
+  unitPriceCents Int // precio unitario neto en céntimos EUR
+  source         PriceTierSource @default(DEFAULT_ESTIMATE)
+  updatedAt      DateTime        @default(now())
 
   @@unique([variantId, minQty])
   @@index([variantId])
@@ -507,31 +507,31 @@ enum PriceTierSource {
 
 // Posiciones de marcaje (del printdata)
 model MarkingPosition {
-  id              String                @id @default(cuid())
-  product         Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId       String
-  positionId      String                // ej. "TOP COMPASS", "TOP BOX"
-  maxWidthMm      Float?
-  maxHeightMm     Float?
-  imageUrl        String?               // mockup de la zona
-  techniques      MarkingTechniqueOnPosition[]
+  id          String                       @id @default(cuid())
+  product     Product                      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+  positionId  String // ej. "TOP COMPASS", "TOP BOX"
+  maxWidthMm  Float?
+  maxHeightMm Float?
+  imageUrl    String? // mockup de la zona
+  techniques  MarkingTechniqueOnPosition[]
 
   @@index([productId])
 }
 
 // Técnicas de impresión disponibles globalmente con tarifa MidOcean
 model MarkingTechnique {
-  id          String                       @id @default(cuid())
-  code        String                       @unique // "B", "L3", "BP"...
-  name        String                       // legible en español
-  description String?                      // descripción original del proveedor (EN)
+  id               String                       @id @default(cuid())
+  code             String                       @unique // "B", "L3", "BP"...
+  name             String // legible en español
+  description      String? // descripción original del proveedor (EN)
   // Tarifa
-  pricingType PricingType?                 // NumberOfPositions, AreaRange, etc.
-  setupCents  Int?                         // setup fijo por pedido (cliché/film/láser)
-  setupRepeatCents Int?                    // setup reducido al repetir el mismo diseño
-  hasNextColour Boolean    @default(false) // true si añade coste por tinta extra
-  positions   MarkingTechniqueOnPosition[]
-  scales      MarkingPriceScale[]
+  pricingType      PricingType? // NumberOfPositions, AreaRange, etc.
+  setupCents       Int? // setup fijo por pedido (cliché/film/láser)
+  setupRepeatCents Int? // setup reducido al repetir el mismo diseño
+  hasNextColour    Boolean                      @default(false) // true si añade coste por tinta extra
+  positions        MarkingTechniqueOnPosition[]
+  scales           MarkingPriceScale[]
 }
 
 enum PricingType {
@@ -546,16 +546,16 @@ enum PricingType {
 // Una técnica simple (NumberOfPositions) tiene scales con rangeId=null.
 // Una técnica AreaRange tiene varios rangeId (A, B, C…) con area_from/to.
 model MarkingPriceScale {
-  id              String           @id @default(cuid())
-  technique       MarkingTechnique @relation(fields: [techniqueCode], references: [code], onDelete: Cascade)
-  techniqueCode   String
-  rangeId         String?          // "A", "B", "C"… solo para AreaRange / ColourAreaRange
-  areaFromCm2     Float?           // área mínima del rango (cm²)
-  areaToCm2       Float?           // área máxima del rango (cm²)
-  minQty          Int              // tramo mínimo aplicable
-  unitCostCents   Int              // coste neto por unidad (céntimos EUR)
-  nextColourCostCents Int?         // coste por tinta extra (si la técnica tiene multicolor)
-  updatedAt       DateTime         @default(now())
+  id                  String           @id @default(cuid())
+  technique           MarkingTechnique @relation(fields: [techniqueCode], references: [code], onDelete: Cascade)
+  techniqueCode       String
+  rangeId             String? // "A", "B", "C"… solo para AreaRange / ColourAreaRange
+  areaFromCm2         Float? // área mínima del rango (cm²)
+  areaToCm2           Float? // área máxima del rango (cm²)
+  minQty              Int // tramo mínimo aplicable
+  unitCostCents       Int // coste neto por unidad (céntimos EUR)
+  nextColourCostCents Int? // coste por tinta extra (si la técnica tiene multicolor)
+  updatedAt           DateTime         @default(now())
 
   @@unique([techniqueCode, rangeId, minQty])
   @@index([techniqueCode])
@@ -564,10 +564,10 @@ model MarkingPriceScale {
 // Manipulaciones del logo (Simple, Medium, Complex…) — coste extra por unidad
 // según complejidad del archivo de impresión que mande el cliente.
 model PrintManipulation {
-  code         String  @id // "A","B","C","D","E","Z"
-  description  String  // "Simple", "Medium"…
-  unitCostCents Int    // céntimos EUR por unidad
-  updatedAt    DateTime @default(now())
+  code          String   @id // "A","B","C","D","E","Z"
+  description   String // "Simple", "Medium"…
+  unitCostCents Int // céntimos EUR por unidad
+  updatedAt     DateTime @default(now())
 }
 
 // ============================================================================
@@ -575,35 +575,35 @@ model PrintManipulation {
 // ============================================================================
 
 model AdminUser {
-  id           String      @id @default(cuid())
-  email        String      @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   name         String
   passwordHash String
-  role         AdminRole   @default(COMERCIAL)
-  active       Boolean     @default(true)
-  createdAt    DateTime    @default(now())
+  role         AdminRole @default(COMERCIAL)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
   lastLoginAt  DateTime?
 
   @@index([active])
 }
 
 enum AdminRole {
-  CEO            // todo · gestión usuarios · facturación · análisis
-  COMERCIAL      // cotizaciones, propuestas IA, sin costes ni payments
-  FACTURACION    // payments, links pago, IVA, sin editar cotizaciones
-  OPERACIONES    // pedidos producción, tracking, proofs, sin precios cliente
+  CEO // todo · gestión usuarios · facturación · análisis
+  COMERCIAL // cotizaciones, propuestas IA, sin costes ni payments
+  FACTURACION // payments, links pago, IVA, sin editar cotizaciones
+  OPERACIONES // pedidos producción, tracking, proofs, sin precios cliente
 }
 
 // Usuarios cliente — portal /clientes con control completo
 model CustomerUser {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  company       String?
-  passwordHash  String?   // nullable: pueden entrar también con magic link
-  active        Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  lastLoginAt   DateTime?
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  company      String?
+  passwordHash String? // nullable: pueden entrar también con magic link
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
 
   // Magic link login (sin contraseña)
   magicLinkToken     String?   @unique
@@ -617,58 +617,58 @@ model CustomerUser {
 // ============================================================================
 
 model ApiKey {
-  id          String   @id @default(cuid())
-  label       String
-  email       String
-  company     String?
+  id         String    @id @default(cuid())
+  label      String
+  email      String
+  company    String?
   // hash del secret (no almaceno el plano)
-  keyPrefix   String   @unique // primeros 8 chars del secret para identificar
-  secretHash  String
-  active      Boolean  @default(true)
-  scopes      String[] @default([])  // ["read:catalog", "write:quote"]
-  rateLimit   Int      @default(100) // req/h
-  createdAt   DateTime @default(now())
-  lastUsedAt  DateTime?
-  notes       String?  @db.Text
+  keyPrefix  String    @unique // primeros 8 chars del secret para identificar
+  secretHash String
+  active     Boolean   @default(true)
+  scopes     String[]  @default([]) // ["read:catalog", "write:quote"]
+  rateLimit  Int       @default(100) // req/h
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  notes      String?   @db.Text
 
-  webhooks    WebhookEndpoint[]
+  webhooks WebhookEndpoint[]
 
   @@index([active])
 }
 
 // Webhooks salientes hacia clientes API
 model WebhookEndpoint {
-  id          String   @id @default(cuid())
-  apiKey      ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
-  apiKeyId    String?
-  url         String
-  secret      String                  // firma HMAC-SHA256 del payload
-  events      String[] @default([])   // quote.status.changed, payment.completed, proof.status.changed
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id              String    @id @default(cuid())
+  apiKey          ApiKey?   @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  apiKeyId        String?
+  url             String
+  secret          String // firma HMAC-SHA256 del payload
+  events          String[]  @default([]) // quote.status.changed, payment.completed, proof.status.changed
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
   lastDeliveredAt DateTime?
   lastFailedAt    DateTime?
 
-  deliveries  WebhookDelivery[]
+  deliveries WebhookDelivery[]
 
   @@index([apiKeyId])
   @@index([active])
 }
 
 model WebhookDelivery {
-  id            String          @id @default(cuid())
-  endpoint      WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
-  endpointId    String
+  id         String          @id @default(cuid())
+  endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  endpointId String
 
-  event         String
-  payload       Json
-  status        DeliveryStatus  @default(PENDING)
-  attempts      Int             @default(0)
+  event              String
+  payload            Json
+  status             DeliveryStatus @default(PENDING)
+  attempts           Int            @default(0)
   lastResponseStatus Int?
-  lastError     String?         @db.Text
-  createdAt     DateTime        @default(now())
-  deliveredAt   DateTime?
-  nextRetryAt   DateTime?
+  lastError          String?        @db.Text
+  createdAt          DateTime       @default(now())
+  deliveredAt        DateTime?
+  nextRetryAt        DateTime?
 
   @@index([endpointId])
   @@index([status, nextRetryAt])
@@ -683,17 +683,17 @@ enum DeliveryStatus {
 
 // Newsletter privada — alta voluntaria + drip emails post-pedido
 model NewsletterSubscriber {
-  id              String   @id @default(cuid())
-  email           String   @unique
-  name            String?
-  company         String?
-  source          String?  // home-footer, blog, recommend-after, etc
-  locale          String   @default("es")
-  optedInAt       DateTime @default(now())
-  unsubscribedAt  DateTime?
-  unsubscribeToken String  @unique @default(cuid())
-  lastSentAt      DateTime?
-  totalSent       Int      @default(0)
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String?
+  company          String?
+  source           String? // home-footer, blog, recommend-after, etc
+  locale           String    @default("es")
+  optedInAt        DateTime  @default(now())
+  unsubscribedAt   DateTime?
+  unsubscribeToken String    @unique @default(cuid())
+  lastSentAt       DateTime?
+  totalSent        Int       @default(0)
 
   @@index([unsubscribedAt])
 }
@@ -701,7 +701,7 @@ model NewsletterSubscriber {
 model EmailDripSent {
   id     String   @id @default(cuid())
   cartId String
-  step   Int      // 0, 14, 45
+  step   Int // 0, 14, 45
   sentAt DateTime @default(now())
 
   @@unique([cartId, step])
@@ -710,44 +710,44 @@ model EmailDripSent {
 
 // Programa de afiliados (distinto de Partner = CEE definido al principio)
 model AffiliatePartner {
-  id            String    @id @default(cuid())
-  slug          String    @unique
-  name          String
-  email         String
-  company       String?
-  commissionPct Int       @default(10)
-  active        Boolean   @default(true)
-  totalEarnedCents Int    @default(0)
-  totalPaidOutCents Int   @default(0)
-  notes         String?   @db.Text
-  createdAt     DateTime  @default(now())
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  name              String
+  email             String
+  company           String?
+  commissionPct     Int      @default(10)
+  active            Boolean  @default(true)
+  totalEarnedCents  Int      @default(0)
+  totalPaidOutCents Int      @default(0)
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
 
-  referrals     Referral[]
-  application   PartnerApplication?
+  referrals   Referral[]
+  application PartnerApplication?
 
   @@index([active])
 }
 
 model Referral {
-  id              String    @id @default(cuid())
+  id              String           @id @default(cuid())
   partner         AffiliatePartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   partnerId       String
-  cartId          String    @unique
-  status          ReferralStatus @default(LEAD)
-  baseAmountCents Int       @default(0)   // cuánto se cobró que computa para comisión
-  commissionCents Int       @default(0)
+  cartId          String           @unique
+  status          ReferralStatus   @default(LEAD)
+  baseAmountCents Int              @default(0) // cuánto se cobró que computa para comisión
+  commissionCents Int              @default(0)
   paidOutAt       DateTime?
-  createdAt       DateTime  @default(now())
+  createdAt       DateTime         @default(now())
 
   @@index([partnerId])
   @@index([status])
 }
 
 enum ReferralStatus {
-  LEAD       // cart creado, aún sin pagar
-  EARNED     // cart pagado, comisión devengada pero no liquidada
-  PAID_OUT   // pagada al partner
-  REFUSED    // partner cancelado / fraude
+  LEAD // cart creado, aún sin pagar
+  EARNED // cart pagado, comisión devengada pero no liquidada
+  PAID_OUT // pagada al partner
+  REFUSED // partner cancelado / fraude
 }
 
 // Embeddings semánticos para búsqueda inteligente
@@ -764,25 +764,25 @@ model ProductEmbedding {
 
 // Cupones / descuentos comerciales
 model Coupon {
-  id           String   @id @default(cuid())
-  code         String   @unique
+  id           String     @id @default(cuid())
+  code         String     @unique
   label        String
   kind         CouponKind
-  percentValue Int?     // 1-100 (si kind = PERCENT)
-  fixedCents   Int?     // descuento fijo en céntimos (si kind = FIXED)
+  percentValue Int? // 1-100 (si kind = PERCENT)
+  fixedCents   Int? // descuento fijo en céntimos (si kind = FIXED)
 
-  minTotalCents Int?    // total mínimo del carrito para que aplique
-  maxUses      Int?     // máximo nº de usos (null = ilimitado)
-  usedCount    Int      @default(0)
+  minTotalCents Int? // total mínimo del carrito para que aplique
+  maxUses       Int? // máximo nº de usos (null = ilimitado)
+  usedCount     Int  @default(0)
 
-  validFrom    DateTime @default(now())
-  validUntil   DateTime?
+  validFrom  DateTime  @default(now())
+  validUntil DateTime?
 
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  notes        String?  @db.Text
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  notes     String?  @db.Text
 
-  redemptions  CouponRedemption[]
+  redemptions CouponRedemption[]
 
   @@index([active])
 }
@@ -806,21 +806,21 @@ model CouponRedemption {
 
 // Reviews post-pedido (NPS + comentario verificado)
 model Review {
-  id          String   @id @default(cuid())
-  cart        CartQuote @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  cartId      String
+  id     String    @id @default(cuid())
+  cart   CartQuote @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId String
 
-  token       String   @unique @default(cuid())
-  invitedAt   DateTime @default(now())
+  token       String    @unique @default(cuid())
+  invitedAt   DateTime  @default(now())
   submittedAt DateTime?
 
-  npsScore    Int?     // 0-10
-  comment     String?  @db.Text
-  authorName  String?
+  npsScore      Int? // 0-10
+  comment       String? @db.Text
+  authorName    String?
   authorCompany String?
 
-  approved    Boolean  @default(false)
-  isPublic    Boolean  @default(true)
+  approved Boolean @default(false)
+  isPublic Boolean @default(true)
 
   @@index([cartId])
   @@index([approved, submittedAt])
@@ -831,12 +831,12 @@ model Review {
 // ============================================================================
 
 model PushSubscription {
-  id        String   @id @default(cuid())
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  label     String?  // descripción opcional (ej. "Mario · iPhone 15")
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  label      String? // descripción opcional (ej. "Mario · iPhone 15")
+  createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
 }
 
@@ -845,14 +845,14 @@ model PushSubscription {
 // ============================================================================
 
 model AnalyticsEvent {
-  id        String   @id @default(cuid())
-  type      String   // viewProduct, addToCart, recommend, payClick, payComplete…
-  path      String?
+  id          String   @id @default(cuid())
+  type        String // viewProduct, addToCart, recommend, payClick, payComplete…
+  path        String?
   productSlug String?
-  payload   Json?
-  sessionId String?  // anónimo, generado client-side
-  userAgent String?  @db.Text
-  createdAt DateTime @default(now())
+  payload     Json?
+  sessionId   String? // anónimo, generado client-side
+  userAgent   String?  @db.Text
+  createdAt   DateTime @default(now())
 
   @@index([type, createdAt])
   @@index([productSlug])
@@ -864,66 +864,65 @@ model AnalyticsEvent {
 // ============================================================================
 
 model CartQuote {
-  id          String          @id @default(cuid())
-  createdAt   DateTime        @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   // contacto
-  name        String
-  company     String?
-  email       String
-  phone       String?
+  name    String
+  company String?
+  email   String
+  phone   String?
 
   // dirección de envío (opcional, se completa en admin)
   shippingAddress    String?
   shippingPostalCode String?
   shippingCity       String?
-  shippingCountry    String?  @default("ES")
+  shippingCountry    String? @default("ES")
   vatNumber          String?
 
   // brief libre para complementar
-  message     String?
-  deadline    String?
-  source      String?         // landing, ficha-cotizar, etc
-  utm         Json?
+  message  String?
+  deadline String?
+  source   String? // landing, ficha-cotizar, etc
+  utm      Json?
 
   // estado
-  status      CartQuoteStatus @default(NEW)
+  status              CartQuoteStatus @default(NEW)
   // notas internas y total estimado para que el admin no recalcule
-  internalNotes String?       @db.Text
+  internalNotes       String?         @db.Text
   estimatedTotalCents Int?
 
   // integración MidOcean
-  midoceanOrderId       String?  @unique
+  midoceanOrderId          String?   @unique
   midoceanCustomerOrderRef String?
-  midoceanOrderStatus   String?
-  midoceanOrderPayload  Json?    // snapshot del payload enviado
-  midoceanOrderResponse Json?    // respuesta de MidOcean
-  confirmedAt           DateTime?
-  orderedAt             DateTime?
+  midoceanOrderStatus      String?
+  midoceanOrderPayload     Json? // snapshot del payload enviado
+  midoceanOrderResponse    Json? // respuesta de MidOcean
+  confirmedAt              DateTime?
+  orderedAt                DateTime?
 
   // pago online (Sprint 8)
-  acceptedTotalCents Int?              // total final negociado por el admin
-  depositPercent     Int?              // % de depósito a cobrar (50, 100…)
-  paymentLinkToken   String?  @unique  // token público del enlace de pago
+  acceptedTotalCents Int? // total final negociado por el admin
+  depositPercent     Int? // % de depósito a cobrar (50, 100…)
+  paymentLinkToken   String?   @unique // token público del enlace de pago
   paymentLinkSentAt  DateTime?
 
   // Dashboard cliente: token público para ver SUS pedidos e impacto
-  customerToken      String?  @unique
+  customerToken String? @unique
 
-  items       CartQuoteItem[]
-  proofs      OrderProof[]
-  trackings   OrderTracking[]
-  payments    Payment[]
-  reviews     Review[]
-  redemption  CouponRedemption?
-  voiceSessions VoiceSession[]
+  items          CartQuoteItem[]
+  proofs         OrderProof[]
+  trackings      OrderTracking[]
+  payments       Payment[]
+  reviews        Review[]
+  redemption     CouponRedemption?
+  voiceSessions  VoiceSession[]
   purchaseOrders PurchaseOrder[]
 
   // Carritos abandonados — sistema de recuperación con recordatorios
   reminderSentAt DateTime? // última vez que se envió recordatorio (manual o auto)
   reminderCount  Int       @default(0) // total de recordatorios enviados
   recoveredAt    DateTime? // cuándo el cliente volvió tras recordatorio
-
 
   @@index([status])
   @@index([email])
@@ -941,9 +940,9 @@ enum CartQuoteStatus {
 }
 
 model CartQuoteItem {
-  id              String     @id @default(cuid())
-  cart            CartQuote  @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  cartId          String
+  id     String    @id @default(cuid())
+  cart   CartQuote @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId String
 
   // referencia al producto en el momento de añadir
   productSlug     String
@@ -952,16 +951,16 @@ model CartQuoteItem {
   primaryImageUrl String?
 
   // configuración elegida por el cliente
-  quantity        Int
-  variantSku      String?    // si elige una variante específica
-  colorName       String?
+  quantity   Int
+  variantSku String? // si elige una variante específica
+  colorName  String?
 
   // marcaje
   markingTechniqueCode String?
   markingTechniqueName String?
   markingPositionId    String?
   markingColours       Int?
-  markingComplexity    String?  // A,B,C,D,E,Z
+  markingComplexity    String? // A,B,C,D,E,Z
 
   // snapshot del precio cliente calculado en el momento (céntimos EUR)
   unitPriceClientCents Int?
@@ -971,9 +970,9 @@ model CartQuoteItem {
   // Mario lo descarga para enviarlo a MidOcean al producir.
   customerLogoUrl      String?
   customerLogoFilename String?
-  customerLogoSize     Int?    // bytes
+  customerLogoSize     Int? // bytes
 
-  notes           String?
+  notes String?
 
   // Multi-marcaje (textil con bordado pecho + serigrafía espalda + láser manga…).
   // Si no hay markings, los campos planos arriba (markingTechniqueCode/PositionId/
@@ -981,7 +980,7 @@ model CartQuoteItem {
   // espejo de los campos planos y los siguientes son marcas adicionales.
   // Mantenemos los campos planos durante la transición para no romper queries
   // existentes (drips, dashboard, midocean-auto-order legacy).
-  markings        CartQuoteItemMarking[]
+  markings CartQuoteItemMarking[]
 
   // PurchaseOrder al que pertenece este item (asignado en el split tras pago).
   // Null mientras el cart no ha sido pagado o no se ha hecho split todavía.
@@ -996,23 +995,23 @@ model CartQuoteItem {
 /// Permite N personalizaciones por ítem, cada una con su técnica/colores/coste.
 /// MidOcean acepta exactamente esto en su array `printing_positions[]`.
 model CartQuoteItemMarking {
-  id                    String        @id @default(cuid())
-  item                  CartQuoteItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  itemId                String
+  id     String        @id @default(cuid())
+  item   CartQuoteItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId String
 
-  positionId            String        // ej. "FRONT DO DL", "BACK", "SLEEVE_R"
-  positionLabel         String?       // ej. "Frontal", "Espalda" (snapshot al añadir)
-  techniqueCode         String        // ej. "S1" serigrafía, "L1" láser, "E1" bordado
-  techniqueName         String?       // snapshot human-readable
-  numberOfColors        Int           @default(1)
-  manipulationCode      String?       // S/M/L/X (rango de cantidad MidOcean)
+  positionId       String // ej. "FRONT DO DL", "BACK", "SLEEVE_R"
+  positionLabel    String? // ej. "Frontal", "Espalda" (snapshot al añadir)
+  techniqueCode    String // ej. "S1" serigrafía, "L1" láser, "E1" bordado
+  techniqueName    String? // snapshot human-readable
+  numberOfColors   Int     @default(1)
+  manipulationCode String? // S/M/L/X (rango de cantidad MidOcean)
 
   // Coste snapshot del momento (céntimos EUR)
-  setupCostCents        Int?          // coste fijo de preparación de esta marca
-  unitCostCents         Int?          // coste por unidad de esta marca
+  setupCostCents Int? // coste fijo de preparación de esta marca
+  unitCostCents  Int? // coste por unidad de esta marca
 
-  notes                 String?       // ej. "logo claim mismo color que bordado"
-  order                 Int           @default(0)  // orden visual
+  notes String? // ej. "logo claim mismo color que bordado"
+  order Int     @default(0) // orden visual
 
   @@index([itemId, order])
 }
@@ -1022,24 +1021,24 @@ model CartQuoteItemMarking {
 // ============================================================================
 
 model OrderProof {
-  id              String       @id @default(cuid())
-  cart            CartQuote    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  cartId          String
+  id     String    @id @default(cuid())
+  cart   CartQuote @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId String
 
   // token único para link público de aprobación (sin login)
-  token           String       @unique @default(cuid())
-  status          ProofStatus  @default(PENDING)
+  token  String      @unique @default(cuid())
+  status ProofStatus @default(PENDING)
 
   // origen del proof
-  midoceanProofId String?      // si viene de MidOcean
-  productSlug     String?      // a qué producto/item del cart corresponde
-  artworkUrl      String?      // imagen/PDF del mockup
-  notes           String?      @db.Text
+  midoceanProofId String? // si viene de MidOcean
+  productSlug     String? // a qué producto/item del cart corresponde
+  artworkUrl      String? // imagen/PDF del mockup
+  notes           String? @db.Text
 
-  createdAt       DateTime     @default(now())
+  createdAt       DateTime  @default(now())
   decidedAt       DateTime?
-  decidedBy       String?      // email del cliente que decidió
-  rejectionReason String?      @db.Text
+  decidedBy       String? // email del cliente que decidió
+  rejectionReason String?   @db.Text
 
   @@index([cartId])
   @@index([token])
@@ -1047,11 +1046,11 @@ model OrderProof {
 }
 
 enum ProofStatus {
-  PENDING       // esperando decisión cliente
-  APPROVED      // cliente aprobó
-  REJECTED      // cliente rechazó
-  REVISION      // cliente subió artwork nuevo
-  EXPIRED       // pasó el plazo
+  PENDING // esperando decisión cliente
+  APPROVED // cliente aprobó
+  REJECTED // cliente rechazó
+  REVISION // cliente subió artwork nuevo
+  EXPIRED // pasó el plazo
 }
 
 // ============================================================================
@@ -1059,29 +1058,29 @@ enum ProofStatus {
 // ============================================================================
 
 model Payment {
-  id                    String         @id @default(cuid())
-  cart                  CartQuote      @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  cartId                String
+  id     String    @id @default(cuid())
+  cart   CartQuote @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId String
 
-  amountCents           Int            // importe en céntimos EUR
-  currency              String         @default("EUR")
-  status                PaymentStatus  @default(PENDING)
-  kind                  PaymentKind    @default(DEPOSIT)
+  amountCents Int // importe en céntimos EUR
+  currency    String        @default("EUR")
+  status      PaymentStatus @default(PENDING)
+  kind        PaymentKind   @default(DEPOSIT)
 
   // Stripe metadata
-  stripeMode            String?        // "test" | "live"
-  stripeSessionId       String?        @unique
-  stripePaymentIntentId String?        @unique
+  stripeMode            String? // "test" | "live"
+  stripeSessionId       String? @unique
+  stripePaymentIntentId String? @unique
   stripeReceiptUrl      String?
 
-  createdAt             DateTime       @default(now())
-  paidAt                DateTime?
-  refundedAt            DateTime?
-  failureReason         String?
+  createdAt     DateTime  @default(now())
+  paidAt        DateTime?
+  refundedAt    DateTime?
+  failureReason String?
 
   // Factura
-  invoiceNumber         String?        @unique  // formato 2026-0001 (YYYY-NNNN)
-  invoiceIssuedAt       DateTime?
+  invoiceNumber   String?   @unique // formato 2026-0001 (YYYY-NNNN)
+  invoiceIssuedAt DateTime?
 
   @@index([cartId])
   @@index([status])
@@ -1096,36 +1095,36 @@ enum PaymentStatus {
 }
 
 enum PaymentKind {
-  DEPOSIT      // pago de depósito (típicamente 50%)
-  FULL         // pago total
-  BALANCE      // pago final (resto tras depósito)
+  DEPOSIT // pago de depósito (típicamente 50%)
+  FULL // pago total
+  BALANCE // pago final (resto tras depósito)
 }
 
 // Snapshot del estado del pedido cada vez que consultamos tracking
 model OrderTracking {
-  id            String     @id @default(cuid())
-  cart          CartQuote  @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  cartId        String
-  fetchedAt     DateTime   @default(now())
-  status        String?    // estado MidOcean
-  trackingCode  String?
-  carrier       String?
-  carrierUrl    String?
-  rawJson       Json?
+  id           String    @id @default(cuid())
+  cart         CartQuote @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId       String
+  fetchedAt    DateTime  @default(now())
+  status       String? // estado MidOcean
+  trackingCode String?
+  carrier      String?
+  carrierUrl   String?
+  rawJson      Json?
 
   @@index([cartId])
 }
 
 // Snapshot de la última versión de la tarifa de marcaje aplicada
 model MarkingPricelistSync {
-  id              String        @id @default(cuid())
-  supplier        SupplierCode  @unique
+  id              String       @id @default(cuid())
+  supplier        SupplierCode @unique
   validFrom       DateTime
   validUntil      DateTime?
-  currency        String        @default("EUR")
-  fetchedAt       DateTime      @default(now())
-  techniquesCount Int           @default(0)
-  scalesCount     Int           @default(0)
+  currency        String       @default("EUR")
+  fetchedAt       DateTime     @default(now())
+  techniquesCount Int          @default(0)
+  scalesCount     Int          @default(0)
 }
 
 model MarkingTechniqueOnPosition {
@@ -1142,21 +1141,21 @@ model MarkingTechniqueOnPosition {
 /// Consultas al recomendador IA — registramos cada brief para entender
 /// qué pide la gente, descubrir gaps de catálogo y mejorar el prompt.
 model RecommenderQuery {
-  id                String    @id @default(cuid())
-  brief             String    @db.Text
-  budget            Int?      // €/total declarado por el cliente
-  quantity          Int?      // unidades declaradas
-  ecoOnly           Boolean   @default(false)
+  id                 String   @id @default(cuid())
+  brief              String   @db.Text
+  budget             Int? // €/total declarado por el cliente
+  quantity           Int? // unidades declaradas
+  ecoOnly            Boolean  @default(false)
   needsClarification Boolean? // pidió aclaración o devolvió recomendación directa
-  fallback          Boolean   @default(false) // true si hubo error parseando JSON
-  recommendedSlugs  String[]  @default([]) // slugs devueltos al cliente
-  summary           String?   @db.Text // resumen del modelo
-  modelUsed         String?   // ej anthropic/claude-sonnet-4.5
-  promptTokens      Int?
-  completionTokens  Int?
-  ip                String?   // primera IP (proxy headers)
-  ua                String?   @db.Text // user agent
-  createdAt         DateTime  @default(now())
+  fallback           Boolean  @default(false) // true si hubo error parseando JSON
+  recommendedSlugs   String[] @default([]) // slugs devueltos al cliente
+  summary            String?  @db.Text // resumen del modelo
+  modelUsed          String? // ej anthropic/claude-sonnet-4.5
+  promptTokens       Int?
+  completionTokens   Int?
+  ip                 String? // primera IP (proxy headers)
+  ua                 String?  @db.Text // user agent
+  createdAt          DateTime @default(now())
 
   @@index([createdAt])
   @@index([fallback])
@@ -1173,9 +1172,9 @@ model RecommenderQuery {
 /// la imagen. El cliente solo ve /api/m/Q2X9F7K3M2P5R8N4 — sin pista
 /// del proveedor.
 model MediaAsset {
-  hash        String   @id          // 16 chars base32 (no 0/O/1/I/L)
+  hash        String   @id // 16 chars base32 (no 0/O/1/I/L)
   originalUrl String   @unique
-  kind        String?               // "product-primary" | "product-variant" | "marking-position" | "override-extra"
+  kind        String? // "product-primary" | "product-variant" | "marking-position" | "override-extra"
   createdAt   DateTime @default(now())
 
   @@index([originalUrl])
@@ -1188,12 +1187,12 @@ model MediaAsset {
 /// Para fichas de producto NO usar este modelo — usar ProductOverride.metaTitle
 /// y ProductOverride.metaDescription que ya existen.
 model PageSeo {
-  path        String   @id           // "/", "/catalogo", "/sobre", "/recomendador"
-  title       String?                // <title> y og:title
-  description String?  @db.Text      // <meta description> y og:description
-  ogImage     String?                // URL absoluta o /public path
-  robots      String?                // ej "noindex,follow" si quieres
-  schemaJson  Json?                  // schema.org adicional libre (Organization, Service…)
+  path        String   @id // "/", "/catalogo", "/sobre", "/recomendador"
+  title       String? // <title> y og:title
+  description String?  @db.Text // <meta description> y og:description
+  ogImage     String? // URL absoluta o /public path
+  robots      String? // ej "noindex,follow" si quieres
+  schemaJson  Json? // schema.org adicional libre (Organization, Service…)
   updatedAt   DateTime @updatedAt
   updatedBy   String?
 }
@@ -1235,9 +1234,9 @@ model LeadMagnet {
   slug          String         @unique
   title         String
   description   String?        @db.Text
-  fileUrl       String         // URL absoluta del PDF/recurso
-  heroUrl       String?        // imagen mock de portada
-  category      String?        // "guía", "plantilla", "checklist", "case-study"
+  fileUrl       String // URL absoluta del PDF/recurso
+  heroUrl       String? // imagen mock de portada
+  category      String? // "guía", "plantilla", "checklist", "case-study"
   tags          String[]       @default([])
   active        Boolean        @default(true)
   featured      Boolean        @default(false)
@@ -1259,11 +1258,11 @@ model LeadDownload {
   email        String
   name         String?
   company      String?
-  source       String?    // utm_source
-  medium       String?    // utm_medium
-  campaign     String?    // utm_campaign
+  source       String? // utm_source
+  medium       String? // utm_medium
+  campaign     String? // utm_campaign
   referer      String?
-  ipHash       String?    // hash IP para anti-spam, no PII real
+  ipHash       String? // hash IP para anti-spam, no PII real
   downloadedAt DateTime   @default(now())
 
   @@index([magnetId])
@@ -1306,35 +1305,35 @@ model MarketingSpend {
 /// Long-form (1500-2500 palabras) con schema.org Article + FAQPage.
 /// Tracking de posiciones con Google Search Console (futuro).
 model BlogPost {
-  id            String    @id @default(cuid())
-  slug          String    @unique
-  title         String
-  excerpt       String?   @db.Text
-  bodyMd        String    @db.Text     // Markdown source
-  heroUrl       String?
-  metaTitle     String?
-  metaDescription String? @db.Text
-  keywordTarget String?                  // keyword principal SEO
-  intent        BlogIntent @default(INFORMATIONAL)
-  schemaJson    Json?                    // schema.org adicional (FAQPage, HowTo…)
-  tags          String[]  @default([])
-  status        BlogPostStatus @default(DRAFT)
-  publishedAt   DateTime?
-  metrics       Json?                    // GSC clicks/impressions/avgPosition
-  author        String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  createdBy     String?
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  title           String
+  excerpt         String?        @db.Text
+  bodyMd          String         @db.Text // Markdown source
+  heroUrl         String?
+  metaTitle       String?
+  metaDescription String?        @db.Text
+  keywordTarget   String? // keyword principal SEO
+  intent          BlogIntent     @default(INFORMATIONAL)
+  schemaJson      Json? // schema.org adicional (FAQPage, HowTo…)
+  tags            String[]       @default([])
+  status          BlogPostStatus @default(DRAFT)
+  publishedAt     DateTime?
+  metrics         Json? // GSC clicks/impressions/avgPosition
+  author          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String?
 
   @@index([status, publishedAt])
   @@index([slug])
 }
 
 enum BlogIntent {
-  INFORMATIONAL  // "qué es", "cómo elegir", "guía"
-  TRANSACTIONAL  // "comprar", "precios", "proveedor"
-  NAVIGATIONAL   // "TodoMerchandising opiniones"
-  COMMERCIAL     // "mejor merchandising", "comparativa"
+  INFORMATIONAL // "qué es", "cómo elegir", "guía"
+  TRANSACTIONAL // "comprar", "precios", "proveedor"
+  NAVIGATIONAL // "TodoMerchandising opiniones"
+  COMMERCIAL // "mejor merchandising", "comparativa"
 }
 
 enum BlogPostStatus {
@@ -1348,43 +1347,43 @@ enum BlogPostStatus {
 /// Guardamos tokens y account IDs aquí en lugar de .env para que el admin
 /// pueda editarlos sin redeploy y rotarlos sin tocar infra. Solo CEO accede.
 model IntegrationConfig {
-  provider    IntegrationProvider @id  // un único registro por provider
-  enabled     Boolean             @default(false)
-  config      Json                // {apiKey, blogId, accounts: {IG: "123", LINKEDIN: "456"}}
-  lastTestAt  DateTime?           // último test de conexión
-  lastTestOk  Boolean?            // resultado test
-  lastError   String?             @db.Text
-  updatedAt   DateTime            @updatedAt
-  updatedBy   String?
+  provider   IntegrationProvider @id // un único registro por provider
+  enabled    Boolean             @default(false)
+  config     Json // {apiKey, blogId, accounts: {IG: "123", LINKEDIN: "456"}}
+  lastTestAt DateTime? // último test de conexión
+  lastTestOk Boolean? // resultado test
+  lastError  String?             @db.Text
+  updatedAt  DateTime            @updatedAt
+  updatedBy  String?
 }
 
 enum IntegrationProvider {
   METRICOOL
-  MAGNIFIC      // IA imágenes: upscaler, remove-bg, mystic, relight, expand
-  REPLICATE     // IA imágenes pay-per-use: real-esrgan, flux, rembg, etc.
+  MAGNIFIC // IA imágenes: upscaler, remove-bg, mystic, relight, expand
+  REPLICATE // IA imágenes pay-per-use: real-esrgan, flux, rembg, etc.
   META_ADS
   GOOGLE_ADS
   LINKEDIN_ADS
-  RESEND        // ya usado para emails (placeholder por unificación)
-  STRIPE        // ya usado (placeholder)
+  RESEND // ya usado para emails (placeholder por unificación)
+  STRIPE // ya usado (placeholder)
 }
 
 /// Tareas Replicate (upscale, flux, remove-bg, etc). Mismo patrón que
 /// MagnificTask. La diferencia es el provider y los modelos disponibles.
 model ReplicateTask {
-  id          String   @id @default(cuid())
-  type        String   // "upscale" | "generate" | "remove-bg"
-  status      String   // "queued" | "processing" | "ready" | "failed"
-  model       String   // ej "philz1337x/clarity-upscaler"
-  inputUrl    String?  @db.Text
-  outputUrl   String?  @db.Text  // URL local persistida (tras descarga)
+  id                 String   @id @default(cuid())
+  type               String // "upscale" | "generate" | "remove-bg"
+  status             String // "queued" | "processing" | "ready" | "failed"
+  model              String // ej "philz1337x/clarity-upscaler"
+  inputUrl           String?  @db.Text
+  outputUrl          String?  @db.Text // URL local persistida (tras descarga)
   remotePredictionId String?
-  prompt      String?  @db.Text
-  params      Json?
-  error       String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   String?
+  prompt             String?  @db.Text
+  params             Json?
+  error              String?  @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  createdBy          String?
 
   @@index([type, status])
   @@index([createdAt])
@@ -1394,19 +1393,19 @@ model ReplicateTask {
 /// historial por dos motivos: (1) tracking de coste y uso por usuario,
 /// (2) poll a Magnific async sin perder el task_id si se cierra la pestaña.
 model MagnificTask {
-  id          String   @id @default(cuid())
-  type        String   // "upscale" | "remove-bg" | "mystic" | "relight" | "expand" | "style-transfer"
-  status      String   // "queued" | "processing" | "ready" | "failed"
-  inputUrl    String?  @db.Text  // URL imagen origen (no para mystic)
-  outputUrl   String?  @db.Text  // URL imagen final (cuando ready)
-  previewUrl  String?  @db.Text  // versión preview (algunos endpoints la dan)
+  id           String   @id @default(cuid())
+  type         String // "upscale" | "remove-bg" | "mystic" | "relight" | "expand" | "style-transfer"
+  status       String // "queued" | "processing" | "ready" | "failed"
+  inputUrl     String?  @db.Text // URL imagen origen (no para mystic)
+  outputUrl    String?  @db.Text // URL imagen final (cuando ready)
+  previewUrl   String?  @db.Text // versión preview (algunos endpoints la dan)
   remoteTaskId String? // task_id devuelto por Magnific (para polling)
-  prompt      String?  @db.Text  // para mystic
-  params      Json?    // params de la request (scale, resolution, aspect_ratio, etc)
-  error       String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   String?  // email del admin que lanzó la task
+  prompt       String?  @db.Text // para mystic
+  params       Json? // params de la request (scale, resolution, aspect_ratio, etc)
+  error        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String? // email del admin que lanzó la task
 
   @@index([type, status])
   @@index([createdAt])
@@ -1416,31 +1415,31 @@ model MagnificTask {
 /// común. Una campaña típica: "Black Friday 2026 — 25% sobre textil",
 /// "Lanzamiento línea eco", "Captación RRHH". UTM auto único por campaña.
 model Campaign {
-  id            String          @id @default(cuid())
-  name          String
-  objective     CampaignObjective @default(LEADS)
-  channels      String[]        // ["meta", "google", "linkedin", "ig", "email"]
-  budgetCents   Int?
-  startsAt      DateTime
-  endsAt        DateTime?
-  status        CampaignStatus  @default(PLANNED)
-  utmCampaign   String          @unique  // slug auto: "black-friday-2026"
-  adAccountIds  Json?           // {meta: "act_xxx", google: "123-456-7890"}
-  pieces        ContentPiece[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  createdBy     String?
+  id           String            @id @default(cuid())
+  name         String
+  objective    CampaignObjective @default(LEADS)
+  channels     String[] // ["meta", "google", "linkedin", "ig", "email"]
+  budgetCents  Int?
+  startsAt     DateTime
+  endsAt       DateTime?
+  status       CampaignStatus    @default(PLANNED)
+  utmCampaign  String            @unique // slug auto: "black-friday-2026"
+  adAccountIds Json? // {meta: "act_xxx", google: "123-456-7890"}
+  pieces       ContentPiece[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  createdBy    String?
 
   @@index([status])
   @@index([startsAt])
 }
 
 enum CampaignObjective {
-  LEADS         // captar formularios / cotizaciones
-  CONVERSIONS   // pago directo
-  TRAFFIC       // tráfico a landing
-  AWARENESS     // alcance / branding
-  RETENTION     // upsell / cross-sell a clientes actuales
+  LEADS // captar formularios / cotizaciones
+  CONVERSIONS // pago directo
+  TRAFFIC // tráfico a landing
+  AWARENESS // alcance / branding
+  RETENTION // upsell / cross-sell a clientes actuales
 }
 
 enum CampaignStatus {
@@ -1456,42 +1455,42 @@ enum CampaignStatus {
 /// APPROVED (lista para schedule) → SCHEDULED (con fecha futura) →
 /// PUBLISHED (enviada al canal externo) | FAILED (error al publicar).
 model ContentPiece {
-  id              String         @id @default(cuid())
-  type            ContentType
-  channel         ContentChannel
-  status          ContentStatus  @default(DRAFT)
+  id      String         @id @default(cuid())
+  type    ContentType
+  channel ContentChannel
+  status  ContentStatus  @default(DRAFT)
 
   // Contenido editable
-  title           String?        // título interno para identificar la pieza
-  copy            String         @db.Text
-  copyVariations  Json?          // alternativas IA: [{ id, text, score }]
-  hashtags        String[]       @default([])
-  mentions        String[]       @default([])
+  title          String? // título interno para identificar la pieza
+  copy           String   @db.Text
+  copyVariations Json? // alternativas IA: [{ id, text, score }]
+  hashtags       String[] @default([])
+  mentions       String[] @default([])
 
   // Creatividad
-  creativeUrl     String?        // URL PNG/MP4 final renderizado
-  creativeBrief   String?        @db.Text  // brief para regenerar
+  creativeUrl   String? // URL PNG/MP4 final renderizado
+  creativeBrief String? @db.Text // brief para regenerar
 
   // Vinculación con producto / campaña
-  productSlug     String?
-  campaign        Campaign?      @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  campaignId      String?
+  productSlug String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  campaignId  String?
 
   // Programación
   scheduledAt     DateTime?
   publishedAt     DateTime?
-  channelResponse Json?          // {externalId, externalUrl, postedAt}
+  channelResponse Json? // {externalId, externalUrl, postedAt}
 
   // Tracking
-  utmContent      String?        // identificador único para atribución
-  metrics         ContentMetric[]
+  utmContent String? // identificador único para atribución
+  metrics    ContentMetric[]
 
   // Auditoría
-  createdBy       String?
-  approvedBy      String?
-  approvedAt      DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdBy  String?
+  approvedBy String?
+  approvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([status])
   @@index([channel])
@@ -1500,26 +1499,26 @@ model ContentPiece {
 }
 
 enum ContentType {
-  POST            // post estático (IG feed, FB, LinkedIn)
-  STORY           // 9:16 vertical (IG/FB stories)
-  REEL            // video corto vertical (IG Reels, TikTok, YT Shorts)
-  CARRUSEL        // carrusel multi-imagen
-  EMAIL           // pieza de email broadcast
-  AD              // creatividad de anuncio pagado
-  BLOG            // artículo SEO largo
-  LANDING         // landing page de campaña
+  POST // post estático (IG feed, FB, LinkedIn)
+  STORY // 9:16 vertical (IG/FB stories)
+  REEL // video corto vertical (IG Reels, TikTok, YT Shorts)
+  CARRUSEL // carrusel multi-imagen
+  EMAIL // pieza de email broadcast
+  AD // creatividad de anuncio pagado
+  BLOG // artículo SEO largo
+  LANDING // landing page de campaña
 }
 
 enum ContentChannel {
-  IG              // Instagram
-  FB              // Facebook
+  IG // Instagram
+  FB // Facebook
   LINKEDIN
-  X               // Twitter/X
+  X // Twitter/X
   TIKTOK
   YOUTUBE
   PINTEREST
   EMAIL
-  WEB             // landing propia
+  WEB // landing propia
   GOOGLE_ADS
   META_ADS
   LINKEDIN_ADS
@@ -1536,18 +1535,18 @@ enum ContentStatus {
 }
 
 model ContentMetric {
-  id            String       @id @default(cuid())
-  piece         ContentPiece @relation(fields: [pieceId], references: [id], onDelete: Cascade)
-  pieceId       String
-  day           DateTime     @db.Date
-  impressions   Int          @default(0)
-  reach         Int          @default(0)
-  engagements   Int          @default(0)
-  clicks        Int          @default(0)
-  conversions   Int          @default(0)
-  spendCents    Int          @default(0)
-  source        String       // "metricool", "meta", "google", "linkedin", "internal"
-  raw           Json?
+  id          String       @id @default(cuid())
+  piece       ContentPiece @relation(fields: [pieceId], references: [id], onDelete: Cascade)
+  pieceId     String
+  day         DateTime     @db.Date
+  impressions Int          @default(0)
+  reach       Int          @default(0)
+  engagements Int          @default(0)
+  clicks      Int          @default(0)
+  conversions Int          @default(0)
+  spendCents  Int          @default(0)
+  source      String // "metricool", "meta", "google", "linkedin", "internal"
+  raw         Json?
 
   @@unique([pieceId, day, source])
   @@index([day])
@@ -1559,15 +1558,15 @@ model ContentMetric {
 /// link al cliente / al producto.
 model PortfolioItem {
   id          String   @id @default(cuid())
-  imageUrl    String              // URL absoluta o /uploads/
-  title       String              // ej "200 sudaderas para Acme Corp"
-  description String?  @db.Text   // detalle opcional (técnica, cantidad, sector)
-  clientName  String?             // nombre del cliente público
-  productSlug String?             // link a /catalogo/[slug] si aplica
-  sector      String?             // tag: "eventos", "rrhh", "marketing", etc.
-  featured    Boolean  @default(false)  // aparece en home
+  imageUrl    String // URL absoluta o /uploads/
+  title       String // ej "200 sudaderas para Acme Corp"
+  description String?  @db.Text // detalle opcional (técnica, cantidad, sector)
+  clientName  String? // nombre del cliente público
+  productSlug String? // link a /catalogo/[slug] si aplica
+  sector      String? // tag: "eventos", "rrhh", "marketing", etc.
+  featured    Boolean  @default(false) // aparece en home
   active      Boolean  @default(true)
-  order       Int      @default(0)      // ASC para ordenar
+  order       Int      @default(0) // ASC para ordenar
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   updatedBy   String?
@@ -1580,23 +1579,23 @@ model PortfolioItem {
 /// independiente de si el cliente tiene CustomerUser (login) o solo
 /// CartQuote (lead). Email como PK = clave natural unificada.
 model CustomerProfile {
-  email     String   @id
-  notes     String?  @db.Text
-  tags      String[] @default([])
+  email     String           @id
+  notes     String?          @db.Text
+  tags      String[]         @default([])
   segment   CustomerSegment?
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime         @updatedAt
   updatedBy String?
 
   @@index([segment])
 }
 
 enum CustomerSegment {
-  ENTERPRISE   // empresa grande, ticket > 5k habitual
-  MIDMARKET    // PYME estable
-  STARTUP      // tiraje pequeño pero recurrente
-  ONE_OFF      // cliente puntual
-  PARTNER      // affiliate, embajador
-  CHURNED      // dejó de comprar (>1 año sin pedido)
+  ENTERPRISE // empresa grande, ticket > 5k habitual
+  MIDMARKET // PYME estable
+  STARTUP // tiraje pequeño pero recurrente
+  ONE_OFF // cliente puntual
+  PARTNER // affiliate, embajador
+  CHURNED // dejó de comprar (>1 año sin pedido)
 }
 
 /// Broadcast email manual — envía a NewsletterSubscriber active. Editor
@@ -1604,43 +1603,43 @@ enum CustomerSegment {
 /// Programación opcional con scheduledAt — un cron diario procesará los
 /// que estén SCHEDULED y haya llegado su hora.
 model EmailBroadcast {
-  id            String              @id @default(cuid())
-  subject       String              // asunto del email
-  preheader     String?             // texto preview en bandeja (Gmail/Outlook)
-  html          String              @db.Text
-  text          String?             @db.Text // versión texto plano (auto si null)
-  audience      BroadcastAudience   @default(NEWSLETTER_ALL)
-  status        BroadcastStatus     @default(DRAFT)
-  scheduledAt   DateTime?           // si está SCHEDULED, hora de envío
-  sentAt        DateTime?
-  sentCount     Int                 @default(0)
-  failedCount   Int                 @default(0)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  createdBy     String?             // email admin
-  deliveries    BroadcastDelivery[]
+  id          String              @id @default(cuid())
+  subject     String // asunto del email
+  preheader   String? // texto preview en bandeja (Gmail/Outlook)
+  html        String              @db.Text
+  text        String?             @db.Text // versión texto plano (auto si null)
+  audience    BroadcastAudience   @default(NEWSLETTER_ALL)
+  status      BroadcastStatus     @default(DRAFT)
+  scheduledAt DateTime? // si está SCHEDULED, hora de envío
+  sentAt      DateTime?
+  sentCount   Int                 @default(0)
+  failedCount Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  createdBy   String? // email admin
+  deliveries  BroadcastDelivery[]
 
   @@index([status])
   @@index([scheduledAt])
 }
 
 model BroadcastDelivery {
-  id          String           @id @default(cuid())
-  broadcast   EmailBroadcast   @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  id          String          @id @default(cuid())
+  broadcast   EmailBroadcast  @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
   broadcastId String
   email       String
-  status      DeliveryAttempt  @default(SENT)
-  error       String?          @db.Text
-  sentAt      DateTime         @default(now())
+  status      DeliveryAttempt @default(SENT)
+  error       String?         @db.Text
+  sentAt      DateTime        @default(now())
 
   @@unique([broadcastId, email])
   @@index([broadcastId])
 }
 
 enum BroadcastAudience {
-  NEWSLETTER_ALL    // todos los subscribers active (no unsubscribed)
-  NEWSLETTER_NEW    // los últimos 30 días
-  CUSTOMERS_ALL     // todos los CustomerUser con email
+  NEWSLETTER_ALL // todos los subscribers active (no unsubscribed)
+  NEWSLETTER_NEW // los últimos 30 días
+  CUSTOMERS_ALL // todos los CustomerUser con email
   CART_QUOTES_RECENT // emails de CartQuote últimos 90d (lead nurturing)
 }
 
@@ -1663,22 +1662,22 @@ enum DeliveryAttempt {
 /// dentro de ventana startsAt..endsAt. Si hay varios en el mismo slot,
 /// ordenan por priority desc, luego createdAt desc.
 model MarketingBanner {
-  id          String       @id @default(cuid())
-  slot        BannerSlot
-  title       String       // texto principal grande
-  subtitle    String?      @db.Text // texto secundario
-  ctaLabel    String?      // texto del botón
-  ctaUrl      String?      // /catalogo, /pay/..., https://..., #ancla
-  imageUrl    String?      // imagen lateral o de fondo (opcional)
-  bgColor     String?      // hex ej "#ff6b35" (default = coral del tema)
-  textColor   String?      // hex ej "#faf8f4" (default = bone)
-  active      Boolean      @default(true)
-  startsAt    DateTime?    // null = sin restricción inicio
-  endsAt      DateTime?    // null = sin restricción fin
-  priority    Int          @default(0) // orden dentro del slot (mayor = arriba)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  updatedBy   String?
+  id        String     @id @default(cuid())
+  slot      BannerSlot
+  title     String // texto principal grande
+  subtitle  String?    @db.Text // texto secundario
+  ctaLabel  String? // texto del botón
+  ctaUrl    String? // /catalogo, /pay/..., https://..., #ancla
+  imageUrl  String? // imagen lateral o de fondo (opcional)
+  bgColor   String? // hex ej "#ff6b35" (default = coral del tema)
+  textColor String? // hex ej "#faf8f4" (default = bone)
+  active    Boolean    @default(true)
+  startsAt  DateTime? // null = sin restricción inicio
+  endsAt    DateTime? // null = sin restricción fin
+  priority  Int        @default(0) // orden dentro del slot (mayor = arriba)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  updatedBy String?
 
   @@index([slot, active])
   @@index([startsAt])
@@ -1686,11 +1685,11 @@ model MarketingBanner {
 }
 
 enum BannerSlot {
-  HOME_TOP        // bajo el hero, arriba del marquee
-  HOME_MID        // entre secciones de la home
-  CATALOGO_TOP    // dentro del catálogo, arriba de los filtros
-  FICHA_PRODUCTO  // en la ficha individual de producto
-  FOOTER          // banda promocional de footer
+  HOME_TOP // bajo el hero, arriba del marquee
+  HOME_MID // entre secciones de la home
+  CATALOGO_TOP // dentro del catálogo, arriba de los filtros
+  FICHA_PRODUCTO // en la ficha individual de producto
+  FOOTER // banda promocional de footer
 }
 
 // CMS de marketing — copy editable desde /admin/marketing/site
@@ -1708,18 +1707,88 @@ model SiteSetting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
-  updatedBy String?  // email del admin que lo cambió
+  updatedBy String? // email del admin que lo cambió
 }
 
 // Snapshot del último sync por proveedor
 model SupplierSync {
-  id              String        @id @default(cuid())
-  supplier        SupplierCode  @unique
-  startedAt       DateTime
-  finishedAt      DateTime?
-  ok              Boolean       @default(false)
-  productsFetched Int           @default(0)
+  id               String       @id @default(cuid())
+  supplier         SupplierCode @unique
+  startedAt        DateTime
+  finishedAt       DateTime?
+  ok               Boolean      @default(false)
+  productsFetched  Int          @default(0)
   productsUpserted Int          @default(0)
-  errorsJson      Json?
-  notes           String?
+  errorsJson       Json?
+  notes            String?
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Promociones — descuentos programables sobre el catálogo.
+//
+// A diferencia del Coupon (requiere código manual del cliente), una Promotion
+// se aplica automáticamente a los productos que entran en su scope durante
+// su ventana de validez (startsAt → endsAt). Aparece como precio tachado +
+// badge en card y ficha, y se aplica también a todos los PriceTier (no solo
+// al fromPriceCents) para que el precio del carrito sea coherente.
+//
+// Múltiples promos pueden coexistir; se aplica la de mayor descuento por
+// producto (no se acumulan). El override de precio del producto se aplica
+// PRIMERO, la promo va sobre el resultado.
+//
+// Scope:
+//   ALL          → todo el catálogo
+//   CATEGORY     → targetIds = [categoryId, …]
+//   BRAND        → targetIds = [brandName, …]  (strings; brand no tiene model)
+//   TAG          → targetIds = [marketingTag, …] (matchea ProductOverride.marketingTags)
+//   PRODUCT_LIST → targetIds = [productId, …]
+//
+// Ejemplos:
+//   - "Black Friday −20%" scope=ALL, kind=PERCENT, value=20, startsAt/endsAt
+//   - "Liquidación textil −5€" scope=CATEGORY, value=500 (cents fijos)
+//   - "Best-sellers verano" scope=TAG, targetIds=["best-seller"]
+model Promotion {
+  id          String  @id @default(cuid())
+  name        String // nombre interno, ej. "Black Friday 2026"
+  slug        String  @unique // url-friendly, ej. "black-friday-2026"
+  description String? @db.Text // contexto interno para el equipo
+
+  kind  PromotionKind // PERCENT (10 = -10%) o FIXED (centavos)
+  value Int // valor del descuento (% o cents según kind)
+
+  scope     PromotionScope // dónde aplica
+  targetIds String[]       @default([]) // IDs según scope (categoryId / brand / tag / productId)
+
+  startsAt DateTime // empieza a aplicar
+  endsAt   DateTime? // termina (null = indefinida)
+  active   Boolean   @default(true) // toggle manual para pausar sin tocar fechas
+
+  // Presentación pública
+  badgeText     String? // ej. "−20% BLACK FRIDAY". Si null, se genera auto
+  badgeColor    String? // hex opcional, ej. "#E63E73". Si null, accent
+  displayInList Boolean @default(true) // mostrar en /promociones
+
+  // Métricas (rellenadas en runtime / batch)
+  appliedCount Int @default(0) // veces que se aplicó la promo a un cart line
+  viewCount    Int @default(0) // impresiones del badge
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String? // email admin
+
+  @@index([active, startsAt, endsAt])
+  @@index([scope])
+}
+
+enum PromotionKind {
+  PERCENT
+  FIXED
+}
+
+enum PromotionScope {
+  ALL
+  CATEGORY
+  BRAND
+  TAG
+  PRODUCT_LIST
 }
