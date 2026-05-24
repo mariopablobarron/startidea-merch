@@ -1,0 +1,25 @@
+src/app/page.tsx
+  s_65877aa637ec34::t_982f9606aea54b 64
+  s_65877aa637ec34::t_d7ee24eddf003a 3
+src/components/ActivePromotionBar.tsx
+  s_65877aa637ec34::t_d14a62738594b7 1-92
+src/app/admin/promotions/page.tsx
+  s_65877aa637ec34::t_ce49ebf28e07e0 597-606,608-619,621-663
+  s_65877aa637ec34::t_714ccd230bba15 1010-1034
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "6fc9568afc0d757233bd69d072750542da91a5da",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
