@@ -1,0 +1,49 @@
+src/app/api/admin/broadcasts/tags/route.ts
+  s_65877aa637ec34::t_7770b62b9a5b36 1-33
+src/app/api/admin/broadcasts/[id]/route.ts
+  s_65877aa637ec34::t_ecb5b3da01ecd8 16-22,24
+src/app/admin/marketing/broadcasts/[id]/page.tsx
+  s_65877aa637ec34::t_c04d3038fbd433 132-133,139,142,146,153,157,163-171
+  s_65877aa637ec34::t_4242058cb60794 354-357,361-419
+  s_65877aa637ec34::t_9837b3bdd5f720 6-11,17,29,38
+  s_65877aa637ec34::t_f601f33aac297c 191
+src/app/api/admin/newsletter/export/route.ts
+  s_65877aa637ec34::t_0f8f5a5bd61370 1-91
+src/app/api/admin/broadcasts/route.ts
+  s_65877aa637ec34::t_d4c05a3d6d84ae 13,18-36
+  s_65877aa637ec34::t_6aed0a1fbd1d76 59-60,62-64
+  s_65877aa637ec34::t_5cba12a2799742 95,102-105
+src/app/api/admin/broadcasts/[id]/send/route.ts
+  s_65877aa637ec34::t_84e6ce433681d6 81
+src/lib/broadcast-audience.ts
+  s_65877aa637ec34::t_360106ccdaa6c0 21,48-60,94-97,107-112,131
+prisma/migrations/20260525_broadcast_tag/migration.sql
+  s_65877aa637ec34::t_a2060f5e5e9f9a 1-10
+src/app/admin/marketing/newsletter/page.tsx
+  s_65877aa637ec34::t_927a9d6bedd3e4 201-237
+  s_65877aa637ec34::t_dfe3b2bae09a23 38-49
+  s_65877aa637ec34::t_1073edc9cc0ce5 101-102,114-117,122-125,131-150
+  s_65877aa637ec34::t_f5546a74fdd3d0 171-178
+  s_65877aa637ec34::t_0907b40bd2c6f4 170,179-198
+src/app/api/admin/newsletter/imports/[id]/route.ts
+  s_65877aa637ec34::t_70075027f6ade6 1-79
+prisma/schema.prisma
+  s_65877aa637ec34::t_4ab825a79cf4df 1656
+  s_65877aa637ec34::t_5bc2f15082f5fe 1623-1625
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "d6d29112fb9854e0ba7a88b3543712faa19f24ac",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
