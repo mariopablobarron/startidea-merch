@@ -1,0 +1,21 @@
+src/app/admin/affiliates/page.tsx
+  s_65877aa637ec34::t_513b563b8a43d4 94-110
+src/app/api/admin/affiliates/payouts.csv/route.ts
+  s_65877aa637ec34::t_233e104d1aeb6b 1-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "999376ffadc919f1dc1de2268ee49f4b3938e228",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
