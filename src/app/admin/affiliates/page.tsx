@@ -91,13 +91,23 @@ export default function AffiliatesPage() {
               <strong>crédito</strong> (descuento para sus propios pedidos) al canjearse. Sistema dual.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark"
-          >
-            + Nuevo afiliado
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="/api/admin/affiliates/payouts.csv"
+              download
+              title="Descarga CSV con comisiones pendientes y crédito disponible (incluye notes con IBAN del partner)"
+              className="rounded-full border border-line bg-bone px-4 py-2.5 text-sm font-medium text-ink/80 hover:border-ink/30 hover:bg-bone-soft"
+            >
+              ↓ Exportar pendientes (CSV)
+            </a>
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark"
+            >
+              + Nuevo afiliado
+            </button>
+          </div>
         </header>
 
         {/* Totales agregados */}
