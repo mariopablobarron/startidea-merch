@@ -1,0 +1,26 @@
+src/app/afiliado/[token]/page.tsx
+  s_65877aa637ec34::t_c04d54800e36cc 1-268
+src/lib/affiliate-magic.ts
+  s_65877aa637ec34::t_0f10370c657aa3 1-50
+src/app/admin/affiliates/[id]/page.tsx
+  s_65877aa637ec34::t_20386805272a49 144-154,178-188
+  s_65877aa637ec34::t_5eb4ff0f8f5fa2 71-100
+src/app/api/admin/affiliates/[id]/magic-link/route.ts
+  s_65877aa637ec34::t_c7570e063adac2 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "bee01b607ca38107e0a6c72e20b0bf71e5306b79",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
