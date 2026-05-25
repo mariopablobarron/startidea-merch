@@ -1,0 +1,29 @@
+src/app/api/cron/cifra-sync/route.ts
+  s_65877aa637ec34::t_cbe1da24f847e5 1-72
+prisma/schema.prisma
+  s_65877aa637ec34::t_909ac64e693268 96
+  s_65877aa637ec34::t_6774877af568fd 505
+src/lib/purchase-orders.ts
+  s_65877aa637ec34::t_84e84df9daa4ad 104
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_175acbde7c90a3 23-24
+  s_65877aa637ec34::t_a6b4f2a972111f 1-22,25-288
+src/lib/suppliers/cifra.ts
+  s_65877aa637ec34::t_d5e13182cc024f 1-209
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "64ffbc424a7a47886ff4ce813ce45ab7a1eeb183",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
