@@ -93,6 +93,48 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
   }
 
   // 4. Para cada rootmodel: upsert Product + sus variants
+  // Cache de categorías root (parentId=null) — evita rehacer findFirst por cada
+  // producto y replica el patrón de midocean-sync. Mismo fix que aplicamos a
+  // ese sync: el compound unique parentId_slug NO se puede consultar con
+  // parentId=null en Prisma 6 ("Argument `parentId` must not be null"); hay que
+  // usar findFirst + create.
+  const categoryCache = new Map<string, string>(); // slug → categoryId
+
+  async function resolveRootCategory(name: string): Promise<string | null> {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+    const slug = safeSlug(trimmed);
+    const cached = categoryCache.get(slug);
+    if (cached) return cached;
+    const existing = await prisma.category.findFirst({
+      where: { parentId: null, slug },
+      select: { id: true },
+    });
+    if (existing) {
+      categoryCache.set(slug, existing.id);
+      return existing.id;
+    }
+    try {
+      const created = await prisma.category.create({
+        data: { slug, name: trimmed, level: 1, parentId: null },
+      });
+      categoryCache.set(slug, created.id);
+      return created.id;
+    } catch (e) {
+      // Race: otra Promise del mismo chunk creó la misma categoría a la vez.
+      // Releemos.
+      const again = await prisma.category.findFirst({
+        where: { parentId: null, slug },
+        select: { id: true },
+      });
+      if (again) {
+        categoryCache.set(slug, again.id);
+        return again.id;
+      }
+      throw e;
+    }
+  }
+
   const CHUNK = 50;
   const roots = Array.from(byRoot.keys());
   for (let i = 0; i < roots.length; i += CHUNK) {
@@ -102,21 +144,9 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
         const variants = byRoot.get(rootmodel)!;
         const head = variants[0]!; // usamos el primero como "cabecera"
         try {
-          // Categoría — upsert por nombre (tree plano de Cifra, level 1)
-          let categoryId: string | null = null;
-          if (head.category?.trim()) {
-            const cat = await prisma.category.upsert({
-              where: { parentId_slug: { parentId: null as never, slug: safeSlug(head.category) } },
-              create: {
-                slug: safeSlug(head.category),
-                name: head.category.trim(),
-                level: 1,
-                parentId: null,
-              },
-              update: { name: head.category.trim() },
-            });
-            categoryId = cat.id;
-          }
+          const categoryId = head.category?.trim()
+            ? await resolveRootCategory(head.category)
+            : null;
 
           // Upsert Product (rootmodel = supplierRef)
           const product = await prisma.product.upsert({
