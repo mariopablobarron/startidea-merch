@@ -1,0 +1,37 @@
+src/app/api/admin/newsletter/import/route.ts
+  s_65877aa637ec34::t_defa172a4fd3b8 4
+  s_65877aa637ec34::t_be01f8f4746115 100-107,110-139,143-150,152-202,204-205,207-211,217-239,242,245-255
+  s_65877aa637ec34::t_fdf449e07e4571 30-31,34-45
+  s_65877aa637ec34::t_51a63e245c260b 64-71
+src/app/admin/marketing/newsletter/page.tsx
+  s_65877aa637ec34::t_3d066200f4d556 833-842
+  s_65877aa637ec34::t_4742f6d00c394a 38-40,42,67-74
+  s_65877aa637ec34::t_e2cf8cf20cf694 582
+  s_65877aa637ec34::t_695558508f24d8 614
+  s_65877aa637ec34::t_857bac15e8e0fa 742-766
+  s_65877aa637ec34::t_34d29f3135c41b 525-530,532-572,575-581,583-585,587-613,615-661,663-682,694,701-732
+  s_65877aa637ec34::t_1cd66ca102c85a 662
+  s_65877aa637ec34::t_68510ec9d6e2c5 586
+  s_65877aa637ec34::t_38852089dc3c7f 338,340-345,349-356,376-393,404-418,428,437
+src/app/api/admin/newsletter/import/preview/route.ts
+  s_65877aa637ec34::t_b22900504e164a 58-61,63-68,76,78,83-96,98-132,134,154-155
+  s_65877aa637ec34::t_1f3922e9313564 3
+src/lib/newsletter-parser.ts
+  s_65877aa637ec34::t_2869d263dc6c4e 116-118,120-130,133-142,144-149,151-161,163-185,188-197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "b405989f652952266fee8d30ce4d6f3d30995ff0",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
