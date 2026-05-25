@@ -68,6 +68,36 @@ export default function AffiliateDetailPage({ params }: { params: Promise<{ id: 
   const [loading, setLoading] = useState(true);
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [useCreditOpen, setUseCreditOpen] = useState(false);
+  const [magicBusy, setMagicBusy] = useState(false);
+  const [magicMsg, setMagicMsg] = useState<string | null>(null);
+
+  async function generateMagicLink() {
+    setMagicBusy(true);
+    setMagicMsg(null);
+    try {
+      const r = await fetch(`/api/admin/affiliates/${id}/magic-link`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const d = await r.json();
+      if (!r.ok || !d.url) {
+        setMagicMsg(`⚠ ${d.error || `Error ${r.status}`}`);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(d.url);
+        setMagicMsg(`✓ Link copiado (válido ${d.expiresInDays}d)`);
+      } catch {
+        setMagicMsg(`✓ Link generado: ${d.url}`);
+      }
+    } catch (e) {
+      setMagicMsg(`⚠ ${e instanceof Error ? e.message : "Error"}`);
+    } finally {
+      setMagicBusy(false);
+      // Limpia el toast a los 6s
+      setTimeout(() => setMagicMsg(null), 6000);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,6 +141,19 @@ export default function AffiliateDetailPage({ params }: { params: Promise<{ id: 
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={generateMagicLink}
+              disabled={magicBusy || !partner.active}
+              title={
+                partner.active
+                  ? "Genera un enlace de 30 días para que el afiliado vea su saldo (read-only)"
+                  : "Activa al afiliado para generar el link"
+              }
+              className="rounded-full border border-line bg-bone px-4 py-2.5 text-sm font-medium text-ink/80 hover:border-ink/30 hover:bg-bone-soft disabled:opacity-40"
+            >
+              {magicBusy ? "Generando…" : "📤 Generar magic link"}
+            </button>
+            <button
+              type="button"
               onClick={() => setUseCreditOpen(true)}
               disabled={balance.creditAvailable <= 0}
               title={
@@ -132,6 +175,17 @@ export default function AffiliateDetailPage({ params }: { params: Promise<{ id: 
             </button>
           </div>
         </header>
+        {magicMsg && (
+          <p
+            className={`mt-3 rounded-xl px-3 py-2 text-xs ${
+              magicMsg.startsWith("✓")
+                ? "bg-social/10 text-social"
+                : "bg-accent-wash text-accent-deep"
+            }`}
+          >
+            {magicMsg}
+          </p>
+        )}
 
         {/* 4 stats clave */}
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
