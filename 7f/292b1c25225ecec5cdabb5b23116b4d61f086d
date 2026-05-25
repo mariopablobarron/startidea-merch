@@ -1,0 +1,40 @@
+src/app/api/admin/newsletter/[email]/route.ts
+  s_65877aa637ec34::t_528227903932a5 1-68
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_3ac6d9128870df 101
+prisma/schema.prisma
+  s_65877aa637ec34::t_7cf4f1d08c8c5b 1806,1810,1812,1821-1825
+  s_65877aa637ec34::t_926d71c7e3a631 1807-1809,1811,1813-1820
+  s_65877aa637ec34::t_3287a50b060f49 690-701,703,705,708-709
+prisma/migrations/20260525_newsletter_import/migration.sql
+  s_65877aa637ec34::t_fe13ff98ac5a3d 1-45
+src/app/api/admin/newsletter/imports/route.ts
+  s_65877aa637ec34::t_cb91d0426a77c5 1-34
+src/app/api/admin/newsletter/route.ts
+  s_65877aa637ec34::t_7545535dfd9080 1-87
+src/app/api/admin/newsletter/import/preview/route.ts
+  s_65877aa637ec34::t_c3a7de3a76e560 1-149
+src/app/admin/marketing/newsletter/page.tsx
+  s_65877aa637ec34::t_8de9169afe0665 1-667
+src/app/api/admin/newsletter/import/route.ts
+  s_65877aa637ec34::t_7d0b5a44544732 1-194
+src/lib/newsletter-parser.ts
+  s_65877aa637ec34::t_99a4a68e26ac08 1-120,124-256
+  s_65877aa637ec34::t_2817035def4378 121-123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "7f292b1c25225ecec5cdabb5b23116b4d61f086d",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
