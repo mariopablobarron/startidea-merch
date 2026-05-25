@@ -1,0 +1,24 @@
+src/app/api/admin/affiliates/[id]/ledger/route.ts
+  s_65877aa637ec34::t_19f3c95a114a2a 5,14-16,19-27,30-33,38,41,61-92,99
+src/app/admin/affiliates/[id]/page.tsx
+  s_65877aa637ec34::t_4435146c17e765 413-535
+  s_65877aa637ec34::t_a5923bdd649da3 70
+  s_65877aa637ec34::t_6f8e395f2ef023 111-133
+  s_65877aa637ec34::t_6d05a03173142e 283-293
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "d354dc169537487415682f3976954eb3b39cca0c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
