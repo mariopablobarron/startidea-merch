@@ -152,6 +152,16 @@ model Product {
   active         Boolean  @default(true)
   syncedAt       DateTime @default(now())
 
+  // Hints de marcaje cuando el proveedor NO da estructura completa (caso Cifra).
+  // MidOcean usa MarkingPosition + MarkingTechnique + MarkingPriceScale (estructura
+  // completa). Cifra solo manda 2 strings en su JSON por producto:
+  //   - tgrabacion: técnica (códigos opacos: "A", "A, DIGITAL", "L, TR"…)
+  //   - mgrabacion: medida del área ("70x40 mm")
+  // Persistimos ambos para que el cotizador admin (V2 público después) pueda
+  // resolver tarifa con SupplierMarkingRule.
+  markingTechniqueHint String? // ej "A, DIGITAL"
+  markingSizeHint      String? // ej "70x40 mm"
+
   variants       ProductVariant[]
   positions      MarkingPosition[]
   embedding      ProductEmbedding?
@@ -163,6 +173,39 @@ model Product {
   @@index([categoryId])
   @@index([active])
   @@index([syncedAt])
+}
+
+/// Tarifa aproximada de marcaje por técnica para proveedores cuyo API
+/// NO devuelve pricelist estructurado (caso Cifra: solo strings sueltos
+/// `tgrabacion` + `mgrabacion`).
+///
+/// Modelo simple: cada técnica suma un % sobre el precio unitario del
+/// producto. Útil para cotización pública inmediata; el admin ajusta el
+/// presupuesto final tras la consulta a Cifra.
+///
+/// MidOcean NO usa esta tabla — su tarifa real vive en
+/// MarkingTechnique + MarkingPriceScale.
+model SupplierMarkingRule {
+  id             String       @id @default(cuid())
+  supplier       SupplierCode
+  // Código corto del proveedor ("A", "B", "DIGITAL"…). Coincide con los
+  // tokens dentro de Product.markingTechniqueHint (split por ", ").
+  techniqueCode  String
+  // Etiqueta legible al cliente ("Tampografía", "Impresión digital")
+  techniqueLabel String
+  // Porcentaje (entero) que se suma al precio unitario del producto.
+  // 15 = +15% del precio unitario por unidad personalizada.
+  markupPct      Int
+  // Setup fijo opcional (fee único por pedido, EUR cents). Para gastos
+  // de cliché/film/láser. Puede ser null si la técnica no aplica setup.
+  setupCents     Int?
+  active         Boolean      @default(true)
+  notes          String?      @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([supplier, techniqueCode])
+  @@index([supplier, active])
 }
 
 /// Sesión del agente de voz (ElevenLabs Conversational AI). Cada
