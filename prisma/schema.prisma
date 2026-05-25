@@ -1620,6 +1620,9 @@ model EmailBroadcast {
   html        String              @db.Text
   text        String?             @db.Text // versión texto plano (auto si null)
   audience    BroadcastAudience   @default(NEWSLETTER_ALL)
+  // Tags a los que dirigirse cuando audience=NEWSLETTER_TAG.
+  // Si se pasan varios, OR (cualquier subscriber con AL MENOS uno de los tags).
+  audienceTags String[]            @default([])
   status      BroadcastStatus     @default(DRAFT)
   scheduledAt DateTime? // si está SCHEDULED, hora de envío
   sentAt      DateTime?
@@ -1650,6 +1653,7 @@ model BroadcastDelivery {
 enum BroadcastAudience {
   NEWSLETTER_ALL // todos los subscribers active (no unsubscribed)
   NEWSLETTER_NEW // los últimos 30 días
+  NEWSLETTER_TAG // subscribers con tags en EmailBroadcast.audienceTags (OR)
   CUSTOMERS_ALL // todos los CustomerUser con email
   CART_QUOTES_RECENT // emails de CartQuote últimos 90d (lead nurturing)
 }

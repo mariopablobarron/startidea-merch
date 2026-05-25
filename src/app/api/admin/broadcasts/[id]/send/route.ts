@@ -78,7 +78,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     data: { status: "SENDING" },
   });
 
-  const recipients = await resolveAudience(broadcast.audience);
+  const recipients = await resolveAudience(broadcast.audience, broadcast.audienceTags);
 
   let sentCount = 0;
   let failedCount = 0;

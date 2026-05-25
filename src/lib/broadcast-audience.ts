@@ -18,6 +18,7 @@ export type Recipient = {
 
 export async function resolveAudience(
   audience: BroadcastAudience,
+  audienceTags: string[] = [],
 ): Promise<Recipient[]> {
   if (audience === "NEWSLETTER_ALL") {
     const subs = await prisma.newsletterSubscriber.findMany({
@@ -35,6 +36,19 @@ export async function resolveAudience(
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const subs = await prisma.newsletterSubscriber.findMany({
       where: { unsubscribedAt: null, optedInAt: { gte: since } },
+      select: { email: true, name: true, unsubscribeToken: true },
+    });
+    return subs.map((s) => ({
+      email: s.email,
+      name: s.name,
+      unsubscribeToken: s.unsubscribeToken,
+    }));
+  }
+
+  if (audience === "NEWSLETTER_TAG") {
+    if (audienceTags.length === 0) return [];
+    const subs = await prisma.newsletterSubscriber.findMany({
+      where: { unsubscribedAt: null, tags: { hasSome: audienceTags } },
       select: { email: true, name: true, unsubscribeToken: true },
     });
     return subs.map((s) => ({
@@ -77,7 +91,10 @@ function dedup(list: Recipient[]): Recipient[] {
  * Estima el tamaño de la audiencia sin cargar todos los registros.
  * Para mostrar "Se enviará a X destinatarios" en la UI antes de pulsar.
  */
-export async function estimateAudienceSize(audience: BroadcastAudience): Promise<number> {
+export async function estimateAudienceSize(
+  audience: BroadcastAudience,
+  audienceTags: string[] = [],
+): Promise<number> {
   if (audience === "NEWSLETTER_ALL") {
     return prisma.newsletterSubscriber.count({ where: { unsubscribedAt: null } });
   }
@@ -85,6 +102,12 @@ export async function estimateAudienceSize(audience: BroadcastAudience): Promise
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     return prisma.newsletterSubscriber.count({
       where: { unsubscribedAt: null, optedInAt: { gte: since } },
+    });
+  }
+  if (audience === "NEWSLETTER_TAG") {
+    if (audienceTags.length === 0) return 0;
+    return prisma.newsletterSubscriber.count({
+      where: { unsubscribedAt: null, tags: { hasSome: audienceTags } },
     });
   }
   if (audience === "CUSTOMERS_ALL") {
@@ -105,6 +128,7 @@ export async function estimateAudienceSize(audience: BroadcastAudience): Promise
 export const AUDIENCE_LABELS: Record<BroadcastAudience, string> = {
   NEWSLETTER_ALL: "Newsletter — todos los suscriptores",
   NEWSLETTER_NEW: "Newsletter — nuevos (últimos 30 días)",
+  NEWSLETTER_TAG: "Newsletter — por tag(s) específicos",
   CUSTOMERS_ALL: "Clientes — todos con cuenta",
   CART_QUOTES_RECENT: "Leads — cotizaciones últimos 90 días",
 };

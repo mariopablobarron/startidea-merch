@@ -3,12 +3,18 @@
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 
-type Audience = "NEWSLETTER_ALL" | "NEWSLETTER_NEW" | "CUSTOMERS_ALL" | "CART_QUOTES_RECENT";
+type Audience =
+  | "NEWSLETTER_ALL"
+  | "NEWSLETTER_NEW"
+  | "NEWSLETTER_TAG"
+  | "CUSTOMERS_ALL"
+  | "CART_QUOTES_RECENT";
 type Status = "DRAFT" | "SCHEDULED" | "SENDING" | "SENT" | "FAILED" | "CANCELED";
 
 const AUDIENCE_LABELS: Record<Audience, string> = {
   NEWSLETTER_ALL: "Newsletter — todos los suscriptores",
   NEWSLETTER_NEW: "Newsletter — nuevos (últimos 30 días)",
+  NEWSLETTER_TAG: "Newsletter — por tag(s) específicos",
   CUSTOMERS_ALL: "Clientes con cuenta",
   CART_QUOTES_RECENT: "Leads — cotizaciones últimos 90 días",
 };
@@ -20,6 +26,7 @@ type Broadcast = {
   html: string;
   text: string | null;
   audience: Audience;
+  audienceTags: string[];
   status: Status;
   scheduledAt: string | null;
   sentAt: string | null;
@@ -27,6 +34,8 @@ type Broadcast = {
   failedCount: number;
   createdBy: string | null;
 };
+
+type AvailableTag = { tag: string; count: number };
 
 // Plantillas-arranque: el envío aplica automáticamente el wrap Startidea
 // (crema + card blanca + footer oscuro). Aquí sólo el cuerpo editable.
@@ -120,30 +129,46 @@ export default function BroadcastEditorPage({
   const [preheader, setPreheader] = useState("");
   const [html, setHtml] = useState("");
   const [audience, setAudience] = useState<Audience>("NEWSLETTER_ALL");
+  const [audienceTags, setAudienceTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<AvailableTag[]>([]);
   const [scheduledAt, setScheduledAt] = useState("");
 
   async function load() {
     setLoading(true);
     try {
-      const [r1, r2] = await Promise.all([
+      const [r1, r2, r3] = await Promise.all([
         fetch(`/api/admin/broadcasts/${id}`, { credentials: "include" }),
         fetch("/api/admin/broadcasts", { credentials: "include" }),
+        fetch("/api/admin/broadcasts/tags", { credentials: "include" }),
       ]);
       const d1 = await r1.json();
       const d2 = await r2.json();
+      const d3 = await r3.json();
       if (r1.ok && d1.broadcast) {
         setBroadcast(d1.broadcast);
         setSubject(d1.broadcast.subject);
         setPreheader(d1.broadcast.preheader || "");
         setHtml(d1.broadcast.html);
         setAudience(d1.broadcast.audience);
+        setAudienceTags(d1.broadcast.audienceTags || []);
         setScheduledAt(d1.broadcast.scheduledAt ? d1.broadcast.scheduledAt.slice(0, 16) : "");
       }
       if (r2.ok) setAudienceSizes(d2.audienceSizes || {});
+      if (r3.ok) setAvailableTags(d3.tags || []);
     } finally {
       setLoading(false);
     }
   }
+
+  // Tamaño dinámico cuando audience=NEWSLETTER_TAG (suma única de los tags seleccionados,
+  // aproximación: contamos por tag y sumamos. Mejor: el backend devolvería el total único.
+  // De momento mostramos un rango "≤ N" basado en suma de los tags seleccionados.)
+  const tagsAudienceSize =
+    audience === "NEWSLETTER_TAG"
+      ? availableTags
+          .filter((t) => audienceTags.includes(t.tag))
+          .reduce((acc, t) => acc + t.count, 0)
+      : 0;
 
   useEffect(() => {
     load();
@@ -163,6 +188,7 @@ export default function BroadcastEditorPage({
           preheader: preheader || null,
           html,
           audience,
+          audienceTags: audience === "NEWSLETTER_TAG" ? audienceTags : [],
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           status: scheduledAt ? "SCHEDULED" : "DRAFT",
         }),
@@ -325,13 +351,72 @@ export default function BroadcastEditorPage({
                 >
                   {(Object.keys(AUDIENCE_LABELS) as Audience[]).map((a) => (
                     <option key={a} value={a}>
-                      {AUDIENCE_LABELS[a]} ({(audienceSizes[a] ?? 0).toLocaleString("es-ES")})
+                      {AUDIENCE_LABELS[a]}
+                      {a !== "NEWSLETTER_TAG" && audienceSizes[a] !== undefined
+                        ? ` (${(audienceSizes[a] ?? 0).toLocaleString("es-ES")})`
+                        : ""}
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-accent">
-                  Se enviará a {audienceSize.toLocaleString("es-ES")} destinatarios
-                </p>
+                {audience === "NEWSLETTER_TAG" ? (
+                  <div className="mt-3 rounded-xl border border-line bg-bone-soft p-3">
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-ink/60">
+                      Selecciona las listas (tags) destinatarias
+                    </p>
+                    {availableTags.length === 0 ? (
+                      <p className="text-xs text-ink/55">
+                        No hay tags todavía. Importa primero subscribers desde{" "}
+                        <Link href="/admin/marketing/newsletter" className="text-accent underline">
+                          Newsletter
+                        </Link>
+                        .
+                      </p>
+                    ) : (
+                      <div className="max-h-40 space-y-1 overflow-y-auto">
+                        {availableTags.map((t) => {
+                          const checked = audienceTags.includes(t.tag);
+                          return (
+                            <label
+                              key={t.tag}
+                              className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-1 text-xs hover:bg-bone"
+                            >
+                              <span className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  disabled={isLocked}
+                                  onChange={(e) => {
+                                    if (e.target.checked)
+                                      setAudienceTags([...audienceTags, t.tag]);
+                                    else
+                                      setAudienceTags(
+                                        audienceTags.filter((x) => x !== t.tag),
+                                      );
+                                  }}
+                                  className="h-3.5 w-3.5 rounded border-line accent-accent"
+                                />
+                                <span className="font-mono text-ink/85">{t.tag}</span>
+                              </span>
+                              <span className="rounded-full bg-bone px-2 py-0.5 text-[10px] tabular-nums text-ink/55">
+                                {t.count}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {audienceTags.length > 0 && (
+                      <p className="mt-2 text-[11px] text-accent">
+                        ≤ {tagsAudienceSize.toLocaleString("es-ES")} destinatarios
+                        {audienceTags.length > 1 && " (dedupe de los que estén en varios tags)"}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-[11px] text-accent">
+                    Se enviará a {audienceSize.toLocaleString("es-ES")} destinatarios
+                  </p>
+                )}
               </Field>
 
               <Field label="Asunto">

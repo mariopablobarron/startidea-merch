@@ -35,6 +35,18 @@ type Stats = {
   tags: Array<{ tag: string; count: number }>;
 };
 
+type ImportBatch = {
+  id: string;
+  filename: string;
+  importedBy: string;
+  tag: string;
+  totalRows: number;
+  insertedRows: number;
+  updatedRows: number;
+  skippedRows: number;
+  createdAt: string;
+};
+
 type SheetSummary = {
   sheetName: string;
   sheetIndex: number;
@@ -86,6 +98,8 @@ export default function NewsletterPage() {
   const [status, setStatus] = useState<"subscribed" | "unsubscribed" | "all">("subscribed");
   const [loading, setLoading] = useState(true);
   const [importerOpen, setImporterOpen] = useState(false);
+  const [batches, setBatches] = useState<ImportBatch[]>([]);
+  const [showBatches, setShowBatches] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,15 +111,43 @@ export default function NewsletterPage() {
         perPage: String(perPage),
       });
       if (tag) params.set("tag", tag);
-      const r = await fetch(`/api/admin/newsletter?${params}`, { credentials: "include" });
+      const [r, rb] = await Promise.all([
+        fetch(`/api/admin/newsletter?${params}`, { credentials: "include" }),
+        fetch("/api/admin/newsletter/imports", { credentials: "include" }),
+      ]);
       const d = await r.json();
       setItems(d.items || []);
       setTotal(d.total || 0);
       setStats(d.stats || null);
+      if (rb.ok) {
+        const db = await rb.json();
+        setBatches(db.imports || []);
+      }
     } finally {
       setLoading(false);
     }
   }, [q, status, page, perPage, tag]);
+
+  async function undoBatch(batch: ImportBatch) {
+    if (
+      !confirm(
+        `Deshacer importación «${batch.filename}» (tag: ${batch.tag})?\n\n` +
+          `Borrará subscribers exclusivos de este batch (${batch.insertedRows} nuevos) y quitará el tag a los que ya estaban en otras listas (${batch.updatedRows}).\n\nIRREVERSIBLE.`,
+      )
+    )
+      return;
+    const r = await fetch(`/api/admin/newsletter/imports/${batch.id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const d = await r.json();
+    if (r.ok) {
+      alert(`✓ Batch deshecho: ${d.deleted} borrados · ${d.untagged} solo des-etiquetados`);
+      load();
+    } else {
+      alert(`Error: ${d.error || r.status}`);
+    }
+  }
 
   useEffect(() => {
     load();
@@ -125,14 +167,73 @@ export default function NewsletterPage() {
               desde <Link href="/admin/marketing/broadcasts" className="text-accent hover:underline">Broadcasts</Link>.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setImporterOpen(true)}
-            className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark"
-          >
-            + Importar Excel/CSV
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowBatches((v) => !v)}
+              className="rounded-full border border-line bg-bone px-4 py-2.5 text-sm font-medium text-ink/80 hover:border-accent hover:text-accent"
+              title="Historial de importaciones — deshacer batches"
+            >
+              📋 Importaciones ({batches.length})
+            </button>
+            <a
+              href={`/api/admin/newsletter/export?${new URLSearchParams({
+                ...(q ? { q } : {}),
+                ...(tag ? { tag } : {}),
+                status,
+              }).toString()}`}
+              download
+              className="rounded-full border border-line bg-bone px-4 py-2.5 text-sm font-medium text-ink/80 hover:border-accent hover:text-accent"
+              title="Descarga CSV con los filtros actuales"
+            >
+              ⬇ Exportar CSV
+            </a>
+            <button
+              type="button"
+              onClick={() => setImporterOpen(true)}
+              className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark"
+            >
+              + Importar Excel/CSV
+            </button>
+          </div>
         </header>
+
+        {/* Panel deslizable de batches con opción deshacer */}
+        {showBatches && (
+          <div className="mb-5 rounded-2xl border border-line bg-bone p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink/60">
+              Últimas importaciones (deshacer borra los subscribers exclusivos)
+            </p>
+            {batches.length === 0 ? (
+              <p className="text-xs text-ink/55">Aún no hay importaciones.</p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {batches.map((b) => (
+                  <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-xs">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-ink">{b.filename}</p>
+                      <p className="text-[11px] text-ink/55">
+                        <code className="rounded bg-bone-soft px-1.5 py-0.5 font-mono text-[10px] text-accent-deep">
+                          {b.tag}
+                        </code>{" "}
+                        · {b.insertedRows} nuevos · {b.updatedRows} actualizados
+                        {b.skippedRows > 0 && ` · ${b.skippedRows} omitidos`} · {b.importedBy} ·{" "}
+                        {new Date(b.createdAt).toLocaleString("es-ES")}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => undoBatch(b)}
+                      className="rounded-full bg-accent-wash px-3 py-1.5 text-[11px] text-accent-deep hover:bg-accent/15"
+                    >
+                      Deshacer
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Stats globales */}
         {stats && (

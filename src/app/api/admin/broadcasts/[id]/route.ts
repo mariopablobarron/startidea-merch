@@ -13,8 +13,15 @@ const PatchSchema = z
     html: z.string().min(1).max(200_000).optional(),
     text: z.string().max(200_000).nullable().optional(),
     audience: z
-      .enum(["NEWSLETTER_ALL", "NEWSLETTER_NEW", "CUSTOMERS_ALL", "CART_QUOTES_RECENT"])
+      .enum([
+        "NEWSLETTER_ALL",
+        "NEWSLETTER_NEW",
+        "NEWSLETTER_TAG",
+        "CUSTOMERS_ALL",
+        "CART_QUOTES_RECENT",
+      ])
       .optional(),
+    audienceTags: z.array(z.string().min(1).max(60)).max(20).optional(),
     scheduledAt: z.string().datetime().nullable().optional(),
     status: z.enum(["DRAFT", "SCHEDULED", "CANCELED"]).optional(),
   })

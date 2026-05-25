@@ -10,18 +10,30 @@ export const dynamic = "force-dynamic";
 const AUDIENCES = [
   "NEWSLETTER_ALL",
   "NEWSLETTER_NEW",
+  "NEWSLETTER_TAG",
   "CUSTOMERS_ALL",
   "CART_QUOTES_RECENT",
 ] as const;
 
-const CreateSchema = z.object({
-  subject: z.string().min(1).max(200),
-  preheader: z.string().max(200).nullable().optional(),
-  html: z.string().min(1).max(200_000),
-  text: z.string().max(200_000).nullable().optional(),
-  audience: z.enum(AUDIENCES).default("NEWSLETTER_ALL"),
-  scheduledAt: z.string().datetime().nullable().optional(),
-});
+const CreateSchema = z
+  .object({
+    subject: z.string().min(1).max(200),
+    preheader: z.string().max(200).nullable().optional(),
+    html: z.string().min(1).max(200_000),
+    text: z.string().max(200_000).nullable().optional(),
+    audience: z.enum(AUDIENCES).default("NEWSLETTER_ALL"),
+    audienceTags: z.array(z.string().min(1).max(60)).max(20).default([]),
+    scheduledAt: z.string().datetime().nullable().optional(),
+  })
+  .superRefine((d, ctx) => {
+    if (d.audience === "NEWSLETTER_TAG" && d.audienceTags.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["audienceTags"],
+        message: "NEWSLETTER_TAG requiere al menos un tag en audienceTags",
+      });
+    }
+  });
 
 export async function GET(req: Request) {
   const session = await authenticateAdminRequest(req);
@@ -44,9 +56,12 @@ export async function GET(req: Request) {
     },
   });
 
-  // Pre-calc audience sizes para mostrar en lista
+  // Pre-calc audience sizes para mostrar en lista (sin NEWSLETTER_TAG —
+  // ese depende de qué tags se elijan, se calcula al crear el broadcast)
   const sizes = await Promise.all(
-    AUDIENCES.map(async (a) => [a, await estimateAudienceSize(a)] as const),
+    AUDIENCES.filter((a) => a !== "NEWSLETTER_TAG").map(
+      async (a) => [a, await estimateAudienceSize(a)] as const,
+    ),
   );
   const audienceSizes = Object.fromEntries(sizes);
 
@@ -77,11 +92,15 @@ export async function POST(req: Request) {
       html: d.html,
       text: d.text ?? null,
       audience: d.audience,
+      audienceTags: d.audience === "NEWSLETTER_TAG" ? d.audienceTags : [],
       scheduledAt: d.scheduledAt ? new Date(d.scheduledAt) : null,
       status: d.scheduledAt ? "SCHEDULED" : "DRAFT",
       createdBy: session.email,
     },
   });
 
-  return NextResponse.json({ ok: true, broadcast });
+  // Computa el tamaño real (en caso TAG, depende de los tags elegidos)
+  const estimated = await estimateAudienceSize(d.audience, d.audienceTags);
+
+  return NextResponse.json({ ok: true, broadcast, estimatedRecipients: estimated });
 }
