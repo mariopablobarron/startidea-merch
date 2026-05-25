@@ -31,6 +31,10 @@ import {
   resolveColor,
   type CifraProduct,
 } from "./cifra";
+// Reusamos el slug-builder de midocean: SEO-clean a partir del nombre,
+// resolución de colisión con sufijos -2, -3... Importante para cumplir
+// regla anti-supplier-leak (no exponer "cif-" en URLs públicas).
+import { resolveCleanProductSlug } from "./midocean-sync";
 
 export type CifraSyncResult = {
   startedAt: string;
@@ -47,7 +51,10 @@ export type CifraSyncResult = {
 };
 
 const SUPPLIER = "cifra" as const;
-const SLUG_PREFIX = "cif-"; // slug del producto: cif-<rootmodel>
+// Legacy slug prefix — solo usado para detectar slugs viejos y reemplazarlos.
+// Los productos nuevos van con slug limpio basado en el nombre (mismo patrón
+// que midocean) para no filtrar el proveedor en la URL pública.
+const LEGACY_SLUG_PREFIX = "cif-";
 
 function safeSlug(s: string): string {
   return s
@@ -148,13 +155,27 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
             ? await resolveRootCategory(head.category)
             : null;
 
+          // Slug limpio: si ya existe el producto y tiene slug "limpio"
+          // (no empieza por cif-), lo reusamos; si no, generamos uno nuevo
+          // a partir del nombre. Esto migra automáticamente los slugs
+          // legacy en cada sync hasta que TODOS sean limpios.
+          const existing = await prisma.product.findUnique({
+            where: { supplier_supplierRef: { supplier: SUPPLIER, supplierRef: rootmodel } },
+            select: { id: true, slug: true },
+          });
+          const needsNewSlug =
+            !existing || existing.slug.startsWith(LEGACY_SLUG_PREFIX);
+          const slug = needsNewSlug
+            ? await resolveCleanProductSlug(head.name.trim(), existing?.id ?? null)
+            : existing.slug;
+
           // Upsert Product (rootmodel = supplierRef)
           const product = await prisma.product.upsert({
             where: { supplier_supplierRef: { supplier: SUPPLIER, supplierRef: rootmodel } },
             create: {
               supplier: SUPPLIER,
               supplierRef: rootmodel,
-              slug: `${SLUG_PREFIX}${safeSlug(rootmodel)}`,
+              slug,
               name: head.name.trim(),
               shortDescription: head.description?.trim() || null,
               category: categoryId ? { connect: { id: categoryId } } : undefined,
@@ -172,6 +193,8 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
               syncedAt: new Date(),
             },
             update: {
+              // Si necesita migrar, actualizamos slug; si ya está limpio, lo dejamos.
+              ...(needsNewSlug ? { slug } : {}),
               name: head.name.trim(),
               shortDescription: head.description?.trim() || null,
               category: categoryId ? { connect: { id: categoryId } } : undefined,
