@@ -67,6 +67,7 @@ export default function AffiliateDetailPage({ params }: { params: Promise<{ id: 
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [payoutOpen, setPayoutOpen] = useState(false);
+  const [useCreditOpen, setUseCreditOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,14 +108,29 @@ export default function AffiliateDetailPage({ params }: { params: Promise<{ id: 
               <code className="font-mono text-xs">/{partner.slug}</code>
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setPayoutOpen(true)}
-            disabled={balance.commissionPending <= 0}
-            className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-40"
-          >
-            💰 Registrar pago de comisión
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setUseCreditOpen(true)}
+              disabled={balance.creditAvailable <= 0}
+              title={
+                balance.creditAvailable <= 0
+                  ? "El afiliado aún no tiene crédito disponible"
+                  : "Aplicar parte (o todo) el crédito a un pedido suyo"
+              }
+              className="rounded-full border border-line bg-bone px-4 py-2.5 text-sm font-medium text-ink/80 hover:border-ink/30 hover:bg-bone-soft disabled:opacity-40"
+            >
+              🎁 Usar crédito
+            </button>
+            <button
+              type="button"
+              onClick={() => setPayoutOpen(true)}
+              disabled={balance.commissionPending <= 0}
+              className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-40"
+            >
+              💰 Registrar pago de comisión
+            </button>
+          </div>
         </header>
 
         {/* 4 stats clave */}
@@ -264,6 +280,17 @@ export default function AffiliateDetailPage({ params }: { params: Promise<{ id: 
           }}
         />
       )}
+      {useCreditOpen && (
+        <UseCreditModal
+          partnerId={id}
+          maxCreditCents={balance.creditAvailable}
+          onClose={() => setUseCreditOpen(false)}
+          onDone={() => {
+            setUseCreditOpen(false);
+            load();
+          }}
+        />
+      )}
     </main>
   );
 }
@@ -377,6 +404,129 @@ function PayoutModal({
             className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-40"
           >
             {busy ? "Guardando…" : "Registrar pago"}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+function UseCreditModal({
+  partnerId,
+  maxCreditCents,
+  onClose,
+  onDone,
+}: {
+  partnerId: string;
+  maxCreditCents: number;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [amountEur, setAmountEur] = useState((maxCreditCents / 100).toFixed(2));
+  const [cartId, setCartId] = useState("");
+  const [note, setNote] = useState(`Crédito aplicado · ${new Date().toLocaleDateString("es-ES")}`);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      const amountCents = Math.round(parseFloat(amountEur.replace(",", ".")) * 100);
+      if (!Number.isFinite(amountCents) || amountCents <= 0) {
+        setError("Importe inválido");
+        return;
+      }
+      if (amountCents > maxCreditCents) {
+        setError(`Excede el crédito disponible (${(maxCreditCents / 100).toFixed(2)}€)`);
+        return;
+      }
+      const r = await fetch(`/api/admin/affiliates/${partnerId}/ledger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          kind: "CREDIT_USED",
+          amountCents,
+          note,
+          ...(cartId.trim() ? { cartId: cartId.trim() } : {}),
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setError(d.error || `Error ${r.status}`);
+        return;
+      }
+      onDone();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-ink/40 p-4 pt-16 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-3xl border border-line bg-bone shadow-2xl">
+        <header className="flex items-center justify-between border-b border-line px-6 py-4">
+          <h2 className="font-display text-lg font-semibold text-ink">Usar crédito del afiliado</h2>
+          <button onClick={onClose} className="rounded-full p-1 text-ink/50 hover:bg-bone-soft">✕</button>
+        </header>
+        <div className="space-y-4 px-6 py-5">
+          <p className="text-sm text-ink/70">
+            El afiliado consume parte de su crédito acumulado en un pedido propio. Se resta
+            del saldo de crédito disponible.
+          </p>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-ink/60">
+              Importe aplicado (€)
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={amountEur}
+              onChange={(e) => setAmountEur(e.target.value)}
+              className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-right font-display text-xl outline-none focus:border-accent"
+            />
+            <p className="mt-1 text-[11px] text-ink/55">
+              Crédito disponible: <strong>{(maxCreditCents / 100).toFixed(2)} €</strong>
+            </p>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-ink/60">
+              ID del cart (opcional)
+            </label>
+            <input
+              type="text"
+              value={cartId}
+              onChange={(e) => setCartId(e.target.value)}
+              placeholder="cm…"
+              className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-xs outline-none focus:border-accent"
+            />
+            <p className="mt-1 text-[11px] text-ink/55">
+              Para trazabilidad: qué pedido suyo consumió este crédito.
+            </p>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-ink/60">
+              Nota
+            </label>
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={500}
+              className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+          </div>
+          {error && <p className="rounded-xl bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}
+        </div>
+        <footer className="flex items-center justify-between gap-3 border-t border-line bg-bone-soft px-6 py-4">
+          <button onClick={onClose} className="text-xs text-ink/60 hover:text-ink">Cancelar</button>
+          <button
+            onClick={save}
+            disabled={busy}
+            className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-40"
+          >
+            {busy ? "Guardando…" : "Aplicar crédito"}
           </button>
         </footer>
       </div>
