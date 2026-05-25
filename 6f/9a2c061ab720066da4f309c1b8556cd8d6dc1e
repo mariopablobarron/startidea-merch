@@ -1,0 +1,29 @@
+src/app/admin/suppliers/cifra/marking-rates/page.tsx
+  s_65877aa637ec34::t_5082c995fcc40b 1-338
+src/app/api/admin/suppliers/cifra/marking-rules/route.ts
+  s_65877aa637ec34::t_5ca0e090e9258a 1-126
+src/lib/supplier-marking-rules.ts
+  s_65877aa637ec34::t_166dc2f2a66a11 1-123
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_5bde2a0399b336 61
+prisma/schema.prisma
+  s_65877aa637ec34::t_3bfd291a4c800a 155-164,178-208
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_a48b0b5cb751d9 196-197,216-217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "6f9a2c061ab720066da4f309c1b8556cd8d6dc1e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
