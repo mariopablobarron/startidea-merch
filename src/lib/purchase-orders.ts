@@ -101,6 +101,7 @@ function estimateDeliveryFor(supplier: SupplierCode): Date {
   const businessDays: Record<SupplierCode, number> = {
     midocean: 12,
     makito: 15,
+    cifra: 10, // Cifra suele entregar más rápido (almacén en España)
   };
   const days = businessDays[supplier] ?? 14;
   // Aproximación: días laborables = días naturales × 7/5

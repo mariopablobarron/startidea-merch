@@ -93,6 +93,7 @@ enum PartnerKind {
 enum SupplierCode {
   midocean
   makito
+  cifra
 }
 
 model Category {
@@ -501,6 +502,7 @@ model PriceTier {
 enum PriceTierSource {
   MIDOCEAN_PRICELIST
   MAKITO_PRICELIST
+  CIFRA_PRICELIST
   DEFAULT_ESTIMATE
   MANUAL_OVERRIDE
 }
