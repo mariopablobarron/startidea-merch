@@ -35,10 +35,11 @@ type Stats = {
   tags: Array<{ tag: string; count: number }>;
 };
 
-type PreviewResp = {
-  ok: true;
-  filename: string;
+type SheetSummary = {
+  sheetName: string;
+  sheetIndex: number;
   totalRows: number;
+  headers: string[];
   mapping: {
     email: string | null;
     name: string | null;
@@ -46,7 +47,6 @@ type PreviewResp = {
     phone: string | null;
     extras: string[];
   };
-  headers: string[];
   preview: Array<{
     rowNumber: number;
     email: string | null;
@@ -64,6 +64,14 @@ type PreviewResp = {
     new: number;
     unsubscribed_existing: number;
   };
+  hasEmailColumn: boolean;
+};
+
+type PreviewResp = {
+  ok: true;
+  filename: string;
+  isMultiSheet: boolean;
+  sheets: SheetSummary[];
   temp_token: string;
 };
 
@@ -327,13 +335,25 @@ function Stat({ label, value, accent = false }: { label: string; value: number; 
 
 function ImporterModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [step, setStep] = useState<"upload" | "preview" | "done">("upload");
-  const [file, setFile] = useState<File | null>(null);
+  const [, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<PreviewResp | null>(null);
-  const [tag, setTag] = useState(`lista-${todayTag()}`);
+  // Tag por hoja (key = sheetIndex)
+  const [tagsBySheet, setTagsBySheet] = useState<Record<number, string>>({});
+  // Hojas seleccionadas para importar (key = sheetIndex)
+  const [selected, setSelected] = useState<Record<number, boolean>>({});
+  // Hoja activa en las tabs
+  const [activeSheet, setActiveSheet] = useState<number>(0);
   const [respectUnsubscribed, setRespectUnsubscribed] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ inserted: number; updated: number; skipped: number; batch_id: string } | null>(null);
+  const [results, setResults] = useState<Array<{
+    batch_id: string;
+    sheet_name: string;
+    tag: string;
+    inserted: number;
+    updated: number;
+    skipped: number;
+  }> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function doPreview(f: File) {
@@ -353,6 +373,24 @@ function ImporterModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
         return;
       }
       setPreview(d);
+      // Default: seleccionar hojas con email column y >0 filas válidas. Tag autogenerado por hoja.
+      const initSel: Record<number, boolean> = {};
+      const initTags: Record<number, string> = {};
+      const today = todayTag();
+      for (const s of (d as PreviewResp).sheets) {
+        const usable = s.hasEmailColumn && s.stats.valid > 0;
+        initSel[s.sheetIndex] = usable;
+        // Tag default: si hay 1 sola hoja → "lista-YYYY-MM-DD". Si varias → incluir nombre de hoja
+        initTags[s.sheetIndex] =
+          (d as PreviewResp).sheets.length > 1
+            ? `lista-${today}-${slugify(s.sheetName)}`
+            : `lista-${today}`;
+      }
+      setSelected(initSel);
+      setTagsBySheet(initTags);
+      // Activar la primera hoja usable
+      const firstUsable = (d as PreviewResp).sheets.find((s) => initSel[s.sheetIndex]);
+      setActiveSheet(firstUsable?.sheetIndex ?? (d as PreviewResp).sheets[0]?.sheetIndex ?? 0);
       setStep("preview");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error de red");
@@ -363,6 +401,21 @@ function ImporterModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
   async function doImport() {
     if (!preview) return;
+    // Construir array de hojas a importar
+    const toImport = preview.sheets
+      .filter((s) => selected[s.sheetIndex] && s.hasEmailColumn && s.stats.valid > 0)
+      .map((s) => ({
+        sheet_index: s.sheetIndex,
+        tag: (tagsBySheet[s.sheetIndex] || "").trim(),
+      }));
+    if (toImport.length === 0) {
+      setError("Selecciona al menos una hoja válida para importar");
+      return;
+    }
+    if (toImport.some((s) => !s.tag || !/^[a-zA-Z0-9_\-:.]+$/.test(s.tag))) {
+      setError("Cada hoja necesita un tag válido (solo letras, números, - _ : .)");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -372,7 +425,7 @@ function ImporterModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
         credentials: "include",
         body: JSON.stringify({
           temp_token: preview.temp_token,
-          tag,
+          sheets: toImport,
           respect_unsubscribed: respectUnsubscribed,
         }),
       });
@@ -381,7 +434,7 @@ function ImporterModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
         setError(d.error || `Error ${r.status}`);
         return;
       }
-      setResult({ inserted: d.inserted, updated: d.updated, skipped: d.skipped, batch_id: d.batch_id });
+      setResults(d.results);
       setStep("done");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error de red");
@@ -469,85 +522,164 @@ function ImporterModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
           {step === "preview" && preview && (
             <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <PreviewStat label="Filas totales" value={preview.totalRows} />
-                <PreviewStat label="Emails válidos" value={preview.stats.valid} ok />
-                <PreviewStat label="A crear" value={preview.stats.new} ok />
-                <PreviewStat label="Ya existían (actualizar tags)" value={preview.stats.already_exists} />
-                <PreviewStat label="Duplicados en archivo" value={preview.stats.duplicated_in_file} muted />
-                <PreviewStat label="Sin email válido" value={preview.stats.invalid} muted />
+              <p className="text-sm text-ink/65">
+                <strong>{preview.filename}</strong> · {preview.sheets.length}{" "}
+                {preview.sheets.length === 1 ? "hoja detectada" : "hojas detectadas"}.{" "}
+                {preview.isMultiSheet &&
+                  "Cada hoja se importa como una lista independiente (puedes seleccionar cuáles y con qué tag)."}
+              </p>
+
+              {/* Tabs de hojas (siempre — incluso si solo hay 1, da contexto visual) */}
+              <div className="flex flex-wrap gap-1.5 border-b border-line pb-px">
+                {preview.sheets.map((s) => {
+                  const isActive = s.sheetIndex === activeSheet;
+                  const isSelected = !!selected[s.sheetIndex];
+                  const usable = s.hasEmailColumn && s.stats.valid > 0;
+                  return (
+                    <button
+                      key={s.sheetIndex}
+                      type="button"
+                      onClick={() => setActiveSheet(s.sheetIndex)}
+                      className={`flex items-center gap-2 rounded-t-xl border border-line border-b-0 px-3 py-2 text-sm transition ${
+                        isActive
+                          ? "border-accent bg-accent/5 text-ink"
+                          : "bg-bone-soft text-ink/65 hover:bg-bone"
+                      } ${!usable ? "opacity-50" : ""}`}
+                    >
+                      {preview.isMultiSheet && usable && (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setSelected({ ...selected, [s.sheetIndex]: e.target.checked });
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-3.5 w-3.5 cursor-pointer rounded border-line accent-accent"
+                        />
+                      )}
+                      <span className="font-medium">{s.sheetName}</span>
+                      <span className="rounded-full bg-bone px-1.5 py-px text-[10px] tabular-nums text-ink/55">
+                        {s.totalRows}
+                      </span>
+                      {!s.hasEmailColumn && (
+                        <span className="text-[10px] text-accent" title="Sin columna email — no importable">
+                          ⚠
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
-              {preview.stats.unsubscribed_existing > 0 && (
-                <div className="rounded-xl bg-accent/5 p-3 text-sm text-accent-deep">
-                  ⚠ {preview.stats.unsubscribed_existing} de estos emails están dados de baja
-                  previamente. {respectUnsubscribed
-                    ? "Por defecto NO se reactivarán (respetamos RGPD)."
-                    : "Se REACTIVARÁN — solo úsalo si tienes un nuevo opt-in."}
-                </div>
-              )}
+              {/* Contenido de la hoja activa */}
+              {(() => {
+                const sheet = preview.sheets.find((s) => s.sheetIndex === activeSheet);
+                if (!sheet) return null;
+                if (!sheet.hasEmailColumn) {
+                  return (
+                    <div className="rounded-2xl border border-accent/30 bg-accent-wash p-4 text-sm text-accent-deep">
+                      <p className="font-semibold">⚠ Hoja «{sheet.sheetName}» sin columna de email</p>
+                      <p className="mt-1 text-xs">
+                        Cabeceras detectadas:{" "}
+                        <span className="font-mono">{sheet.headers.join(", ") || "(ninguna)"}</span>.
+                        Esta hoja NO se importará. Renombra una columna a «email» / «correo» / «e-mail» para incluirla.
+                      </p>
+                    </div>
+                  );
+                }
 
-              <div className="rounded-2xl border border-line bg-bone-soft p-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink/60">
-                  Mapeo detectado
-                </p>
-                <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
-                  <MapRow label="Email" value={preview.mapping.email} required />
-                  <MapRow label="Nombre" value={preview.mapping.name} />
-                  <MapRow label="Empresa" value={preview.mapping.company} />
-                  <MapRow label="Teléfono" value={preview.mapping.phone} />
-                </dl>
-                {preview.mapping.extras.length > 0 && (
-                  <p className="mt-2 text-[11px] text-ink/55">
-                    Columnas extras (guardadas en metadata):{" "}
-                    <span className="font-mono">{preview.mapping.extras.join(", ")}</span>
-                  </p>
-                )}
-              </div>
+                return (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <PreviewStat label="Filas totales" value={sheet.totalRows} />
+                      <PreviewStat label="Emails válidos" value={sheet.stats.valid} ok />
+                      <PreviewStat label="A crear" value={sheet.stats.new} ok />
+                      <PreviewStat label="Ya existían (actualizar tags)" value={sheet.stats.already_exists} />
+                      <PreviewStat label="Duplicados en archivo" value={sheet.stats.duplicated_in_file} muted />
+                      <PreviewStat label="Sin email válido" value={sheet.stats.invalid} muted />
+                    </div>
 
-              <div className="rounded-2xl border border-line bg-bone-soft p-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink/60">
-                  Primeras filas
-                </p>
-                <div className="max-h-48 overflow-y-auto rounded-lg border border-line bg-bone">
-                  <table className="w-full text-[11px]">
-                    <thead className="bg-bone-soft sticky top-0">
-                      <tr className="text-left text-ink/55">
-                        <th className="px-2 py-1">#</th>
-                        <th className="px-2 py-1">Email</th>
-                        <th className="px-2 py-1">Nombre</th>
-                        <th className="px-2 py-1">Empresa</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.preview.slice(0, 8).map((r) => (
-                        <tr key={r.rowNumber} className="border-t border-line">
-                          <td className="px-2 py-1 text-ink/40">{r.rowNumber}</td>
-                          <td className="px-2 py-1 font-mono text-ink">{r.email || <span className="text-accent">⚠ {r.rawError}</span>}</td>
-                          <td className="px-2 py-1">{r.name || "—"}</td>
-                          <td className="px-2 py-1">{r.company || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                    {sheet.stats.unsubscribed_existing > 0 && (
+                      <div className="rounded-xl bg-accent/5 p-3 text-sm text-accent-deep">
+                        ⚠ {sheet.stats.unsubscribed_existing} emails de esta hoja están dados de baja previamente.{" "}
+                        {respectUnsubscribed
+                          ? "Por defecto NO se reactivarán (RGPD)."
+                          : "Se REACTIVARÁN — solo úsalo si tienes nuevo opt-in."}
+                      </div>
+                    )}
 
-              <div>
-                <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-ink/60">
-                  Tag para esta lista*
-                </label>
-                <input
-                  type="text"
-                  value={tag}
-                  onChange={(e) => setTag(e.target.value.replace(/\s+/g, "-"))}
-                  className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
-                  pattern="[a-zA-Z0-9_\-:.]+"
-                />
-                <p className="mt-1 text-[11px] text-ink/50">
-                  Etiqueta para identificar esta lista en filtros y broadcasts. Sin espacios.
-                </p>
-              </div>
+                    <div className="rounded-2xl border border-line bg-bone-soft p-4">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink/60">
+                        Mapeo detectado en «{sheet.sheetName}»
+                      </p>
+                      <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
+                        <MapRow label="Email" value={sheet.mapping.email} required />
+                        <MapRow label="Nombre" value={sheet.mapping.name} />
+                        <MapRow label="Empresa" value={sheet.mapping.company} />
+                        <MapRow label="Teléfono" value={sheet.mapping.phone} />
+                      </dl>
+                      {sheet.mapping.extras.length > 0 && (
+                        <p className="mt-2 text-[11px] text-ink/55">
+                          Columnas extras (guardadas en metadata):{" "}
+                          <span className="font-mono">{sheet.mapping.extras.join(", ")}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="rounded-2xl border border-line bg-bone-soft p-4">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink/60">
+                        Primeras filas
+                      </p>
+                      <div className="max-h-48 overflow-y-auto rounded-lg border border-line bg-bone">
+                        <table className="w-full text-[11px]">
+                          <thead className="bg-bone-soft sticky top-0">
+                            <tr className="text-left text-ink/55">
+                              <th className="px-2 py-1">#</th>
+                              <th className="px-2 py-1">Email</th>
+                              <th className="px-2 py-1">Nombre</th>
+                              <th className="px-2 py-1">Empresa</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sheet.preview.slice(0, 8).map((r) => (
+                              <tr key={r.rowNumber} className="border-t border-line">
+                                <td className="px-2 py-1 text-ink/40">{r.rowNumber}</td>
+                                <td className="px-2 py-1 font-mono text-ink">
+                                  {r.email || <span className="text-accent">⚠ {r.rawError}</span>}
+                                </td>
+                                <td className="px-2 py-1">{r.name || "—"}</td>
+                                <td className="px-2 py-1">{r.company || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-ink/60">
+                        Tag para «{sheet.sheetName}»*
+                      </label>
+                      <input
+                        type="text"
+                        value={tagsBySheet[sheet.sheetIndex] || ""}
+                        onChange={(e) =>
+                          setTagsBySheet({
+                            ...tagsBySheet,
+                            [sheet.sheetIndex]: e.target.value.replace(/\s+/g, "-"),
+                          })
+                        }
+                        className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+                        pattern="[a-zA-Z0-9_\-:.]+"
+                      />
+                      <p className="mt-1 text-[11px] text-ink/50">
+                        Etiqueta para esta hoja. Cada hoja puede tener su tag distinto (ej. <code className="font-mono">lista-clientes</code>, <code className="font-mono">lista-prospects</code>).
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
 
               <label className="inline-flex cursor-pointer items-start gap-2 text-sm">
                 <input
@@ -559,27 +691,45 @@ function ImporterModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
                 <span>
                   <strong>Respetar opt-outs previos</strong> (RECOMENDADO)
                   <span className="block text-[11px] text-ink/55">
-                    Si está marcado, los emails que ya pidieron baja antes NO se reactivan.
+                    Los emails que ya pidieron baja antes NO se reactivan.
                   </span>
                 </span>
               </label>
             </>
           )}
 
-          {step === "done" && result && (
-            <div className="space-y-3 text-center">
-              <p className="text-5xl">✓</p>
-              <p className="font-display text-xl font-semibold text-social">
-                {result.inserted} nuevos · {result.updated} actualizados
-              </p>
-              {result.skipped > 0 && (
-                <p className="text-sm text-ink/55">{result.skipped} omitidos (sin email, duplicados, opt-out)</p>
-              )}
-              <p className="text-xs text-ink/45">Batch ID: <span className="font-mono">{result.batch_id}</span></p>
-              <p className="mt-4 text-sm text-ink/70">
-                Ahora puedes enviarles un broadcast desde{" "}
-                <Link href="/admin/marketing/broadcasts" className="text-accent underline">Broadcasts</Link>{" "}
-                seleccionando el tag <code className="rounded bg-bone-soft px-1.5 py-0.5 font-mono">{tag}</code>.
+          {step === "done" && results && (
+            <div className="space-y-3">
+              <div className="text-center">
+                <p className="text-5xl">✓</p>
+                <p className="mt-2 font-display text-xl font-semibold text-social">
+                  {results.length === 1
+                    ? `${results[0]?.inserted ?? 0} nuevos · ${results[0]?.updated ?? 0} actualizados`
+                    : `${results.length} listas importadas`}
+                </p>
+              </div>
+              <div className="space-y-2">
+                {results.map((r, i) => (
+                  <div key={i} className="rounded-xl border border-line bg-bone-soft p-3 text-sm">
+                    <p className="flex items-center justify-between">
+                      <span className="font-medium text-ink">{r.sheet_name}</span>
+                      <code className="rounded bg-bone px-2 py-0.5 font-mono text-[11px] text-accent-deep">
+                        {r.tag}
+                      </code>
+                    </p>
+                    <p className="mt-1 text-xs text-ink/65">
+                      {r.inserted} nuevos · {r.updated} actualizados
+                      {r.skipped > 0 && ` · ${r.skipped} omitidos`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-center text-sm text-ink/70">
+                Ahora puedes enviarles broadcasts desde{" "}
+                <Link href="/admin/marketing/broadcasts" className="text-accent underline">
+                  Broadcasts
+                </Link>{" "}
+                filtrando por estos tags.
               </p>
             </div>
           )}
@@ -589,16 +739,31 @@ function ImporterModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
           <button type="button" onClick={onClose} className="text-xs text-ink/60 hover:text-ink">
             {step === "done" ? "Cerrar" : "Cancelar"}
           </button>
-          {step === "preview" && (
-            <button
-              type="button"
-              onClick={doImport}
-              disabled={busy || !tag.trim()}
-              className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-40"
-            >
-              {busy ? "Importando…" : `Importar ${preview?.stats.new || 0} nuevos + actualizar ${preview?.stats.already_exists || 0}`}
-            </button>
-          )}
+          {step === "preview" && preview && (() => {
+            // Calcular totales sobre las hojas seleccionadas
+            const selectedSheets = preview.sheets.filter(
+              (s) => selected[s.sheetIndex] && s.hasEmailColumn && s.stats.valid > 0,
+            );
+            const totalNew = selectedSheets.reduce((a, s) => a + s.stats.new, 0);
+            const totalUpdate = selectedSheets.reduce((a, s) => a + s.stats.already_exists, 0);
+            const canImport = selectedSheets.length > 0;
+            return (
+              <button
+                type="button"
+                onClick={doImport}
+                disabled={busy || !canImport}
+                className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-40"
+              >
+                {busy
+                  ? "Importando…"
+                  : selectedSheets.length === 0
+                    ? "Selecciona al menos 1 hoja"
+                    : selectedSheets.length === 1
+                      ? `Importar ${totalNew} nuevos + actualizar ${totalUpdate}`
+                      : `Importar ${selectedSheets.length} listas (${totalNew} nuevos + ${totalUpdate} actualizar)`}
+              </button>
+            );
+          })()}
           {step === "done" && (
             <button
               type="button"
@@ -664,4 +829,14 @@ function MapRow({
 function todayTag(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 30);
 }

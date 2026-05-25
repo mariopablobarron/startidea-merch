@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
-import { parseAny } from "@/lib/newsletter-parser";
+import { parseAny, parseXlsxAllSheets, type ParseResult } from "@/lib/newsletter-parser";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -27,13 +27,22 @@ export const maxDuration = 300; // 5 min para imports grandes (50k rows)
  * unsubscribed y `respect_unsubscribed=true`, NO se modifica.
  */
 
+const TAG_RE = /^[a-zA-Z0-9_\-:.]+$/;
+
 const BodySchema = z.object({
   temp_token: z.string().min(8).max(64).regex(/^[a-f0-9]+$/),
-  tag: z
-    .string()
-    .min(2)
-    .max(60)
-    .regex(/^[a-zA-Z0-9_\-:.]+$/, "Tag: letras, números, guiones, _, :, ."),
+  // Modo simple (1 hoja): pasar solo tag
+  tag: z.string().min(2).max(60).regex(TAG_RE).optional(),
+  // Modo multi-hoja: lista de {sheet_index, tag}. Si presente, ignora `tag` global
+  sheets: z
+    .array(
+      z.object({
+        sheet_index: z.number().int().min(0).max(50),
+        tag: z.string().min(2).max(60).regex(TAG_RE),
+      }),
+    )
+    .max(20)
+    .optional(),
   respect_unsubscribed: z.boolean().default(true),
 });
 
@@ -52,7 +61,14 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const { temp_token, tag, respect_unsubscribed } = parsed.data;
+  const { temp_token, tag, sheets: sheetsToImport, respect_unsubscribed } = parsed.data;
+
+  if (!tag && (!sheetsToImport || sheetsToImport.length === 0)) {
+    return NextResponse.json(
+      { error: "Falta `tag` (modo simple) o `sheets` (modo multi-hoja)" },
+      { status: 400 },
+    );
+  }
 
   // Leer archivo + meta del temp dir
   const { readFile, unlink } = await import("node:fs/promises");
@@ -81,114 +97,160 @@ export async function POST(req: Request) {
     );
   }
 
-  const parsedFile = await parseAny(buffer, meta.filename);
-  if (parsedFile.totalRows === 0 || !parsedFile.mapping.email) {
-    return NextResponse.json({ error: "Archivo inválido" }, { status: 400 });
+  // Cargar todas las hojas (compatible con CSV — devuelve 1)
+  const isXlsx = /\.(xlsx|xls)$/i.test(meta.filename);
+  let allSheets: Array<{ sheetName: string; sheetIndex: number } & ParseResult>;
+  if (isXlsx) {
+    allSheets = await parseXlsxAllSheets(buffer);
+  } else {
+    const single = await parseAny(buffer, meta.filename);
+    allSheets = [{ sheetName: "CSV", sheetIndex: 0, ...single }];
   }
 
-  // Crear el batch en BD (estado: en proceso)
-  const importRow = await prisma.newsletterImport.create({
-    data: {
-      filename: meta.filename,
-      importedBy: session.email,
-      tag,
-      totalRows: parsedFile.totalRows,
-    },
-  });
+  // Determinar qué hojas + tag procesar
+  const plan: Array<{ sheetIndex: number; tag: string }> = sheetsToImport
+    ? sheetsToImport.map((s) => ({ sheetIndex: s.sheet_index, tag: s.tag }))
+    : [{ sheetIndex: 0, tag: tag! }]; // modo simple: solo hoja 0 con el tag global
 
-  // Procesar filas en chunks de 200 (transacciones cortas, no bloquear BD)
-  const CHUNK = 200;
-  let inserted = 0;
-  let updated = 0;
-  let skipped = 0;
-  const errors: Array<{ row: number; email: string | null; message: string }> = [];
+  // Procesar cada hoja → un batch independiente
+  const results: Array<{
+    batch_id: string;
+    sheet_name: string;
+    tag: string;
+    inserted: number;
+    updated: number;
+    skipped: number;
+    errors: Array<{ row: number; email: string | null; message: string }>;
+  }> = [];
 
-  // Dedupe dentro del archivo: si email repetido, gana la última
-  const dedup = new Map<string, (typeof parsedFile.rows)[0]>();
-  for (const r of parsedFile.rows) {
-    if (!r.email) {
-      skipped++;
-      if (errors.length < 50) errors.push({ row: r.rowNumber, email: null, message: r.rawError || "Sin email" });
+  for (const { sheetIndex, tag: sheetTag } of plan) {
+    const sheet = allSheets.find((s) => s.sheetIndex === sheetIndex);
+    if (!sheet || sheet.totalRows === 0 || !sheet.mapping.email) {
+      results.push({
+        batch_id: "",
+        sheet_name: sheet?.sheetName || `#${sheetIndex}`,
+        tag: sheetTag,
+        inserted: 0,
+        updated: 0,
+        skipped: 0,
+        errors: [
+          { row: 0, email: null, message: "Hoja inválida (vacía o sin email)" },
+        ],
+      });
       continue;
     }
-    dedup.set(r.email, r);
-  }
-  const rows = Array.from(dedup.values());
 
-  for (let i = 0; i < rows.length; i += CHUNK) {
-    const chunk = rows.slice(i, i + CHUNK);
-
-    // Lookup existentes en este chunk
-    const emails = chunk.map((r) => r.email!) as string[];
-    const existing = await prisma.newsletterSubscriber.findMany({
-      where: { email: { in: emails } },
-      select: { email: true, tags: true, unsubscribedAt: true },
+    // Crear batch
+    const importRow = await prisma.newsletterImport.create({
+      data: {
+        filename: `${meta.filename} · ${sheet.sheetName}`,
+        importedBy: session.email,
+        tag: sheetTag,
+        totalRows: sheet.totalRows,
+      },
     });
-    const existingMap = new Map(existing.map((e) => [e.email, e]));
 
-    await prisma.$transaction(
-      chunk.map((r) => {
-        const ex = existingMap.get(r.email!);
-        if (ex) {
-          // Existe — skip si unsubscribed y respect=true
-          if (ex.unsubscribedAt != null && respect_unsubscribed) {
-            skipped++;
-            return prisma.$queryRaw`SELECT 1`; // no-op (placeholder para transaction)
+    // Procesar
+    const CHUNK = 200;
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+    const errors: Array<{ row: number; email: string | null; message: string }> = [];
+
+    const dedup = new Map<string, (typeof sheet.rows)[0]>();
+    for (const r of sheet.rows) {
+      if (!r.email) {
+        skipped++;
+        if (errors.length < 50)
+          errors.push({ row: r.rowNumber, email: null, message: r.rawError || "Sin email" });
+        continue;
+      }
+      dedup.set(r.email, r);
+    }
+    const rows = Array.from(dedup.values());
+
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const chunk = rows.slice(i, i + CHUNK);
+      const emails = chunk.map((r) => r.email!) as string[];
+      const existing = await prisma.newsletterSubscriber.findMany({
+        where: { email: { in: emails } },
+        select: { email: true, tags: true, unsubscribedAt: true },
+      });
+      const existingMap = new Map(existing.map((e) => [e.email, e]));
+
+      await prisma.$transaction(
+        chunk.map((r) => {
+          const ex = existingMap.get(r.email!);
+          if (ex) {
+            if (ex.unsubscribedAt != null && respect_unsubscribed) {
+              skipped++;
+              return prisma.$queryRaw`SELECT 1`;
+            }
+            updated++;
+            const mergedTags = Array.from(new Set([...ex.tags, sheetTag]));
+            return prisma.newsletterSubscriber.update({
+              where: { email: r.email! },
+              data: {
+                tags: mergedTags,
+                name: r.name ?? undefined,
+                company: r.company ?? undefined,
+                phone: r.phone ?? undefined,
+                meta: Object.keys(r.meta).length > 0 ? r.meta : undefined,
+                importBatchId: importRow.id,
+                source: `import:${importRow.id}`,
+              },
+            });
           }
-          updated++;
-          // Mergea tags sin duplicar
-          const mergedTags = Array.from(new Set([...ex.tags, tag]));
-          return prisma.newsletterSubscriber.update({
-            where: { email: r.email! },
+          inserted++;
+          return prisma.newsletterSubscriber.create({
             data: {
-              tags: mergedTags,
-              name: r.name ?? undefined,
-              company: r.company ?? undefined,
-              phone: r.phone ?? undefined,
+              email: r.email!,
+              name: r.name,
+              company: r.company,
+              phone: r.phone,
+              tags: [sheetTag],
               meta: Object.keys(r.meta).length > 0 ? r.meta : undefined,
               importBatchId: importRow.id,
               source: `import:${importRow.id}`,
             },
           });
-        }
-        inserted++;
-        return prisma.newsletterSubscriber.create({
-          data: {
-            email: r.email!,
-            name: r.name,
-            company: r.company,
-            phone: r.phone,
-            tags: [tag],
-            meta: Object.keys(r.meta).length > 0 ? r.meta : undefined,
-            importBatchId: importRow.id,
-            source: `import:${importRow.id}`,
-          },
-        });
-      }),
-    );
+        }),
+      );
+    }
+
+    await prisma.newsletterImport.update({
+      where: { id: importRow.id },
+      data: {
+        insertedRows: inserted,
+        updatedRows: updated,
+        skippedRows: skipped,
+        errorsJson: errors.length > 0 ? errors : undefined,
+      },
+    });
+
+    results.push({
+      batch_id: importRow.id,
+      sheet_name: sheet.sheetName,
+      tag: sheetTag,
+      inserted,
+      updated,
+      skipped,
+      errors: errors.slice(0, 20),
+    });
   }
 
-  // Actualizar el batch con los stats finales
-  await prisma.newsletterImport.update({
-    where: { id: importRow.id },
-    data: {
-      insertedRows: inserted,
-      updatedRows: updated,
-      skippedRows: skipped,
-      errorsJson: errors.length > 0 ? errors : undefined,
-    },
-  });
-
-  // Cleanup temp files
+  // Cleanup
   await Promise.all([unlink(binPath).catch(() => {}), unlink(metaPath).catch(() => {})]);
 
-  return NextResponse.json({
-    ok: true,
-    batch_id: importRow.id,
-    tag,
-    inserted,
-    updated,
-    skipped,
-    errors: errors.slice(0, 20),
-  });
+  // Totales agregados
+  const totals = results.reduce(
+    (acc, r) => ({
+      inserted: acc.inserted + r.inserted,
+      updated: acc.updated + r.updated,
+      skipped: acc.skipped + r.skipped,
+    }),
+    { inserted: 0, updated: 0, skipped: 0 },
+  );
+
+  return NextResponse.json({ ok: true, results, totals });
 }

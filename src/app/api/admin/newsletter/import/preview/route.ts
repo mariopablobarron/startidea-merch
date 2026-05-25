@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
-import { parseAny } from "@/lib/newsletter-parser";
+import { parseAny, parseXlsxAllSheets, type ParsedSheet } from "@/lib/newsletter-parser";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -55,9 +55,17 @@ export async function POST(req: Request) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  let parsed;
+  const isXlsx = /\.(xlsx|xls)$/i.test(file.name);
+
+  // Multi-hoja para XLSX, hoja única (envuelta) para CSV
+  let sheets: ParsedSheet[];
   try {
-    parsed = await parseAny(buffer, file.name);
+    if (isXlsx) {
+      sheets = await parseXlsxAllSheets(buffer);
+    } else {
+      const single = await parseAny(buffer, file.name);
+      sheets = [{ sheetName: "CSV", sheetIndex: 0, ...single }];
+    }
   } catch (e) {
     return NextResponse.json(
       { error: `No se pudo parsear el archivo: ${e instanceof Error ? e.message : "error desconocido"}` },
@@ -65,54 +73,65 @@ export async function POST(req: Request) {
     );
   }
 
-  if (parsed.totalRows === 0) {
+  if (sheets.length === 0 || sheets.every((s) => s.totalRows === 0)) {
     return NextResponse.json(
-      { error: "El archivo no tiene filas (¿hoja vacía o solo cabecera?)" },
-      { status: 400 },
-    );
-  }
-  if (!parsed.mapping.email) {
-    return NextResponse.json(
-      {
-        error: "No se detectó columna de email. Asegúrate de que el archivo tenga una cabecera tipo 'email', 'correo', 'e-mail'…",
-        headers: parsed.headers,
-      },
+      { error: "El archivo no tiene filas (¿hojas vacías o solo cabecera?)" },
       { status: 400 },
     );
   }
 
-  // Dedupe dentro del archivo
-  const emailsInFile = new Map<string, number>(); // email → cuántas veces aparece
-  let invalid = 0;
-  for (const r of parsed.rows) {
-    if (!r.email) {
-      invalid++;
-      continue;
-    }
-    emailsInFile.set(r.email, (emailsInFile.get(r.email) || 0) + 1);
-  }
-  const duplicatedInFile = Array.from(emailsInFile.values()).reduce((s, n) => s + (n - 1), 0);
-  const uniqueEmails = Array.from(emailsInFile.keys());
+  // Para cada hoja, computar stats individuales (dedupe + lookup en BD)
+  const sheetSummaries = await Promise.all(
+    sheets.map(async (sheet) => {
+      const emailsInSheet = new Map<string, number>();
+      let invalid = 0;
+      for (const r of sheet.rows) {
+        if (!r.email) {
+          invalid++;
+          continue;
+        }
+        emailsInSheet.set(r.email, (emailsInSheet.get(r.email) || 0) + 1);
+      }
+      const duplicatedInSheet = Array.from(emailsInSheet.values()).reduce((s, n) => s + (n - 1), 0);
+      const uniqueEmails = Array.from(emailsInSheet.keys());
 
-  // Lookup en BD (qué emails ya existen)
-  const existing = uniqueEmails.length
-    ? await prisma.newsletterSubscriber.findMany({
-        where: { email: { in: uniqueEmails } },
-        select: { email: true, unsubscribedAt: true },
-      })
-    : [];
-  const existingMap = new Map(existing.map((e) => [e.email, e.unsubscribedAt != null]));
-  let alreadyExists = 0;
-  let unsubscribedExisting = 0;
-  for (const e of uniqueEmails) {
-    if (existingMap.has(e)) {
-      alreadyExists++;
-      if (existingMap.get(e)) unsubscribedExisting++;
-    }
-  }
+      const existing = uniqueEmails.length
+        ? await prisma.newsletterSubscriber.findMany({
+            where: { email: { in: uniqueEmails } },
+            select: { email: true, unsubscribedAt: true },
+          })
+        : [];
+      const existingMap = new Map(existing.map((e) => [e.email, e.unsubscribedAt != null]));
+      let alreadyExists = 0;
+      let unsubscribedExisting = 0;
+      for (const e of uniqueEmails) {
+        if (existingMap.has(e)) {
+          alreadyExists++;
+          if (existingMap.get(e)) unsubscribedExisting++;
+        }
+      }
 
-  // Guardar el buffer en una "papelera" temporal para que `/import` lo recoja
-  // sin re-subir. Usamos /tmp con un token random + cleanup a las 30 min.
+      return {
+        sheetName: sheet.sheetName,
+        sheetIndex: sheet.sheetIndex,
+        totalRows: sheet.totalRows,
+        headers: sheet.headers,
+        mapping: sheet.mapping,
+        preview: sheet.rows.slice(0, 10),
+        stats: {
+          valid: sheet.totalRows - invalid,
+          invalid,
+          duplicated_in_file: duplicatedInSheet,
+          already_exists: alreadyExists,
+          new: uniqueEmails.length - alreadyExists,
+          unsubscribed_existing: unsubscribedExisting,
+        },
+        hasEmailColumn: !!sheet.mapping.email,
+      };
+    }),
+  );
+
+  // Guardar buffer en temp dir para que /import lo recoja sin re-subir
   const { randomBytes } = await import("node:crypto");
   const { writeFile, mkdir } = await import("node:fs/promises");
   const path = await import("node:path");
@@ -132,18 +151,8 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     filename: file.name,
-    totalRows: parsed.totalRows,
-    mapping: parsed.mapping,
-    headers: parsed.headers,
-    preview: parsed.rows.slice(0, 10),
-    stats: {
-      valid: parsed.totalRows - invalid,
-      invalid,
-      duplicated_in_file: duplicatedInFile,
-      already_exists: alreadyExists,
-      new: uniqueEmails.length - alreadyExists,
-      unsubscribed_existing: unsubscribedExisting,
-    },
+    isMultiSheet: sheets.length > 1,
+    sheets: sheetSummaries,
     temp_token: token,
   });
 }

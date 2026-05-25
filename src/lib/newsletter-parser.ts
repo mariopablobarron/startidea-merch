@@ -113,50 +113,88 @@ function cleanString(raw: unknown, max = 240): string | null {
 // ──────────────────────────────────────────────────────────────────────────
 
 /**
- * Parsea XLSX. Lee la primera hoja por defecto.
- * Buffer Node.js, no Web Stream.
+ * Una hoja parseada con su nombre + resultado individual.
+ * Para XLSX multi-pestaña: cada hoja se parsea independiente (puede tener
+ * cabeceras y columnas distintas).
  */
-export async function parseXlsx(buffer: Buffer): Promise<ParseResult> {
+export type ParsedSheet = ParseResult & {
+  sheetName: string;
+  sheetIndex: number;
+};
+
+/**
+ * Parsea TODAS las hojas (pestañas) del XLSX. Cada hoja con su mapping
+ * detectado independiente. Devuelve array vacío si el workbook no tiene hojas
+ * o todas están vacías.
+ */
+export async function parseXlsxAllSheets(buffer: Buffer): Promise<ParsedSheet[]> {
   const workbook = new ExcelJS.Workbook();
-  // ExcelJS espera ArrayBuffer-like; el Buffer de Node es compatible runtime
-  // pero TS no lo acepta en versiones recientes. Cast explícito.
   await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
-  const sheet = workbook.worksheets[0];
-  if (!sheet) {
-    return { headers: [], mapping: emptyMapping(), rows: [], totalRows: 0 };
-  }
+  const sheets: ParsedSheet[] = [];
 
-  // Detectar headers (primera fila con valores)
-  let headerRowNum = 1;
-  let headerRow = sheet.getRow(headerRowNum);
-  // Si la primera fila está vacía, intentamos la 2 (caso típico: título en fila 1)
-  if (!headerRow.values || (headerRow.values as unknown[]).filter(Boolean).length === 0) {
-    headerRowNum = 2;
-    headerRow = sheet.getRow(headerRowNum);
-  }
-
-  const headers: string[] = [];
-  const headerValues = headerRow.values as unknown[];
-  for (let c = 1; c < headerValues.length; c++) {
-    const v = headerValues[c];
-    headers.push(v != null ? String(v).trim() : `col_${c}`);
-  }
-
-  const mapping = detectMapping(headers);
-  const rows: ParsedRow[] = [];
-
-  sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    if (rowNumber <= headerRowNum) return; // saltar header
-    const rowVals = row.values as unknown[];
-    const obj: Record<string, unknown> = {};
-    for (let c = 1; c < rowVals.length; c++) {
-      const header = headers[c - 1];
-      if (header) obj[header] = extractCellValue(rowVals[c]);
+  workbook.worksheets.forEach((sheet, idx) => {
+    // Detectar header row (1ª fila con datos; si la 1 está vacía, prueba la 2)
+    let headerRowNum = 1;
+    let headerRow = sheet.getRow(headerRowNum);
+    if (!headerRow.values || (headerRow.values as unknown[]).filter(Boolean).length === 0) {
+      headerRowNum = 2;
+      headerRow = sheet.getRow(headerRowNum);
     }
-    rows.push(rowToParsed(obj, mapping, rowNumber));
+
+    const headers: string[] = [];
+    const headerValues = headerRow.values as unknown[];
+    for (let c = 1; c < headerValues.length; c++) {
+      const v = headerValues[c];
+      headers.push(v != null ? String(v).trim() : `col_${c}`);
+    }
+
+    // Hoja completamente vacía → la incluimos con 0 rows para que UI sepa
+    if (headers.length === 0) {
+      sheets.push({
+        sheetName: sheet.name,
+        sheetIndex: idx,
+        headers: [],
+        mapping: emptyMapping(),
+        rows: [],
+        totalRows: 0,
+      });
+      return;
+    }
+
+    const mapping = detectMapping(headers);
+    const rows: ParsedRow[] = [];
+
+    sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber <= headerRowNum) return;
+      const rowVals = row.values as unknown[];
+      const obj: Record<string, unknown> = {};
+      for (let c = 1; c < rowVals.length; c++) {
+        const header = headers[c - 1];
+        if (header) obj[header] = extractCellValue(rowVals[c]);
+      }
+      rows.push(rowToParsed(obj, mapping, rowNumber));
+    });
+
+    sheets.push({
+      sheetName: sheet.name,
+      sheetIndex: idx,
+      headers,
+      mapping,
+      rows,
+      totalRows: rows.length,
+    });
   });
 
-  return { headers, mapping, rows, totalRows: rows.length };
+  return sheets;
+}
+
+/**
+ * Parsea XLSX devolviendo solo la PRIMERA hoja (compat con código existente).
+ * Para multi-hoja usar parseXlsxAllSheets().
+ */
+export async function parseXlsx(buffer: Buffer): Promise<ParseResult> {
+  const all = await parseXlsxAllSheets(buffer);
+  return all[0] || { headers: [], mapping: emptyMapping(), rows: [], totalRows: 0 };
 }
 
 /**
