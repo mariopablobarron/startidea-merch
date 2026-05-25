@@ -1,0 +1,21 @@
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_a057cc591fc985 34-37
+  s_65877aa637ec34::t_18d05056437f4e 54-57
+  s_65877aa637ec34::t_a6505e4d08f4ff 158-171,178,196-197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "0a2993a29f467c9d3f3d284c2fbbd0bf5af70211",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
