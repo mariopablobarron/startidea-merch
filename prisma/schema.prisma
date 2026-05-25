@@ -683,19 +683,30 @@ enum DeliveryStatus {
 
 // Newsletter privada — alta voluntaria + drip emails post-pedido
 model NewsletterSubscriber {
-  id               String    @id @default(cuid())
-  email            String    @unique
+  id               String            @id @default(cuid())
+  email            String            @unique
   name             String?
   company          String?
-  source           String? // home-footer, blog, recommend-after, etc
-  locale           String    @default("es")
-  optedInAt        DateTime  @default(now())
+  phone            String?
+  source           String? // home-footer, blog, recommend-after, import:<id>, manual, ...
+  locale           String            @default("es")
+  // Tags libres usados como "listas" para segmentar broadcasts.
+  // Convención: "lista-YYYY-MM-descripcion" + tags semánticos (cliente, partner, evento, …)
+  tags             String[]          @default([])
+  // Metadata libre por subscriber (columnas extra del Excel, ej. ciudad, sector, presupuesto…)
+  meta             Json?
+  // Si vino de un import en bloque, FK al batch para "ver/deshacer/re-enviar lista"
+  importBatch      NewsletterImport? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  importBatchId    String?
+  optedInAt        DateTime          @default(now())
   unsubscribedAt   DateTime?
-  unsubscribeToken String    @unique @default(cuid())
+  unsubscribeToken String            @unique @default(cuid())
   lastSentAt       DateTime?
-  totalSent        Int       @default(0)
+  totalSent        Int               @default(0)
 
   @@index([unsubscribedAt])
+  @@index([importBatchId])
+  @@index([tags], type: Gin)
 }
 
 model EmailDripSent {
@@ -1791,4 +1802,24 @@ enum PromotionScope {
   BRAND
   TAG
   PRODUCT_LIST
+}
+
+// Tracking de cada importación masiva de newsletter desde Excel/CSV.
+// Permite ver "el batch" (quién, cuándo, cuántas filas, qué tag se aplicó)
+// y deshacer un envío fallido borrando solo el batch (DELETE WHERE importBatchId).
+model NewsletterImport {
+  id           String                 @id @default(cuid())
+  filename     String
+  importedBy   String // email admin
+  tag          String // tag asignado a todos los subscribers del batch
+  totalRows    Int                    @default(0)
+  insertedRows Int                    @default(0) // emails nuevos creados
+  updatedRows  Int                    @default(0) // ya existían, se actualizaron (tag, name…)
+  skippedRows  Int                    @default(0) // dedupe, email inválido, ya opt-out
+  errorsJson   Json? // hasta 50 errores: { row, email, message }
+  createdAt    DateTime               @default(now())
+  subscribers  NewsletterSubscriber[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([tag])
 }
