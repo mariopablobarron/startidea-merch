@@ -1,0 +1,21 @@
+src/components/admin/NavDropdown.tsx
+  s_65877aa637ec34::t_cccf462a75634c 10-15,19-24,29,34,37-38,42,73-74,77,81-116,120-134
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_040b80417bdb9f 29-30,37,41-64,66-110,112-131,133-134,142,147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "d64aad4c169b8e62a398e158c79d8eec0688dd66",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
