@@ -1,0 +1,30 @@
+src/app/admin/coupons/page.tsx
+  s_65877aa637ec34::t_94dd5cd424bedf 26-37
+  s_65877aa637ec34::t_41ba43e21aa9da 305
+  s_65877aa637ec34::t_c11661b370fd61 228-278
+  s_65877aa637ec34::t_e419af1b25b1cb 317-333
+  s_65877aa637ec34::t_8a0a9d86c8a5ba 295
+  s_65877aa637ec34::t_ff4b5487c1947a 43,55-57
+  s_65877aa637ec34::t_b7937efc22f9a6 74
+  s_65877aa637ec34::t_374eade36da37f 117-119
+  s_65877aa637ec34::t_1b319aa6681915 97-103
+src/app/api/admin/coupons/route.ts
+  s_65877aa637ec34::t_bfaca2bc424822 18-22,31-34,36-42
+  s_65877aa637ec34::t_45ff69fb866b0a 74-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "4f5b2aa8584c98de80c6c1bc6d5472c2bcaaf6e4",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
