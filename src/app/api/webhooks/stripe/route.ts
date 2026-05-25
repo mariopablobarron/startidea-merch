@@ -6,6 +6,7 @@ import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
 import { notifyTelegram } from "@/lib/telegram";
 import { markReferralEarned } from "@/lib/referral";
+import { recordCouponRedemption } from "@/lib/affiliates";
 import { autoPlaceMidoceanOrder } from "@/lib/midocean-auto-order";
 import { createPurchaseOrdersFromCart } from "@/lib/purchase-orders";
 import { createPostPaymentMagicLink } from "@/lib/customer-portal-magic";
@@ -281,6 +282,34 @@ async function postPaymentAutoflow(args: {
   });
 
   void markReferralEarned(cartId, amountCents).catch(() => {});
+
+  // F2 (25-may): si el cart se pagó con un cupón vinculado a afiliado,
+  // crea entries COMMISSION + CREDIT en el ledger del partner.
+  // - Idempotente: recordCouponRedemption ya dedupe por (cartId, kind).
+  // - Si el cupón no tiene afiliado, el helper devuelve null silenciosamente.
+  // - Si el evt_xxx llega 2 veces, processedStripeEvent ya nos blinda; este
+  //   helper es defense-in-depth.
+  void prisma.couponRedemption
+    .findUnique({ where: { cartId }, select: { couponId: true } })
+    .then((redemption) => {
+      if (!redemption) return null;
+      return recordCouponRedemption({
+        cartId,
+        couponId: redemption.couponId,
+        cartTotalCents: amountCents,
+      });
+    })
+    .then((res) => {
+      if (res) {
+        console.log(
+          "[stripe webhook] affiliate-ledger",
+          cartId,
+          `commission=${res.commissionCents}`,
+          `credit=${res.creditCents}`,
+        );
+      }
+    })
+    .catch((err) => console.error("[stripe webhook affiliate-ledger]", err));
 
   const viaLabel = via === "express-checkout" ? " (Apple/Google Pay)" : "";
   void notifyTelegram(
