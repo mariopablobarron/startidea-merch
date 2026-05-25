@@ -169,48 +169,90 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
             ? await resolveCleanProductSlug(head.name.trim(), existing?.id ?? null)
             : existing.slug;
 
-          // Upsert Product (rootmodel = supplierRef)
-          const product = await prisma.product.upsert({
-            where: { supplier_supplierRef: { supplier: SUPPLIER, supplierRef: rootmodel } },
-            create: {
-              supplier: SUPPLIER,
-              supplierRef: rootmodel,
-              slug,
-              name: head.name.trim(),
-              shortDescription: head.description?.trim() || null,
-              category: categoryId ? { connect: { id: categoryId } } : undefined,
-              supplierCategoryCode: head.category || null,
-              weightG: parseFloat(head.pncaja || "0") > 0
-                ? Math.round((parseFloat(head.pncaja!) * 1000) / (head.unacaja || 1))
-                : null,
-              lengthMm: cmStringToMm(head.length),
-              widthMm: cmStringToMm(head.width),
-              heightMm: cmStringToMm(head.height),
-              primaryImageUrl: head.image || null,
-              material: head.material?.trim() || null,
-              tags: [],
-              active: true,
-              syncedAt: new Date(),
-            },
-            update: {
-              // Si necesita migrar, actualizamos slug; si ya está limpio, lo dejamos.
-              ...(needsNewSlug ? { slug } : {}),
-              name: head.name.trim(),
-              shortDescription: head.description?.trim() || null,
-              category: categoryId ? { connect: { id: categoryId } } : undefined,
-              supplierCategoryCode: head.category || null,
-              weightG: parseFloat(head.pncaja || "0") > 0
-                ? Math.round((parseFloat(head.pncaja!) * 1000) / (head.unacaja || 1))
-                : null,
-              lengthMm: cmStringToMm(head.length),
-              widthMm: cmStringToMm(head.width),
-              heightMm: cmStringToMm(head.height),
-              primaryImageUrl: head.image || null,
-              material: head.material?.trim() || null,
-              active: true,
-              syncedAt: new Date(),
-            },
-          });
+          // Upsert Product (rootmodel = supplierRef).
+          // Race-safe: si dos promesas del mismo chunk eligieron el mismo
+          // slug "clean" antes de escribir, una falla con P2002. Reintentamos
+          // hasta 3 veces añadiendo sufijo hash determinista (no aleatorio
+          // para idempotencia entre syncs).
+          async function upsertWithSlug(slugToUse: string) {
+            return prisma.product.upsert({
+              where: { supplier_supplierRef: { supplier: SUPPLIER, supplierRef: rootmodel } },
+              create: {
+                supplier: SUPPLIER,
+                supplierRef: rootmodel,
+                slug: slugToUse,
+                name: head.name.trim(),
+                shortDescription: head.description?.trim() || null,
+                category: categoryId ? { connect: { id: categoryId } } : undefined,
+                supplierCategoryCode: head.category || null,
+                weightG: parseFloat(head.pncaja || "0") > 0
+                  ? Math.round((parseFloat(head.pncaja!) * 1000) / (head.unacaja || 1))
+                  : null,
+                lengthMm: cmStringToMm(head.length),
+                widthMm: cmStringToMm(head.width),
+                heightMm: cmStringToMm(head.height),
+                primaryImageUrl: head.image || null,
+                material: head.material?.trim() || null,
+                tags: [],
+                active: true,
+                syncedAt: new Date(),
+              },
+              update: {
+                ...(needsNewSlug ? { slug: slugToUse } : {}),
+                name: head.name.trim(),
+                shortDescription: head.description?.trim() || null,
+                category: categoryId ? { connect: { id: categoryId } } : undefined,
+                supplierCategoryCode: head.category || null,
+                weightG: parseFloat(head.pncaja || "0") > 0
+                  ? Math.round((parseFloat(head.pncaja!) * 1000) / (head.unacaja || 1))
+                  : null,
+                lengthMm: cmStringToMm(head.length),
+                widthMm: cmStringToMm(head.width),
+                heightMm: cmStringToMm(head.height),
+                primaryImageUrl: head.image || null,
+                material: head.material?.trim() || null,
+                active: true,
+                syncedAt: new Date(),
+              },
+            });
+          }
+
+          // Hash determinista del rootmodel para sufijo de desempate.
+          function rootHash(s: string): string {
+            let h = 0;
+            for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+            return Math.abs(h).toString(36).slice(0, 4);
+          }
+
+          let product;
+          try {
+            product = await upsertWithSlug(slug);
+          } catch (e) {
+            if (
+              e instanceof Prisma.PrismaClientKnownRequestError &&
+              e.code === "P2002" &&
+              needsNewSlug
+            ) {
+              // Colisión de slug — añadimos sufijo determinista
+              const retrySlug = `${slug}-${rootHash(rootmodel)}`;
+              try {
+                product = await upsertWithSlug(retrySlug);
+              } catch (e2) {
+                if (
+                  e2 instanceof Prisma.PrismaClientKnownRequestError &&
+                  e2.code === "P2002"
+                ) {
+                  // 2º intento con sufijo de timestamp (extremadamente raro)
+                  const lastResort = `${slug}-${rootHash(rootmodel)}-${Date.now().toString(36).slice(-3)}`;
+                  product = await upsertWithSlug(lastResort);
+                } else {
+                  throw e2;
+                }
+              }
+            } else {
+              throw e;
+            }
+          }
           productsUpserted++;
 
           // Variantes
