@@ -1,0 +1,36 @@
+src/app/api/admin/affiliates/route.ts
+  s_65877aa637ec34::t_d58b624fbc6fc6 1-102
+src/lib/affiliates.ts
+  s_65877aa637ec34::t_aef7706c80b71c 1-159
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_b8e56d1a106372 79-80
+src/app/api/admin/affiliates/[id]/ledger/route.ts
+  s_65877aa637ec34::t_d5367d440200d7 1-61
+src/app/admin/affiliates/[id]/page.tsx
+  s_65877aa637ec34::t_d6417e88d499e8 1-385
+src/app/admin/affiliates/page.tsx
+  s_65877aa637ec34::t_62b050f80497cb 1-383
+prisma/migrations/20260525_affiliate_ledger/migration.sql
+  s_65877aa637ec34::t_10f605548b8f89 1-55
+prisma/schema.prisma
+  s_65877aa637ec34::t_e30effaa0a3da0 837-845,853
+  s_65877aa637ec34::t_8a085d4c991d47 729-730,732-735,737,745-746,751-784
+src/app/api/admin/affiliates/[id]/route.ts
+  s_65877aa637ec34::t_81b01b9ce646d6 1-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "b6a755adc2c552e89b9ee37c93e9813167f53672",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
