@@ -76,7 +76,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                         { href: "/admin/marketing/broadcasts", label: "Broadcasts (email)", title: "Enviar boletines a tus listas" },
                         { href: "/admin/clientes", label: "CRM clientes", title: "Clientes con cuenta — LTV, segmentos, notas" },
                         { href: "/admin/marketing/outbound", label: "CRM outbound", title: "Pipeline manual de leads (LinkedIn, eventos)" },
-                        { href: "/admin/marketing/partners", label: "Partners 🤝", title: "Programa de afiliados — aprobar solicitudes" },
+                        { href: "/admin/affiliates", label: "Afiliados 💰", title: "Cupones con comisión + crédito · ledger + payouts" },
+                        { href: "/admin/marketing/partners", label: "Solicitudes partners 🤝", title: "Aprobar nuevas solicitudes" },
                       ],
                     },
                     {
