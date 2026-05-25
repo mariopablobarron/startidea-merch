@@ -23,11 +23,24 @@ type Coupon = {
   validUntil: string | null;
   active: boolean;
   createdAt: string;
+  affiliateId: string | null;
+  affiliate: { id: string; name: string; slug: string } | null;
+  commissionPctOverride: number | null;
+  creditPctOverride: number | null;
+};
+
+type AffiliateOption = {
+  id: string;
+  name: string;
+  slug: string;
+  commissionPct: number;
+  creditPct: number;
 };
 
 export default function AdminCouponsPage() {
   const [secret, setSecret] = useState("");
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [affiliates, setAffiliates] = useState<AffiliateOption[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Form
@@ -39,6 +52,9 @@ export default function AdminCouponsPage() {
   const [minTotal, setMinTotal] = useState(0);
   const [maxUses, setMaxUses] = useState("");
   const [validUntil, setValidUntil] = useState("");
+  const [affiliateId, setAffiliateId] = useState("");
+  const [overrideComm, setOverrideComm] = useState("");
+  const [overrideCred, setOverrideCred] = useState("");
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -55,6 +71,7 @@ export default function AdminCouponsPage() {
     if (!res.ok) setError(data.error || "Error");
     else {
       setCoupons(data.coupons || []);
+      setAffiliates(data.affiliates || []);
       sessionStorage.setItem("merch:admin", secret);
     }
   }
@@ -77,6 +94,13 @@ export default function AdminCouponsPage() {
         ...(minTotal > 0 ? { minTotalCents: minTotal * 100 } : {}),
         ...(maxUses ? { maxUses: parseInt(maxUses, 10) } : {}),
         ...(validUntil ? { validUntil: new Date(validUntil).toISOString() } : {}),
+        ...(affiliateId ? { affiliateId } : {}),
+        ...(affiliateId && overrideComm
+          ? { commissionPctOverride: parseInt(overrideComm, 10) }
+          : {}),
+        ...(affiliateId && overrideCred
+          ? { creditPctOverride: parseInt(overrideCred, 10) }
+          : {}),
       };
       const res = await fetch("/api/admin/coupons", {
         method: "POST",
@@ -90,6 +114,9 @@ export default function AdminCouponsPage() {
         setLabel("");
         setMaxUses("");
         setValidUntil("");
+        setAffiliateId("");
+        setOverrideComm("");
+        setOverrideCred("");
         await load();
       }
     } finally {
@@ -198,6 +225,57 @@ export default function AdminCouponsPage() {
               className="rounded-xl border border-line bg-bone-soft px-3 py-2.5 text-sm outline-none focus:border-accent"
             />
           </div>
+
+          {/* Bloque vincular afiliado — opcional */}
+          <div className="mt-6 rounded-2xl border border-line bg-bone-soft p-4">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-ink/60">
+              Vincular a afiliado (opcional)
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <select
+                value={affiliateId}
+                onChange={(e) => setAffiliateId(e.target.value)}
+                className="rounded-xl border border-line bg-bone px-3 py-2.5 text-sm outline-none focus:border-accent"
+              >
+                <option value="">— Sin afiliado —</option>
+                {affiliates.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({a.commissionPct}% com · {a.creditPct}% crédito)
+                  </option>
+                ))}
+              </select>
+              {affiliateId && (
+                <>
+                  <input
+                    type="number"
+                    value={overrideComm}
+                    onChange={(e) => setOverrideComm(e.target.value)}
+                    min={0}
+                    max={50}
+                    placeholder="Override % comisión (opcional)"
+                    className="rounded-xl border border-line bg-bone px-3 py-2.5 text-sm outline-none focus:border-accent"
+                  />
+                  <input
+                    type="number"
+                    value={overrideCred}
+                    onChange={(e) => setOverrideCred(e.target.value)}
+                    min={0}
+                    max={50}
+                    placeholder="Override % crédito (opcional)"
+                    className="rounded-xl border border-line bg-bone px-3 py-2.5 text-sm outline-none focus:border-accent"
+                  />
+                </>
+              )}
+            </div>
+            {affiliateId && (
+              <p className="mt-2 text-[11px] text-ink/55">
+                Al canjearse este cupón se generarán <strong>2 entries</strong> en el ledger del afiliado:
+                COMMISSION (que pagarás aparte) + CREDIT (que se acumula para sus pedidos). Si dejas los
+                overrides vacíos, se usan los % por defecto del afiliado.
+              </p>
+            )}
+          </div>
+
           <button
             type="submit"
             disabled={creating}
@@ -214,6 +292,7 @@ export default function AdminCouponsPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-ink/50">Código</th>
                 <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-ink/50">Descuento</th>
+                <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-ink/50">Afiliado</th>
                 <th className="px-4 py-3 text-center text-[10px] font-medium uppercase tracking-wider text-ink/50">Usos</th>
                 <th className="px-4 py-3 text-center text-[10px] font-medium uppercase tracking-wider text-ink/50">Mínimo</th>
                 <th className="px-4 py-3 text-center text-[10px] font-medium uppercase tracking-wider text-ink/50">Hasta</th>
@@ -223,7 +302,7 @@ export default function AdminCouponsPage() {
             <tbody>
               {coupons.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-ink/60">No hay cupones aún.</td>
+                  <td colSpan={7} className="p-8 text-center text-ink/60">No hay cupones aún.</td>
                 </tr>
               )}
               {coupons.map((c) => (
@@ -234,6 +313,23 @@ export default function AdminCouponsPage() {
                   </td>
                   <td className="px-4 py-3 font-medium">
                     {c.kind === "PERCENT" ? `${c.percentValue}%` : EUR.format((c.fixedCents || 0) / 100)}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {c.affiliate ? (
+                      <Link
+                        href={`/admin/affiliates/${c.affiliate.id}`}
+                        className="text-accent hover:underline"
+                      >
+                        {c.affiliate.name}
+                        {(c.commissionPctOverride !== null || c.creditPctOverride !== null) && (
+                          <span className="ml-1 text-[10px] text-ink/45">
+                            ({c.commissionPctOverride ?? "·"}/{c.creditPctOverride ?? "·"})
+                          </span>
+                        )}
+                      </Link>
+                    ) : (
+                      <span className="text-ink/30">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-center tabular-nums">
                     {c.usedCount}{c.maxUses ? ` / ${c.maxUses}` : ""}

@@ -15,6 +15,11 @@ const Schema = z.object({
   minTotalCents: z.number().int().positive().max(100_000_000).optional(),
   maxUses: z.number().int().positive().max(100_000).optional(),
   validUntil: z.string().datetime().optional(),
+  // Vínculo con afiliado: si se rellena, al canjear el cupón se generarán
+  // entries COMMISSION + CREDIT automáticamente en el ledger.
+  affiliateId: z.string().min(1).max(40).nullable().optional(),
+  commissionPctOverride: z.number().int().min(0).max(50).nullable().optional(),
+  creditPctOverride: z.number().int().min(0).max(50).nullable().optional(),
   notes: z.string().max(2000).optional(),
 });
 
@@ -23,9 +28,18 @@ export async function GET(req: Request) {
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
   const coupons = await prisma.coupon.findMany({
     orderBy: { createdAt: "desc" },
-    include: { _count: { select: { redemptions: true } } },
+    include: {
+      _count: { select: { redemptions: true } },
+      affiliate: { select: { id: true, name: true, slug: true } },
+    },
   });
-  return NextResponse.json({ ok: true, coupons });
+  // También devolver lista de afiliados activos para el selector del form
+  const affiliates = await prisma.affiliatePartner.findMany({
+    where: { active: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, slug: true, commissionPct: true, creditPct: true },
+  });
+  return NextResponse.json({ ok: true, coupons, affiliates });
 }
 
 export async function POST(req: Request) {
@@ -57,6 +71,9 @@ export async function POST(req: Request) {
         maxUses: d.maxUses,
         validUntil: d.validUntil ? new Date(d.validUntil) : null,
         notes: d.notes,
+        affiliateId: d.affiliateId ?? null,
+        commissionPctOverride: d.commissionPctOverride ?? null,
+        creditPctOverride: d.creditPctOverride ?? null,
       },
     });
     return NextResponse.json({ ok: true, coupon });
