@@ -37,6 +37,15 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Sync de tarifas (técnicas marcaje + precios producto)",
   },
   {
+    name: "cifra-sync",
+    endpointPath: "/api/cron/cifra-sync",
+    method: "POST",
+    schedule: "diario 05:00 UTC",
+    scheduleCron: "0 5 * * *",
+    frequencyHours: 24,
+    description: "Sincroniza catálogo Cifra (productos + variantes + pricelist)",
+  },
+  {
     name: "embeddings-sync",
     endpointPath: "/api/cron/embeddings-sync",
     method: "POST",
