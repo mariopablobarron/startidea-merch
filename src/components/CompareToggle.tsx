@@ -55,7 +55,7 @@ export function CompareToggle({ slug }: { slug: string }) {
       type="button"
       onClick={toggle}
       disabled={full}
-      className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-xs font-medium transition ${
+      className={`mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border px-4 py-3 text-xs font-medium transition ${
         isInside
           ? "border-accent bg-accent-wash text-accent-deep"
           : full

@@ -235,8 +235,14 @@ export default async function ProductDetailPage({
 
         <section className="py-10 lg:py-14">
           <div className="mx-auto grid max-w-8xl gap-12 px-6 lg:grid-cols-[1.3fr,1fr] lg:px-10">
-            {/* IZQUIERDA — galería + variantes + descripción */}
-            <div>
+            {/* IZQUIERDA — galería + variantes + descripción.
+                En mobile va DESPUÉS del configurador (order-2) para que
+                el cliente vea precio + upload logo + total ANTES de tener
+                que hacer scroll por toda la galería + descripción larga.
+                Audit móvil: ficha tenía 8 553 px altura y el "Subir logo"
+                quedaba a y=5316. Con este reorder el configurador queda
+                "above the fold" en mobile. */}
+            <div className="order-2 lg:order-1">
               <div className="relative aspect-square overflow-hidden rounded-3xl border border-line bg-bone-soft">
                 {proxyImageUrl(product.primaryImageUrl) ? (
                   <Image
@@ -433,8 +439,9 @@ export default async function ProductDetailPage({
               )}
             </div>
 
-            {/* DERECHA — sticky con info + configurador */}
-            <aside className="lg:sticky lg:top-24 lg:self-start">
+            {/* DERECHA — sticky con info + configurador.
+                Mobile: order-1 (arriba del todo). Desktop: order normal. */}
+            <aside className="order-1 lg:order-2 lg:sticky lg:top-24 lg:self-start">
               {/* Banda de promoción activa: aparece encima de la marca y muy visible */}
               {activePromo && (
                 <div

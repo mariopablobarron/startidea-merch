@@ -34,7 +34,7 @@ export function WhatsAppCta({
         href={href}
         target="_blank"
         rel="noopener"
-        className="inline-flex items-center gap-2 rounded-full border border-line bg-bone-soft px-4 py-2 text-sm font-medium text-ink transition hover:border-[#25D366] hover:text-[#0e6b3a]"
+        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-bone-soft px-5 py-3 text-sm font-medium text-ink transition hover:border-[#25D366] hover:text-[#0e6b3a]"
       >
         <WhatsAppIcon />
         Consultar por WhatsApp
