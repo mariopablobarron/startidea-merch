@@ -21,6 +21,7 @@
 import { prisma } from "@/lib/prisma";
 import { createOrder, type CifraOrderPayload } from "@/lib/suppliers/cifra";
 import { notifyTelegram } from "@/lib/telegram";
+import { provinciaFromPostalCodeOrCity } from "@/lib/spain-postal-code";
 
 export type CifraAutoOrderResult =
   | { ok: true; orderId: string }
@@ -87,6 +88,11 @@ export async function autoPlaceCifraOrder(cartId: string): Promise<CifraAutoOrde
     quantity: it.quantity,
   }));
 
+  // Cifra pide `zone` (provincia). Lo derivamos del código postal español
+  // (mapeo oficial Correos: primeros 2 dígitos del CP identifican la
+  // provincia). Si el CP no es español o inválido, fallback a city.
+  const zone = provinciaFromPostalCodeOrCity(cart.shippingPostalCode, cart.shippingCity);
+
   const payload: CifraOrderPayload = {
     commit: liveOrdersEnabled(),
     client_reference: `merch-${cart.id.slice(0, 8)}`,
@@ -95,9 +101,7 @@ export async function autoPlaceCifraOrder(cartId: string): Promise<CifraAutoOrde
       firstname: cart.name,
       address_1: cart.shippingAddress,
       city: cart.shippingCity,
-      // Cifra pide `zone` (provincia). No la tenemos en BD — usamos city como
-      // pragmatismo. Cifra suele tolerarlo en pedidos B2B con código postal.
-      zone: cart.shippingCity,
+      zone,
       postcode: cart.shippingPostalCode,
       country: cart.shippingCountry || "ES",
       email: cart.email,
