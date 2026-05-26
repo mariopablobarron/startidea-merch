@@ -1,8 +1,11 @@
 #!/usr/bin/env bun
 /**
  * Escanea páginas públicas en producción buscando fugas del proveedor:
- *   - Hostnames CDN: cdn1.midocean.com, *.makito.com, etc.
+ *   - Hostnames CDN MidOcean: cdn1.midocean.com, printposition-img-api-v2.cdn.midocean.com
+ *   - Hostnames CDN Cifra: publicatalogue.com, www.publicatalogue.com
+ *   - Hostnames CDN Makito: imgresources.makito.es, data.makito.es, print.makito.es
  *   - Patrones SKU en URLs/HTML: ar1234, mo9812, cx1013, mk-xxxx
+ *   - Slugs con prefijo proveedor: cif-XXX, mak-XXX
  *
  * Reporta hallazgos (página + contexto) o "limpio".
  *
@@ -13,8 +16,19 @@ const SITE = process.env.SITE_URL || "https://merchandising.hubstartidea.es";
 
 // Patrones tóxicos
 const LEAK_PATTERNS = [
-  { code: "cdn1-midocean", re: /cdn1\.midocean\.com\/[^"'\s]*/gi },
-  { code: "makito-cdn", re: /[a-z0-9.-]*\.makito\.com\/[^"'\s]*/gi },
+  // MidOcean CDN
+  { code: "midocean-cdn", re: /[a-z0-9.-]*\.midocean\.com[^"'\s]*/gi },
+  { code: "xindao-cdn", re: /[a-z0-9.-]*\.xindao\.(?:com|eu)[^"'\s]*/gi },
+  // Cifra CDN
+  { code: "cifra-cdn", re: /[a-z0-9.-]*\.publicatalogue\.com[^"'\s]*/gi },
+  { code: "cifra-domain", re: /\bcifrashop\.com[^"'\s]*/gi },
+  // Makito CDN + dominios
+  { code: "makito-cdn", re: /[a-z0-9.-]*\.makito\.(?:com|es)[^"'\s]*/gi },
+  { code: "makito-keyword", re: /\bmakito\b/gi },
+  // Slugs con prefijos de proveedor (regla anti-supplier-leak)
+  { code: "slug-prefix-cif", re: /\/catalogo\/cif-[a-z0-9-]+/gi },
+  { code: "slug-prefix-mak", re: /\/catalogo\/(?:mak|mk)-[a-z0-9-]+/gi },
+  // SKU patterns
   { code: "supplier-sku", re: /\b(ar|mo|cx|mk)[0-9]{3,5}\b/gi },
 ];
 
