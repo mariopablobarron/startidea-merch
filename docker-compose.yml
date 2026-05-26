@@ -74,7 +74,7 @@ services:
       # Voice agent (ElevenLabs Conversational AI · Carmen)
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
       ELEVENLABS_AGENT_ID: ${ELEVENLABS_AGENT_ID}
-      ELEVENLABS_AGENT_NAME: ${ELEVENLABS_AGENT_NAME:-Carmen}
+      ELEVENLABS_AGENT_NAME: ${ELEVENLABS_AGENT_NAME:-Diego}
       VOICE_AGENT_TOOL_SECRET: ${VOICE_AGENT_TOOL_SECRET}
       # OpenAI key (heredada del hub — usada para embeddings semánticos via
       # LlamaIndex.ts y, futuro, improve-descriptions con GPT-4o-mini)

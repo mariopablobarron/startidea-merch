@@ -76,6 +76,6 @@ export async function GET(req: Request) {
   return NextResponse.json({
     signedUrl,
     voiceSessionId: session.id,
-    agentName: process.env.ELEVENLABS_AGENT_NAME || "Carmen",
+    agentName: process.env.ELEVENLABS_AGENT_NAME || "Diego",
   });
 }

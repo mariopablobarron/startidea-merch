@@ -28,7 +28,9 @@ function VoiceAgentInner() {
   const [open, setOpen] = useState(false);
   const [bootingError, setBootingError] = useState<string | null>(null);
   const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
-  const [agentName, setAgentName] = useState("Carmen");
+  // Nombre por defecto del asesor. Se sobrescribe con ELEVENLABS_AGENT_NAME
+  // del env (ver /api/voice-agent/signed-url). "Diego" = voz masculina ES.
+  const [agentName, setAgentName] = useState("Diego");
   const [messages, setMessages] = useState<Message[]>([]);
   const [productSlugsDiscussed, setProductSlugsDiscussed] = useState<Set<string>>(new Set());
   const startedAtRef = useRef<number | null>(null);
