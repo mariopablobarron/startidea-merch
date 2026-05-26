@@ -128,45 +128,47 @@ function parseXmlProducts(xml: string): XmlProduct[] {
   return Array.isArray(products) ? products : [products];
 }
 
+// El XML real de Makito usa CAMELCASE sin underscore: section1, price1.
+// Confirmado con HEAD + sample en sandbox 2026-05-26.
 type XmlPrice = {
   ref: string | number;
-  section_1?: number; price_1?: number;
-  section_2?: number; price_2?: number;
-  section_3?: number; price_3?: number;
-  section_4?: number; price_4?: number;
-  section_5?: number; price_5?: number;
-  section_6?: number; price_6?: number;
+  section1?: number | string;
+  price1?: number;
+  section2?: number | string;
+  price2?: number;
+  section3?: number | string;
+  price3?: number;
+  section4?: number | string;
+  price4?: number;
+  section5?: number | string;
+  price5?: number;
+  section6?: number | string;
+  price6?: number;
 };
 
 function parseXmlPrices(xml: string): XmlPrice[] {
   const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
-  const data = parser.parse(xml) as { tarifs?: { tarif?: XmlPrice | XmlPrice[] } };
-  const tarifs = data?.tarifs?.tarif;
-  if (!tarifs) return [];
-  return Array.isArray(tarifs) ? tarifs : [tarifs];
+  const data = parser.parse(xml) as { catalog?: { product?: XmlPrice | XmlPrice[] } };
+  const items = data?.catalog?.product;
+  if (!items) return [];
+  return Array.isArray(items) ? items : [items];
 }
 
 type XmlStock = {
   matnr?: string | number;
   ref?: string | number;
-  stock?: number;
-  stock_availability?: string | number;
-  date?: string;
+  stock?: number | string;
+  available?: string;
+  colour?: string;
+  size?: string;
 };
 
 function parseXmlStock(xml: string): XmlStock[] {
   const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
-  const data = parser.parse(xml) as Record<string, unknown>;
-  // Estructura varía. Probar varias keys.
-  const possibleArrays = [
-    (data?.allstockfile as { item?: XmlStock | XmlStock[] })?.item,
-    (data?.stock as { item?: XmlStock | XmlStock[] })?.item,
-    (data?.items as { item?: XmlStock | XmlStock[] })?.item,
-  ];
-  for (const arr of possibleArrays) {
-    if (arr) return Array.isArray(arr) ? arr : [arr];
-  }
-  return [];
+  const data = parser.parse(xml) as { catalog?: { product?: XmlStock | XmlStock[] } };
+  const items = data?.catalog?.product;
+  if (!items) return [];
+  return Array.isArray(items) ? items : [items];
 }
 
 // ─── Main sync ────────────────────────────────────────────────────────────
@@ -408,8 +410,17 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
       if (variantIds.length === 0) continue;
       const tiers: Array<{ minQty: number; cents: number }> = [];
       for (let i = 1; i <= 6; i++) {
-        const sec = (t as unknown as Record<string, number>)[`section_${i}`];
-        const price = (t as unknown as Record<string, number>)[`price_${i}`];
+        // Makito XML usa camelCase sin underscore: section1, price1, etc.
+        // Además section1 puede venir como "-500" (negativo = "hasta 500" pero
+        // lo guardamos como minQty=1 para que el tier cubra desde 1 unidad).
+        const rawSec = (t as unknown as Record<string, number | string>)[`section${i}`];
+        const price = (t as unknown as Record<string, number>)[`price${i}`];
+        let sec: number;
+        if (typeof rawSec === "string" && rawSec.startsWith("-")) {
+          sec = 1; // primer tramo
+        } else {
+          sec = typeof rawSec === "number" ? rawSec : parseInt(String(rawSec || "0"), 10);
+        }
         if (sec > 0 && price > 0) {
           tiers.push({ minQty: sec, cents: priceToCents(price) });
         }
@@ -585,31 +596,38 @@ async function upsertMarkingScales(t: MakitoMarkingTechniquePrice): Promise<numb
     const price = (t as unknown as Record<string, number>)[`price_${i}`];
     const priceCol = (t as unknown as Record<string, number>)[`price_col_${i}`];
     if (!sec || sec <= 0 || !price || price <= 0) continue;
-    await prisma.markingPriceScale
-      .upsert({
-        where: {
-          techniqueCode_rangeId_minQty: {
-            techniqueCode,
-            rangeId: null as never, // null pero TypeScript pide string
-            minQty: sec,
+    // Prisma 6 rechaza rangeId=null en compound unique. Mismo bug que ya
+    // arreglamos en cifra-sync para Category. Usamos findFirst + create.
+    const existing = await prisma.markingPriceScale.findFirst({
+      where: { techniqueCode, rangeId: null, minQty: sec },
+      select: { id: true },
+    });
+    try {
+      if (existing) {
+        await prisma.markingPriceScale.update({
+          where: { id: existing.id },
+          data: {
+            unitCostCents: Math.round(price * 100),
+            nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
           },
-        },
-        create: {
-          techniqueCode,
-          rangeId: null,
-          areaFromCm2: null,
-          areaToCm2: null,
-          minQty: sec,
-          unitCostCents: Math.round(price * 100),
-          nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
-        },
-        update: {
-          unitCostCents: Math.round(price * 100),
-          nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
-        },
-      })
-      .catch(() => {});
-    count++;
+        });
+      } else {
+        await prisma.markingPriceScale.create({
+          data: {
+            techniqueCode,
+            rangeId: null,
+            areaFromCm2: null,
+            areaToCm2: null,
+            minQty: sec,
+            unitCostCents: Math.round(price * 100),
+            nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
+          },
+        });
+      }
+      count++;
+    } catch {
+      // race condition entre llamadas paralelas — silent
+    }
   }
   return count;
 }
