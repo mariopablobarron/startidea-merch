@@ -120,11 +120,19 @@ export async function runMakitoMarkingEnrich(opts: {
     if (t.print_area_id && t.txt) translations.set(t.print_area_id, t.txt);
   }
 
-  // 2. Productos Makito con marking
+  // 2. Productos Makito con marking — SOLO los que aún tienen DEFAULT virtual
+  //    o NO tienen positions reales. Idempotente: re-disparar el endpoint NO
+  //    re-procesa productos ya enriquecidos (evita duplicados).
   const products = await prisma.product.findMany({
     where: {
       supplier: "makito",
       markingTechniqueHint: { not: null },
+      // NO procesar productos que YA tienen positions reales (non-DEFAULT)
+      NOT: {
+        positions: {
+          some: { positionId: { not: "DEFAULT" } },
+        },
+      },
     },
     select: { id: true, supplierRef: true },
     take: opts.limit,
