@@ -1,0 +1,21 @@
+src/lib/supplier-marking-rules.ts
+  s_65877aa637ec34::t_289d4cf9c3196e 58-65,70,74-113,121
+prisma/schema.prisma
+  s_65877aa637ec34::t_28380c585cd495 179-215
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "552cbf90146e8a0a108cd58b351702f06934d4b7",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
