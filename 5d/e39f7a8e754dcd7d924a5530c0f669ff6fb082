@@ -1,0 +1,55 @@
+.claude/agents/legal-compliance.md
+  s_65877aa637ec34::t_34154fa14e6b7d 1-84
+.claude/agents/review-collector.md
+  s_65877aa637ec34::t_5ad1fbb697709a 1-71
+.claude/agents/ai-search-optimizer.md
+  s_65877aa637ec34::t_8704ea3432884a 1-54
+.claude/agents/pricing-strategist.md
+  s_65877aa637ec34::t_53dabb85d07b02 1-81
+.claude/agents/ops-runbook.md
+  s_65877aa637ec34::t_a9cf001546ab8f 1-76
+.claude/agents/lead-qualifier.md
+  s_65877aa637ec34::t_d7efbcea5a9ac7 1-77
+.claude/agents/social-media.md
+  s_65877aa637ec34::t_603dd933a1c6f5 1-48
+.claude/agents/content-creator.md
+  s_65877aa637ec34::t_2bb4a9866f1605 1-44
+.claude/agents/partner-outreach.md
+  s_65877aa637ec34::t_89201d44a9de64 1-65
+.claude/agents/README.md
+  s_65877aa637ec34::t_92def0ddaf4d57 1-70
+.claude/agents/email-marketer.md
+  s_65877aa637ec34::t_d5bd14ccf632b6 1-61
+.claude/agents/inventory-strategist.md
+  s_65877aa637ec34::t_896738723340c1 1-74
+.claude/agents/seo-auditor.md
+  s_65877aa637ec34::t_fd15e548125d2c 1-44
+.claude/agents/deal-coach.md
+  s_65877aa637ec34::t_3245605bdee136 1-67
+.claude/agents/stats-reporter.md
+  s_65877aa637ec34::t_e79c7db6d512de 1-84
+.claude/agents/finance-tracker.md
+  s_65877aa637ec34::t_30faca65120143 1-60
+.claude/agents/landing-cro.md
+  s_65877aa637ec34::t_30b41b8254fdaa 1-69
+.claude/agents/competitive-intel.md
+  s_65877aa637ec34::t_9ddcfdcd9be5e6 1-64
+.claude/agents/performance-monitor.md
+  s_65877aa637ec34::t_51be6f6c5aa6c7 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "5de39f7a8e754dcd7d924a5530c0f669ff6fb082",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
