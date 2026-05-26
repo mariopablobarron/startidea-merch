@@ -162,17 +162,55 @@ model Product {
   markingTechniqueHint String? // ej "A, DIGITAL"
   markingSizeHint      String? // ej "70x40 mm"
 
-  variants       ProductVariant[]
-  positions      MarkingPosition[]
-  embedding      ProductEmbedding?
-  override       ProductOverride?
-  slugRedirects  ProductSlugRedirect[] @relation("SlugRedirects")
-  mockupRequests MockupRequest[]
+  variants             ProductVariant[]
+  positions            MarkingPosition[]
+  embedding            ProductEmbedding?
+  override             ProductOverride?
+  slugRedirects        ProductSlugRedirect[] @relation("SlugRedirects")
+  mockupRequests       MockupRequest[]
+  productMarkingPrices ProductMarkingPrice[]
 
   @@unique([supplier, supplierRef])
   @@index([categoryId])
   @@index([active])
   @@index([syncedAt])
+}
+
+/// Tarifa REAL de marcaje por producto extraída del catálogo PDF de Cifra
+/// (Catalogo_2026.pdf). Cada producto tiene 4 tramos de cantidad (-500 / 500
+/// / 2000 / 5000 para "1 color 1 posición") con su precio unitario.
+///
+/// Tiene preferencia sobre SupplierMarkingRule (% aproximado) en el helper
+/// de cotización: si existe ProductMarkingPrice → se usa; si no → cae al %
+/// del SupplierMarkingRule por técnica.
+///
+/// FULL_COLOR es opcional — sólo ~25 productos en el catálogo lo tienen
+/// (escalado distinto: 100/250/500/1000).
+model ProductMarkingPrice {
+  id          String           @id @default(cuid())
+  product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+  mode        MarkingPriceMode
+  maxAreaCm   String? // ej "10x4 cm" para FULL_COLOR
+  // 4 tramos: minQty + precio unitario en céntimos
+  tier1MinQty Int
+  tier1Cents  Int
+  tier2MinQty Int
+  tier2Cents  Int
+  tier3MinQty Int
+  tier3Cents  Int
+  tier4MinQty Int
+  tier4Cents  Int
+  source      String           @default("cifra-pdf-2026")
+  extractedAt DateTime         @default(now())
+
+  @@unique([productId, mode])
+  @@index([productId])
+}
+
+enum MarkingPriceMode {
+  ONE_COLOR
+  FULL_COLOR
 }
 
 /// Tarifa aproximada de marcaje por técnica para proveedores cuyo API

@@ -55,14 +55,62 @@ export async function getAvailableMarkingRules(opts: {
 
 /**
  * Cotiza el coste de marcaje para una cantidad y técnica concreta.
- * Devuelve null si no hay regla activa para esa técnica.
+ *
+ * Orden de preferencia (cascada):
+ *   1. ProductMarkingPrice — tarifa REAL extraída del PDF Cifra, escalonada
+ *      por cantidad. Si existe, se usa con tramo correspondiente al qty.
+ *   2. SupplierMarkingRule — % aproximado sobre el precio unitario del producto.
+ *      Fallback cuando el PDF no tenía tarifa para ese producto.
+ *
+ * Devuelve null si no hay ninguna de las dos.
  */
 export async function quoteMarkingForRule(opts: {
   supplier: SupplierCode;
   techniqueCode: string;
+  productId?: string; // si se proporciona, busca tarifa REAL primero
   productUnitPriceCents: number;
   qty: number;
 }): Promise<MarkingRuleQuote | null> {
+  const qty = Math.max(1, opts.qty);
+
+  // 1) Tarifa REAL si tenemos productId
+  if (opts.productId) {
+    const real = await prisma.productMarkingPrice.findUnique({
+      where: { productId_mode: { productId: opts.productId, mode: "ONE_COLOR" } },
+    });
+    if (real) {
+      // Elegir tramo aplicable según qty (mayor minQty <= qty)
+      const tramos = [
+        { minQty: real.tier4MinQty, cents: real.tier4Cents },
+        { minQty: real.tier3MinQty, cents: real.tier3Cents },
+        { minQty: real.tier2MinQty, cents: real.tier2Cents },
+        { minQty: real.tier1MinQty, cents: real.tier1Cents },
+      ];
+      const tramo = tramos.find((t) => qty >= t.minQty) || tramos[tramos.length - 1];
+      // Etiqueta/setup vienen del SupplierMarkingRule si existe (para
+      // mostrar nombre legible y setup fee)
+      const ruleForLabel = await prisma.supplierMarkingRule.findUnique({
+        where: {
+          supplier_techniqueCode: {
+            supplier: opts.supplier,
+            techniqueCode: opts.techniqueCode,
+          },
+        },
+      });
+      const setupCents = ruleForLabel?.setupCents ?? 0;
+      const unitMarkupCents = tramo.cents;
+      return {
+        techniqueCode: opts.techniqueCode,
+        techniqueLabel: ruleForLabel?.techniqueLabel || opts.techniqueCode,
+        markupPct: 0, // tarifa fija, no %
+        unitMarkupCents,
+        setupCents,
+        totalMarkingCents: setupCents + unitMarkupCents * qty,
+      };
+    }
+  }
+
+  // 2) Fallback % aproximado
   const rule = await prisma.supplierMarkingRule.findUnique({
     where: { supplier_techniqueCode: { supplier: opts.supplier, techniqueCode: opts.techniqueCode } },
   });
@@ -70,7 +118,7 @@ export async function quoteMarkingForRule(opts: {
 
   const unitMarkupCents = Math.round((opts.productUnitPriceCents * rule.markupPct) / 100);
   const setupCents = rule.setupCents ?? 0;
-  const totalMarkingCents = setupCents + unitMarkupCents * Math.max(1, opts.qty);
+  const totalMarkingCents = setupCents + unitMarkupCents * qty;
 
   return {
     techniqueCode: rule.techniqueCode,
