@@ -1,0 +1,25 @@
+src/lib/proxy-image.ts
+  s_65877aa637ec34::t_e39df0b6102004 17,23-25
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_5e6880b060bb95 38-41
+  s_65877aa637ec34::t_7f5e7845e3f8ef 176-180,203,223
+  s_65877aa637ec34::t_67da7f72b0a924 275-276,286,294
+src/lib/suppliers/cifra.ts
+  s_65877aa637ec34::t_0541a61b1fc244 17-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "a33fcfe7de376cd6b0c37924b659ecd3acc4dfac",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
