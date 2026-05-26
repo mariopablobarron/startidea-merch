@@ -1,0 +1,24 @@
+docker-compose.yml
+  s_65877aa637ec34::t_4e106424895d62 50-55
+src/lib/cifra-auto-order.ts
+  s_65877aa637ec34::t_1b548e898e0628 1-155
+src/app/api/webhooks/stripe/route.ts
+  s_65877aa637ec34::t_93f3a165111ea2 333-337,339-343
+  s_65877aa637ec34::t_2bbc0aea9deeac 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "b66f9b658db9dea2aba9c94ee9778bb3a9b34191",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
