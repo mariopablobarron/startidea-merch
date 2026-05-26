@@ -1,0 +1,19 @@
+scripts/audit-supplier-leaks.ts
+  s_65877aa637ec34::t_69b2965a89ef75 4-6,8,19-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "50b6341b3c61a9c49614dfb5216511a86ee4da84",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
