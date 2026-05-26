@@ -1,0 +1,24 @@
+src/components/WhatsAppCta.tsx
+  s_65877aa637ec34::t_49b8f0d88cddf7 37
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_e418e8d542b663 238-245
+  s_65877aa637ec34::t_a95cb7213d2619 442-444
+src/components/CompareToggle.tsx
+  s_65877aa637ec34::t_93c4d3481379ae 58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "71a70318fb2e9f5a9834ae13be13f78f32d8cdc4",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
