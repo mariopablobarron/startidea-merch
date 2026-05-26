@@ -8,6 +8,7 @@ import { notifyTelegram } from "@/lib/telegram";
 import { markReferralEarned } from "@/lib/referral";
 import { recordCouponRedemption } from "@/lib/affiliates";
 import { autoPlaceMidoceanOrder } from "@/lib/midocean-auto-order";
+import { autoPlaceCifraOrder } from "@/lib/cifra-auto-order";
 import { createPurchaseOrdersFromCart } from "@/lib/purchase-orders";
 import { createPostPaymentMagicLink } from "@/lib/customer-portal-magic";
 
@@ -329,15 +330,17 @@ async function postPaymentAutoflow(args: {
   void createPurchaseOrdersFromCart(cartId)
     .then((pos) => {
       console.log("[stripe webhook] purchaseOrders created", cartId, pos.map((p) => `${p.supplier}:${p.id}`));
-      // 2) Auto-place MidOcean: solo se dispara para el PO MidOcean
-      // (el adaptador internamente filtra los items que pertenecen al PO).
-      // El resto de POs (makito, etc.) los procesa admin manualmente —
-      // por ahora no hay integración auto para ellos.
+      // 2) Auto-place por proveedor (cada adaptador filtra sus propios items)
+      //   - MidOcean: API completa con printdata. Default ON.
+      //   - Cifra: API simple sin marcaje. Default DRY RUN hasta confirmar
+      //     CIFRA_LIVE_ORDERS=true.
+      //   - Makito: sin API pública, queda PENDING para gestión manual.
       void autoPlaceMidoceanOrder(cartId)
-        .then((res) => {
-          console.log("[stripe webhook] autoPlaceMidocean", cartId, res);
-        })
-        .catch((err) => console.error("[stripe webhook autoPlace]", err));
+        .then((res) => console.log("[stripe webhook] autoPlaceMidocean", cartId, res))
+        .catch((err) => console.error("[stripe webhook autoPlaceMidocean]", err));
+      void autoPlaceCifraOrder(cartId)
+        .then((res) => console.log("[stripe webhook] autoPlaceCifra", cartId, res))
+        .catch((err) => console.error("[stripe webhook autoPlaceCifra]", err));
     })
     .catch((err) => console.error("[stripe webhook purchaseOrders]", err));
 

@@ -47,6 +47,12 @@ services:
       CIFRA_API_TOKEN: ${CIFRA_API_TOKEN}
       CIFRA_API_BASE: ${CIFRA_API_BASE:-https://api.cifrashop.com}
       CIFRA_LANG: ${CIFRA_LANG:-es}
+      # Auto-place del pedido a Cifra tras pago Stripe. Default true.
+      # CIFRA_LIVE_ORDERS=true (no default) confirma envío REAL a Cifra.
+      # false (default) = dry run, guarda payload en PO.internalNotes sin
+      # llegar a Cifra. Útil para validar antes de activar producción real.
+      CIFRA_AUTO_PLACE_ON_PAYMENT: ${CIFRA_AUTO_PLACE_ON_PAYMENT:-true}
+      CIFRA_LIVE_ORDERS: ${CIFRA_LIVE_ORDERS:-false}
       MARGIN_MULTIPLIER: ${MARGIN_MULTIPLIER:-1.6}
       STRIPE_MODE: ${STRIPE_MODE:-test}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
