@@ -14,11 +14,15 @@ import { prisma } from "@/lib/prisma";
  */
 
 const PROVIDER_HOSTS = new Set([
+  // MidOcean
   "cdn1.midocean.com",
   "printposition-img-api-v2.cdn.midocean.com",
   "cdn.midocean.com",
   "images.xindao.eu",
   "assets.xindao.com",
+  // Cifra (publicatalogue.com es su CDN — el nombre delata el proveedor)
+  "publicatalogue.com",
+  "www.publicatalogue.com",
 ]);
 
 const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // 31 chars sin ambiguos

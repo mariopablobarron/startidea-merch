@@ -14,9 +14,9 @@
  *   - /products devuelve `price_pvp` (precio venta público) en EUR string 4 dec
  *   - /prices devuelve `p_disc[]` con tramos por cantidad → PriceTier
  *
- * Imágenes: URL absoluta en publicatalogue.com (no proxiar bajo /api/m
- * salvo que se quiera ocultar el CDN — Cifra es proveedor abierto, no es
- * crítico esconderlo como con MidOcean cuyos CDNs llevan referencias internas).
+ * Imágenes: URL absoluta en publicatalogue.com. SE PROXEAN bajo /api/m/<hash>
+ * via ensureMediaAsset — regla anti-supplier-leak: el cliente NUNCA debe ver
+ * un dominio que delate el proveedor. publicatalogue.com es identificable.
  */
 
 const BASE_URL = process.env.CIFRA_API_BASE || "https://api.cifrashop.com";

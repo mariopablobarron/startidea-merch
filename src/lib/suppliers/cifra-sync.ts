@@ -35,6 +35,10 @@ import {
 // resolución de colisión con sufijos -2, -3... Importante para cumplir
 // regla anti-supplier-leak (no exponer "cif-" en URLs públicas).
 import { resolveCleanProductSlug } from "./midocean-sync";
+// Proxy de imágenes: registra el original en MediaAsset y devuelve
+// `/api/m/<hash>` opaco. CRÍTICO: publicatalogue.com delata a Cifra,
+// nunca debe llegar al HTML público (regla anti-supplier-leak).
+import { ensureMediaAsset } from "@/lib/proxy-image";
 
 export type CifraSyncResult = {
   startedAt: string;
@@ -169,6 +173,11 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
             ? await resolveCleanProductSlug(head.name.trim(), existing?.id ?? null)
             : existing.slug;
 
+          // Proxy de imágenes ANTES del upsert. ensureMediaAsset registra
+          // la URL original en MediaAsset y devuelve `/api/m/<hash>` opaco.
+          // El cliente público NUNCA ve publicatalogue.com.
+          const proxiedPrimary = await ensureMediaAsset(head.image || null, "product-primary");
+
           // Upsert Product (rootmodel = supplierRef).
           // Race-safe: si dos promesas del mismo chunk eligieron el mismo
           // slug "clean" antes de escribir, una falla con P2002. Reintentamos
@@ -191,7 +200,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 lengthMm: cmStringToMm(head.length),
                 widthMm: cmStringToMm(head.width),
                 heightMm: cmStringToMm(head.height),
-                primaryImageUrl: head.image || null,
+                primaryImageUrl: proxiedPrimary,
                 material: head.material?.trim() || null,
                 markingTechniqueHint: head.tgrabacion?.trim() || null,
                 markingSizeHint: head.mgrabacion?.trim() || null,
@@ -211,7 +220,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 lengthMm: cmStringToMm(head.length),
                 widthMm: cmStringToMm(head.width),
                 heightMm: cmStringToMm(head.height),
-                primaryImageUrl: head.image || null,
+                primaryImageUrl: proxiedPrimary,
                 material: head.material?.trim() || null,
                 markingTechniqueHint: head.tgrabacion?.trim() || null,
                 markingSizeHint: head.mgrabacion?.trim() || null,
@@ -263,6 +272,8 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
           for (const v of variants) {
             const suffix = extractColorSuffix(v.model, rootmodel);
             const color = resolveColor(suffix);
+            // Proxy de imagen variant (mismo motivo que el primary)
+            const proxiedVariantImg = await ensureMediaAsset(v.image || null, "product-variant");
             await prisma.productVariant.upsert({
               where: { sku: v.model },
               create: {
@@ -272,7 +283,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 colorName: color.name,
                 colorGroup: color.group,
                 colorHex: color.hex,
-                imageUrl: v.image || null,
+                imageUrl: proxiedVariantImg,
                 stockQty: typeof v.quantity === "number" ? v.quantity : 0,
                 stockUpdatedAt: new Date(),
               },
@@ -280,7 +291,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 colorName: color.name,
                 colorGroup: color.group,
                 colorHex: color.hex,
-                imageUrl: v.image || null,
+                imageUrl: proxiedVariantImg,
                 stockQty: typeof v.quantity === "number" ? v.quantity : 0,
                 stockUpdatedAt: new Date(),
               },
