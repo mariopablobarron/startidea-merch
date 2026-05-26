@@ -30,7 +30,7 @@
     "fast-xml-parser": "^5.8.0",
     "framer-motion": "^11.18.0",
     "jose": "^6.2.3",
-    "lucide-react": "^0.469.0",
+    "lucide-react": "^1.16.0",
     "marked": "^18.0.3",
     "next": "15.5.18",
     "prisma": "^6.2.1",
