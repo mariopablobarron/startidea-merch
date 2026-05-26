@@ -1,0 +1,35 @@
+src/lib/cron-catalog.ts
+  s_65877aa637ec34::t_0bedb39e5e6193 49-56
+src/lib/suppliers/makito.ts
+  s_65877aa637ec34::t_43ad8dd262da68 2-14,16-20,23-27,29-53,56-63,65-98,100-116,118,120-176,179-271,273-291
+  s_65877aa637ec34::t_dcc4a09d9de690 293-310
+src/lib/makito-auto-order.ts
+  s_65877aa637ec34::t_46a33979cff1fe 1-113
+src/app/api/cron/makito-sync/route.ts
+  s_65877aa637ec34::t_8d3cf6d24fc98c 1-68
+docker-compose.yml
+  s_65877aa637ec34::t_0fe2b6c9045aeb 56-66
+src/lib/suppliers/makito-sync.ts
+  s_65877aa637ec34::t_005410784cf922 1-615
+src/app/api/webhooks/stripe/route.ts
+  s_65877aa637ec34::t_205611f4aa58be 12
+  s_65877aa637ec34::t_e011c435bfc069 345-349
+src/lib/proxy-image.ts
+  s_65877aa637ec34::t_bfcf62da383c52 26-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "5d7eafd503ac9d57dabbbea89f15f780b20a15a0",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
