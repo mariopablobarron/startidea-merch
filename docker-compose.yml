@@ -53,6 +53,17 @@ services:
       # llegar a Cifra. Útil para validar antes de activar producción real.
       CIFRA_AUTO_PLACE_ON_PAYMENT: ${CIFRA_AUTO_PLACE_ON_PAYMENT:-true}
       CIFRA_LIVE_ORDERS: ${CIFRA_LIVE_ORDERS:-false}
+      # Makito API (data.makito.es/api) — Bearer token Sanctum tras login
+      MAKITO_API_BASE: ${MAKITO_API_BASE:-https://data.makito.es/api}
+      MAKITO_API_EMAIL: ${MAKITO_API_EMAIL}
+      MAKITO_API_PASSWORD: ${MAKITO_API_PASSWORD}
+      # Makito feeds XML (print.makito.es/user/xml/*) — token UUID en query
+      MAKITO_FEED_BASE: ${MAKITO_FEED_BASE:-https://print.makito.es/user/xml}
+      MAKITO_FEED_TOKEN: ${MAKITO_FEED_TOKEN}
+      # Makito no expone POST de orders en su API. Auto-order envía email
+      # a admin (Mario) con el desglose; el pedido al proveedor se hace
+      # manualmente (mismo workflow legacy de B2B Makito).
+      MAKITO_AUTO_PLACE_ON_PAYMENT: ${MAKITO_AUTO_PLACE_ON_PAYMENT:-true}
       MARGIN_MULTIPLIER: ${MARGIN_MULTIPLIER:-1.6}
       STRIPE_MODE: ${STRIPE_MODE:-test}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}

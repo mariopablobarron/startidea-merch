@@ -23,6 +23,9 @@ const PROVIDER_HOSTS = new Set([
   // Cifra (publicatalogue.com es su CDN — el nombre delata el proveedor)
   "publicatalogue.com",
   "www.publicatalogue.com",
+  // Makito (imgresources.makito.es delata claramente Makito)
+  "imgresources.makito.es",
+  "www.imgresources.makito.es",
 ]);
 
 const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // 31 chars sin ambiguos

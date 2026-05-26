@@ -46,6 +46,15 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Sincroniza catálogo Cifra (productos + variantes + pricelist)",
   },
   {
+    name: "makito-sync",
+    endpointPath: "/api/cron/makito-sync",
+    method: "POST",
+    schedule: "diario 06:00 UTC",
+    scheduleCron: "0 6 * * *",
+    frequencyHours: 24,
+    description: "Sincroniza catálogo Makito (XML productos/precios/stock + API tarifa marcaje)",
+  },
+  {
     name: "embeddings-sync",
     endpointPath: "/api/cron/embeddings-sync",
     method: "POST",

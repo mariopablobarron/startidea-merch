@@ -9,6 +9,7 @@ import { markReferralEarned } from "@/lib/referral";
 import { recordCouponRedemption } from "@/lib/affiliates";
 import { autoPlaceMidoceanOrder } from "@/lib/midocean-auto-order";
 import { autoPlaceCifraOrder } from "@/lib/cifra-auto-order";
+import { autoPlaceMakitoOrder } from "@/lib/makito-auto-order";
 import { createPurchaseOrdersFromCart } from "@/lib/purchase-orders";
 import { createPostPaymentMagicLink } from "@/lib/customer-portal-magic";
 
@@ -341,6 +342,11 @@ async function postPaymentAutoflow(args: {
       void autoPlaceCifraOrder(cartId)
         .then((res) => console.log("[stripe webhook] autoPlaceCifra", cartId, res))
         .catch((err) => console.error("[stripe webhook autoPlaceCifra]", err));
+      // Makito: no tiene POST orders en API. Notifica Telegram con
+      // el desglose + marca internalNotes idempotente.
+      void autoPlaceMakitoOrder(cartId)
+        .then((res) => console.log("[stripe webhook] autoPlaceMakito", cartId, res))
+        .catch((err) => console.error("[stripe webhook autoPlaceMakito]", err));
     })
     .catch((err) => console.error("[stripe webhook purchaseOrders]", err));
 
