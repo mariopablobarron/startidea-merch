@@ -57,17 +57,30 @@ async function login(): Promise<string> {
   return tok;
 }
 
-async function apiGet<T>(path: string): Promise<T | null> {
-  const token = await login();
-  const r = await fetch(`${API_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!r.ok) {
-    // Algunos productos sin marcaje devuelven 404 — silencioso
-    if (r.status === 404 || r.status === 500) return null;
+async function apiGet<T>(path: string, retries = 4): Promise<T | null> {
+  let lastErr: string = "";
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const token = await login();
+    const r = await fetch(`${API_BASE}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (r.ok) return (await r.json()) as T;
+    // Algunos productos sin marcaje devuelven 404 → null silencioso
+    if (r.status === 404) return null;
+    // Server errors transitorios para algunos refs (HTTP 500 antes era endpoint
+    // wrong-lang, pero también puede ser producto sin datos) → silencioso
+    if (r.status === 500) return null;
+    // 429 Too Many Requests → backoff exponencial 1s, 2s, 4s, 8s, 16s
+    if (r.status === 429) {
+      const waitMs = Math.min(16_000, 1000 * Math.pow(2, attempt));
+      await new Promise((res) => setTimeout(res, waitMs));
+      lastErr = `429 (intento ${attempt + 1}/${retries + 1})`;
+      continue;
+    }
     throw new Error(`Makito ${path} → ${r.status}`);
   }
-  return (await r.json()) as T;
+  // Si tras todos los retries seguimos en 429, throw para que el caller decida
+  throw new Error(`Makito ${path} → ${lastErr || "rate limit"}`);
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -109,7 +122,9 @@ export async function runMakitoMarkingEnrich(opts: {
 } = {}): Promise<MakitoEnrichResult> {
   const startedAt = new Date();
   const errors: MakitoEnrichResult["errors"] = [];
-  const concurrency = opts.concurrency || 8;
+  // Concurrencia baja por defecto: Makito rate-limita a ~5-10 req/s aprox.
+  // 4 paralelo con retry exponencial en 429 funciona en pruebas sin atascos.
+  const concurrency = opts.concurrency || 4;
 
   // 1. Cargar traducciones globales (1 call, 5 620 entries)
   const translationsResp = await apiGet<{ markings: MkTranslation[] }>(
