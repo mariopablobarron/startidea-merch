@@ -15,6 +15,9 @@ const MIME: Record<string, string> = {
   ".webp": "image/webp",
   ".pdf": "application/pdf",
   ".gif": "image/gif",
+  ".html": "text/html; charset=utf-8",
+  ".htm": "text/html; charset=utf-8",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 
 /**
@@ -32,7 +35,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ path: s
   }
 
   // Solo permitimos kinds conocidos como primera parte
-  const allowedKinds = new Set(["customer-logos", "admin-proofs", "magnific-assets"]);
+  const allowedKinds = new Set([
+    "customer-logos",
+    "admin-proofs",
+    "magnific-assets",
+    "recursos", // lead magnets descargables HTML/PDF/DOCX (página /recursos)
+  ]);
   if (!allowedKinds.has(parts[0])) {
     return NextResponse.json({ error: "Path no permitido" }, { status: 403 });
   }
