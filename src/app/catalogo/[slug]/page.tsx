@@ -52,13 +52,26 @@ export async function generateMetadata({
     p.override?.metaDescription ||
     p.shortDescription?.slice(0, 160) ||
     `${name} personalizable con tu logo.`;
+  const productUrl = `https://merchandising.hubstartidea.es/catalogo/${slug}`;
+  const productImg = absoluteProxyImageUrl(p.primaryImageUrl);
   return {
     title,
     description,
+    alternates: { canonical: productUrl },
     openGraph: {
-      images: absoluteProxyImageUrl(p.primaryImageUrl)
-        ? [{ url: absoluteProxyImageUrl(p.primaryImageUrl)! }]
-        : [],
+      type: "website",
+      url: productUrl,
+      title,
+      description,
+      siteName: "TodoMerchandising",
+      locale: "es_ES",
+      images: productImg ? [{ url: productImg, width: 1200, height: 630, alt: name }] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: productImg ? [productImg] : [],
     },
   };
 }

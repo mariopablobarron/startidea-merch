@@ -40,6 +40,10 @@ export const metadata: Metadata = {
   },
   description:
     "Merchandising corporativo personalizado con impacto social real. Cada pedido genera trabajo digno en Centros Especiales de Empleo y empresas locales.",
+  alternates: {
+    // Canonical raíz · cada página puede sobrescribir con su slug propio
+    canonical: SITE_URL,
+  },
   openGraph: {
     type: "website",
     locale: "es_ES",
@@ -48,8 +52,24 @@ export const metadata: Metadata = {
     title: "TodoMerchandising — Merchandising con impacto social",
     description:
       "Merchandising corporativo con impacto social. CEE y empresas locales detrás de cada pedido.",
+    // Imagen Open Graph por defecto · cada page (producto/blog) la sobrescribe
+    // con su imagen propia para shares más visuales.
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "TodoMerchandising — merchandising corporativo personalizado",
+      },
+    ],
   },
-  twitter: { card: "summary_large_image" },
+  twitter: {
+    card: "summary_large_image",
+    title: "TodoMerchandising — Merchandising con impacto social",
+    description:
+      "Merchandising corporativo con impacto social. CEE y empresas locales detrás de cada pedido.",
+    images: ["/og-default.png"],
+  },
   robots: { index: true, follow: true },
   manifest: "/manifest.json",
   themeColor: "#F4EFE6", // crema — fondo por defecto manual Startidea

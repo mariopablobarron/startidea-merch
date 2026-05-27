@@ -33,16 +33,28 @@ export async function generateMetadata({
     },
   });
   if (!post) return { title: "Artículo no encontrado" };
+  const postUrl = `https://merchandising.hubstartidea.es/blog/${slug}`;
+  const title = post.metaTitle || post.title;
+  const description = post.metaDescription || post.excerpt?.slice(0, 160) || `Artículo sobre ${post.tags[0] || "merchandising"}`;
   return {
-    title: post.metaTitle || post.title,
-    description:
-      post.metaDescription || post.excerpt?.slice(0, 160) || `Artículo sobre ${post.tags[0] || "merchandising"}`,
+    title,
+    description,
+    alternates: { canonical: postUrl },
     openGraph: {
       type: "article",
-      title: post.metaTitle || post.title,
-      description: post.metaDescription || post.excerpt || undefined,
-      images: post.heroUrl ? [{ url: post.heroUrl }] : undefined,
+      url: postUrl,
+      title,
+      description,
+      siteName: "TodoMerchandising",
+      locale: "es_ES",
+      images: post.heroUrl ? [{ url: post.heroUrl, width: 1200, height: 630, alt: title }] : undefined,
       publishedTime: post.publishedAt?.toISOString(),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: post.heroUrl ? [post.heroUrl] : undefined,
     },
   };
 }
