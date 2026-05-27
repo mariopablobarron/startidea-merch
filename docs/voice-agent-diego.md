@@ -5,12 +5,13 @@ Sustituye a Carmen por **Diego** — asesor comercial de voz masculina en españ
 ## 1. Lo que YA está hecho en código
 
 - `ELEVENLABS_AGENT_NAME` por defecto = **`Diego`** (en `docker-compose.yml` y fallbacks)
-- 5 tools listos y desplegados en `/api/voice-agent/tools/*`:
+- **6 tools** listos y desplegados en `/api/voice-agent/tools/*`:
   - `list-promotions` → promociones activas
   - `search-products` → buscar producto por keyword
   - `product-details` → ficha técnica + precio + zonas marcaje
   - `calculate-quote` → cotización en vivo por cantidad y técnica
   - `submit-quote` → cierra venta capturando nombre + email + empresa + tlf + items
+  - `request-callback` ⭐ → solicita llamada humana con tlf + hora preferida (alerta TG inmediata)
 - `VoiceSession` model trackea cada conversación + qué productos se hablaron + si terminó en cotización
 - Widget UI: botón "Hablar con Diego" en cada página vía `VoiceAgentGate`
 
@@ -82,7 +83,7 @@ Cerrar una cotización formal. Cada conversación debe terminar con submit_quote
 - NUNCA inventes precios. Siempre llama calculate-quote para dar cifras.
 - NUNCA mentes sobre plazos. Plazo estándar: 8-15 días laborables. Exprés disponible para urgencias.
 - NUNCA prometas algo que no puedes verificar. Si no sabes, dilo y ofrece llamada con humano.
-- SI el cliente parece dudar, ofrece WhatsApp directo con Mario: +34 958 045 789
+- SI el cliente parece dudar O pide hablar con persona, usa `request_callback` con su tlf + hora preferida en vez de WhatsApp. Si insiste en WhatsApp, dale el +34 958 045 789
 - SI el cliente quiere algo fuera de catálogo, NO inventes. Toma datos y di "Te confirmamos en menos de 24h si lo podemos producir".
 - LLAMA submit-quote en cuanto tengas el mínimo viable. Mejor 5 cotizaciones imperfectas que 0 perfectas.
 
@@ -110,9 +111,9 @@ Copia esto al campo `First message` del agente:
 Hola, soy Diego de TodoMerchandising. Te ayudo a configurar tu pedido de merch personalizado en menos de 5 minutos. ¿Qué tipo de producto necesitas y para cuándo?
 ```
 
-### 2.5. Confirma las 5 tools
+### 2.5. Confirma las 6 tools
 
-En el dashboard del agente, asegúrate de que están añadidas estas 5 tools como **Server tools** (Webhook):
+En el dashboard del agente, asegúrate de que están añadidas estas 6 tools como **Server tools** (Webhook):
 
 | Tool name | URL endpoint | Method |
 |---|---|---|
@@ -121,6 +122,18 @@ En el dashboard del agente, asegúrate de que están añadidas estas 5 tools com
 | `product_details` | `https://merchandising.hubstartidea.es/api/voice-agent/tools/product-details` | POST |
 | `calculate_quote` | `https://merchandising.hubstartidea.es/api/voice-agent/tools/calculate-quote` | POST |
 | `submit_quote` | `https://merchandising.hubstartidea.es/api/voice-agent/tools/submit-quote` | POST |
+| `request_callback` ⭐ | `https://merchandising.hubstartidea.es/api/voice-agent/tools/request-callback` | POST |
+
+**`request_callback`** (nuevo): para cuando el cliente prefiere hablar con humano. Diego lo llama capturando nombre + tlf + email opcional + hora preferida + razón. Alerta Telegram inmediata a Mario + email interno + entrada en `/admin/cart-quotes` con `source=voice-agent-callback`.
+
+Parámetros del schema (para configurar en ElevenLabs):
+- `name` (string · obligatorio)
+- `phone` (string · obligatorio)
+- `email` (string · opcional)
+- `company` (string · opcional)
+- `preferred_time` (string · opcional, ej. "esta tarde", "mañana 10h")
+- `reason` (string · opcional, qué quiere el cliente)
+- `voice_session_id` (string · opcional, lo aporta el agente)
 
 Cada tool debe llevar el header:
 ```
