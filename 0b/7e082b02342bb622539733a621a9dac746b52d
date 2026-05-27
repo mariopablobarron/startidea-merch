@@ -1,0 +1,23 @@
+docs/voice-agent-diego.md
+  s_65877aa637ec34::t_1944debe4abcc0 86
+  s_65877aa637ec34::t_29ed7caf9020b3 114,116,125-136
+  s_65877aa637ec34::t_850dc0a3d61b9f 8,14
+src/app/api/voice-agent/tools/request-callback/route.ts
+  s_65877aa637ec34::t_2525ac0882e74b 1-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0b7e082b02342bb622539733a621a9dac746b52d",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
