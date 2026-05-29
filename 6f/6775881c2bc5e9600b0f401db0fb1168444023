@@ -1,0 +1,28 @@
+src/lib/suppliers/sweep.ts
+  s_65877aa637ec34::t_f03b9d8f12b279 1-37
+src/app/api/cron/midocean-sync/route.ts
+  s_65877aa637ec34::t_8d6222b6b67691 40-44
+  s_65877aa637ec34::t_03e9deb19f2ba7 4
+src/app/api/cron/makito-sync/route.ts
+  s_65877aa637ec34::t_a6353e61f35b32 33-37
+  s_65877aa637ec34::t_7364e6f2748c4d 4
+src/app/api/cron/cifra-sync/route.ts
+  s_65877aa637ec34::t_3e488742785460 4
+  s_65877aa637ec34::t_583267636a5f99 37-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6f6775881c2bc5e9600b0f401db0fb1168444023",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
