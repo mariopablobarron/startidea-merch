@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Carrito de cotización · Resumen y envío",
   description:
     "Revisa los productos que has añadido a tu cotización, ajusta cantidad y técnica de marcaje y envíanos el brief. Te responderemos en menos de 24 horas con presupuesto cerrado.",
+  alternates: { canonical: "https://merchandising.hubstartidea.es/carrito" },
   robots: { index: false, follow: true },
 };
 

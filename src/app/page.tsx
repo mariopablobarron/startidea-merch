@@ -32,7 +32,10 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("/");
-  return mergeMetadata({}, seo);
+  return mergeMetadata(
+    { alternates: { canonical: "https://merchandising.hubstartidea.es/" } },
+    seo,
+  );
 }
 
 async function getHeroData() {

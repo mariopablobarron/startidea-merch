@@ -28,6 +28,7 @@ const BASE_METADATA: Metadata = {
   title: "Catálogo de merchandising personalizable",
   description:
     "Más de 2.000 productos promocionales personalizables: textil, drinkware, escritura, tecnología, eventos. Producción con impacto social en Centros Especiales de Empleo y talleres locales.",
+  alternates: { canonical: "https://merchandising.hubstartidea.es/catalogo" },
 };
 
 export const revalidate = 3600;

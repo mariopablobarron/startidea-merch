@@ -40,10 +40,11 @@ export const metadata: Metadata = {
   },
   description:
     "Merchandising corporativo personalizado con impacto social real. Cada pedido genera trabajo digno en Centros Especiales de Empleo y empresas locales.",
-  alternates: {
-    // Canonical raíz · cada página puede sobrescribir con su slug propio
-    canonical: SITE_URL,
-  },
+  // NO definir alternates.canonical global aquí — Next.js lo heredaba
+  // literalmente a TODAS las páginas que no lo sobrescriben (resultado:
+  // /sobre, /promociones, /ayuda... etc. apuntaban canonical → home,
+  // disparando aviso GSC "Página alternativa con etiqueta canónica
+  // adecuada". Cada page debe declarar su propio canonical.
   openGraph: {
     type: "website",
     locale: "es_ES",

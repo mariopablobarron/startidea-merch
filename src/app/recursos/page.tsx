@@ -11,6 +11,7 @@ const BASE_METADATA: Metadata = {
   title: "Recursos · TodoMerchandising",
   description:
     "Guías, plantillas y checklists gratuitas sobre merchandising corporativo B2B. Descarga PDF.",
+  alternates: { canonical: "https://merchandising.hubstartidea.es/recursos" },
 };
 
 export async function generateMetadata(): Promise<Metadata> {

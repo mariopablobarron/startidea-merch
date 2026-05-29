@@ -11,6 +11,7 @@ const BASE_METADATA: Metadata = {
   title: "Blog · TodoMerchandising",
   description:
     "Guías prácticas sobre merchandising corporativo: técnicas de marcaje, cantidades mínimas, plazos, sostenibilidad y casos reales B2B.",
+  alternates: { canonical: "https://merchandising.hubstartidea.es/blog" },
 };
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Recomendador inteligente · Encuentra el merchandising perfecto",
   description:
     "Cuéntanos qué necesitas y nuestro asistente IA recomienda 3-5 productos en segundos. Brief libre, presupuesto, cantidad y filtro eco. Precio al instante en cada ficha.",
+  alternates: { canonical: "https://merchandising.hubstartidea.es/recomendador" },
 };
 
 export const dynamic = "force-dynamic";

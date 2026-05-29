@@ -9,6 +9,7 @@ const BASE_METADATA: Metadata = {
   title: "Trabajos realizados · TodoMerchandising",
   description:
     "Galería de pedidos reales: empresas, eventos y campañas que han producido merchandising personalizado con impacto en TodoMerchandising.",
+  alternates: { canonical: "https://merchandising.hubstartidea.es/trabajos" },
 };
 
 export async function generateMetadata(): Promise<Metadata> {
