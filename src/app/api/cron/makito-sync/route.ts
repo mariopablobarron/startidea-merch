@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { runMakitoSync } from "@/lib/suppliers/makito-sync";
-import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -30,11 +29,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // Tras el sync, sweep: desactiva productos sin precio (el upsert los reactiva).
-  void (async () => {
-    await runMakitoSync();
-    await deactivateUnpricedProducts("makito");
-  })().catch((e) => {
+  void runMakitoSync().catch((e) => {
     console.error("[makito-sync] async failure", e);
   });
 
