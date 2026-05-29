@@ -1,6 +1,9 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
+// Nota: NO usar `runtime = "edge"`. El VPS auto-hospedado sirve Next con
+// Node estándar (Docker). Edge runtime devuelve 502 porque el server
+// Node no soporta el edge handler. `nodejs` es el default y ImageResponse
+// funciona perfectamente en Node 20+.
 export const alt = "todomerchandising — merchandising con impacto social";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
