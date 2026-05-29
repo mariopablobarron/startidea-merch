@@ -70,7 +70,7 @@ export default async function OG() {
               borderRadius: "9999px",
               border: "1px solid rgba(11,11,15,0.12)",
               background: "rgba(11,11,15,0.03)",
-              width: "fit-content",
+              alignSelf: "flex-start", // satori (next/og) no soporta `fit-content`
               fontSize: "16px",
               fontWeight: 500,
               color: "rgba(11,11,15,0.7)",
