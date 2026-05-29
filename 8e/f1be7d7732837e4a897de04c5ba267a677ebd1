@@ -1,0 +1,41 @@
+src/app/comparar/page.tsx
+  s_65877aa637ec34::t_413c39542c6c7e 16
+src/app/blog/page.tsx
+  s_65877aa637ec34::t_406f85877c8c26 14
+src/app/carrito/page.tsx
+  s_65877aa637ec34::t_81a41974bdaaa0 11
+src/app/ayuda/page.tsx
+  s_65877aa637ec34::t_b9f452af981b7e 11
+src/app/page.tsx
+  s_65877aa637ec34::t_2338d41b6c65e1 35-38
+src/app/recursos/page.tsx
+  s_65877aa637ec34::t_afb1f6c4501c72 14
+src/app/trabajos/page.tsx
+  s_65877aa637ec34::t_49a798c8af9aa8 12
+src/app/recomendador/page.tsx
+  s_65877aa637ec34::t_ad84a727c70eb7 12
+src/app/layout.tsx
+  s_65877aa637ec34::t_2ebcf385c3f5a1 43-47
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_2c675a11cc5ccb 31
+src/app/promociones/page.tsx
+  s_65877aa637ec34::t_be9de8de831b37 21
+src/app/sobre/page.tsx
+  s_65877aa637ec34::t_52f11e2c926e74 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8ef1be7d7732837e4a897de04c5ba267a677ebd1",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
