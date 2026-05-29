@@ -10,6 +10,7 @@ import { Process } from "@/components/Process";
 import { Categories } from "@/components/Categories";
 import { Partners } from "@/components/Partners";
 import { Cases } from "@/components/Cases";
+import { LatestPosts } from "@/components/LatestPosts";
 import { PublicReviews } from "@/components/PublicReviews";
 import { SeoContent } from "@/components/SeoContent";
 import { Faq } from "@/components/Faq";
@@ -84,6 +85,7 @@ export default async function HomePage() {
         <BannerSlot slot="HOME_MID" />
         <PortfolioGrid variant="home" />
         <Cases />
+        <LatestPosts />
         <PublicReviews />
         <Partners />
         <Categories />
