@@ -53,23 +53,17 @@ export const metadata: Metadata = {
     title: "TodoMerchandising — Merchandising con impacto social",
     description:
       "Merchandising corporativo con impacto social. CEE y empresas locales detrás de cada pedido.",
-    // Imagen Open Graph por defecto · cada page (producto/blog) la sobrescribe
-    // con su imagen propia para shares más visuales.
-    images: [
-      {
-        url: "/og-default.png",
-        width: 1200,
-        height: 630,
-        alt: "TodoMerchandising — merchandising corporativo personalizado",
-      },
-    ],
+    // Imagen Open Graph: Next 15 sirve `src/app/opengraph-image.tsx`
+    // automáticamente — no declarar `images` aquí evita 404 del PNG
+    // estático que no existe. Cada page (producto/blog) puede sobrescribir
+    // colocando su propio `opengraph-image.tsx` o declarando `images` en su metadata.
   },
   twitter: {
     card: "summary_large_image",
     title: "TodoMerchandising — Merchandising con impacto social",
     description:
       "Merchandising corporativo con impacto social. CEE y empresas locales detrás de cada pedido.",
-    images: ["/og-default.png"],
+    // images: Next 15 sirve `src/app/twitter-image.tsx` o reutiliza opengraph-image
   },
   robots: { index: true, follow: true },
   manifest: "/manifest.json",
