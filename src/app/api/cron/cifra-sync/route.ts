@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { runCifraSync } from "@/lib/suppliers/cifra-sync";
+import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -33,7 +34,12 @@ export async function POST(req: Request) {
 
   // Fire-and-forget — el handler retorna inmediato. El sync corre en background
   // y persiste resultado en SupplierSync.
-  void runCifraSync().catch((e) => {
+  // Tras el sync, sweep: oculta productos cuyo PDF de Cifra trae precio 0
+  // (descatalogados o "consultar"). El upsert los reactiva cuando vuelvan.
+  void (async () => {
+    await runCifraSync();
+    await deactivateUnpricedProducts("cifra");
+  })().catch((e) => {
     console.error("[cifra-sync] async failure", e);
   });
 

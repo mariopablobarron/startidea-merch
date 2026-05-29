@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { runMidoceanSync } from "@/lib/suppliers/midocean-sync";
+import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -36,7 +37,12 @@ export async function POST(req: Request) {
 
   // Fire-and-forget. El handler retorna inmediatamente.
   // Captura errores para log; no propagamos para no afectar el ciclo de Node.
-  void runMidoceanSync().catch((e) => {
+  // Tras el sync, sweep: oculta productos sin precio (descatalogados por supplier).
+  // El upsert los reactiva automáticamente cuando el supplier vuelva a enviar precio.
+  void (async () => {
+    await runMidoceanSync();
+    await deactivateUnpricedProducts("midocean");
+  })().catch((e) => {
     console.error("[midocean-sync] async failure", e);
   });
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { runMakitoSync } from "@/lib/suppliers/makito-sync";
+import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -29,7 +30,13 @@ export async function POST(req: Request) {
     );
   }
 
-  void runMakitoSync().catch((e) => {
+  // Tras el sync, sweep: oculta productos cuyo feed Makito envía con
+  // <variants> vacío (textiles en transición). El upsert los reactiva
+  // automáticamente cuando Makito vuelva a enviar variants completas.
+  void (async () => {
+    await runMakitoSync();
+    await deactivateUnpricedProducts("makito");
+  })().catch((e) => {
     console.error("[makito-sync] async failure", e);
   });
 
