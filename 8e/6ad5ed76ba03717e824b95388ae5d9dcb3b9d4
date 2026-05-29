@@ -1,0 +1,20 @@
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_a4955a75ae04d7 52-59
+  s_65877aa637ec34::t_f82a4915c9822e 370-373,392-421
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8e6ad5ed76ba03717e824b95388ae5d9dcb3b9d4",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
