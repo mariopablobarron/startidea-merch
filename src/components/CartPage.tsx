@@ -49,6 +49,14 @@ export function CartPage() {
     writeCart(next);
   }
 
+  /** Quita del carrito todos los items que no tienen precio calculado. */
+  function removeUnpricedItems() {
+    const next = readCart().filter(
+      (it) => typeof it.totalClientCents === "number" && it.totalClientCents > 0,
+    );
+    writeCart(next);
+  }
+
   async function submitCart(directPay: boolean) {
     setError(null);
     setSuccess(null);
@@ -359,6 +367,10 @@ export function CartPage() {
               (it) =>
                 typeof it.totalClientCents === "number" && it.totalClientCents > 0,
             );
+          const unpricedItems = items.filter(
+            (it) =>
+              !(typeof it.totalClientCents === "number" && it.totalClientCents > 0),
+          );
           return (
             <>
               <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
@@ -376,6 +388,37 @@ export function CartPage() {
                   presupuesto cerrado para tu equipo si necesitas factura
                   pro-forma o aprobación interna.
                 </p>
+              )}
+              {!allPriced && unpricedItems.length > 0 && items.length > 0 && (
+                <div className="mt-3 rounded-xl border border-accent/30 bg-accent-wash/40 p-3 text-xs">
+                  <p className="font-medium text-accent-deep">
+                    Pago con tarjeta no disponible
+                  </p>
+                  <p className="mt-1 text-ink/70">
+                    {unpricedItems.length === 1
+                      ? "Hay 1 producto en tu carrito sin precio cerrado."
+                      : `Hay ${unpricedItems.length} productos en tu carrito sin precio cerrado.`}{" "}
+                    Suele pasar con productos con marcaje muy custom o agotados.
+                    Pide cotización cerrada y te respondemos en &lt;24 h.
+                  </p>
+                  <ul className="mt-2 space-y-0.5 text-[11px] text-ink/55">
+                    {unpricedItems.slice(0, 3).map((it, i) => (
+                      <li key={i}>· {it.productName}</li>
+                    ))}
+                    {unpricedItems.length > 3 && (
+                      <li>· y {unpricedItems.length - 3} más…</li>
+                    )}
+                  </ul>
+                  {items.length > unpricedItems.length && (
+                    <button
+                      type="button"
+                      onClick={removeUnpricedItems}
+                      className="mt-2 text-[11px] font-medium text-accent underline-offset-2 hover:underline"
+                    >
+                      Quitar estos productos y pagar el resto con tarjeta →
+                    </button>
+                  )}
+                </div>
               )}
             </>
           );
