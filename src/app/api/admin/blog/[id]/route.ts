@@ -3,6 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { ensureSlug } from "@/lib/blog-generator";
+import {
+  notifyGoogleIndexing,
+  isGoogleIndexingConfigured,
+} from "@/lib/google-indexing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,6 +78,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ...(isPublishing ? { publishedAt: new Date() } : {}),
     },
   });
+
+  // Si acaba de publicarse, notificar a Google Indexing API (fire-and-forget).
+  // Si la API no está configurada o falla, no rompemos la respuesta del admin.
+  if (isPublishing && isGoogleIndexingConfigured()) {
+    const SITE_URL =
+      process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+    const url = `${SITE_URL}/blog/${updated.slug}`;
+    void notifyGoogleIndexing([url], "URL_UPDATED").catch((e) =>
+      console.error("[blog publish] Google Indexing fallo:", e),
+    );
+  }
 
   return NextResponse.json({ ok: true, post: updated });
 }
