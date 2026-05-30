@@ -81,18 +81,17 @@ export default async function BlogIndexPage() {
                       className="group block rounded-3xl border border-line bg-bone p-6 transition hover:border-accent/40 hover:shadow-lg lg:p-8"
                     >
                       <div className="flex flex-wrap gap-6 lg:flex-nowrap">
-                        {p.heroUrl && (
-                          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-bone-soft lg:h-44 lg:w-72 lg:flex-shrink-0">
-                            <Image
-                              src={p.heroUrl}
-                              alt=""
-                              fill
-                              sizes="(max-width:1024px) 100vw, 288px"
-                              className="object-cover transition group-hover:scale-105"
-                              unoptimized
-                            />
-                          </div>
-                        )}
+                        <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-bone-soft lg:h-44 lg:w-72 lg:flex-shrink-0">
+                          {/* Si no hay heroUrl en BD, usa el OG dinámico del post. */}
+                          <Image
+                            src={p.heroUrl || `/blog/${p.slug}/opengraph-image`}
+                            alt=""
+                            fill
+                            sizes="(max-width:1024px) 100vw, 288px"
+                            className="object-cover transition group-hover:scale-105"
+                            unoptimized
+                          />
+                        </div>
                         <div className="min-w-0 flex-1">
                           {p.tags.length > 0 && (
                             <p className="text-[11px] uppercase tracking-wider text-accent">

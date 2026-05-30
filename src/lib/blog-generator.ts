@@ -224,12 +224,15 @@ export function buildBlogSchema(post: {
   faq?: Array<{ q: string; a: string }>;
 }, siteUrl: string): object {
   const url = `${siteUrl}/blog/${post.slug}`;
+  // Si no hay heroUrl en BD, el OG dinámico del post sirve como image canónico.
+  // BlogPosting (subtipo de Article) → mejor rich result en Google.
+  const image = post.heroUrl || `${siteUrl}/blog/${post.slug}/opengraph-image`;
   const article = {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "BlogPosting",
     headline: post.title,
     description: post.excerpt || undefined,
-    image: post.heroUrl ? [post.heroUrl] : undefined,
+    image: [image],
     datePublished: post.publishedAt?.toISOString(),
     dateModified: post.updatedAt.toISOString(),
     author: {

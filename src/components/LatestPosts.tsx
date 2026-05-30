@@ -62,20 +62,18 @@ export async function LatestPosts() {
                 href={`/blog/${p.slug}`}
                 className="group block h-full overflow-hidden rounded-3xl border border-line bg-bone-soft transition hover:border-accent/40 hover:shadow-lg"
               >
-                {p.heroUrl ? (
-                  <div className="relative aspect-[16/10] overflow-hidden bg-bone">
-                    <Image
-                      src={p.heroUrl}
-                      alt=""
-                      fill
-                      sizes="(max-width:768px) 100vw, (max-width:1024px) 50vw, 33vw"
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                      unoptimized
-                    />
-                  </div>
-                ) : (
-                  <div className="relative aspect-[16/10] bg-gradient-to-br from-accent/10 via-bone to-bone-soft" />
-                )}
+                <div className="relative aspect-[16/10] overflow-hidden bg-bone">
+                  {/* Si no hay heroUrl en BD, usa el OG dinámico del post como
+                      fallback — siempre hay imagen (nunca placeholder gradient). */}
+                  <Image
+                    src={p.heroUrl || `/blog/${p.slug}/opengraph-image`}
+                    alt=""
+                    fill
+                    sizes="(max-width:768px) 100vw, (max-width:1024px) 50vw, 33vw"
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                    unoptimized
+                  />
+                </div>
                 <div className="p-6">
                   {p.tags.length > 0 && (
                     <p className="text-[10px] uppercase tracking-wider text-accent">
