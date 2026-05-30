@@ -1,0 +1,28 @@
+src/lib/indexnow.ts
+  s_65877aa637ec34::t_386040af874ee8 80-82
+  s_65877aa637ec34::t_346befc3bf2789 1-79,83-108
+src/app/api/admin/indexing/notify/route.ts
+  s_65877aa637ec34::t_52e451fa8122cd 8
+  s_65877aa637ec34::t_d9401d0e92dbdd 33-36,41,69,72-82,86-101
+src/app/indexnow.txt/route.ts
+  s_65877aa637ec34::t_5c823ee2cfe9c2 1-29
+src/app/api/admin/blog/[id]/route.ts
+  s_65877aa637ec34::t_b238016805799c 10
+  s_65877aa637ec34::t_b68dff9fd92d6f 83-86,90-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "95583ce4d43824059b2d99ac88d62b2002ed41e8",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
