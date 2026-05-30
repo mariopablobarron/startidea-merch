@@ -5,6 +5,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { RelatedProducts } from "@/components/RelatedProducts";
 import { prisma } from "@/lib/prisma";
 import { ProductOrderForm } from "@/components/ProductOrderForm";
 import { CompareToggle } from "@/components/CompareToggle";
@@ -588,6 +589,13 @@ export default async function ProductDetailPage({
             </aside>
           </div>
         </section>
+
+        <RelatedProducts
+          currentId={product.id}
+          categoryId={product.categoryId}
+          tags={product.tags}
+          supplier={product.supplier}
+        />
       </main>
       <Footer />
       <WhatsAppFloat />
