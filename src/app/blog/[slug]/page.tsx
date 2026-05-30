@@ -6,6 +6,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { JsonLd } from "@/components/JsonLd";
+import { RelatedPosts } from "@/components/RelatedPosts";
 import { prisma } from "@/lib/prisma";
 import { mdToHtml, buildBlogSchema } from "@/lib/blog-generator";
 
@@ -142,6 +143,8 @@ export default async function BlogPostPage({
             className="prose prose-lg mt-10 max-w-none prose-headings:font-display prose-headings:text-ink prose-h2:mt-12 prose-h3:mt-8 prose-a:text-accent prose-a:no-underline hover:prose-a:underline prose-strong:text-ink"
             dangerouslySetInnerHTML={{ __html: html }}
           />
+
+          <RelatedPosts currentSlug={post.slug} currentTags={post.tags} />
 
           <aside className="mt-12 rounded-3xl border border-line bg-bone-soft p-6 lg:p-8">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
