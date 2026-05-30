@@ -219,7 +219,7 @@ export function SeoContent() {
             Cómo solicitar tu cotización en TodoMerchandising
           </h3>
           <p>
-            El proceso es directo y sin compromiso: explora el catálogo (más de 2.000 productos
+            El proceso es directo y sin compromiso: explora el catálogo (más de 9.000 productos
             con precio &quot;desde&quot; visible en cada tarjeta), añade los que te interesan al
             configurador, indica cantidad y técnica de marcaje. Te devolvemos cotización
             cerrada en menos de 24 horas laborables con depósito flexible (50 % al confirmar,

@@ -18,7 +18,7 @@ const STEPS: Step[] = [
       "TodoMerchandising es merchandising B2B: cada pedido se produce en Centros Especiales de Empleo o talleres locales. Mismo precio que cualquier proveedor.",
   },
   {
-    title: "Más de 2.000 productos personalizables",
+    title: "Más de 9.000 productos personalizables",
     body:
       "Catálogo curado con stock europeo real, precios escalados por cantidad y áreas de marcaje detalladas. Búscalo por nombre, categoría, color o material.",
     cta: { label: "Abrir catálogo →", href: "/catalogo" },

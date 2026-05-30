@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const BASE_METADATA: Metadata = {
   title: "Catálogo de merchandising personalizable",
   description:
-    "Más de 2.000 productos promocionales personalizables: textil, drinkware, escritura, tecnología, eventos. Producción con impacto social en Centros Especiales de Empleo y talleres locales.",
+    "Más de 9.000 productos promocionales personalizables: textil, drinkware, escritura, tecnología, eventos. Producción con impacto social en Centros Especiales de Empleo y talleres locales.",
   alternates: { canonical: "https://merchandising.hubstartidea.es/catalogo" },
 };
 
@@ -266,7 +266,7 @@ export default async function CatalogoPage({
               Catálogo
             </p>
             <h1 className="font-display text-section font-semibold text-ink">
-              {category ? category.name : "Más de 2.000 productos personalizables"}
+              {category ? category.name : "Más de 9.000 productos personalizables"}
             </h1>
             <p className="mt-4 max-w-3xl text-base text-ink/70 lg:text-lg">
               Cualquier producto se personaliza con tu logo y se produce en CEE o talleres
