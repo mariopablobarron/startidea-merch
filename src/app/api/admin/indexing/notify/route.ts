@@ -5,6 +5,7 @@ import {
   notifyGoogleIndexing,
   isGoogleIndexingConfigured,
 } from "@/lib/google-indexing";
+import { submitToIndexNow, isIndexNowConfigured } from "@/lib/indexnow";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,12 +30,15 @@ export async function POST(req: Request) {
   const auth = requireAdminSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
-  if (!isGoogleIndexingConfigured()) {
+  const googleReady = isGoogleIndexingConfigured();
+  const indexNowReady = isIndexNowConfigured();
+
+  if (!googleReady && !indexNowReady) {
     return NextResponse.json(
       {
         ok: false,
         error:
-          "Google Indexing API no configurada. Faltan GOOGLE_INDEXING_CLIENT_EMAIL y GOOGLE_INDEXING_PRIVATE_KEY en el .env.",
+          "Ningún proveedor de indexación configurado. Añade GOOGLE_INDEXING_* o INDEXNOW_KEY al .env.",
       },
       { status: 503 },
     );
@@ -62,17 +66,38 @@ export async function POST(req: Request) {
   }
 
   if (urls.length === 0) {
-    return NextResponse.json({ ok: true, message: "No hay URLs que notificar", results: [] });
+    return NextResponse.json({ ok: true, message: "No hay URLs que notificar" });
   }
 
-  const results = await notifyGoogleIndexing(urls, "URL_UPDATED");
-  const okCount = results.filter((r) => r.ok).length;
+  // Disparamos en paralelo. Google e IndexNow son independientes — si
+  // uno falla, el otro puede tener éxito.
+  const [googleResults, indexNowResult] = await Promise.all([
+    googleReady
+      ? notifyGoogleIndexing(urls, "URL_UPDATED")
+      : Promise.resolve(null),
+    indexNowReady ? submitToIndexNow(urls) : Promise.resolve(null),
+  ]);
+
+  const googleOk = googleResults?.filter((r) => r.ok).length ?? 0;
+  const googleFail = (googleResults?.length ?? 0) - googleOk;
 
   return NextResponse.json({
     ok: true,
-    notified: okCount,
-    failed: results.length - okCount,
-    total: results.length,
-    results,
+    google: googleResults
+      ? {
+          notified: googleOk,
+          failed: googleFail,
+          total: googleResults.length,
+          results: googleResults,
+        }
+      : { skipped: "not configured" },
+    indexNow: indexNowResult
+      ? {
+          ok: indexNowResult.ok,
+          status: indexNowResult.status,
+          urlsSubmitted: indexNowResult.urlsSubmitted,
+          message: indexNowResult.message,
+        }
+      : { skipped: "not configured" },
   });
 }

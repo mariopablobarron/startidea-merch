@@ -7,6 +7,7 @@ import {
   notifyGoogleIndexing,
   isGoogleIndexingConfigured,
 } from "@/lib/google-indexing";
+import { submitToIndexNow, isIndexNowConfigured } from "@/lib/indexnow";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,15 +80,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     },
   });
 
-  // Si acaba de publicarse, notificar a Google Indexing API (fire-and-forget).
-  // Si la API no está configurada o falla, no rompemos la respuesta del admin.
-  if (isPublishing && isGoogleIndexingConfigured()) {
+  // Si acaba de publicarse, notificar a los proveedores configurados
+  // (Google Indexing + IndexNow para Bing/Yandex/DDG). Fire-and-forget:
+  // si fallan no rompemos la respuesta del admin.
+  if (isPublishing) {
     const SITE_URL =
       process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
     const url = `${SITE_URL}/blog/${updated.slug}`;
-    void notifyGoogleIndexing([url], "URL_UPDATED").catch((e) =>
-      console.error("[blog publish] Google Indexing fallo:", e),
-    );
+    if (isGoogleIndexingConfigured()) {
+      void notifyGoogleIndexing([url], "URL_UPDATED").catch((e) =>
+        console.error("[blog publish] Google Indexing fallo:", e),
+      );
+    }
+    if (isIndexNowConfigured()) {
+      void submitToIndexNow([url]).catch((e) =>
+        console.error("[blog publish] IndexNow fallo:", e),
+      );
+    }
   }
 
   return NextResponse.json({ ok: true, post: updated });
