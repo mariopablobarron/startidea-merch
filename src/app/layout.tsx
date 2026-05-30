@@ -83,7 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script
           defer
           src="https://analytics.hubstartidea.es/script.js"
-          data-website-id="530b17d7-0550-4d76-8264-13078706b507"
+          data-website-id="7ab5c23b-9087-43ae-99fb-40e6c46d6da0"
           strategy="afterInteractive"
         />
         {/* GA4 + Search Console — opcional, se activa con env vars */}
