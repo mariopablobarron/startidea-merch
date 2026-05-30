@@ -48,14 +48,23 @@ export async function generateMetadata({
       description,
       siteName: "TodoMerchandising",
       locale: "es_ES",
-      images: post.heroUrl ? [{ url: post.heroUrl, width: 1200, height: 630, alt: title }] : undefined,
+      // Si no hay heroUrl en BD, usa el OG dinámico del post como fallback
+      // — siempre se exporta og:image (clave para previews en RRSS).
+      images: [
+        {
+          url: post.heroUrl || `${postUrl}/opengraph-image`,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
       publishedTime: post.publishedAt?.toISOString(),
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: post.heroUrl ? [post.heroUrl] : undefined,
+      images: [post.heroUrl || `${postUrl}/opengraph-image`],
     },
   };
 }
