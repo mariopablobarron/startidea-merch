@@ -9,6 +9,8 @@ import { JsonLd } from "@/components/JsonLd";
 import { RelatedPosts } from "@/components/RelatedPosts";
 import { prisma } from "@/lib/prisma";
 import { mdToHtml, buildBlogSchema } from "@/lib/blog-generator";
+import { injectInternalLinks, type LinkableEntity } from "@/lib/blog-internal-links";
+import { SECTORS } from "@/lib/sectors";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
@@ -78,7 +80,33 @@ export default async function BlogPostPage({
   const post = await prisma.blogPost.findUnique({ where: { slug } });
   if (!post || post.status !== "PUBLISHED") notFound();
 
-  const html = mdToHtml(post.bodyMd);
+  // 1. Markdown → HTML
+  let html = mdToHtml(post.bodyMd);
+
+  // 2. Internal linking automático: enlazar menciones a sectores y categorías.
+  // Solo trae entidades simples (sectores y top categorías) — no productos
+  // específicos (sería ruido + matches falsos para nombres genéricos).
+  try {
+    const topCategories = await prisma.category.findMany({
+      where: { level: 0 },
+      select: { name: true, slug: true },
+      take: 30,
+    });
+    const entities: LinkableEntity[] = [
+      ...SECTORS.map((s) => ({
+        name: s.title,
+        url: `/sectores/${s.slug}`,
+      })),
+      ...topCategories.map((c) => ({
+        name: c.name,
+        url: `/catalogo?cat=${c.slug}`,
+      })),
+    ];
+    html = injectInternalLinks(html, entities, { maxPerEntity: 1, minLength: 5 });
+  } catch {
+    // Si falla la BD, seguimos con el HTML sin linkar — no rompemos el post.
+  }
+
   const faq = (post.schemaJson as { faq?: Array<{ q: string; a: string }> } | null)?.faq;
   const schema = buildBlogSchema(
     {
