@@ -1,0 +1,20 @@
+src/app/api/admin/indexing/diagnose/route.ts
+  s_65877aa637ec34::t_2b8f8b81bbc015 95,101-115
+  s_65877aa637ec34::t_2f3db72cb656c7 128-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f445b5b8911ecfc4f76d389894a8e605778927cf",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
