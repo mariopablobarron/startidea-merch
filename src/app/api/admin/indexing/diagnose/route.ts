@@ -35,10 +35,13 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url).searchParams.get("url") || `${SITE_URL}/blog/kit-bienvenida-empleados-checklist`;
 
-  // 1. Firmar JWT
+  // 1. Firmar JWT — incluimos también scope webmasters.readonly para listar
+  // las propiedades GSC donde la SA tiene acceso (debugging del 403).
   const key = await importPKCS8(privateKey, "RS256");
   const now = Math.floor(Date.now() / 1000);
-  const jwt = await new SignJWT({ scope: "https://www.googleapis.com/auth/indexing" })
+  const scope =
+    "https://www.googleapis.com/auth/indexing https://www.googleapis.com/auth/webmasters.readonly";
+  const jwt = await new SignJWT({ scope })
     .setProtectedHeader({ alg: "RS256", typ: "JWT" })
     .setIssuer(email)
     .setSubject(email)
@@ -89,6 +92,14 @@ export async function GET(req: Request) {
   });
   const pubBody = await pubRes.text();
 
+  // 5. Listar propiedades GSC donde la SA tiene acceso. Esto es la clave
+  // para diagnosticar el 403 — si la lista está vacía, la SA no es Owner
+  // de ninguna propiedad (a pesar de lo que veas en GSC UI).
+  const sitesRes = await fetch("https://www.googleapis.com/webmasters/v3/sites", {
+    headers: { Authorization: `Bearer ${access_token}` },
+  });
+  const sitesBody = await sitesRes.text();
+
   return NextResponse.json({
     ok: pubRes.ok,
     diagnosis: {
@@ -99,6 +110,7 @@ export async function GET(req: Request) {
       url,
       getMetadata: { status: metaRes.status, body: tryParse(metaBody) },
       publish: { status: pubRes.status, body: tryParse(pubBody) },
+      sitesAccess: { status: sitesRes.status, body: tryParse(sitesBody) },
     },
   });
 }
