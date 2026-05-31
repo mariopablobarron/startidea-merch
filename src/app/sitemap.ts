@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { SECTORS } from "@/lib/sectors";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
 
@@ -27,6 +28,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/recursos`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/recomendador`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/comparar`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/sectores`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/clientes`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/sobre`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/ayuda`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/aviso-legal`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
@@ -80,8 +84,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    return [...staticPages, ...productPages, ...categoryPages, ...blogPages, ...magnetPages];
+    // 6 landings dinámicas de sectores — programmatic SEO real
+    const sectorPages: MetadataRoute.Sitemap = SECTORS.map((s) => ({
+      url: `${BASE}/sectores/${s.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    }));
+
+    return [
+      ...staticPages,
+      ...sectorPages,
+      ...productPages,
+      ...categoryPages,
+      ...blogPages,
+      ...magnetPages,
+    ];
   } catch {
-    return staticPages;
+    // Mismo fallback pero incluyendo sectores (estáticos en /lib/sectors)
+    const sectorPages: MetadataRoute.Sitemap = SECTORS.map((s) => ({
+      url: `${BASE}/sectores/${s.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    }));
+    return [...staticPages, ...sectorPages];
   }
 }
