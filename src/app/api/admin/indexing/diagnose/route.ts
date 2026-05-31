@@ -92,13 +92,27 @@ export async function GET(req: Request) {
   });
   const pubBody = await pubRes.text();
 
-  // 5. Listar propiedades GSC donde la SA tiene acceso. Esto es la clave
-  // para diagnosticar el 403 — si la lista está vacía, la SA no es Owner
-  // de ninguna propiedad (a pesar de lo que veas en GSC UI).
+  // 5. Listar propiedades GSC + probar permisos específicos en cada formato.
   const sitesRes = await fetch("https://www.googleapis.com/webmasters/v3/sites", {
     headers: { Authorization: `Bearer ${access_token}` },
   });
   const sitesBody = await sitesRes.text();
+
+  // 5b. Consultar permiso específico en formato sc-domain (Domain property)
+  const domainProp = "sc-domain:merchandising.hubstartidea.es";
+  const domRes = await fetch(
+    `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(domainProp)}`,
+    { headers: { Authorization: `Bearer ${access_token}` } },
+  );
+  const domBody = await domRes.text();
+
+  // 5c. Consultar permiso en formato URL-prefix (por si Mario añadió ahí)
+  const urlProp = "https://merchandising.hubstartidea.es/";
+  const urlRes = await fetch(
+    `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(urlProp)}`,
+    { headers: { Authorization: `Bearer ${access_token}` } },
+  );
+  const urlBody = await urlRes.text();
 
   return NextResponse.json({
     ok: pubRes.ok,
@@ -111,6 +125,16 @@ export async function GET(req: Request) {
       getMetadata: { status: metaRes.status, body: tryParse(metaBody) },
       publish: { status: pubRes.status, body: tryParse(pubBody) },
       sitesAccess: { status: sitesRes.status, body: tryParse(sitesBody) },
+      domainPropertyCheck: {
+        siteUrl: domainProp,
+        status: domRes.status,
+        body: tryParse(domBody),
+      },
+      urlPrefixCheck: {
+        siteUrl: urlProp,
+        status: urlRes.status,
+        body: tryParse(urlBody),
+      },
     },
   });
 }
