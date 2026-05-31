@@ -3,16 +3,23 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubs
 export const ORGANIZATION_JSONLD = {
   "@context": "https://schema.org",
   "@type": "Organization",
+  "@id": `${SITE_URL}/#org`,
   name: "todomerchandising",
   alternateName: "TodoMerchandising",
+  legalName: "Startidea Málaga SL",
   url: SITE_URL,
   logo: `${SITE_URL}/opengraph-image`,
+  image: `${SITE_URL}/opengraph-image`,
   description:
     "Merchandising corporativo personalizado producido en Centros Especiales de Empleo y talleres locales. Una iniciativa de Startidea.",
   parentOrganization: {
     "@type": "Organization",
-    name: "Startidea",
+    name: "Startidea Málaga SL",
     url: "https://startidea.es",
+  },
+  foundingLocation: {
+    "@type": "Place",
+    address: { "@type": "PostalAddress", addressLocality: "Málaga", addressCountry: "ES" },
   },
   contactPoint: {
     "@type": "ContactPoint",
@@ -24,6 +31,8 @@ export const ORGANIZATION_JSONLD = {
   address: {
     "@type": "PostalAddress",
     addressCountry: "ES",
+    addressRegion: "Andalucía",
+    addressLocality: "Málaga",
   },
   knowsAbout: [
     "Merchandising corporativo",
@@ -99,6 +108,55 @@ export const FAQ_JSONLD = {
 
 // Alias del schema con SearchAction (mantiene backwards-compat con imports).
 export const WEBSITE_JSONLD = WEBSITE_JSONLD_WITH_SEARCH;
+
+/**
+ * Schema.org LocalBusiness — para la página /sobre.
+ *
+ * Mejora Trustworthiness (E-E-A-T) — Google valora ver entidades con
+ * dirección, contacto y horarios reales. Incluye Knowledge Graph hints.
+ *
+ * Si más adelante tienes una dirección postal específica y/o horarios
+ * publicables, extiéndelo aquí.
+ */
+export const LOCAL_BUSINESS_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "@id": `${SITE_URL}/#org`,
+  name: "TodoMerchandising",
+  alternateName: "todomerchandising",
+  url: SITE_URL,
+  logo: `${SITE_URL}/opengraph-image`,
+  image: `${SITE_URL}/opengraph-image`,
+  description:
+    "Agencia de merchandising corporativo B2B con producción en Centros Especiales de Empleo y talleres locales. Una iniciativa de Startidea Málaga SL.",
+  parentOrganization: {
+    "@type": "Organization",
+    name: "Startidea Málaga SL",
+    url: "https://startidea.es",
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressCountry: "ES",
+    addressRegion: "Andalucía",
+    addressLocality: "Málaga",
+  },
+  email: "pedidos@startidea.es",
+  areaServed: { "@type": "Country", name: "ES" },
+  priceRange: "€€",
+  knowsAbout: [
+    "Merchandising corporativo",
+    "Producción en CEE",
+    "Trazabilidad social",
+    "Personalización textil",
+    "Serigrafía",
+    "Bordado",
+    "DTF",
+    "Grabado láser",
+    "RSC",
+    "Compras públicas",
+  ],
+  sameAs: ["https://startidea.es", "https://hubstartidea.es"],
+};
 
 /**
  * Schema.org CollectionPage — para páginas índice (catálogo, blog).

@@ -95,6 +95,15 @@ export default async function SectorDetailPage({
       serviceType: "Merchandising corporativo",
       audience: { "@type": "BusinessAudience", audienceType: s.title },
       url,
+      // Rango orientativo — Google muestra "Desde X €" en rich result
+      offers: {
+        "@type": "AggregateOffer",
+        priceCurrency: "EUR",
+        lowPrice: "0.50",
+        highPrice: "150.00",
+        offerCount: s.products.length,
+        availability: "https://schema.org/InStock",
+      },
     },
   ];
   if (s.faqs && s.faqs.length > 0) {

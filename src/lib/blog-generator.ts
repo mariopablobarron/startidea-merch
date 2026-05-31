@@ -241,6 +241,9 @@ export function buildBlogSchema(post: {
         .filter(Boolean).length
     : undefined;
 
+  // Author como Person con worksFor — mejor E-E-A-T que Organization plano.
+  // Google da más peso a contenido firmado por personas con expertise visible.
+  const authorName = post.author || "Equipo TodoMerchandising";
   const article = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -251,13 +254,28 @@ export function buildBlogSchema(post: {
     dateModified: post.updatedAt.toISOString(),
     inLanguage: "es-ES",
     author: {
-      "@type": "Organization",
-      name: post.author || "Startidea",
-      url: "https://startidea.es",
+      "@type": "Person",
+      name: authorName,
+      jobTitle: "Especialistas en merchandising corporativo B2B",
+      worksFor: {
+        "@type": "Organization",
+        name: "TodoMerchandising",
+        url: siteUrl,
+      },
+      knowsAbout: [
+        "Merchandising corporativo",
+        "Centros Especiales de Empleo",
+        "Personalización textil",
+        "Serigrafía",
+        "Bordado",
+        "DTF",
+        "Compras B2B",
+      ],
     },
     publisher: {
       "@type": "Organization",
       name: "TodoMerchandising",
+      url: siteUrl,
       logo: { "@type": "ImageObject", url: `${siteUrl}/logo-mark.svg` },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
