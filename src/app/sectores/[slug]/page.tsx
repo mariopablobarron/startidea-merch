@@ -36,9 +36,10 @@ export async function generateMetadata({
       description,
       siteName: "TodoMerchandising",
       locale: "es_ES",
+      // Usa el opengraph-image.tsx específico del sector (PNG por sector)
       images: [
         {
-          url: `${SITE_URL}/opengraph-image`,
+          url: `${SITE_URL}/sectores/${s.slug}/opengraph-image`,
           width: 1200,
           height: 630,
           alt: title,
@@ -49,7 +50,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: [`${SITE_URL}/opengraph-image`],
+      images: [`${SITE_URL}/sectores/${s.slug}/opengraph-image`],
     },
   };
 }

@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/recomendador`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/comparar`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/sectores`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/clientes`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    // /clientes NO va en sitemap — es portal privado con robots: noindex
     { url: `${BASE}/sobre`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/ayuda`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
