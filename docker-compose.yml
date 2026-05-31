@@ -20,6 +20,13 @@ services:
     restart: unless-stopped
     depends_on:
       - db
+    # env_file carga TODAS las vars de .env automáticamente. Las vars listadas
+    # en `environment:` siguen aplicando — son redundancia explícita para las
+    # críticas. Cualquier var nueva que añadas solo al .env (sin tocar este
+    # compose) llegará al container sin recrear nada. Resolvió el problema
+    # crónico de vars que se "perdían" en cada deploy.
+    env_file:
+      - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
       RESEND_API_KEY: ${RESEND_API_KEY}
@@ -81,6 +88,10 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       STRIPE_TAX_ENABLED: ${STRIPE_TAX_ENABLED:-false}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      # SEO automation — Google Indexing API + IndexNow (Bing/Yandex/DDG)
+      GOOGLE_INDEXING_CLIENT_EMAIL: ${GOOGLE_INDEXING_CLIENT_EMAIL}
+      GOOGLE_INDEXING_PRIVATE_KEY: ${GOOGLE_INDEXING_PRIVATE_KEY}
+      INDEXNOW_KEY: ${INDEXNOW_KEY}
       NODE_ENV: production
       PORT: "3000"
       # Forzar bind a 0.0.0.0 — sin esto Next.js standalone escucha solo
