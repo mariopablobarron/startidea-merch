@@ -89,6 +89,8 @@ export default async function BlogPostPage({
       publishedAt: post.publishedAt,
       updatedAt: post.updatedAt,
       author: post.author,
+      tags: post.tags,
+      bodyMd: post.bodyMd,
       faq,
     },
     SITE_URL,

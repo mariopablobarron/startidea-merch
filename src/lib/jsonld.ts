@@ -35,6 +35,29 @@ export const ORGANIZATION_JSONLD = {
     "Grabado láser",
     "Impacto social",
   ],
+  // sameAs — perfiles oficiales en otras plataformas. Refuerza Knowledge
+  // Graph de Google y conecta la entidad con sus presencias. Si añades más
+  // redes (LinkedIn empresa, Instagram corporate, etc.) extiende la lista.
+  sameAs: ["https://startidea.es", "https://hubstartidea.es"],
+};
+
+export const WEBSITE_JSONLD_WITH_SEARCH = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "todomerchandising",
+  alternateName: "TodoMerchandising",
+  url: SITE_URL,
+  inLanguage: "es-ES",
+  // SearchAction declara que la web tiene un buscador interno —
+  // Google puede mostrar la sitelinks searchbox en SERPs de marca.
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${SITE_URL}/catalogo?q={search_term_string}`,
+    },
+    "query-input": "required name=search_term_string",
+  },
 };
 
 export const FAQ_JSONLD_ITEMS = [
@@ -74,13 +97,8 @@ export const FAQ_JSONLD = {
   })),
 };
 
-export const WEBSITE_JSONLD = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: "todomerchandising",
-  url: SITE_URL,
-  inLanguage: "es-ES",
-};
+// Alias del schema con SearchAction (mantiene backwards-compat con imports).
+export const WEBSITE_JSONLD = WEBSITE_JSONLD_WITH_SEARCH;
 
 /**
  * Schema.org Product para rich snippets en SERP.

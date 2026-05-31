@@ -221,12 +221,26 @@ export function buildBlogSchema(post: {
   publishedAt: Date | null;
   updatedAt: Date;
   author: string | null;
+  tags?: string[];
+  bodyMd?: string | null;
   faq?: Array<{ q: string; a: string }>;
 }, siteUrl: string): object {
   const url = `${siteUrl}/blog/${post.slug}`;
   // Si no hay heroUrl en BD, el OG dinámico del post sirve como image canónico.
   // BlogPosting (subtipo de Article) → mejor rich result en Google.
   const image = post.heroUrl || `${siteUrl}/blog/${post.slug}/opengraph-image`;
+
+  // wordCount aproximado a partir del markdown (ayuda a Google a clasificar
+  // como long-form / short-form y mejora featured snippets en posts largos).
+  const wordCount = post.bodyMd
+    ? post.bodyMd
+        .replace(/```[\s\S]*?```/g, "") // quitar bloques de código
+        .replace(/[#*_~`>\-+|]/g, " ") // quitar markdown
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // quitar links
+        .split(/\s+/)
+        .filter(Boolean).length
+    : undefined;
+
   const article = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -235,6 +249,7 @@ export function buildBlogSchema(post: {
     image: [image],
     datePublished: post.publishedAt?.toISOString(),
     dateModified: post.updatedAt.toISOString(),
+    inLanguage: "es-ES",
     author: {
       "@type": "Organization",
       name: post.author || "Startidea",
@@ -246,21 +261,40 @@ export function buildBlogSchema(post: {
       logo: { "@type": "ImageObject", url: `${siteUrl}/logo-mark.svg` },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    ...(wordCount ? { wordCount } : {}),
+    ...(post.tags && post.tags.length > 0
+      ? {
+          keywords: post.tags.join(", "),
+          articleSection: post.tags[0],
+        }
+      : {}),
   };
 
+  // BreadcrumbList — Inicio → Blog → <post>. Mejora el rich result en
+  // Google con la ruta visible bajo el título en los resultados.
+  const breadcrumbs = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Inicio", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${siteUrl}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title, item: url },
+    ],
+  };
+
+  const items: object[] = [article, breadcrumbs];
+
   if (post.faq && post.faq.length > 0) {
-    return [
-      article,
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        mainEntity: post.faq.map((f) => ({
-          "@type": "Question",
-          name: f.q,
-          acceptedAnswer: { "@type": "Answer", text: f.a },
-        })),
-      },
-    ];
+    items.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: post.faq.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    });
   }
-  return article;
+
+  return items;
 }

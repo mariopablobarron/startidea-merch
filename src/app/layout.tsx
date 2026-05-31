@@ -90,6 +90,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <GoogleAnalytics />
         {/* Pixels publicitarios Meta + Google Ads + LinkedIn (env-driven) */}
         <AdsPixels />
+        {/* Feeds discoverables — RSS del blog + llms.txt para AI crawlers */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="TodoMerchandising · Blog"
+          href="/blog/rss.xml"
+        />
       </head>
       <body>
         {children}

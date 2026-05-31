@@ -10,8 +10,11 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: ["/api/", "/aviso-legal", "/privacidad", "/cookies"],
       },
+      // Permitimos AI crawlers — usamos /llms.txt como índice curado.
+      // Si más adelante quieres bloquear alguno concreto (GPTBot, etc.),
+      // añade una rule específica con disallow: ["/"].
     ],
-    sitemap: `${BASE}/sitemap.xml`,
+    sitemap: [`${BASE}/sitemap.xml`, `${BASE}/blog/rss.xml`],
     host: BASE,
   };
 }
