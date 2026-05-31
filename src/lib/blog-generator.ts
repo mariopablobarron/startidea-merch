@@ -16,6 +16,7 @@
  */
 
 import { marked } from "marked";
+import { detectHowToSteps, buildHowToSchema } from "./blog-howto";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.OPENROUTER_MODEL_BLOG || "anthropic/claude-sonnet-4.5";
@@ -312,6 +313,23 @@ export function buildBlogSchema(post: {
         acceptedAnswer: { "@type": "Answer", text: f.a },
       })),
     });
+  }
+
+  // HowTo schema si el post tiene estructura de guía paso a paso.
+  // Detección automática del body markdown.
+  if (post.bodyMd) {
+    const steps = detectHowToSteps(post.bodyMd);
+    if (steps.length >= 3) {
+      items.push(
+        buildHowToSchema({
+          name: post.title,
+          description: post.excerpt || post.title,
+          steps,
+          image,
+          url,
+        }) as object,
+      );
+    }
   }
 
   return items;
