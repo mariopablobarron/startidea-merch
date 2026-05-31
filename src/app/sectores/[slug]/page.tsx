@@ -4,7 +4,11 @@ import { notFound } from "next/navigation";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { JsonLd } from "@/components/JsonLd";
 import { SECTORS, getSector } from "@/lib/sectors";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
 export function generateStaticParams() {
   return SECTORS.map((s) => ({ slug: s.slug }));
@@ -18,9 +22,35 @@ export async function generateMetadata({
   const { slug } = await params;
   const s = getSector(slug);
   if (!s) return { title: "Sector no encontrado" };
+  const url = `${SITE_URL}/sectores/${s.slug}`;
+  const title = `Merchandising para ${s.title.toLowerCase()} · Casos reales y productos`;
+  const description = s.heroIntro.slice(0, 160);
   return {
-    title: `Merchandising para ${s.title.toLowerCase()} · Casos reales y productos`,
-    description: s.heroIntro.slice(0, 160),
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      url,
+      title,
+      description,
+      siteName: "TodoMerchandising",
+      locale: "es_ES",
+      images: [
+        {
+          url: `${SITE_URL}/opengraph-image`,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`${SITE_URL}/opengraph-image`],
+    },
   };
 }
 
@@ -33,8 +63,55 @@ export default async function SectorDetailPage({
   const s = getSector(slug);
   if (!s) notFound();
 
+  const url = `${SITE_URL}/sectores/${s.slug}`;
+
+  // JSON-LD: BreadcrumbList + Service + FAQPage (si hay FAQs)
+  const schemas: object[] = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE_URL },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Sectores",
+          item: `${SITE_URL}/sectores`,
+        },
+        { "@type": "ListItem", position: 3, name: s.title, item: url },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      name: `Merchandising para ${s.title}`,
+      description: s.heroIntro.slice(0, 300),
+      provider: {
+        "@type": "Organization",
+        name: "TodoMerchandising",
+        url: SITE_URL,
+      },
+      areaServed: { "@type": "Country", name: "ES" },
+      serviceType: "Merchandising corporativo",
+      audience: { "@type": "BusinessAudience", audienceType: s.title },
+      url,
+    },
+  ];
+  if (s.faqs && s.faqs.length > 0) {
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: s.faqs.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    });
+  }
+
   return (
     <>
+      <JsonLd data={schemas as never} />
       <Nav />
       <main className="bg-bone-soft">
         <section className="border-b border-line bg-bone py-14 lg:py-20">

@@ -4,6 +4,8 @@ import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { Recommender } from "@/components/Recommender";
 import { prisma } from "@/lib/prisma";
+import { JsonLd } from "@/components/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
   title: "Recomendador inteligente · Encuentra el merchandising perfecto",
@@ -35,6 +37,7 @@ export default async function RecomendadorPage() {
   const countLabel = formatCount(productCount);
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Inicio", url: "/" }, { name: "Recomendador", url: "/recomendador" }]) as never} />
       <Nav />
       <main className="bg-bone-soft">
         <section className="border-b border-line bg-bone py-16 lg:py-20">

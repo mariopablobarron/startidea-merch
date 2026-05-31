@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { estimateBaseCentsFromName, defaultTiersFromBase, formatMoney, pickTier } from "@/lib/pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl } from "@/lib/proxy-image";
+import { JsonLd } from "@/components/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
   title: "Comparar productos · Decide entre 2 ó 3 referencias",
@@ -52,6 +54,7 @@ export default async function CompararPage({
 
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Inicio", url: "/" }, { name: "Comparador", url: "/comparar" }]) as never} />
       <Nav />
       <main className="bg-bone-soft">
         <section className="border-b border-line bg-bone py-14 lg:py-16">

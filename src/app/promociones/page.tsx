@@ -8,6 +8,8 @@ import { BannerSlot } from "@/components/BannerSlot";
 import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { mergeMetadata, getPageSeo } from "@/lib/page-seo";
+import { JsonLd } from "@/components/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/jsonld";
 import {
   loadActivePromotions,
   applyBestPromotion,
@@ -107,6 +109,7 @@ export default async function PromocionesPage() {
 
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Inicio", url: "/" }, { name: "Promociones", url: "/promociones" }]) as never} />
       <Nav />
       <main className="bg-bone">
         <section className="border-b border-line bg-gradient-to-br from-accent/10 via-bone to-bone py-14 lg:py-20">

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { JsonLd } from "@/components/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
   title: "Centro de ayuda · Cómo funciona TodoMerchandising",
@@ -139,6 +141,7 @@ const SECTIONS = [
 export default function AyudaPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Inicio", url: "/" }, { name: "Centro de ayuda", url: "/ayuda" }]) as never} />
       <Nav />
       <main className="bg-bone-soft">
         <section className="border-b border-line bg-bone py-16 lg:py-20">

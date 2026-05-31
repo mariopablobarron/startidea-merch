@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
+import { JsonLd } from "@/components/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { Eye, Target, Compass } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -32,6 +34,7 @@ const VALUES = [
 export default function SobrePage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Inicio", url: "/" }, { name: "Sobre nosotros", url: "/sobre" }]) as never} />
       <Nav />
       <main className="bg-bone">
         <section className="bg-bone py-24 lg:py-36">

@@ -4,6 +4,8 @@ import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { PortfolioGrid } from "@/components/PortfolioGrid";
 import { mergeMetadata, getPageSeo } from "@/lib/page-seo";
+import { JsonLd } from "@/components/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/jsonld";
 
 const BASE_METADATA: Metadata = {
   title: "Trabajos realizados · TodoMerchandising",
@@ -22,6 +24,7 @@ export const dynamic = "force-dynamic";
 export default function TrabajosPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Inicio", url: "/" }, { name: "Trabajos", url: "/trabajos" }]) as never} />
       <Nav />
       <main>
         <section className="border-b border-line bg-bone py-12 lg:py-16">

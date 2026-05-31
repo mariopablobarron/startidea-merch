@@ -6,6 +6,8 @@ import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { prisma } from "@/lib/prisma";
 import { mergeMetadata, getPageSeo } from "@/lib/page-seo";
+import { JsonLd } from "@/components/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/jsonld";
 
 const BASE_METADATA: Metadata = {
   title: "Recursos · TodoMerchandising",
@@ -38,6 +40,7 @@ export default async function RecursosPage() {
 
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Inicio", url: "/" }, { name: "Recursos", url: "/recursos" }]) as never} />
       <Nav />
       <main>
         <section className="border-b border-line bg-bone py-14 lg:py-20">

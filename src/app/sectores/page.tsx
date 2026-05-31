@@ -3,17 +3,39 @@ import Link from "next/link";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { JsonLd } from "@/components/JsonLd";
 import { SECTORS } from "@/lib/sectors";
+import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
 export const metadata: Metadata = {
   title: "Merchandising por sector · Tech, eventos, retail, AAPP, RSC, RRHH",
   description:
     "Soluciones de merchandising corporativo adaptadas a cada sector: empresas tech, organizadores de eventos, retail, administración pública, departamentos RSC y RRHH.",
+  alternates: { canonical: `${SITE_URL}/sectores` },
 };
 
 export default function SectoresPage() {
+  const breadcrumbs = breadcrumbJsonLd([
+    { name: "Inicio", url: "/" },
+    { name: "Sectores", url: "/sectores" },
+  ]);
+  const collection = collectionPageJsonLd({
+    name: "Merchandising por sector · TodoMerchandising",
+    description:
+      "Landings dedicadas a cada sector con casos reales, retos y productos recomendados.",
+    url: `${SITE_URL}/sectores`,
+    items: SECTORS.map((s) => ({
+      name: `Merchandising para ${s.title}`,
+      url: `${SITE_URL}/sectores/${s.slug}`,
+    })),
+  });
+
   return (
     <>
+      <JsonLd data={[breadcrumbs, collection] as never} />
       <Nav />
       <main className="bg-bone-soft">
         <section className="border-b border-line bg-bone py-16 lg:py-20">
