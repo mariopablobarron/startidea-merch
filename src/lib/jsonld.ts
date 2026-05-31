@@ -101,6 +101,39 @@ export const FAQ_JSONLD = {
 export const WEBSITE_JSONLD = WEBSITE_JSONLD_WITH_SEARCH;
 
 /**
+ * Schema.org CollectionPage — para páginas índice (catálogo, blog).
+ * Google usa este tipo para entender que la página agrupa items y mostrar
+ * sitelinks más ricos.
+ */
+export function collectionPageJsonLd(args: {
+  name: string;
+  description: string;
+  url: string;
+  items: Array<{ name: string; url: string; image?: string | null }>;
+}): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: args.name,
+    description: args.description,
+    url: args.url,
+    inLanguage: "es-ES",
+    isPartOf: { "@type": "WebSite", "@id": SITE_URL },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: args.items.length,
+      itemListElement: args.items.map((it, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: it.url,
+        name: it.name,
+        ...(it.image ? { image: it.image } : {}),
+      })),
+    },
+  };
+}
+
+/**
  * Schema.org Product para rich snippets en SERP.
  * - precio: el de la primera tier (1 ud); Google muestra el "from X €" si especificas range.
  * - availability: InStock para todos los activos (MidOcean + locales).

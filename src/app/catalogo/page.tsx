@@ -5,13 +5,18 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { BannerSlot } from "@/components/BannerSlot";
+import { JsonLd } from "@/components/JsonLd";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { publicRef } from "@/lib/internal-ref";
-import { proxyImageUrl } from "@/lib/proxy-image";
+import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
+import { collectionPageJsonLd } from "@/lib/jsonld";
 import { SortSelect } from "@/components/SortSelect";
 import { CompareBadge } from "@/components/CatalogCardActions";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 import {
   loadActivePromotions,
   applyBestPromotion,
@@ -255,8 +260,25 @@ export default async function CatalogoPage({
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
+  // CollectionPage JSON-LD: Google entiende la página como índice de
+  // items y puede mostrar sitelinks más ricos. Solo primeros 24 items
+  // (los visibles) — más sería verboso para el crawler.
+  const collectionSchema = collectionPageJsonLd({
+    name: category ? `${category.name} · TodoMerchandising` : "Catálogo · TodoMerchandising",
+    description: category
+      ? `Productos de la categoría ${category.name}: personalizables con tu logo y producción con impacto social.`
+      : "Más de 9.000 productos promocionales personalizables con producción en Centros Especiales de Empleo.",
+    url: `${SITE_URL}/catalogo${catSlug ? `?cat=${catSlug}` : ""}`,
+    items: products.slice(0, 24).map((p) => ({
+      name: p.override?.customName || p.name,
+      url: `${SITE_URL}/catalogo/${p.slug}`,
+      image: absoluteProxyImageUrl(p.primaryImageUrl),
+    })),
+  });
+
   return (
     <>
+      <JsonLd data={collectionSchema as never} />
       <Nav />
       <BannerSlot slot="CATALOGO_TOP" />
       <main className="bg-bone">

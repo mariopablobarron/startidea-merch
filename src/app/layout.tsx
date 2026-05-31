@@ -79,6 +79,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={`${montserrat.variable} ${montserratAlt.variable}`}>
       <head>
+        {/* Performance: preconnect a orígenes críticos que cargamos en el
+            primer paint. Reduce LCP eliminando handshake TCP/TLS. Solo
+            los críticos — los de ads van con dns-prefetch (más barato). */}
+        <link rel="preconnect" href="https://analytics.hubstartidea.es" />
+        <link rel="dns-prefetch" href="https://analytics.hubstartidea.es" />
+        {/* Fonts ya gestionados por next/font (auto-preconnect) */}
+        {/* Ads pixels — dns-prefetch para que solo resuelvan DNS sin
+            handshake hasta que el usuario acepte cookies */}
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://connect.facebook.net" />
+        <link rel="dns-prefetch" href="https://px.ads.linkedin.com" />
         {/* Umami analytics (privacy-first, sin cookies) */}
         <Script
           defer

@@ -4,8 +4,13 @@ import Image from "next/image";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { JsonLd } from "@/components/JsonLd";
 import { prisma } from "@/lib/prisma";
 import { mergeMetadata, getPageSeo } from "@/lib/page-seo";
+import { collectionPageJsonLd } from "@/lib/jsonld";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
 const BASE_METADATA: Metadata = {
   title: "Blog · TodoMerchandising",
@@ -47,8 +52,24 @@ async function loadPosts() {
 export default async function BlogIndexPage() {
   const posts = await loadPosts();
 
+  const collectionSchema =
+    posts.length > 0
+      ? collectionPageJsonLd({
+          name: "Blog · TodoMerchandising",
+          description:
+            "Guías prácticas sobre merchandising corporativo: técnicas de marcaje, cantidades mínimas, plazos, sostenibilidad y casos reales B2B.",
+          url: `${SITE_URL}/blog`,
+          items: posts.map((p) => ({
+            name: p.title,
+            url: `${SITE_URL}/blog/${p.slug}`,
+            image: p.heroUrl || `${SITE_URL}/blog/${p.slug}/opengraph-image`,
+          })),
+        })
+      : null;
+
   return (
     <>
+      {collectionSchema && <JsonLd data={collectionSchema as never} />}
       <Nav />
       <main>
         <section className="border-b border-line bg-bone py-14 lg:py-20">
