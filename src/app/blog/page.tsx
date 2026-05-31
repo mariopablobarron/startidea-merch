@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { prisma } from "@/lib/prisma";
 import { mergeMetadata, getPageSeo } from "@/lib/page-seo";
 import { collectionPageJsonLd } from "@/lib/jsonld";
+import { tagToSlug } from "@/lib/blog-tags";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
@@ -141,6 +142,36 @@ export default async function BlogIndexPage() {
                 ))}
               </ul>
             )}
+
+            {/* Tag cloud — landing por tag (clúster temático para SEO) */}
+            {(() => {
+              const tagCounts = new Map<string, number>();
+              posts.forEach((p) =>
+                p.tags.forEach((t) => tagCounts.set(t, (tagCounts.get(t) || 0) + 1)),
+              );
+              const tags = Array.from(tagCounts.entries()).sort((a, b) => b[1] - a[1]);
+              if (tags.length === 0) return null;
+              return (
+                <div className="mt-16 border-t border-line pt-10">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+                    Explora por tema
+                  </p>
+                  <ul className="mt-4 flex flex-wrap gap-2">
+                    {tags.map(([tag, count]) => (
+                      <li key={tag}>
+                        <Link
+                          href={`/blog/tag/${tagToSlug(tag)}`}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-line bg-bone px-3 py-1.5 text-sm text-ink/70 transition hover:border-accent/40 hover:text-accent"
+                        >
+                          {tag}
+                          <span className="text-xs text-ink/40">({count})</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
           </div>
         </section>
       </main>

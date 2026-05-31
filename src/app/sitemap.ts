@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { SECTORS } from "@/lib/sectors";
+import { tagToSlug } from "@/lib/blog-tags";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
 
@@ -78,6 +79,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
+    // Páginas por tag del blog (clúster temático). Re-query con tags ya que
+    // arriba el select no los incluyó.
+    const postsWithTags = await prisma.blogPost.findMany({
+      where: { status: "PUBLISHED" },
+      select: { tags: true },
+    });
+    const uniqueTagSlugs = new Set<string>();
+    postsWithTags.forEach((p) =>
+      p.tags.forEach((t) => uniqueTagSlugs.add(tagToSlug(t))),
+    );
+    const tagPages: MetadataRoute.Sitemap = Array.from(uniqueTagSlugs).map((slug) => ({
+      url: `${BASE}/blog/tag/${slug}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
     const magnetPages: MetadataRoute.Sitemap = magnets.map((m) => ({
       url: `${BASE}/recursos/${m.slug}`,
       lastModified: m.updatedAt,
@@ -99,6 +117,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...productPages,
       ...categoryPages,
       ...blogPages,
+      ...tagPages,
       ...magnetPages,
     ];
   } catch {
