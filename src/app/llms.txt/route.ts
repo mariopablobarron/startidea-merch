@@ -55,7 +55,8 @@ ${productCount ? `Catálogo activo: **${productCount.toLocaleString("es-ES")}+ p
 - [Recomendador](${SITE_URL}/recomendador) — IA que sugiere productos según presupuesto y caso de uso
 - [Comparador](${SITE_URL}/comparar) — comparar productos lado a lado
 - [Sobre nosotros](${SITE_URL}/sobre) — quiénes somos
-- [Ayuda](${SITE_URL}/ayuda) — FAQ + cómo pedir
+- [Ayuda](${SITE_URL}/ayuda) — guía rápida de cómo pedir
+- [FAQ completas](${SITE_URL}/faq) — 30+ respuestas organizadas por categoría (cotización, plazos, marcaje, materiales, CEE, logística, garantías)
 - [Promociones](${SITE_URL}/promociones) — descuentos activos
 ${productCount ? `- [Sitemap XML](${SITE_URL}/sitemap.xml) — ${productCount.toLocaleString("es-ES")}+ URLs indexables\n` : ""}
 
