@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import {
+  estimateBaseCentsFromName,
+  defaultTiersFromBase,
+  pickTier,
+} from "@/lib/pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,7 +75,7 @@ export async function POST(req: Request) {
         : {}),
     },
     orderBy: [{ syncedAt: "desc" }],
-    take: 250,
+    take: 500,
     select: {
       slug: true,
       supplierRef: true,
@@ -91,33 +96,69 @@ export async function POST(req: Request) {
     )
     .join("\n");
 
-  const systemPrompt = `Eres un consultor B2B de merchandising corporativo en español. Tu trabajo es leer un brief de cliente y recomendar 3 a 5 productos del catálogo de TodoMerchandising (Startidea Málaga SL) que mejor encajen.
+  const systemPrompt = `Eres un consultor B2B de merchandising corporativo en español. Tu trabajo es leer un brief de cliente y, según el tipo de brief, devolver UNO de estos dos formatos JSON:
+
+CASO A — BRIEF EXPLORATORIO (ej. "quiero merchandising para mi feria tech, 100 unidades, 1000 €")
+→ Modo recomendación: sugieres 3-5 productos del catálogo.
+
+CASO B — BRIEF DE COTIZACIÓN MULTI-ITEM (ej. "necesito X polos, Y toallas, Z bolígrafos")
+→ Modo cotización: detectas CADA item separado con su cantidad, técnica de marcaje y posibles tallas, y eliges el producto del catálogo que mejor encaja con cada uno.
 
 Reglas estrictas:
-1. SOLO recomiendas productos que aparecen en el catálogo proporcionado. No inventas referencias.
-2. Cada recomendación incluye: slug del producto, justificación corta (1-2 frases) y por qué encaja con el brief.
-3. Tono cercano, directo, español de España. Tuteo. Sin tecnicismos vacíos.
-4. Si el brief es ambiguo, pide aclaración en lugar de adivinar.
-5. Responde SOLO con JSON válido. No envuelvas en markdown, no añadas comentarios.
+1. SOLO recomiendas productos que aparecen en el catálogo proporcionado (usa el slug exacto). No inventes referencias.
+2. Para términos genéricos, busca sinónimos en el catálogo. Ej: "toalla microfibra" puede aparecer como "toalla deportiva", "toalla gym", "microfibra sport". Para "polo hombre/mujer", busca polos con info de género.
+3. Si en el catálogo NO hay nada que encaje con un item de cotización, marca ese item con notFound:true y describe qué buscaste.
+4. Detecta técnica de marcaje del brief: "serigrafía", "serigrafiado", "bordado", "bordada", "láser", "DTF", "tampografía", "impreso", "grabado". Si no se menciona, deja technique:null.
+5. Detecta tallas y reparto: "20 talla M, 20 L, 20 XL" → sizes:{ M:20, L:20, XL:20 }. Cantidad TOTAL del item = suma de tallas.
+6. Detecta colores del brief.
+7. Tono cercano, español de España, tuteo.
+8. Responde SOLO con JSON válido. Sin markdown, sin comentarios fuera del JSON.
 
-Formato de respuesta JSON:
+FORMATO JSON modo CASO A (recomendación):
 {
+  "mode": "recommend",
   "needsClarification": false,
   "clarificationQuestion": null,
   "recommendations": [
-    { "slug": "<slug>", "ref": "<ref>", "name": "<name>", "rationale": "<2 frases>" }
+    { "slug": "<slug>", "rationale": "<2 frases>" }
   ],
-  "summary": "<frase de cierre comercial, 1 línea>"
+  "summary": "<frase comercial cierre>"
 }
 
-Si needsClarification=true, recommendations es []  y clarificationQuestion contiene la pregunta única que necesitas responder.`;
+FORMATO JSON modo CASO B (cotización):
+{
+  "mode": "quote",
+  "needsClarification": false,
+  "clarificationQuestion": null,
+  "quoteItems": [
+    {
+      "description": "<lo que pide el cliente, tal cual>",
+      "slug": "<slug del producto que mejor encaja, o null si notFound>",
+      "notFound": false,
+      "searchedAs": "<términos que probaste si notFound>",
+      "quantity": <int total>,
+      "sizes": { "S": 15, "M": 15, ... } | null,
+      "technique": "serigrafia" | "bordado" | "laser" | "dtf" | "tampografia" | null,
+      "colorRequested": "<color que pide el cliente, opcional>",
+      "rationale": "<por qué este producto encaja con el item, 1 frase>"
+    }
+  ],
+  "summary": "<frase comercial 1 línea, ej: Te calculo precios y total estimado abajo.>"
+}
+
+Si needsClarification=true, ambos arrays vacíos y clarificationQuestion contiene la pregunta única.`;
 
   const userPrompt = `Brief del cliente:
 """
 ${brief}
 """${budget ? `\n\nPresupuesto orientativo: ${budget} €` : ""}${quantity ? `\n\nCantidad estimada: ${quantity} unidades` : ""}${preferredCategories?.length ? `\n\nCategorías preferidas: ${preferredCategories.join(", ")}` : ""}${ecoOnly ? "\n\nFiltro: SOLO productos eco/sostenibles." : ""}
 
-Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devuelve SOLO el JSON descrito.`;
+INSTRUCCIONES DE PROCESADO:
+1. ¿Es un brief multi-item (lista de productos con cantidades específicas)? → CASO B mode="quote"
+2. ¿Es un brief exploratorio o de búsqueda? → CASO A mode="recommend"
+3. Para cada item busca con SINÓNIMOS si no encuentras coincidencia directa.
+
+Devuelve SOLO el JSON descrito.`;
 
   // 2) Llamada a OpenRouter (formato OpenAI-compatible)
   let response: Response;
@@ -132,8 +173,8 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1500,
-        temperature: 0.4,
+        max_tokens: 4000,
+        temperature: 0.3,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
@@ -170,10 +211,23 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
   };
   const text = json.choices?.[0]?.message?.content || "";
 
+  type QuoteItemAi = {
+    description: string;
+    slug: string | null;
+    notFound?: boolean;
+    searchedAs?: string;
+    quantity: number;
+    sizes?: Record<string, number> | null;
+    technique?: string | null;
+    colorRequested?: string | null;
+    rationale?: string;
+  };
   let parsedRec: {
+    mode?: "recommend" | "quote";
     needsClarification?: boolean;
     clarificationQuestion?: string | null;
     recommendations?: Array<{ slug: string; ref?: string; name?: string; rationale?: string }>;
+    quoteItems?: QuoteItemAi[];
     summary?: string;
   };
   // Parser tolerante: algunos modelos devuelven el JSON envuelto en
@@ -223,6 +277,152 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
     }),
   );
 
+  // 3b) Enriquecer quoteItems con producto real + cálculo de precio.
+  // Para cada item: si tiene slug, busca producto y calcula precio real con
+  // PriceTier si existe, o estimación si no. Marcaje añade setup + por ud.
+  const TECHNIQUE_PER_UNIT_CENTS: Record<string, number> = {
+    serigrafia: 60,
+    bordado: 140,
+    laser: 95,
+    dtf: 110,
+    tampografia: 50,
+  };
+  const TECHNIQUE_SETUP_CENTS: Record<string, number> = {
+    serigrafia: 4000,
+    bordado: 5500,
+    laser: 3500,
+    dtf: 3000,
+    tampografia: 3500,
+  };
+  type QuoteItemEnriched = {
+    description: string;
+    notFound: boolean;
+    searchedAs?: string;
+    quantity: number;
+    sizes?: Record<string, number> | null;
+    technique: string | null;
+    colorRequested: string | null;
+    rationale: string;
+    product: {
+      slug: string;
+      name: string;
+      ref: string;
+      url: string;
+      primaryImageUrl: string | null;
+    } | null;
+    unitPriceCents: number | null;
+    markingPerUnitCents: number;
+    markingSetupCents: number;
+    totalCents: number | null;
+    priceSource: "tier" | "estimate" | null;
+  };
+
+  const enrichedQuoteItems: QuoteItemEnriched[] = await Promise.all(
+    (parsedRec.quoteItems || []).map(async (it): Promise<QuoteItemEnriched> => {
+      const base: QuoteItemEnriched = {
+        description: it.description || "",
+        notFound: !!it.notFound,
+        searchedAs: it.searchedAs,
+        quantity: Number(it.quantity) || 0,
+        sizes: it.sizes || null,
+        technique: it.technique || null,
+        colorRequested: it.colorRequested || null,
+        rationale: it.rationale || "",
+        product: null,
+        unitPriceCents: null,
+        markingPerUnitCents: 0,
+        markingSetupCents: 0,
+        totalCents: null,
+        priceSource: null,
+      };
+      if (!it.slug || base.quantity <= 0) return base;
+
+      const p = await prisma.product.findUnique({
+        where: { slug: it.slug },
+        select: {
+          slug: true,
+          name: true,
+          supplierRef: true,
+          primaryImageUrl: true,
+          fromPriceCents: true,
+          category: { select: { name: true } },
+          variants: {
+            select: {
+              priceTiers: {
+                select: { minQty: true, unitPriceCents: true },
+              },
+            },
+          },
+        },
+      });
+      if (!p) return base;
+
+      base.product = {
+        slug: p.slug,
+        name: p.name,
+        ref: p.supplierRef,
+        url: `/catalogo/${p.slug}`,
+        primaryImageUrl: p.primaryImageUrl,
+      };
+
+      // 1) Intentar usar PriceTier real del variant con tarifa
+      let tierCents: number | null = null;
+      for (const v of p.variants) {
+        if (v.priceTiers.length > 0) {
+          const t = pickTier(
+            v.priceTiers.map((pt) => ({
+              minQty: pt.minQty,
+              unitPriceCents: pt.unitPriceCents,
+              source: "PROVIDER" as const,
+            })),
+            base.quantity,
+          );
+          if (t) {
+            tierCents = t.unitPriceCents;
+            base.priceSource = "tier";
+            break;
+          }
+        }
+      }
+      // 2) Fallback: estimación desde el nombre + curva default
+      if (tierCents === null) {
+        const baseCents =
+          p.fromPriceCents && p.fromPriceCents > 0
+            ? p.fromPriceCents
+            : estimateBaseCentsFromName(p.name, p.category?.name);
+        const t = pickTier(defaultTiersFromBase(baseCents), base.quantity);
+        if (t) {
+          tierCents = t.unitPriceCents;
+          base.priceSource = "estimate";
+        }
+      }
+      base.unitPriceCents = tierCents;
+
+      // 3) Coste marcaje si LLM detectó técnica
+      if (it.technique && tierCents !== null) {
+        const k = it.technique.toLowerCase();
+        base.markingPerUnitCents = TECHNIQUE_PER_UNIT_CENTS[k] ?? 0;
+        base.markingSetupCents = TECHNIQUE_SETUP_CENTS[k] ?? 0;
+      }
+
+      // 4) Total
+      if (tierCents !== null) {
+        base.totalCents =
+          tierCents * base.quantity +
+          base.markingPerUnitCents * base.quantity +
+          base.markingSetupCents;
+      }
+
+      return base;
+    }),
+  );
+
+  const quoteTotalCents = enrichedQuoteItems.reduce(
+    (sum, it) => sum + (it.totalCents || 0),
+    0,
+  );
+  const quoteItemsCount = enrichedQuoteItems.length;
+
   // Logging: guardar la consulta para análisis admin
   void prisma.recommenderQuery
     .create({
@@ -246,9 +446,12 @@ Recomienda los 3-5 productos del catálogo que mejor resuelven este brief. Devue
 
   return NextResponse.json({
     ok: true,
+    mode: parsedRec.mode || (quoteItemsCount > 0 ? "quote" : "recommend"),
     needsClarification: !!parsedRec.needsClarification,
     clarificationQuestion: parsedRec.clarificationQuestion || null,
     recommendations: enriched.filter(Boolean),
+    quoteItems: enrichedQuoteItems,
+    quoteTotalCents: quoteItemsCount > 0 ? quoteTotalCents : null,
     summary: parsedRec.summary || "",
     model: json.model || MODEL,
     usage: json.usage,

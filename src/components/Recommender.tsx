@@ -14,12 +14,38 @@ type Recommendation = {
   rationale: string;
 };
 
+type QuoteItem = {
+  description: string;
+  notFound: boolean;
+  searchedAs?: string;
+  quantity: number;
+  sizes?: Record<string, number> | null;
+  technique: string | null;
+  colorRequested: string | null;
+  rationale: string;
+  product: {
+    slug: string;
+    name: string;
+    ref: string;
+    url: string;
+    primaryImageUrl: string | null;
+  } | null;
+  unitPriceCents: number | null;
+  markingPerUnitCents: number;
+  markingSetupCents: number;
+  totalCents: number | null;
+  priceSource: "tier" | "estimate" | null;
+};
+
 type ApiResponse =
   | {
       ok: true;
+      mode?: "recommend" | "quote";
       needsClarification: boolean;
       clarificationQuestion: string | null;
       recommendations: Recommendation[];
+      quoteItems?: QuoteItem[];
+      quoteTotalCents?: number | null;
       summary: string;
     }
   | {
@@ -30,6 +56,20 @@ type ApiResponse =
       recommendations: never[];
     }
   | { error: string; hint?: string };
+
+const EUR = new Intl.NumberFormat("es-ES", {
+  style: "currency",
+  currency: "EUR",
+  minimumFractionDigits: 2,
+});
+
+const TECHNIQUE_LABEL: Record<string, string> = {
+  serigrafia: "Serigrafía",
+  bordado: "Bordado",
+  laser: "Grabado láser",
+  dtf: "DTF",
+  tampografia: "Tampografía",
+};
 
 export function Recommender() {
   const [brief, setBrief] = useState("");
@@ -79,18 +119,22 @@ export function Recommender() {
           Asistente de selección
         </p>
         <h2 className="mt-3 font-display text-3xl font-semibold text-ink">
-          Cuéntanos qué necesitas y te recomendamos productos del catálogo en segundos.
+          Cuéntanos qué necesitas y te damos catálogo + precio en segundos.
         </h2>
+        <p className="mt-3 text-sm text-ink/65">
+          Acepta brief exploratorio (<em>"regalo de evento, 250 ud, presupuesto 4&nbsp;€/ud"</em>)
+          o lista de cotización detallada con cantidades, tallas y técnicas de marcaje.
+        </p>
 
         <label className="mt-7 block">
           <span className="text-sm font-medium text-ink">¿Qué buscas?</span>
           <textarea
             value={brief}
             onChange={(e) => setBrief(e.target.value)}
-            rows={5}
+            rows={7}
             minLength={20}
             maxLength={2000}
-            placeholder="Ej: Necesito 250 regalos para clientes empresa, evento navidad, presupuesto 4€/ud, prefiero algo eco-friendly y que se pueda personalizar con nuestro logo en color."
+            placeholder={`Ejemplo cotización multi-item:\n\nToallas de microfibra serigrafiadas: 100 ud\nPolo hombre negro con logo bordado a 1 color: 20 talla M, 20 L, 20 XL\nPolo mujer negro con logo bordado a 1 color: 15 S, 15 M, 15 L`}
             className="mt-2 w-full rounded-2xl border border-line bg-bone-soft px-4 py-3 text-base outline-none transition focus:border-accent"
             required
           />
@@ -143,9 +187,9 @@ export function Recommender() {
         </button>
 
         <p className="mt-4 text-[11px] leading-relaxed text-ink/50">
-          ⓘ El asistente revisa los 250 productos más relevantes del catálogo y elige 3-5 que
-          encajan con tu brief. Es una recomendación inicial — la cotización final la prepara
-          un humano en menos de 24 h.
+          ⓘ El asistente revisa hasta 500 productos del catálogo. Si pegas una lista detallada,
+          detecta cada item con cantidad/talla/técnica y te calcula precio orientativo + total.
+          La cotización formal la cierra un humano en menos de 24 h.
         </p>
       </form>
 
@@ -217,7 +261,149 @@ export function Recommender() {
           </div>
         )}
 
-        {result && "ok" in result && (!("needsClarification" in result) || !result.needsClarification) && result.recommendations.length > 0 && (
+        {/* Modo COTIZACIÓN MULTI-ITEM — cuando el LLM detectó N items con cantidades */}
+        {result && "ok" in result && "quoteItems" in result && result.quoteItems && result.quoteItems.length > 0 && (
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+              {result.quoteItems.length} {result.quoteItems.length === 1 ? "item detectado" : "items detectados"} en tu brief
+            </p>
+            <h3 className="mt-2 font-display text-2xl font-semibold text-ink">
+              Cotización orientativa
+            </h3>
+            <ul className="mt-6 space-y-4">
+              {result.quoteItems.map((it, idx) => (
+                <li
+                  key={idx}
+                  className={`overflow-hidden rounded-3xl border ${
+                    it.notFound ? "border-accent-deep/40 bg-accent-wash/40" : "border-line bg-bone"
+                  } p-5 transition hover:shadow-md`}
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row">
+                    {it.product?.primaryImageUrl ? (
+                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-bone-soft">
+                        <Image
+                          src={it.product.primaryImageUrl}
+                          alt={it.product.name}
+                          fill
+                          sizes="96px"
+                          className="object-contain p-2"
+                        />
+                      </div>
+                    ) : (
+                      <div className="grid h-24 w-24 shrink-0 place-items-center rounded-2xl bg-bone-soft text-3xl">
+                        {it.notFound ? "❓" : "📦"}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] uppercase tracking-wider text-ink/50">
+                        Item {idx + 1}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-sm font-medium text-ink">{it.description}</p>
+                      {it.product ? (
+                        <Link href={it.product.url} className="mt-2 inline-block font-display text-lg font-semibold text-ink hover:text-accent">
+                          {it.product.name} <span className="text-xs text-ink/40">· Ref. {it.product.ref}</span>
+                        </Link>
+                      ) : (
+                        <p className="mt-2 text-sm text-accent-deep">
+                          ⚠ No encontrado en catálogo. Buscamos como: <em>{it.searchedAs || "—"}</em>
+                        </p>
+                      )}
+                      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+                        <span className="rounded-full bg-bone-soft px-2 py-0.5 text-ink/70">
+                          Cantidad: <strong>{it.quantity} ud</strong>
+                        </span>
+                        {it.technique && (
+                          <span className="rounded-full bg-accent-wash px-2 py-0.5 text-accent-deep">
+                            {TECHNIQUE_LABEL[it.technique] || it.technique}
+                          </span>
+                        )}
+                        {it.colorRequested && (
+                          <span className="rounded-full bg-bone-soft px-2 py-0.5 text-ink/70">
+                            Color: {it.colorRequested}
+                          </span>
+                        )}
+                      </div>
+                      {it.sizes && Object.keys(it.sizes).length > 0 && (
+                        <p className="mt-2 text-xs text-ink/60">
+                          Tallas:{" "}
+                          {Object.entries(it.sizes)
+                            .map(([s, q]) => `${s}×${q}`)
+                            .join(" · ")}
+                        </p>
+                      )}
+                      {it.rationale && (
+                        <p className="mt-2 text-xs italic text-ink/55">{it.rationale}</p>
+                      )}
+                    </div>
+                    {/* Precio */}
+                    <div className="text-right sm:min-w-[140px]">
+                      {it.unitPriceCents != null ? (
+                        <>
+                          <p className="text-[10px] uppercase tracking-wider text-ink/50">
+                            Estimado total
+                          </p>
+                          <p className="font-display text-2xl font-semibold tabular-nums text-ink">
+                            {EUR.format((it.totalCents || 0) / 100)}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-ink/55">
+                            {EUR.format(it.unitPriceCents / 100)}/ud
+                            {it.markingPerUnitCents > 0 && (
+                              <>
+                                {" + "}
+                                {EUR.format(it.markingPerUnitCents / 100)} marcaje
+                              </>
+                            )}
+                          </p>
+                          {it.markingSetupCents > 0 && (
+                            <p className="text-[10px] text-ink/45">
+                              + {EUR.format(it.markingSetupCents / 100)} setup técnica
+                            </p>
+                          )}
+                          {it.priceSource === "estimate" && (
+                            <p className="mt-1 text-[10px] text-accent-deep">≈ estimado</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-xs text-ink/50">Precio bajo cotización formal</p>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {result.quoteTotalCents != null && result.quoteTotalCents > 0 && (
+              <div className="mt-6 flex items-center justify-between rounded-3xl border-2 border-ink bg-bone p-5">
+                <span className="font-display text-lg font-semibold text-ink">Total estimado</span>
+                <span className="font-display text-3xl font-bold tabular-nums text-ink">
+                  {EUR.format(result.quoteTotalCents / 100)}
+                </span>
+              </div>
+            )}
+
+            <p className="mt-4 rounded-2xl bg-bone-soft p-4 text-xs italic text-ink/70">
+              ⓘ <strong>Precios orientativos</strong>: incluyen producto + marcaje (técnica + setup) según
+              tarifa estándar 2026. Cotización formal cerrada (con muestras y plazo cerrado) en
+              menos de 24 h laborables.
+            </p>
+
+            {result.summary && (
+              <p className="mt-3 rounded-2xl bg-accent-wash p-4 text-sm italic text-ink/80">
+                {result.summary}
+              </p>
+            )}
+
+            <Link
+              href="/#cotizar"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-bone transition hover:bg-accent-dark"
+            >
+              Pedir cotización formal ahora →
+            </Link>
+          </div>
+        )}
+
+        {/* Modo RECOMMEND — cuando el LLM detectó brief exploratorio */}
+        {result && "ok" in result && (!("needsClarification" in result) || !result.needsClarification) && (!("quoteItems" in result) || !result.quoteItems || result.quoteItems.length === 0) && result.recommendations.length > 0 && (
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               {result.recommendations.length} recomendaciones para ti
