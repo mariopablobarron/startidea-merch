@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { JsonLd } from "@/components/JsonLd";
 import { RelatedPosts } from "@/components/RelatedPosts";
+import { NewsletterForm } from "@/components/NewsletterForm";
 import { prisma } from "@/lib/prisma";
 import { mdToHtml, buildBlogSchema } from "@/lib/blog-generator";
 import { injectInternalLinks, type LinkableEntity } from "@/lib/blog-internal-links";
@@ -182,6 +183,26 @@ export default async function BlogPostPage({
             className="prose prose-lg mt-10 max-w-none prose-headings:font-display prose-headings:text-ink prose-h2:mt-12 prose-h3:mt-8 prose-a:text-accent prose-a:no-underline hover:prose-a:underline prose-strong:text-ink"
             dangerouslySetInnerHTML={{ __html: html }}
           />
+
+          {/* Newsletter signup — momento óptimo de conversión: justo después
+              de que el usuario haya leído todo el contenido. Source con slug
+              para tracking por post en /admin/marketing/newsletter. */}
+          <aside className="mt-12 rounded-3xl border border-accent/20 bg-accent-wash/40 p-6 lg:p-8">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent-deep">
+              Recibe las próximas guías
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-semibold text-ink lg:text-3xl">
+              Una guía al mes en tu inbox
+            </h2>
+            <p className="mt-3 text-sm text-ink/70 lg:text-base">
+              Lo que aprendemos produciendo merchandising B2B: técnicas, plazos,
+              cifras reales del mercado español, casos concretos. Sin spam. Solo
+              cuando tenemos algo que aportar.
+            </p>
+            <div className="mt-5">
+              <NewsletterForm source={`blog-${post.slug}`} />
+            </div>
+          </aside>
 
           <RelatedPosts currentSlug={post.slug} currentTags={post.tags} />
 

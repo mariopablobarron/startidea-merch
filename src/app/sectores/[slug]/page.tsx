@@ -5,6 +5,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { JsonLd } from "@/components/JsonLd";
+import { NewsletterForm } from "@/components/NewsletterForm";
 import { SECTORS, getSector } from "@/lib/sectors";
 
 const SITE_URL =
@@ -276,6 +277,24 @@ export default async function SectorDetailPage({
             <p className="mt-3 text-xs text-ink/50">
               ¿Prefieres que el asistente IA elija por ti? <Link href="/recomendador" className="text-accent underline-offset-4 hover:underline">Probar recomendador</Link>.
             </p>
+          </div>
+        </section>
+
+        {/* Newsletter signup — captura email de visitantes high-intent */}
+        <section className="border-t border-line bg-accent-wash/40 py-14 lg:py-16">
+          <div className="mx-auto max-w-3xl px-6 text-center lg:px-10">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent-deep">
+              Boletín mensual
+            </p>
+            <h2 className="mt-3 font-display text-2xl font-semibold text-ink lg:text-3xl">
+              Casos y guías para {s.title.toLowerCase()}
+            </h2>
+            <p className="mt-3 max-w-xl mx-auto text-ink/65">
+              Una guía al mes con plazos, cifras y casos reales del merchandising B2B. Sin spam, una sola vez al mes.
+            </p>
+            <div className="mt-6 max-w-md mx-auto">
+              <NewsletterForm source={`sector-${s.slug}`} />
+            </div>
           </div>
         </section>
       </main>

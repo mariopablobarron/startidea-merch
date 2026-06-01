@@ -6,6 +6,7 @@ import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { FAQ_CATEGORIES, getAllFaqItems } from "@/lib/faqs-full";
+import { NewsletterForm } from "@/components/NewsletterForm";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
@@ -131,6 +132,24 @@ export default function FaqPage() {
             </div>
           </section>
         ))}
+
+        {/* Newsletter signup pre-CTA */}
+        <section className="border-b border-line bg-accent-wash/40 py-14 lg:py-16">
+          <div className="mx-auto max-w-3xl px-6 text-center lg:px-10">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent-deep">
+              Boletín mensual
+            </p>
+            <h2 className="mt-3 font-display text-2xl font-semibold text-ink lg:text-3xl">
+              Guías y casos reales en tu inbox
+            </h2>
+            <p className="mt-3 max-w-xl mx-auto text-ink/65">
+              Una guía al mes con plazos, cifras y casos reales del mercado del merchandising corporativo en España. Sin spam.
+            </p>
+            <div className="mt-6 max-w-md mx-auto">
+              <NewsletterForm source="faq-bottom" />
+            </div>
+          </div>
+        </section>
 
         {/* CTA final */}
         <section className="py-14 lg:py-20">
