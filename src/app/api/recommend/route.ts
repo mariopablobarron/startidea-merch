@@ -456,9 +456,11 @@ Devuelve SOLO el JSON descrito.`;
           : {}),
       },
     });
+    console.log("[recommend] persisted OK");
   } catch (e) {
     console.error("[recommend] failed to persist RecommenderQuery:", e);
   }
+  console.log("[recommend] post-try block reached");
 
   return NextResponse.json({
     ok: true,
