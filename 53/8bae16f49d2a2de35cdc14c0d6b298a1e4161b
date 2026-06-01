@@ -1,0 +1,21 @@
+public/.well-known/security.txt
+  s_65877aa637ec34::t_07e4ed82056c19 1-20
+public/humans.txt
+  s_65877aa637ec34::t_996f06ce6c90a9 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "538bae16f49d2a2de35cdc14c0d6b298a1e4161b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
