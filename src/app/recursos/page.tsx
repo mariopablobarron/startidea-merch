@@ -63,6 +63,33 @@ const NAVIGABLE_GUIDES = [
     cta: "Leer la guía",
   },
   {
+    slug: "tabla-tallas-universales",
+    href: "/recursos/tabla-tallas-universales",
+    category: "Producción · Textil",
+    title: "Tabla tallas universales B&C / Sols / MidOcean",
+    description:
+      "Equivalencias en cm para camiseta hombre, mujer y polo entre las marcas dominantes del textil promocional. Más reglas para medir bien antes de pedir.",
+    cta: "Ver tablas",
+  },
+  {
+    slug: "calendario-regalos-corporativos",
+    href: "/recursos/calendario-regalos-corporativos",
+    category: "Estrategia · Calendario",
+    title: "Calendario corporativo de regalos 2026",
+    description:
+      "Las 12 ventanas del año donde regalar mejor: qué dar a empleados, clientes, partners y candidatos, con plazos de producción para llegar a tiempo.",
+    cta: "Ver calendario",
+  },
+  {
+    slug: "especificaciones-mockup",
+    href: "/recursos/especificaciones-mockup",
+    category: "Producción · Brief",
+    title: "Especificaciones técnicas para mockup",
+    description:
+      "Qué enviar a tu proveedor para tener mockup + cotización en 24h sin rondas de emails. Plantilla copy-paste lista para enviar.",
+    cta: "Ver checklist",
+  },
+  {
     slug: "calculadora-rsc",
     href: "/recursos/calculadora-rsc",
     category: "Impacto · Calculadora",
