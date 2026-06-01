@@ -429,8 +429,9 @@ Devuelve SOLO el JSON descrito.`;
   // sin él el fire-and-forget no completaba antes de que Next terminara
   // el handler en runtime nodejs containerizado.
   const resolvedMode = parsedRec.mode || (quoteItemsCount > 0 ? "quote" : "recommend");
+  let queryId: string | null = null;
   try {
-    await prisma.recommenderQuery.create({
+    const created = await prisma.recommenderQuery.create({
       data: {
         brief,
         budget: budget ?? null,
@@ -454,7 +455,9 @@ Devuelve SOLO el JSON descrito.`;
             }
           : {}),
       },
+      select: { id: true },
     });
+    queryId = created.id;
   } catch (e) {
     console.error("[recommend] failed to persist RecommenderQuery:", e);
   }
@@ -470,6 +473,9 @@ Devuelve SOLO el JSON descrito.`;
     summary: parsedRec.summary || "",
     model: json.model || MODEL,
     usage: json.usage,
+    // ID de la query persistida — usado por el componente para vincular
+    // la Proposal generada al hacer "enviar por email".
+    queryId,
   });
 }
 

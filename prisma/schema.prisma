@@ -1315,10 +1315,53 @@ model RecommenderQuery {
   quoteTotalCents    Int?
   createdAt          DateTime @default(now())
 
+  proposals          Proposal[]
+
   @@index([createdAt])
   @@index([fallback])
   @@index([needsClarification])
   @@index([mode])
+}
+
+/// Proposal — propuesta de cotización enviada por email + PDF.
+///
+/// Se genera desde el recomendador cuando un visitante introduce su email
+/// para recibir la propuesta formal. Contiene los mismos quoteItems que
+/// RecommenderQuery (snapshot inmutable de la cotización en el momento
+/// del envío) y los totales ya con IVA calculado.
+///
+/// El PDF se regenera on-the-fly desde quoteItems — no se almacena binario.
+/// Acceso al PDF protegido por HMAC token en URL pública.
+model Proposal {
+  id                 String   @id @default(cuid())
+  // Numeración secuencial humana: PROP-YYYY-NNNN (4 dígitos por año).
+  // Generada vía advisory lock en createProposal() para evitar colisiones.
+  proposalNumber     String   @unique
+  email              String
+  name               String? // opcional, capturado si el cliente lo da
+  company            String? // opcional, capturado si el cliente lo da
+  // Snapshot del array quoteItems (mismo shape que RecommenderQuery).
+  quoteItems         Json
+  subtotalCents      Int // suma de totalCents de items (sin IVA)
+  ivaCents           Int // 21% del subtotal
+  totalCents         Int // subtotal + iva
+  recommenderQueryId String? // FK opcional — origen del brief
+  recommenderQuery   RecommenderQuery? @relation(fields: [recommenderQueryId], references: [id], onDelete: SetNull)
+  // Status: sent | opened | accepted | rejected
+  status             String   @default("sent")
+  sentAt             DateTime @default(now())
+  openedAt           DateTime? // primera vez que se descargó el PDF
+  acceptedAt         DateTime? // si el cliente aceptó y pidió cotización formal
+  ip                 String?
+  ua                 String?  @db.Text
+  resendId           String? // ID del email Resend (para tracking)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([email])
+  @@index([sentAt])
+  @@index([status])
+  @@index([recommenderQueryId])
 }
 
 /// MediaAsset — mapeo opaco hash→originalUrl para que el HTML público

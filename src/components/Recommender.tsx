@@ -47,6 +47,7 @@ type ApiResponse =
       quoteItems?: QuoteItem[];
       quoteTotalCents?: number | null;
       summary: string;
+      queryId?: string | null;
     }
   | {
       ok: true;
@@ -56,6 +57,17 @@ type ApiResponse =
       recommendations: never[];
     }
   | { error: string; hint?: string };
+
+type ProposalState =
+  | { status: "idle" }
+  | { status: "sending" }
+  | {
+      status: "sent";
+      proposalNumber: string;
+      downloadUrl: string;
+      emailFailed?: boolean;
+    }
+  | { status: "error"; message: string };
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -79,6 +91,51 @@ export function Recommender() {
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ApiResponse | null>(null);
+
+  // Estado del card "enviar propuesta por email + PDF"
+  const [emailInput, setEmailInput] = useState("");
+  const [proposalState, setProposalState] = useState<ProposalState>({ status: "idle" });
+
+  async function handleSendProposal(e: React.FormEvent) {
+    e.preventDefault();
+    if (!result || !("quoteItems" in result) || !result.quoteItems?.length) return;
+    const email = emailInput.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setProposalState({ status: "error", message: "Email no válido" });
+      return;
+    }
+    setProposalState({ status: "sending" });
+    try {
+      const res = await fetch("/api/proposal/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          quoteItems: result.quoteItems,
+          recommenderQueryId: result.queryId ?? null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        setProposalState({
+          status: "error",
+          message: data?.error || `HTTP ${res.status}`,
+        });
+        return;
+      }
+      setProposalState({
+        status: "sent",
+        proposalNumber: data.proposalNumber,
+        downloadUrl: data.downloadUrl,
+        emailFailed: !!data.emailFailed,
+      });
+    } catch (err) {
+      setProposalState({
+        status: "error",
+        message: err instanceof Error ? err.message : "Error de red",
+      });
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -374,7 +431,9 @@ export function Recommender() {
 
             {result.quoteTotalCents != null && result.quoteTotalCents > 0 && (
               <div className="mt-6 flex items-center justify-between rounded-3xl border-2 border-ink bg-bone p-5">
-                <span className="font-display text-lg font-semibold text-ink">Total estimado</span>
+                <span className="font-display text-lg font-semibold text-ink">
+                  Total estimado <span className="text-sm font-normal text-ink/60">(sin IVA)</span>
+                </span>
                 <span className="font-display text-3xl font-bold tabular-nums text-ink">
                   {EUR.format(result.quoteTotalCents / 100)}
                 </span>
@@ -386,6 +445,98 @@ export function Recommender() {
               tarifa estándar 2026. Cotización formal cerrada (con muestras y plazo cerrado) en
               menos de 24 h laborables.
             </p>
+
+            {/* Card: enviar propuesta por email + PDF */}
+            {result.quoteTotalCents != null && result.quoteTotalCents > 0 && (
+              <div className="mt-6 overflow-hidden rounded-3xl border border-line bg-gradient-to-br from-bone to-bone-soft p-6">
+                {proposalState.status === "sent" ? (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-social text-bone text-sm">
+                        ✓
+                      </span>
+                      <p className="font-display text-lg font-semibold text-ink">
+                        Propuesta {proposalState.proposalNumber} enviada
+                      </p>
+                    </div>
+                    <p className="mt-2 text-sm text-ink/70">
+                      {proposalState.emailFailed ? (
+                        <>
+                          No pudimos enviarla por email ({" "}
+                          <span className="font-mono text-xs">{emailInput}</span>{" "}
+                          ). Descárgala aquí o intenta de nuevo en unos minutos.
+                        </>
+                      ) : (
+                        <>
+                          Te la hemos enviado a{" "}
+                          <span className="font-medium text-ink">{emailInput}</span>{" "}
+                          con el PDF adjunto. Si en 2 min no llega, revisa la
+                          carpeta de spam o descárgala aquí:
+                        </>
+                      )}
+                    </p>
+                    <a
+                      href={proposalState.downloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex items-center gap-2 rounded-full border border-ink bg-bone px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-ink hover:text-bone"
+                    >
+                      Descargar PDF →
+                    </a>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSendProposal}>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+                      📧 Quédate la propuesta firmada
+                    </p>
+                    <h3 className="mt-2 font-display text-xl font-semibold text-ink">
+                      ¿Te la mandamos en PDF a tu email?
+                    </h3>
+                    <p className="mt-2 text-sm text-ink/70">
+                      Recibes la propuesta nº PROP-2026-XXXX con detalle por
+                      producto, IVA y condiciones — lista para reenviar a
+                      finanzas o adjuntar al pedido.
+                    </p>
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      <input
+                        type="email"
+                        required
+                        placeholder="tu@empresa.com"
+                        value={emailInput}
+                        onChange={(e) => {
+                          setEmailInput(e.target.value);
+                          if (proposalState.status === "error") {
+                            setProposalState({ status: "idle" });
+                          }
+                        }}
+                        disabled={proposalState.status === "sending"}
+                        className="flex-1 rounded-full border border-line bg-bone px-5 py-3 text-base text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                        autoComplete="email"
+                      />
+                      <button
+                        type="submit"
+                        disabled={proposalState.status === "sending"}
+                        className="inline-flex items-center justify-center rounded-full bg-ink px-6 py-3 text-sm font-semibold text-bone transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {proposalState.status === "sending"
+                          ? "Generando PDF…"
+                          : "Enviar propuesta"}
+                      </button>
+                    </div>
+                    {proposalState.status === "error" && (
+                      <p className="mt-2 text-xs text-accent-deep">
+                        {proposalState.message}. Reintenta o escríbenos a
+                        pedidos@startidea.es.
+                      </p>
+                    )}
+                    <p className="mt-3 text-[11px] text-ink/50">
+                      Solo usamos tu email para mandarte esta propuesta. Sin
+                      newsletter automática, sin spam.
+                    </p>
+                  </form>
+                )}
+              </div>
+            )}
 
             {result.summary && (
               <p className="mt-3 rounded-2xl bg-accent-wash p-4 text-sm italic text-ink/80">
