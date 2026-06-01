@@ -1,0 +1,43 @@
+src/app/api/proposal/send/route.ts
+  s_65877aa637ec34::t_c727667ad63e0b 38
+  s_65877aa637ec34::t_e7a5c8af5fe8ba 273-282
+src/app/admin/insights/notifications/page.tsx
+  s_65877aa637ec34::t_7d3df54866ae3d 1-43
+src/lib/insights/index.ts
+  s_65877aa637ec34::t_3073ac0ba22a05 170-173,178-180,183-185,187-196,198-208,210-215,219-220,222-225
+src/lib/notification-rules.ts
+  s_65877aa637ec34::t_c8597a5bfbeaef 1-109
+src/app/api/admin/notification-rules/route.ts
+  s_65877aa637ec34::t_771ec3ac2eb7d7 1-54
+prisma/schema.prisma
+  s_65877aa637ec34::t_271ccbf80b880c 180-191
+prisma/migrations/20260602_add_admin_setting/migration.sql
+  s_65877aa637ec34::t_8761a2a7f96a37 1-10
+src/app/api/search/suggest/route.ts
+  s_65877aa637ec34::t_36a958a1abdfff 98,100,102-105,113
+  s_65877aa637ec34::t_4a197a3e394975 4
+src/app/admin/quick/page.tsx
+  s_65877aa637ec34::t_7441cf33e39968 1-197
+src/app/admin/insights/page.tsx
+  s_65877aa637ec34::t_3f1d83f318c0d0 451-455,466-470,475-479
+src/components/AdminChrome.tsx
+  s_65877aa637ec34::t_0f22886edd7453 27-29
+src/app/admin/insights/notifications/NotificationsClient.tsx
+  s_65877aa637ec34::t_854375bd6b05a6 1-118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "67ad97b6458eb0e6b03b2009d6779eab0511f3be",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
