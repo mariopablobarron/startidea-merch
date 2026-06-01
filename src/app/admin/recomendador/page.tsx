@@ -3,6 +3,23 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 
+type QuoteItem = {
+  description: string;
+  notFound?: boolean;
+  searchedAs?: string;
+  quantity: number;
+  sizes?: Record<string, number> | null;
+  technique?: string | null;
+  colorRequested?: string | null;
+  rationale?: string;
+  product: { slug: string; name: string; ref: string; url?: string } | null;
+  unitPriceCents: number | null;
+  markingPerUnitCents: number;
+  markingSetupCents: number;
+  totalCents: number | null;
+  priceSource: "tier" | "estimate" | null;
+};
+
 type Item = {
   id: string;
   brief: string;
@@ -18,6 +35,14 @@ type Item = {
   completionTokens: number | null;
   ip: string | null;
   createdAt: string;
+  mode?: "recommend" | "quote" | null;
+  quoteItems?: QuoteItem[] | null;
+  quoteTotalCents?: number | null;
+};
+
+const EUR_FMT = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 2 });
+const TECH_LABEL: Record<string, string> = {
+  serigrafia: "Serigrafía", bordado: "Bordado", laser: "Láser", dtf: "DTF", tampografia: "Tampografía",
 };
 
 type Resp = {
@@ -250,6 +275,14 @@ export default function RecomendadorAdminPage() {
                             Eco only
                           </span>
                         )}
+                        {it.mode === "quote" && (
+                          <span className="rounded-full bg-accent px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-bone">
+                            💼 Cotización · {it.quoteItems?.length ?? 0} items
+                            {it.quoteTotalCents != null && it.quoteTotalCents > 0 && (
+                              <> · {EUR_FMT.format(it.quoteTotalCents / 100)}</>
+                            )}
+                          </span>
+                        )}
                         {it.budget && (
                           <span className="text-ink/60">
                             💰 {it.budget.toLocaleString("es-ES")}€
@@ -288,6 +321,84 @@ export default function RecomendadorAdminPage() {
                           <span className="text-[10px] text-ink/40">
                             +{it.recommendedSlugs.length - 5}
                           </span>
+                        )}
+                      </div>
+                    )}
+
+                    {isExp && it.quoteItems && it.quoteItems.length > 0 && (
+                      <div className="mt-3 rounded-xl border border-accent/30 bg-accent-wash/30 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-accent-deep">
+                          Cotización detectada · {it.quoteItems.length} items
+                        </p>
+                        <ul className="mt-2 space-y-2">
+                          {it.quoteItems.map((qi, idx) => (
+                            <li key={idx} className="rounded-lg bg-bone p-3 text-xs">
+                              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-ink line-clamp-1">
+                                    {qi.description}
+                                  </p>
+                                  {qi.product ? (
+                                    <Link
+                                      href={`/catalogo/${qi.product.slug}`}
+                                      target="_blank"
+                                      className="mt-0.5 text-[11px] font-mono text-accent hover:underline"
+                                    >
+                                      → {qi.product.name} · Ref. {qi.product.ref}
+                                    </Link>
+                                  ) : qi.notFound ? (
+                                    <p className="mt-0.5 text-[11px] text-accent-deep">
+                                      ⚠ Sin match en catálogo (buscó: {qi.searchedAs || "—"})
+                                    </p>
+                                  ) : (
+                                    <p className="mt-0.5 text-[11px] text-ink/50">— sin producto —</p>
+                                  )}
+                                  <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-ink/60">
+                                    <span>×{qi.quantity}ud</span>
+                                    {qi.technique && (
+                                      <span className="rounded bg-accent-wash/60 px-1 text-accent-deep">
+                                        {TECH_LABEL[qi.technique] || qi.technique}
+                                      </span>
+                                    )}
+                                    {qi.colorRequested && <span>· {qi.colorRequested}</span>}
+                                    {qi.sizes && Object.keys(qi.sizes).length > 0 && (
+                                      <span>
+                                        ·{" "}
+                                        {Object.entries(qi.sizes)
+                                          .map(([s, q]) => `${s}×${q}`)
+                                          .join("/")}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right tabular-nums">
+                                  {qi.totalCents != null ? (
+                                    <>
+                                      <p className="font-semibold text-ink">
+                                        {EUR_FMT.format(qi.totalCents / 100)}
+                                      </p>
+                                      {qi.unitPriceCents && (
+                                        <p className="text-[10px] text-ink/50">
+                                          {EUR_FMT.format(qi.unitPriceCents / 100)}/ud
+                                          {qi.priceSource === "estimate" && " ≈"}
+                                        </p>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <p className="text-[10px] text-ink/40">sin precio</p>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        {it.quoteTotalCents != null && it.quoteTotalCents > 0 && (
+                          <div className="mt-2 flex items-center justify-between border-t border-accent/20 pt-2">
+                            <span className="font-semibold text-ink">Total estimado</span>
+                            <span className="font-semibold tabular-nums text-ink">
+                              {EUR_FMT.format(it.quoteTotalCents / 100)}
+                            </span>
+                          </div>
                         )}
                       </div>
                     )}

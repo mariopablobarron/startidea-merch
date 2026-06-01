@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   estimateBaseCentsFromName,
@@ -423,7 +424,9 @@ Devuelve SOLO el JSON descrito.`;
   );
   const quoteItemsCount = enrichedQuoteItems.length;
 
-  // Logging: guardar la consulta para análisis admin
+  // Logging: guardar la consulta para análisis admin (incluye quoteItems
+  // si fue modo cotización).
+  const resolvedMode = parsedRec.mode || (quoteItemsCount > 0 ? "quote" : "recommend");
   void prisma.recommenderQuery
     .create({
       data: {
@@ -440,6 +443,12 @@ Devuelve SOLO el JSON descrito.`;
         completionTokens: json.usage?.completion_tokens ?? null,
         ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
         ua: req.headers.get("user-agent")?.slice(0, 500) || null,
+        mode: resolvedMode,
+        quoteItems:
+          quoteItemsCount > 0
+            ? (enrichedQuoteItems as unknown as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+        quoteTotalCents: quoteItemsCount > 0 ? quoteTotalCents : null,
       },
     })
     .catch(() => {});

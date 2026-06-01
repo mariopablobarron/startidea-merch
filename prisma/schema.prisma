@@ -1304,11 +1304,21 @@ model RecommenderQuery {
   completionTokens   Int?
   ip                 String? // primera IP (proxy headers)
   ua                 String?  @db.Text // user agent
+  // Modo de respuesta: "recommend" (cards) o "quote" (cotización multi-item).
+  mode               String?
+  // Items de cotización enriquecidos con precio. Solo presente en mode=quote.
+  // Estructura: [{ description, product:{slug,name,ref}, quantity, sizes?,
+  //   technique, unitPriceCents, markingPerUnitCents, markingSetupCents,
+  //   totalCents, priceSource, notFound, searchedAs, rationale }]
+  quoteItems         Json?
+  // Total general estimado (suma de totalCents de quoteItems).
+  quoteTotalCents    Int?
   createdAt          DateTime @default(now())
 
   @@index([createdAt])
   @@index([fallback])
   @@index([needsClarification])
+  @@index([mode])
 }
 
 /// MediaAsset — mapeo opaco hash→originalUrl para que el HTML público
