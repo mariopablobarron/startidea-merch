@@ -35,6 +35,35 @@ async function loadMagnets() {
   }
 }
 
+/**
+ * Guías técnicas con contenido HTML rico que NO requieren email para
+ * acceder. Se listan arriba en la página de recursos como bloque propio,
+ * complementario al listado de lead magnets en PDF.
+ *
+ * Para añadir una nueva: crea la página estática en src/app/recursos/<slug>/
+ * y añade el descriptor aquí.
+ */
+const NAVIGABLE_GUIDES = [
+  {
+    slug: "guia-pantone-serigrafia-corporativa",
+    href: "/recursos/guia-pantone-serigrafia-corporativa",
+    category: "Color · Serigrafía",
+    title: "Guía Pantone para serigrafía corporativa",
+    description:
+      "Tabla con 25 colores corporativos clásicos y equivalencias Pantone → CMYK → HEX → RGB. Cómo identificar el Pantone de tu logo y evitar que el rojo salga rosa.",
+    cta: "Leer la guía",
+  },
+  {
+    slug: "calculadora-rsc",
+    href: "/recursos/calculadora-rsc",
+    category: "Impacto · Calculadora",
+    title: "Calculadora de impacto RSC del merch",
+    description:
+      "Cuantifica las horas de empleo en CEE y los kg de CO₂ evitados con tu pedido. Útil para reporting de sostenibilidad.",
+    cta: "Calcular impacto",
+  },
+] as const;
+
 export default async function RecursosPage() {
   const magnets = await loadMagnets();
 
@@ -52,20 +81,66 @@ export default async function RecursosPage() {
               Guías y plantillas de merchandising corporativo
             </h1>
             <p className="mt-4 max-w-2xl text-base text-ink/65 lg:text-lg">
-              Lo que aprendemos produciendo pedidos B2B reales, condensado en PDFs descargables.
-              Sin spam: dejas tu email y te llegan al instante.
+              PDFs, guías navegables, calculadoras y plantillas. Lo que
+              aprendemos produciendo pedidos B2B reales, condensado para que tu
+              próximo pedido salga bien a la primera.
             </p>
           </div>
         </section>
 
+        {/* Guías navegables (contenido HTML rico, sin gate de email) */}
+        <section className="border-b border-line py-10 lg:py-14">
+          <div className="mx-auto max-w-5xl px-6 lg:px-10">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+              Guías técnicas · lectura directa
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-semibold text-ink">
+              Para resolver tu duda sin descargar nada
+            </h2>
+            <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {NAVIGABLE_GUIDES.map((g) => (
+                <li key={g.slug}>
+                  <Link
+                    href={g.href}
+                    className="group flex h-full flex-col rounded-3xl border border-line bg-bone p-5 transition hover:border-accent/40 hover:shadow-lg"
+                  >
+                    <p className="text-[10px] uppercase tracking-wider text-accent">
+                      {g.category}
+                    </p>
+                    <h3 className="mt-1 font-display text-lg font-semibold text-ink group-hover:text-accent">
+                      {g.title}
+                    </h3>
+                    <p className="mt-2 line-clamp-3 flex-1 text-sm text-ink/65">
+                      {g.description}
+                    </p>
+                    <p className="mt-4 text-xs font-medium text-accent">
+                      {g.cta} →
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* Lead magnets (PDFs descargables con email gate) */}
         <section className="py-10 lg:py-14">
           <div className="mx-auto max-w-5xl px-6 lg:px-10">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+              Descargas gratuitas · PDF
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-semibold text-ink">
+              PDFs y plantillas para tu próximo pedido
+            </h2>
+            <p className="mt-3 text-sm text-ink/60">
+              Dejas tu email y los recibes al instante. Sin spam.
+            </p>
             {magnets.length === 0 ? (
-              <p className="rounded-2xl border border-line bg-bone p-10 text-center text-sm text-ink/60">
+              <p className="mt-6 rounded-2xl border border-line bg-bone p-10 text-center text-sm text-ink/60">
                 Pronto añadiremos los primeros recursos descargables.
               </p>
             ) : (
-              <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {magnets.map((m) => (
                   <li key={m.id}>
                     <Link
