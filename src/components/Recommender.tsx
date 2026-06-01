@@ -122,7 +122,7 @@ export function Recommender() {
           Cuéntanos qué necesitas y te damos catálogo + precio en segundos.
         </h2>
         <p className="mt-3 text-sm text-ink/65">
-          Acepta brief exploratorio (<em>"regalo de evento, 250 ud, presupuesto 4&nbsp;€/ud"</em>)
+          Acepta brief exploratorio (ej. «regalo de evento, 250&nbsp;ud, presupuesto 4&nbsp;€/ud»)
           o lista de cotización detallada con cantidades, tallas y técnicas de marcaje.
         </p>
 
