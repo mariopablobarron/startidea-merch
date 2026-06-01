@@ -1,0 +1,52 @@
+src/lib/proposal-number.ts
+  s_65877aa637ec34::t_42a2151e8b829e 2-40
+  s_65877aa637ec34::t_7b34f62c920994 1
+src/lib/recommender-proposal-pdf.tsx
+  s_65877aa637ec34::t_82b295e81e89ab 1-326
+src/app/admin/propuestas/page.tsx
+  s_65877aa637ec34::t_d1444821dd5524 98-99,102-108
+  s_65877aa637ec34::t_4afca4561db4e6 1-97,100-101,109-227,229-231
+  s_65877aa637ec34::t_9dbd3af9de0545 228
+prisma/migrations/20260601_add_proposal/migration.sql
+  s_65877aa637ec34::t_53ea93dc36cc81 1-49
+src/app/api/proposal/send/route.ts
+  s_65877aa637ec34::t_9032790eb8af81 138-145
+  s_65877aa637ec34::t_319e3ebe90cfa2 1-21,23-24,26-137,147-245
+  s_65877aa637ec34::t_3815792016d3bf 146
+  s_65877aa637ec34::t_e930e7e5527414 22,25
+src/components/Recommender.tsx
+  s_65877aa637ec34::t_eb97348d929562 434-436,449-539
+  s_65877aa637ec34::t_1eefa5daf72d92 50,61-70
+  s_65877aa637ec34::t_64ce3a29632f3e 95-139
+src/app/api/proposal/[number]/pdf/route.ts
+  s_65877aa637ec34::t_98e4b329d6d39c 11,13
+  s_65877aa637ec34::t_2c9a0814576210 75-82
+  s_65877aa637ec34::t_39efcb1b93736e 1-10,12,14-74,84-102
+  s_65877aa637ec34::t_23979f8246a7d4 83
+src/lib/proposal-types.ts
+  s_65877aa637ec34::t_2d7d8330503371 1-72
+src/lib/proposal-mailer.ts
+  s_65877aa637ec34::t_1e45e4fcab096a 1-148
+prisma/schema.prisma
+  s_65877aa637ec34::t_ca0ac425a7ace5 1318-1319,1326-1364
+src/lib/proposal-token.ts
+  s_65877aa637ec34::t_adbe31d6f623ea 1-55
+src/app/api/recommend/route.ts
+  s_65877aa637ec34::t_db80558ee2376f 432,434,458,460,476-478
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "01a4cdff4c472ec6efd8437f479516b487b4c122",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
