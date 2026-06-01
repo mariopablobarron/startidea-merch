@@ -44,6 +44,40 @@ export async function GET(req: Request) {
     }),
   ]);
 
+  // Log query para detectar demanda no cubierta. Solo cuando la búsqueda
+  // tiene 3+ caracteres (filtra ruido) y no se repite del MISMO IP en
+  // <30s (filtra typeahead que dispara con cada tecla).
+  if (q.length >= 3) {
+    void (async () => {
+      try {
+        const xff = req.headers.get("x-forwarded-for");
+        const ip = xff?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || null;
+        const ua = req.headers.get("user-agent")?.slice(0, 500) ?? null;
+        const queryLower = q.toLowerCase();
+        const totalResults = products.length + categories.length;
+
+        // Dedup: si el mismo IP buscó la misma query en últimos 30s, no logear.
+        if (ip) {
+          const recent = await prisma.searchQuery.findFirst({
+            where: {
+              ip,
+              queryLower,
+              createdAt: { gte: new Date(Date.now() - 30_000) },
+            },
+            select: { id: true },
+          });
+          if (recent) return;
+        }
+
+        await prisma.searchQuery.create({
+          data: { query: q, queryLower, resultsCount: totalResults, ip, ua },
+        });
+      } catch {
+        // Silencioso, no bloquea la búsqueda
+      }
+    })();
+  }
+
   return NextResponse.json(
     {
       products: products.map((p) => ({

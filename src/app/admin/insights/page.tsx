@@ -10,6 +10,9 @@ import {
   getSuggestions,
   getConversionFunnel,
   getTopCategories,
+  getTopSearchQueries,
+  getSearchQueriesNoResults,
+  getHourlyHeatmap,
   type Suggestion,
 } from "@/lib/insights";
 
@@ -63,6 +66,80 @@ function fmtDate(d: Date | null | undefined): string {
   }).format(d);
 }
 
+const DOW_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+function Heatmap({ cells }: { cells: { dow: number; hour: number; visits: number }[] }) {
+  if (cells.length === 0) {
+    return (
+      <p className="mt-4 rounded-2xl border border-line bg-bone-soft p-6 text-center text-sm text-ink/60">
+        Aún no hay datos de heatmap. Empezará a llenarse con los views recogidos.
+      </p>
+    );
+  }
+
+  // Construir matriz 7×24
+  const matrix: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
+  let max = 0;
+  for (const c of cells) {
+    if (c.dow >= 0 && c.dow < 7 && c.hour >= 0 && c.hour < 24) {
+      matrix[c.dow][c.hour] = c.visits;
+      if (c.visits > max) max = c.visits;
+    }
+  }
+
+  function color(v: number): string {
+    if (v === 0) return "bg-bone-soft";
+    const intensity = max > 0 ? v / max : 0;
+    if (intensity > 0.8) return "bg-accent-deep text-bone";
+    if (intensity > 0.6) return "bg-accent text-bone";
+    if (intensity > 0.4) return "bg-accent/70 text-bone";
+    if (intensity > 0.2) return "bg-accent/40";
+    return "bg-accent/15";
+  }
+
+  return (
+    <div className="mt-4 overflow-x-auto rounded-3xl border border-line bg-bone p-4">
+      <table className="w-full min-w-[680px] text-[10px]">
+        <thead>
+          <tr>
+            <th className="w-12"></th>
+            {Array.from({ length: 24 }, (_, h) => (
+              <th key={h} className="px-0.5 py-1 font-mono text-ink/40">
+                {h.toString().padStart(2, "0")}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {DOW_LABELS.map((label, dow) => (
+            <tr key={dow}>
+              <td className="pr-2 text-right font-mono text-[11px] font-semibold text-ink/60">
+                {label}
+              </td>
+              {Array.from({ length: 24 }, (_, h) => {
+                const v = matrix[dow][h];
+                return (
+                  <td key={h} className="p-0.5">
+                    <div
+                      className={`flex h-6 items-center justify-center rounded ${color(v)} font-mono text-[9px]`}
+                      title={`${label} · ${h}:00 UTC · ${v} visitas`}
+                    >
+                      {v > 0 ? v : ""}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-3 text-[11px] text-ink/50">
+        Hora UTC · color = intensidad relativa al máximo del mapa ({max} visitas)
+      </p>
+    </div>
+  );
+}
+
 function KpiCard({
   label,
   value,
@@ -96,13 +173,26 @@ function KpiCard({
 export default async function InsightsPage() {
   if (!(await isAdmin())) redirect("/admin/login");
 
-  const [health, suppliers, top, suggestions, funnel, categories] = await Promise.all([
+  const [
+    health,
+    suppliers,
+    top,
+    suggestions,
+    funnel,
+    categories,
+    topSearches,
+    noResultSearches,
+    heatmap,
+  ] = await Promise.all([
     getCatalogHealth(),
     getSupplierStatuses(),
     getTopViewedProducts(20, "30d"),
     getSuggestions(),
     getConversionFunnel(),
     getTopCategories(10),
+    getTopSearchQueries(15, "30d").catch(() => []),
+    getSearchQueriesNoResults(15, "30d").catch(() => []),
+    getHourlyHeatmap().catch(() => []),
   ]);
 
   const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
@@ -363,6 +453,81 @@ export default async function InsightsPage() {
               </table>
             </div>
           )}
+        </section>
+
+        {/* ─── Búsquedas ─── */}
+        <section className="mt-12" id="busquedas">
+          <h2 className="font-display text-xl font-semibold text-ink">
+            🔍 Qué busca tu cliente (30 días)
+          </h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Tracking de queries del buscador navbar. Las queries sin
+            resultados son demanda real no cubierta.
+          </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-3xl border border-line bg-bone p-5">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-ink/60">
+                Top queries
+              </p>
+              {topSearches.length === 0 ? (
+                <p className="mt-4 text-sm text-ink/55">
+                  Sin búsquedas registradas aún.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-1.5">
+                  {topSearches.slice(0, 10).map((s) => (
+                    <li
+                      key={s.query}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-bone-soft px-3 py-2"
+                    >
+                      <span className="truncate text-sm text-ink/80">{s.query}</span>
+                      <span className="shrink-0 text-xs text-ink/55">
+                        {s.count} búsq · {s.resultsAvg.toFixed(0)} resultados/avg
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="rounded-3xl border border-accent-wash bg-accent-wash p-5">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-accent-deep">
+                Buscan pero NO tienes 💎
+              </p>
+              {noResultSearches.length === 0 ? (
+                <p className="mt-4 text-sm text-ink/55">
+                  Sin queries fallidas. Tu catálogo cubre lo que buscan.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-1.5">
+                  {noResultSearches.slice(0, 10).map((s) => (
+                    <li
+                      key={s.query}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-bone px-3 py-2"
+                    >
+                      <span className="truncate text-sm font-medium text-ink">
+                        {s.query}
+                      </span>
+                      <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-bone">
+                        {s.count}×
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Heatmap horario ─── */}
+        <section className="mt-12" id="heatmap">
+          <h2 className="font-display text-xl font-semibold text-ink">
+            🗓️ Cuándo te visitan (mapa de calor 30d)
+          </h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Visitas a fichas de producto por día y hora (UTC). Útil para
+            programar campañas o lanzamientos al momento óptimo.
+          </p>
+          <Heatmap cells={heatmap} />
         </section>
 
         {/* ─── Top productos ─── */}

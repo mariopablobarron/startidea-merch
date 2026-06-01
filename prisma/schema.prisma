@@ -177,6 +177,26 @@ model Product {
   @@index([syncedAt])
 }
 
+/// SearchQuery — log de búsquedas del navbar para detectar demanda no
+/// cubierta. Si los clientes buscan "mascarilla N95" o "tablet 10
+/// pulgadas" y devuelve 0 resultados, son leads de catálogo para añadir.
+///
+/// Se agregan en /admin/insights y se generan sugerencias automáticas
+/// para queries con muchos hits y 0 resultados.
+model SearchQuery {
+  id           String   @id @default(cuid())
+  query        String   @db.Text
+  queryLower   String // normalizado para agrupar "Camisa" y "camisa"
+  resultsCount Int      @default(0) // 0 = sin resultados (gold mine)
+  ip           String?
+  ua           String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([queryLower])
+  @@index([createdAt(sort: Desc)])
+  @@index([resultsCount])
+}
+
 /// ProductView — contadores agregados de interacción del cliente con el
 /// producto. Una fila por producto, se hace upsert con increment desde
 /// /api/track/product-event.

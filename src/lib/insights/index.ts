@@ -230,6 +230,79 @@ export async function getTopCategories(limit = 10): Promise<CategoryRow[]> {
   }));
 }
 
+export type SearchInsight = {
+  query: string;
+  count: number;
+  resultsAvg: number;
+};
+
+export async function getTopSearchQueries(limit = 20, window: "7d" | "30d" = "30d") {
+  const days = window === "7d" ? 7 : 30;
+  const since = new Date(Date.now() - days * 24 * 3600_000);
+  const rows = await prisma.$queryRaw<
+    Array<{ querylower: string; count: bigint; resultsavg: number }>
+  >`
+    SELECT
+      "queryLower" AS querylower,
+      COUNT(*) AS count,
+      ROUND(AVG("resultsCount")::numeric, 1)::float AS resultsavg
+    FROM "SearchQuery"
+    WHERE "createdAt" >= ${since}
+    GROUP BY "queryLower"
+    ORDER BY count DESC
+    LIMIT ${limit}
+  `;
+  return rows.map((r) => ({
+    query: r.querylower,
+    count: Number(r.count),
+    resultsAvg: Number(r.resultsavg ?? 0),
+  }));
+}
+
+export async function getSearchQueriesNoResults(limit = 20, window: "7d" | "30d" = "30d") {
+  const days = window === "7d" ? 7 : 30;
+  const since = new Date(Date.now() - days * 24 * 3600_000);
+  const rows = await prisma.$queryRaw<
+    Array<{ querylower: string; count: bigint }>
+  >`
+    SELECT "queryLower" AS querylower, COUNT(*) AS count
+    FROM "SearchQuery"
+    WHERE "createdAt" >= ${since}
+      AND "resultsCount" = 0
+    GROUP BY "queryLower"
+    ORDER BY count DESC
+    LIMIT ${limit}
+  `;
+  return rows.map((r) => ({ query: r.querylower, count: Number(r.count) }));
+}
+
+export type HourlyHeatmapCell = { dow: number; hour: number; visits: number };
+
+/**
+ * Mapa de calor visitas por día-semana × hora del día (UTC) últimos 30 días.
+ * Útil para decidir cuándo lanzar campañas o publicar contenido.
+ */
+export async function getHourlyHeatmap(): Promise<HourlyHeatmapCell[]> {
+  const since = new Date(Date.now() - 30 * 24 * 3600_000);
+  const rows = await prisma.$queryRaw<
+    Array<{ dow: number; hour: number; visits: bigint }>
+  >`
+    SELECT
+      EXTRACT(DOW FROM "lastViewedAt")::int AS dow,
+      EXTRACT(HOUR FROM "lastViewedAt")::int AS hour,
+      SUM("view30d") AS visits
+    FROM "ProductView"
+    WHERE "lastViewedAt" >= ${since}
+    GROUP BY dow, hour
+    ORDER BY dow, hour
+  `;
+  return rows.map((r) => ({
+    dow: r.dow,
+    hour: r.hour,
+    visits: Number(r.visits),
+  }));
+}
+
 export type Suggestion = {
   id: string;
   severity: "critical" | "warning" | "info" | "opportunity";
@@ -341,6 +414,27 @@ export async function getSuggestions(): Promise<Suggestion[]> {
       body: "Promociones marcadas como activas pero cuya fecha de fin ya pasó. Limpiar para que no aparezcan en el panel.",
       action: { label: "Ver promociones", href: "/admin/promotions" },
     });
+  }
+
+  // 6b. Búsquedas sin resultados (gold mine de demanda)
+  try {
+    const noResults = await getSearchQueriesNoResults(5, "30d");
+    if (noResults.length > 0 && noResults[0].count >= 3) {
+      const top = noResults
+        .slice(0, 3)
+        .map((r) => `«${r.query}» (${r.count})`)
+        .join(", ");
+      suggestions.push({
+        id: "search-no-results",
+        severity: "opportunity",
+        title: `${noResults.length} búsquedas frecuentes sin resultados`,
+        body: `Top: ${top}. Estos son productos que tus visitantes buscan y no tienes — o no aparecen en la búsqueda. Valora añadirlos al catálogo o mejorar el SEO interno.`,
+        action: { label: "Ver listado completo", href: "/admin/insights#busquedas" },
+        metric: `${noResults.length} queries 30d`,
+      });
+    }
+  } catch {
+    // tabla puede no existir aún en primer deploy
   }
 
   // 7. Sin cotizaciones recientes
