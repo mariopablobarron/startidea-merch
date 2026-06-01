@@ -429,7 +429,6 @@ Devuelve SOLO el JSON descrito.`;
   // sin él el fire-and-forget no completaba antes de que Next terminara
   // el handler en runtime nodejs containerizado.
   const resolvedMode = parsedRec.mode || (quoteItemsCount > 0 ? "quote" : "recommend");
-  console.log("[recommend] persisting", { mode: resolvedMode, qItems: quoteItemsCount, brief: brief.slice(0, 50) });
   try {
     await prisma.recommenderQuery.create({
       data: {
@@ -456,11 +455,9 @@ Devuelve SOLO el JSON descrito.`;
           : {}),
       },
     });
-    console.log("[recommend] persisted OK");
   } catch (e) {
     console.error("[recommend] failed to persist RecommenderQuery:", e);
   }
-  console.log("[recommend] post-try block reached");
 
   return NextResponse.json({
     ok: true,
