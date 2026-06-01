@@ -45,6 +45,15 @@ async function loadMagnets() {
  */
 const NAVIGABLE_GUIDES = [
   {
+    slug: "kit-imagen-corporativa",
+    href: "/recursos/kit-imagen-corporativa",
+    category: "Identidad · Marca",
+    title: "Kit de imagen corporativa para PYMEs",
+    description:
+      "Los 5 elementos mínimos que necesitas definir antes de pedir tu primer merch: logo en variantes, paleta, tipografía, iconografía, tagline. Con checklist de auditoría.",
+    cta: "Leer la guía",
+  },
+  {
     slug: "guia-pantone-serigrafia-corporativa",
     href: "/recursos/guia-pantone-serigrafia-corporativa",
     category: "Color · Serigrafía",
