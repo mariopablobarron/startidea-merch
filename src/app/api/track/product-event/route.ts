@@ -1,0 +1,87 @@
+/**
+ * POST /api/track/product-event
+ *
+ * Cuerpo: { productId, event: "view" | "cart_add" | "proposal" | "recommender" }
+ *
+ * Upsert atómico en ProductView con increment del contador correspondiente.
+ * Fire-and-forget desde el cliente — devuelve 200 inmediato sin esperar.
+ *
+ * Sin rate limit estricto a nivel servidor: el navegador del cliente solo
+ * dispara 1 view por sesión (lo gestiona el componente, no la API), y
+ * cart_add solo se dispara en add real. Si llegara abuso, se añade rate
+ * limit con la lib existente.
+ */
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const BodySchema = z.object({
+  productId: z.string().min(1).max(40),
+  event: z.enum(["view", "cart_add", "proposal", "recommender"]),
+});
+
+export async function POST(req: Request) {
+  let body;
+  try {
+    body = BodySchema.parse(await req.json());
+  } catch {
+    return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
+  }
+
+  const { productId, event } = body;
+
+  try {
+    // Increment según el evento. Upsert atómico para evitar race con
+    // primer view del producto.
+    const incrementFields: Record<string, { increment: number }> = {};
+    const setOnInsert: Record<string, number | Date> = {
+      viewCount: 0,
+      cartAddCount: 0,
+      proposalCount: 0,
+      recommenderCount: 0,
+      view30d: 0,
+      cartAdd30d: 0,
+    };
+
+    if (event === "view") {
+      incrementFields.viewCount = { increment: 1 };
+      incrementFields.view30d = { increment: 1 };
+      setOnInsert.viewCount = 1;
+      setOnInsert.view30d = 1;
+    } else if (event === "cart_add") {
+      incrementFields.cartAddCount = { increment: 1 };
+      incrementFields.cartAdd30d = { increment: 1 };
+      setOnInsert.cartAddCount = 1;
+      setOnInsert.cartAdd30d = 1;
+    } else if (event === "proposal") {
+      incrementFields.proposalCount = { increment: 1 };
+      setOnInsert.proposalCount = 1;
+    } else if (event === "recommender") {
+      incrementFields.recommenderCount = { increment: 1 };
+      setOnInsert.recommenderCount = 1;
+    }
+
+    const updateData: Record<string, unknown> = { ...incrementFields };
+    if (event === "cart_add") {
+      updateData.lastCartAddAt = new Date();
+    }
+
+    await prisma.productView.upsert({
+      where: { productId },
+      update: updateData,
+      create: { productId, ...setOnInsert },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    // No tira: si el productId no existe (404) o hay error de BD, no
+    // queremos romper la UX del cliente. Log silencioso.
+    return NextResponse.json({
+      ok: false,
+      error: err instanceof Error ? err.message : "INTERNAL",
+    });
+  }
+}

@@ -26,6 +26,7 @@ import { displayPositionId } from "@/lib/marking-position-display";
 import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
 import { JsonLd } from "@/components/JsonLd";
 import { productJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
+import { ProductViewTracker } from "@/components/ProductViewTracker";
 
 export const revalidate = 3600;
 
@@ -227,6 +228,7 @@ export default async function ProductDetailPage({
   return (
     <>
       <Nav />
+      <ProductViewTracker productId={product.id} />
       <JsonLd data={productSchema} />
       <JsonLd data={breadcrumbSchema} />
       <main className="bg-bone">

@@ -169,11 +169,42 @@ model Product {
   slugRedirects        ProductSlugRedirect[] @relation("SlugRedirects")
   mockupRequests       MockupRequest[]
   productMarkingPrices ProductMarkingPrice[]
+  view                 ProductView?
 
   @@unique([supplier, supplierRef])
   @@index([categoryId])
   @@index([active])
   @@index([syncedAt])
+}
+
+/// ProductView — contadores agregados de interacción del cliente con el
+/// producto. Una fila por producto, se hace upsert con increment desde
+/// /api/track/product-event.
+///
+/// Útil para:
+/// - Top productos visualizados → admin dashboard
+/// - Productos populares sin imagen → sugerencias
+/// - Engagement por categoría → análisis trends
+/// - Conversión catálogo → cart → cotización
+model ProductView {
+  productId        String   @id
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // contadores acumulados desde lanzamiento
+  viewCount        Int      @default(0)
+  cartAddCount     Int      @default(0)
+  proposalCount    Int      @default(0)
+  recommenderCount Int      @default(0)
+  // contadores últimos 30 días (rolling window, recalculados por cron)
+  view30d          Int      @default(0)
+  cartAdd30d       Int      @default(0)
+  // fechas
+  firstViewedAt    DateTime @default(now())
+  lastViewedAt     DateTime @updatedAt
+  lastCartAddAt    DateTime?
+
+  @@index([viewCount(sort: Desc)])
+  @@index([view30d(sort: Desc)])
+  @@index([lastViewedAt(sort: Desc)])
 }
 
 /// Tarifa REAL de marcaje por producto extraída del catálogo PDF de Cifra

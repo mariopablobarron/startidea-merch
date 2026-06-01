@@ -1,0 +1,350 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { isAdmin } from "@/lib/admin-session";
+import { AdminChrome } from "@/components/AdminChrome";
+import {
+  getCatalogHealth,
+  getSupplierStatuses,
+  getTopViewedProducts,
+  getSuggestions,
+  type Suggestion,
+} from "@/lib/insights";
+
+export const metadata: Metadata = {
+  title: "Insights · Panel decisiones",
+  robots: { index: false, follow: false },
+};
+
+export const dynamic = "force-dynamic";
+
+const SUPPLIER_LABEL: Record<string, string> = {
+  midocean: "MidOcean",
+  makito: "Makito",
+  cifra: "Cifra",
+};
+
+const SEVERITY_STYLES: Record<Suggestion["severity"], { bg: string; border: string; text: string; label: string }> = {
+  critical: {
+    bg: "bg-accent-wash",
+    border: "border-accent-deep/30",
+    text: "text-accent-deep",
+    label: "🚨 Crítico",
+  },
+  warning: {
+    bg: "bg-amber-50",
+    border: "border-amber-300",
+    text: "text-amber-900",
+    label: "⚠️ Atención",
+  },
+  opportunity: {
+    bg: "bg-emerald-50",
+    border: "border-emerald-300",
+    text: "text-emerald-900",
+    label: "💡 Oportunidad",
+  },
+  info: {
+    bg: "bg-bone-soft",
+    border: "border-line",
+    text: "text-ink/70",
+    label: "ℹ️ Info",
+  },
+};
+
+function fmtDate(d: Date | null | undefined): string {
+  if (!d) return "—";
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
+
+function KpiCard({
+  label,
+  value,
+  hint,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  highlight?: "success" | "warn" | "danger";
+}) {
+  const ring =
+    highlight === "danger"
+      ? "ring-2 ring-accent/40"
+      : highlight === "warn"
+        ? "ring-2 ring-amber-300"
+        : highlight === "success"
+          ? "ring-2 ring-emerald-300"
+          : "";
+  return (
+    <div className={`rounded-3xl border border-line bg-bone p-5 ${ring}`}>
+      <p className="text-[11px] font-medium uppercase tracking-wider text-ink/60">
+        {label}
+      </p>
+      <p className="mt-2 font-display text-3xl font-semibold text-ink">{value}</p>
+      {hint && <p className="mt-1 text-xs text-ink/55">{hint}</p>}
+    </div>
+  );
+}
+
+export default async function InsightsPage() {
+  if (!(await isAdmin())) redirect("/admin/login");
+
+  const [health, suppliers, top, suggestions] = await Promise.all([
+    getCatalogHealth(),
+    getSupplierStatuses(),
+    getTopViewedProducts(20, "30d"),
+    getSuggestions(),
+  ]);
+
+  const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
+  const totalCarts = top.reduce((sum, p) => sum + p.cartAddCount, 0);
+
+  return (
+    <AdminChrome>
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <nav className="mb-2 flex items-center gap-2 text-xs text-ink/50">
+          <Link href="/admin" className="hover:text-accent">
+            Panel
+          </Link>
+          <span>/</span>
+          <span>Insights</span>
+        </nav>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-semibold text-ink">
+              Insights del negocio
+            </h1>
+            <p className="mt-1 text-sm text-ink/60">
+              Salud del catálogo, estado de proveedores, productos populares y
+              sugerencias para vender más. Datos en tiempo real.
+            </p>
+          </div>
+        </div>
+
+        {/* ─── Sugerencias accionables (lo más importante arriba) ─── */}
+        <section className="mt-8" id="sugerencias">
+          <h2 className="font-display text-xl font-semibold text-ink">
+            🎯 Sugerencias para decidir hoy
+          </h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Generadas a partir del estado real del catálogo, proveedores y
+            engagement de los visitantes.
+          </p>
+          {suggestions.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-line bg-bone-soft p-6 text-center text-sm text-ink/60">
+              Sin sugerencias hoy — tu catálogo está en buena forma 🎉
+            </p>
+          ) : (
+            <ul className="mt-4 grid gap-3 lg:grid-cols-2">
+              {suggestions.map((s) => {
+                const st = SEVERITY_STYLES[s.severity];
+                return (
+                  <li
+                    key={s.id}
+                    className={`rounded-3xl border ${st.border} ${st.bg} p-5`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className={`text-[10px] font-semibold uppercase tracking-wider ${st.text}`}>
+                        {st.label}
+                      </p>
+                      {s.metric && (
+                        <span className="rounded-full border border-line/60 bg-bone px-2 py-0.5 text-[10px] font-mono text-ink/60">
+                          {s.metric}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="mt-2 font-display text-base font-semibold text-ink">
+                      {s.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-ink/70">{s.body}</p>
+                    {s.action && (
+                      <Link
+                        href={s.action.href}
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                      >
+                        {s.action.label} →
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* ─── Salud del catálogo ─── */}
+        <section className="mt-12" id="salud">
+          <h2 className="font-display text-xl font-semibold text-ink">
+            📦 Salud del catálogo
+          </h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              label="Productos activos"
+              value={health.activeProducts.toLocaleString("es-ES")}
+              hint={`${health.totalProducts.toLocaleString("es-ES")} en BD total`}
+            />
+            <KpiCard
+              label="Variantes (SKUs)"
+              value={health.totalVariants.toLocaleString("es-ES")}
+              hint={`${health.variantsWithPrice.toLocaleString("es-ES")} con precio (100%)`}
+              highlight="success"
+            />
+            <KpiCard
+              label="Variantes con stock"
+              value={`${health.pctStock}%`}
+              hint={`${health.variantsWithStock.toLocaleString("es-ES")} de ${health.totalVariants.toLocaleString("es-ES")}`}
+              highlight={health.pctStock >= 80 ? "success" : health.pctStock >= 60 ? "warn" : "danger"}
+            />
+            <KpiCard
+              label="% con imagen"
+              value={`${health.pctImage}%`}
+              hint={`${health.productsWithImage.toLocaleString("es-ES")} de ${health.activeProducts.toLocaleString("es-ES")} activos`}
+              highlight={health.pctImage >= 90 ? "success" : health.pctImage >= 70 ? "warn" : "danger"}
+            />
+          </div>
+        </section>
+
+        {/* ─── Estado proveedores ─── */}
+        <section className="mt-12" id="proveedores">
+          <h2 className="font-display text-xl font-semibold text-ink">
+            🔌 Proveedores en tiempo real
+          </h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Stock se actualiza con cron diario. Si pasa de 26h sin sync, se
+            avisa arriba como sugerencia.
+          </p>
+          <div className="mt-4 overflow-x-auto rounded-3xl border border-line bg-bone">
+            <table className="w-full min-w-[700px] text-sm">
+              <thead className="border-b border-line bg-bone-soft text-left">
+                <tr>
+                  <th className="px-4 py-3 font-medium text-ink/70">Proveedor</th>
+                  <th className="px-4 py-3 text-right font-medium text-ink/70">Productos</th>
+                  <th className="px-4 py-3 text-right font-medium text-ink/70">Activos</th>
+                  <th className="px-4 py-3 text-right font-medium text-ink/70">Variantes</th>
+                  <th className="px-4 py-3 text-right font-medium text-ink/70">Con stock</th>
+                  <th className="px-4 py-3 text-right font-medium text-ink/70">% Stock</th>
+                  <th className="px-4 py-3 font-medium text-ink/70">Última sync stock</th>
+                </tr>
+              </thead>
+              <tbody>
+                {suppliers.map((s) => {
+                  const stale = s.hoursStaleStock !== null && s.hoursStaleStock > 26;
+                  const noStock = s.variants > 0 && s.pctStock === 0;
+                  return (
+                    <tr key={s.supplier} className="border-b border-line/60">
+                      <td className="px-4 py-3 font-medium text-ink">
+                        {SUPPLIER_LABEL[s.supplier] ?? s.supplier}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-ink/80">
+                        {s.products.toLocaleString("es-ES")}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-ink/80">
+                        {s.activeProducts.toLocaleString("es-ES")}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-ink/80">
+                        {s.variants.toLocaleString("es-ES")}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-ink/80">
+                        {s.variantsWithStock.toLocaleString("es-ES")}
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-right tabular-nums font-semibold ${
+                          noStock ? "text-accent-deep" : s.pctStock >= 80 ? "text-emerald-700" : s.pctStock >= 50 ? "text-amber-700" : "text-accent-deep"
+                        }`}
+                      >
+                        {s.pctStock}%
+                      </td>
+                      <td className={`px-4 py-3 text-xs ${stale ? "text-accent-deep font-medium" : "text-ink/60"}`}>
+                        {fmtDate(s.lastStockUpdate)}
+                        {stale && s.hoursStaleStock !== null && (
+                          <span className="ml-2 rounded-full bg-accent-wash px-1.5 py-0.5 text-[10px] font-semibold">
+                            {s.hoursStaleStock}h stale
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ─── Top productos ─── */}
+        <section className="mt-12" id="top-productos">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              🔥 Top productos (últimos 30 días)
+            </h2>
+            <p className="text-xs text-ink/55">
+              Total: {totalViews30d.toLocaleString("es-ES")} views · {totalCarts.toLocaleString("es-ES")} en carrito
+            </p>
+          </div>
+          {top.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-line bg-bone-soft p-6 text-center text-sm text-ink/60">
+              Aún no hay datos de tracking. El sistema empieza a contar visitas
+              desde este momento — vuelve mañana para ver el ranking.
+            </p>
+          ) : (
+            <div className="mt-4 overflow-x-auto rounded-3xl border border-line bg-bone">
+              <table className="w-full min-w-[700px] text-sm">
+                <thead className="border-b border-line bg-bone-soft text-left">
+                  <tr>
+                    <th className="px-3 py-3 font-medium text-ink/70">#</th>
+                    <th className="px-3 py-3 font-medium text-ink/70">Producto</th>
+                    <th className="px-3 py-3 font-medium text-ink/70">Ref</th>
+                    <th className="px-3 py-3 text-right font-medium text-ink/70">Views 30d</th>
+                    <th className="px-3 py-3 text-right font-medium text-ink/70">Carrito</th>
+                    <th className="px-3 py-3 text-right font-medium text-ink/70">Propuesta</th>
+                    <th className="px-3 py-3 font-medium text-ink/70">Última visita</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {top.map((p, i) => (
+                    <tr key={p.productId} className="border-b border-line/60 hover:bg-bone-soft">
+                      <td className="px-3 py-3 text-xs text-ink/40">{i + 1}</td>
+                      <td className="px-3 py-3">
+                        <Link
+                          href={`/catalogo/${p.slug}`}
+                          className="font-medium text-ink hover:text-accent"
+                          target="_blank"
+                        >
+                          {p.name}
+                        </Link>
+                        {!p.primaryImageUrl && (
+                          <span className="ml-2 rounded-full bg-accent-wash px-1.5 py-0.5 text-[10px] font-semibold text-accent-deep">
+                            Sin imagen
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 font-mono text-[11px] text-ink/55">
+                        {p.internalRef ?? "—"}
+                      </td>
+                      <td className="px-3 py-3 text-right tabular-nums font-semibold text-ink">
+                        {p.view30d}
+                      </td>
+                      <td className="px-3 py-3 text-right tabular-nums text-ink/70">
+                        {p.cartAddCount}
+                      </td>
+                      <td className="px-3 py-3 text-right tabular-nums text-ink/70">
+                        {p.proposalCount}
+                      </td>
+                      <td className="px-3 py-3 text-xs text-ink/55">
+                        {fmtDate(p.lastViewedAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </AdminChrome>
+  );
+}

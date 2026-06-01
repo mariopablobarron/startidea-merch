@@ -21,8 +21,17 @@ export function AdminChrome({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
             <nav className="flex items-center gap-5 text-sm text-ink/70">
+              <Link href="/admin/insights" className="font-medium text-ink hover:text-accent">
+                Insights
+              </Link>
               <Link href="/admin/quotes" className="hover:text-accent">
                 Cotizaciones
+              </Link>
+              <Link href="/admin/propuestas" className="hover:text-accent">
+                Propuestas
+              </Link>
+              <Link href="/admin/products" className="hover:text-accent">
+                Productos
               </Link>
             </nav>
           </div>
