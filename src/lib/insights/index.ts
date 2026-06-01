@@ -279,11 +279,14 @@ export async function getSearchQueriesNoResults(limit = 20, window: "7d" | "30d"
 export type HourlyHeatmapCell = { dow: number; hour: number; visits: number };
 
 /**
- * Mapa de calor visitas por día-semana × hora del día (UTC) últimos 30 días.
+ * Mapa de calor visitas por día-semana × hora del día (UTC).
  * Útil para decidir cuándo lanzar campañas o publicar contenido.
+ *
+ * @param window "7d" o "30d"
  */
-export async function getHourlyHeatmap(): Promise<HourlyHeatmapCell[]> {
-  const since = new Date(Date.now() - 30 * 24 * 3600_000);
+export async function getHourlyHeatmap(window: "7d" | "30d" = "30d"): Promise<HourlyHeatmapCell[]> {
+  const days = window === "7d" ? 7 : 30;
+  const since = new Date(Date.now() - days * 24 * 3600_000);
   const rows = await prisma.$queryRaw<
     Array<{ dow: number; hour: number; visits: bigint }>
   >`
@@ -376,6 +379,78 @@ export async function getOverpricedProducts(limit = 10): Promise<OverpricedProdu
     categoryMedianCents: Number(r.categorymedian),
     multiple: r.categorymedian > 0 ? Math.round((Number(r.minprice) / Number(r.categorymedian)) * 10) / 10 : 0,
   }));
+}
+
+export type CarmenStats = {
+  sessions30d: number;
+  sessions7d: number;
+  avgDurationSec: number | null;
+  cartConversions30d: number; // sesiones que acabaron en CartQuote
+  totalCostCents: number; // gasto en ElevenLabs últimos 30d
+  topProducts: Array<{ slug: string; mentions: number }>;
+  topTools: Array<{ tool: string; calls: number }>;
+};
+
+export async function getCarmenStats(): Promise<CarmenStats> {
+  const since30d = new Date(Date.now() - 30 * 24 * 3600_000);
+  const since7d = new Date(Date.now() - 7 * 24 * 3600_000);
+
+  const [sessions30d, sessions7d, avg, sessionsAggregate] = await Promise.all([
+    prisma.voiceSession.count({ where: { startedAt: { gte: since30d } } }),
+    prisma.voiceSession.count({ where: { startedAt: { gte: since7d } } }),
+    prisma.voiceSession.aggregate({
+      where: { startedAt: { gte: since30d }, durationSec: { not: null } },
+      _avg: { durationSec: true },
+    }),
+    prisma.voiceSession.findMany({
+      where: { startedAt: { gte: since30d } },
+      select: {
+        productSlugsDiscussed: true,
+        toolsCalled: true,
+        resultingCartId: true,
+        estimatedCostCents: true,
+      },
+    }),
+  ]);
+
+  const productCounts = new Map<string, number>();
+  const toolCounts = new Map<string, number>();
+  let cartConversions = 0;
+  let totalCostCents = 0;
+
+  for (const s of sessionsAggregate) {
+    if (s.resultingCartId) cartConversions++;
+    if (s.estimatedCostCents) totalCostCents += s.estimatedCostCents;
+    for (const slug of s.productSlugsDiscussed) {
+      productCounts.set(slug, (productCounts.get(slug) ?? 0) + 1);
+    }
+    if (Array.isArray(s.toolsCalled)) {
+      for (const t of s.toolsCalled as Array<{ tool?: string }>) {
+        if (t?.tool) {
+          toolCounts.set(t.tool, (toolCounts.get(t.tool) ?? 0) + 1);
+        }
+      }
+    }
+  }
+
+  const topProducts = Array.from(productCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([slug, mentions]) => ({ slug, mentions }));
+  const topTools = Array.from(toolCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([tool, calls]) => ({ tool, calls }));
+
+  return {
+    sessions30d,
+    sessions7d,
+    avgDurationSec: avg._avg.durationSec ?? null,
+    cartConversions30d: cartConversions,
+    totalCostCents,
+    topProducts,
+    topTools,
+  };
 }
 
 export type Suggestion = {

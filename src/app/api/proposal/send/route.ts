@@ -34,6 +34,7 @@ import { signProposalToken } from "@/lib/proposal-token";
 import { RecommenderProposalPdf } from "@/lib/recommender-proposal-pdf";
 import { sendProposalEmail } from "@/lib/proposal-mailer";
 import { notifyTelegram } from "@/lib/telegram";
+import { notifyAdmins } from "@/lib/notify-admin";
 import type { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -258,17 +259,22 @@ export async function POST(req: Request) {
     }
   })();
 
-  // 7. Notificar a admin (canal interno Telegram)
-  void notifyTelegram(
-    `📨 <b>Propuesta enviada</b>\n` +
-      `Nº: ${proposalNumber}\n` +
-      `A: ${parsed.email}` +
-      (parsed.name ? ` (${parsed.name})` : "") +
-      (parsed.company ? ` · ${parsed.company}` : "") +
-      `\n` +
-      `Total: ${(totals.totalCents / 100).toFixed(2)}€ (IVA incl.)\n` +
-      `Items: ${items.length}`,
-  ).catch(() => {});
+  // 7. Notificar a admin (Telegram + push browser)
+  const summary =
+    `Nº: ${proposalNumber}\n` +
+    `A: ${parsed.email}` +
+    (parsed.name ? ` (${parsed.name})` : "") +
+    (parsed.company ? ` · ${parsed.company}` : "") +
+    `\n` +
+    `Total: ${(totals.totalCents / 100).toFixed(2)}€ (IVA incl.)\n` +
+    `Items: ${items.length}`;
+  void notifyTelegram(`📨 <b>Propuesta enviada</b>\n${summary}`).catch(() => {});
+  void notifyAdmins({
+    title: `📨 Propuesta ${proposalNumber} enviada`,
+    body: `${parsed.email} · ${(totals.totalCents / 100).toFixed(2)}€ · ${items.length} items`,
+    url: "/admin/propuestas",
+    tag: `proposal-${proposalNumber}`,
+  }).catch(() => {});
 
   return NextResponse.json({
     ok: true,

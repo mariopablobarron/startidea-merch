@@ -14,6 +14,7 @@ import {
   getSearchQueriesNoResults,
   getHourlyHeatmap,
   getOverpricedProducts,
+  getCarmenStats,
   type Suggestion,
 } from "@/lib/insights";
 
@@ -174,8 +175,14 @@ function KpiCard({
   );
 }
 
-export default async function InsightsPage() {
+export default async function InsightsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ heatmap?: string }>;
+}) {
   if (!(await isAdmin())) redirect("/admin/login");
+  const { heatmap: heatmapWindowRaw } = await searchParams;
+  const heatmapWindow: "7d" | "30d" = heatmapWindowRaw === "7d" ? "7d" : "30d";
 
   const [
     health,
@@ -188,6 +195,7 @@ export default async function InsightsPage() {
     noResultSearches,
     heatmap,
     overpriced,
+    carmen,
   ] = await Promise.all([
     getCatalogHealth(),
     getSupplierStatuses(),
@@ -197,8 +205,9 @@ export default async function InsightsPage() {
     getTopCategories(10),
     getTopSearchQueries(15, "30d").catch(() => []),
     getSearchQueriesNoResults(15, "30d").catch(() => []),
-    getHourlyHeatmap().catch(() => []),
+    getHourlyHeatmap(heatmapWindow).catch(() => []),
     getOverpricedProducts(10).catch(() => []),
+    getCarmenStats().catch(() => null),
   ]);
 
   const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
@@ -587,15 +596,134 @@ export default async function InsightsPage() {
 
         {/* ─── Heatmap horario ─── */}
         <section className="mt-12" id="heatmap">
-          <h2 className="font-display text-xl font-semibold text-ink">
-            🗓️ Cuándo te visitan (mapa de calor 30d)
-          </h2>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              🗓️ Cuándo te visitan (mapa de calor)
+            </h2>
+            <div className="flex gap-1 rounded-full bg-bone-soft p-1 text-[11px]">
+              <Link
+                href="/admin/insights?heatmap=7d#heatmap"
+                className={`rounded-full px-3 py-1 transition ${heatmapWindow === "7d" ? "bg-ink text-bone" : "text-ink/60 hover:text-ink"}`}
+              >
+                7 días
+              </Link>
+              <Link
+                href="/admin/insights?heatmap=30d#heatmap"
+                className={`rounded-full px-3 py-1 transition ${heatmapWindow === "30d" ? "bg-ink text-bone" : "text-ink/60 hover:text-ink"}`}
+              >
+                30 días
+              </Link>
+            </div>
+          </div>
           <p className="mt-1 text-sm text-ink/60">
             Visitas a fichas de producto por día y hora (UTC). Útil para
             programar campañas o lanzamientos al momento óptimo.
           </p>
           <Heatmap cells={heatmap} />
         </section>
+
+        {/* ─── Carmen ─── */}
+        {carmen && (
+          <section className="mt-12" id="carmen">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              🎤 Carmen — agente de voz
+            </h2>
+            <p className="mt-1 text-sm text-ink/60">
+              Conversaciones de voz con tu asistente IA (ElevenLabs). Útil para
+              detectar qué te piden, qué herramientas falla más y cuánto cuesta.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiCard
+                label="Sesiones 30d"
+                value={carmen.sessions30d.toLocaleString("es-ES")}
+                hint={`${carmen.sessions7d} esta semana`}
+              />
+              <KpiCard
+                label="Duración media"
+                value={
+                  carmen.avgDurationSec
+                    ? `${Math.round(carmen.avgDurationSec)} s`
+                    : "—"
+                }
+                hint="Tiempo de conversación promedio"
+              />
+              <KpiCard
+                label="Sesiones a carrito"
+                value={`${carmen.cartConversions30d}`}
+                hint={
+                  carmen.sessions30d > 0
+                    ? `${Math.round((carmen.cartConversions30d / carmen.sessions30d) * 100)}% conv. voz → cotización`
+                    : "—"
+                }
+                highlight={
+                  carmen.cartConversions30d > 0 ? "success" : undefined
+                }
+              />
+              <KpiCard
+                label="Coste 30d"
+                value={EUR(carmen.totalCostCents)}
+                hint="ElevenLabs estimado"
+              />
+            </div>
+
+            {(carmen.topProducts.length > 0 || carmen.topTools.length > 0) && (
+              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-3xl border border-line bg-bone p-5">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-ink/60">
+                    Top productos mencionados
+                  </p>
+                  {carmen.topProducts.length === 0 ? (
+                    <p className="mt-3 text-sm text-ink/55">—</p>
+                  ) : (
+                    <ul className="mt-3 space-y-1.5">
+                      {carmen.topProducts.map((p) => (
+                        <li
+                          key={p.slug}
+                          className="flex items-center justify-between gap-2 rounded-lg bg-bone-soft px-3 py-2"
+                        >
+                          <Link
+                            href={`/catalogo/${p.slug}`}
+                            target="_blank"
+                            className="truncate text-sm text-ink/80 hover:text-accent"
+                          >
+                            {p.slug}
+                          </Link>
+                          <span className="shrink-0 text-xs text-ink/55">
+                            {p.mentions}×
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="rounded-3xl border border-line bg-bone p-5">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-ink/60">
+                    Top herramientas llamadas
+                  </p>
+                  {carmen.topTools.length === 0 ? (
+                    <p className="mt-3 text-sm text-ink/55">—</p>
+                  ) : (
+                    <ul className="mt-3 space-y-1.5">
+                      {carmen.topTools.map((t) => (
+                        <li
+                          key={t.tool}
+                          className="flex items-center justify-between gap-2 rounded-lg bg-bone-soft px-3 py-2"
+                        >
+                          <span className="font-mono text-xs text-ink/80">
+                            {t.tool}
+                          </span>
+                          <span className="shrink-0 text-xs text-ink/55">
+                            {t.calls}×
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ─── Top productos ─── */}
         <section className="mt-12" id="top-productos">
