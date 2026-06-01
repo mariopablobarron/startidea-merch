@@ -490,6 +490,96 @@ export async function getCarmenStats(): Promise<CarmenStats> {
   };
 }
 
+export type CohortRow = {
+  cohort: string; // "2026-04"
+  newCustomers: number;
+  returnedIn30d: number;
+  returnedIn60d: number;
+  returnedIn90d: number;
+  retention30d: number; // %
+  retention60d: number;
+  retention90d: number;
+};
+
+/**
+ * Análisis de cohortes mensual basado en propuestas (proxy de "cliente").
+ *
+ * Por cada mes: cuántos emails NUEVOS hubo, y cuántos de ellos volvieron
+ * a pedir propuesta en 30/60/90 días. Da una idea de retention real
+ * sin necesitar checkouts cerrados.
+ *
+ * Devuelve últimos 6 meses con datos suficientes (al menos 90 días
+ * para que retention90d sea calculable).
+ */
+export async function getCohortAnalysis(): Promise<CohortRow[]> {
+  const rows = await prisma.$queryRaw<
+    Array<{
+      cohort: string;
+      newcustomers: bigint;
+      returned30: bigint;
+      returned60: bigint;
+      returned90: bigint;
+    }>
+  >`
+    WITH first_seen AS (
+      SELECT email, MIN("sentAt") AS first_sent
+      FROM "Proposal"
+      GROUP BY email
+    ),
+    cohorts AS (
+      SELECT
+        email,
+        first_sent,
+        TO_CHAR(first_sent, 'YYYY-MM') AS cohort
+      FROM first_seen
+    ),
+    proposals_after AS (
+      SELECT
+        c.cohort,
+        c.email,
+        p."sentAt" AS later_sent,
+        c.first_sent
+      FROM cohorts c
+      JOIN "Proposal" p ON p.email = c.email AND p."sentAt" > c.first_sent
+    )
+    SELECT
+      c.cohort,
+      COUNT(DISTINCT c.email) AS newcustomers,
+      COUNT(DISTINCT pa.email) FILTER (
+        WHERE pa.later_sent BETWEEN c.first_sent + INTERVAL '1 day' AND c.first_sent + INTERVAL '30 days'
+      ) AS returned30,
+      COUNT(DISTINCT pa.email) FILTER (
+        WHERE pa.later_sent BETWEEN c.first_sent + INTERVAL '1 day' AND c.first_sent + INTERVAL '60 days'
+      ) AS returned60,
+      COUNT(DISTINCT pa.email) FILTER (
+        WHERE pa.later_sent BETWEEN c.first_sent + INTERVAL '1 day' AND c.first_sent + INTERVAL '90 days'
+      ) AS returned90
+    FROM cohorts c
+    LEFT JOIN proposals_after pa ON pa.email = c.email
+    WHERE c.first_sent < NOW() - INTERVAL '30 days'
+    GROUP BY c.cohort
+    ORDER BY c.cohort DESC
+    LIMIT 6
+  `;
+
+  return rows.map((r) => {
+    const newC = Number(r.newcustomers);
+    const r30 = Number(r.returned30);
+    const r60 = Number(r.returned60);
+    const r90 = Number(r.returned90);
+    return {
+      cohort: r.cohort,
+      newCustomers: newC,
+      returnedIn30d: r30,
+      returnedIn60d: r60,
+      returnedIn90d: r90,
+      retention30d: newC > 0 ? Math.round((r30 / newC) * 1000) / 10 : 0,
+      retention60d: newC > 0 ? Math.round((r60 / newC) * 1000) / 10 : 0,
+      retention90d: newC > 0 ? Math.round((r90 / newC) * 1000) / 10 : 0,
+    };
+  });
+}
+
 export type Suggestion = {
   id: string;
   severity: "critical" | "warning" | "info" | "opportunity";

@@ -15,6 +15,7 @@ import {
   getHourlyHeatmap,
   getOverpricedProducts,
   getCarmenStats,
+  getCohortAnalysis,
   type Suggestion,
 } from "@/lib/insights";
 import { getAISuggestions } from "@/lib/insights/ai-suggestions";
@@ -210,8 +211,10 @@ export default async function InsightsPage({
     getOverpricedProducts(10).catch(() => []),
     getCarmenStats().catch(() => null),
   ]);
-  // AI suggestions en paralelo pero permitiendo fallback (no bloquea el panel)
-  const aiSuggestions = await getAISuggestions().catch(() => []);
+  const [aiSuggestions, cohorts] = await Promise.all([
+    getAISuggestions().catch(() => []),
+    getCohortAnalysis().catch(() => []),
+  ]);
 
   const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
   const totalCarts = top.reduce((sum, p) => sum + p.cartAddCount, 0);
@@ -786,6 +789,62 @@ export default async function InsightsPage({
                 </div>
               </div>
             )}
+          </section>
+        )}
+
+        {/* ─── Cohort analysis ─── */}
+        {cohorts.length > 0 && (
+          <section className="mt-12" id="cohort">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              👥 Retención mensual (cohort analysis)
+            </h2>
+            <p className="mt-1 text-sm text-ink/60">
+              De cada grupo de clientes nuevos por mes, cuántos volvieron a
+              pedir propuesta en 30/60/90 días. Indicador clave de fidelidad B2B.
+            </p>
+            <div className="mt-4 overflow-x-auto rounded-3xl border border-line bg-bone">
+              <table className="w-full min-w-[680px] text-sm">
+                <thead className="border-b border-line bg-bone-soft text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium text-ink/70">Mes</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Clientes nuevos</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Vuelven 30d</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Vuelven 60d</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Vuelven 90d</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Retención 90d</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cohorts.map((c) => {
+                    const r90 = c.retention90d;
+                    const color =
+                      r90 >= 30 ? "text-emerald-700 font-semibold"
+                      : r90 >= 15 ? "text-amber-700"
+                      : "text-ink/55";
+                    return (
+                      <tr key={c.cohort} className="border-b border-line/60">
+                        <td className="px-4 py-3 font-mono text-xs text-ink/80">{c.cohort}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink">
+                          {c.newCustomers}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink/70">
+                          {c.returnedIn30d} <span className="text-[10px] text-ink/40">({c.retention30d}%)</span>
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink/70">
+                          {c.returnedIn60d} <span className="text-[10px] text-ink/40">({c.retention60d}%)</span>
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink/70">
+                          {c.returnedIn90d}
+                        </td>
+                        <td className={`px-4 py-3 text-right tabular-nums ${color}`}>
+                          {r90}%
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </section>
         )}
 

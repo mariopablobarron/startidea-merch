@@ -135,13 +135,35 @@ export function NotificationsClient({
         </p>
       )}
 
-      <button
-        onClick={save}
-        disabled={busy}
-        className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-bone transition hover:bg-accent disabled:opacity-50"
-      >
-        {busy ? "Guardando…" : "Guardar cambios"}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={save}
+          disabled={busy}
+          className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-bone transition hover:bg-accent disabled:opacity-50"
+        >
+          {busy ? "Guardando…" : "Guardar cambios"}
+        </button>
+        <button
+          onClick={async () => {
+            setError(null);
+            setSaved(false);
+            const res = await fetch("/api/admin/notification-rules/test", {
+              method: "POST",
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              setError(data.message || "Error en prueba");
+              return;
+            }
+            setError(
+              `Test enviado · push browser: ${data.channels.push} · Slack: ${data.channels.slack ? "ON" : "OFF"}`,
+            );
+          }}
+          className="rounded-full border border-ink/20 bg-bone-soft px-6 py-3 text-sm font-semibold text-ink transition hover:bg-bone"
+        >
+          🧪 Enviar prueba
+        </button>
+      </div>
     </div>
   );
 }
