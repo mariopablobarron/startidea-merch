@@ -1,0 +1,40 @@
+src/app/admin/insights/page.tsx
+  s_65877aa637ec34::t_bc7556871743ab 190,201
+  s_65877aa637ec34::t_42962ec8bf7b97 16,20-21
+  s_65877aa637ec34::t_8151381ff980ac 464-516,519-529
+src/app/admin/insights/search-aliases/SearchAliasesClient.tsx
+  s_65877aa637ec34::t_a17d42e66d155b 1-167
+.github/workflows/insights-digest.yml
+  s_65877aa637ec34::t_2b14e5a90dcc10 1-38
+src/app/api/cron/insights-digest/route.ts
+  s_65877aa637ec34::t_e5f3289e9534ab 1-194
+prisma/migrations/20260602_add_search_alias/migration.sql
+  s_65877aa637ec34::t_243a811863be34 1-19
+prisma/schema.prisma
+  s_65877aa637ec34::t_d8f3ec2402e8a6 180-198
+src/app/api/search/suggest/route.ts
+  s_65877aa637ec34::t_3b43f147a76371 20-39
+src/lib/insights/index.ts
+  s_65877aa637ec34::t_52ddaaf81c0b3b 306-380
+  s_65877aa637ec34::t_066a3c6ebeb931 515-535
+src/app/admin/insights/search-aliases/page.tsx
+  s_65877aa637ec34::t_0c00cad08338fa 1-65
+src/app/api/admin/search-aliases/route.ts
+  s_65877aa637ec34::t_b05b2b23d6ec59 1-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "53407149dba248ce32d41226034c3412334b99a2",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
