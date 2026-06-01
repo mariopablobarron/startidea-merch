@@ -1,0 +1,28 @@
+src/app/admin/insights/errors/ErrorsClient.tsx
+  s_65877aa637ec34::t_45c7b71970f166 1-161
+src/components/GlobalErrorTracker.tsx
+  s_65877aa637ec34::t_55d48d012eca05 1-87
+src/app/admin/insights/errors/page.tsx
+  s_65877aa637ec34::t_cd1058a4320d88 1-100
+src/app/layout.tsx
+  s_65877aa637ec34::t_6dbbb35cdf19b7 8
+  s_65877aa637ec34::t_01217cbdeb9093 119
+src/app/admin/insights/page.tsx
+  s_65877aa637ec34::t_514e689e27fa39 852-862
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a79cad2774d9e8d57d76b2cac1c217e45b3c8e26",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
