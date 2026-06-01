@@ -17,6 +17,7 @@ import {
   getCarmenStats,
   type Suggestion,
 } from "@/lib/insights";
+import { getAISuggestions } from "@/lib/insights/ai-suggestions";
 
 const EUR = (cents: number) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -209,6 +210,8 @@ export default async function InsightsPage({
     getOverpricedProducts(10).catch(() => []),
     getCarmenStats().catch(() => null),
   ]);
+  // AI suggestions en paralelo pero permitiendo fallback (no bloquea el panel)
+  const aiSuggestions = await getAISuggestions().catch(() => []);
 
   const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
   const totalCarts = top.reduce((sum, p) => sum + p.cartAddCount, 0);
@@ -233,9 +236,58 @@ export default async function InsightsPage({
               sugerencias para vender más. Datos en tiempo real.
             </p>
           </div>
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <span className="text-ink/55">Exportar:</span>
+            {[
+              { type: "top-products", label: "Top productos" },
+              { type: "search-queries", label: "Búsquedas" },
+              { type: "search-no-results", label: "Sin resultados" },
+              { type: "categories", label: "Categorías" },
+              { type: "overpriced", label: "Outliers precio" },
+              { type: "suppliers", label: "Proveedores" },
+            ].map((e) => (
+              <a
+                key={e.type}
+                href={`/api/admin/insights/export?type=${e.type}`}
+                className="rounded-full border border-line bg-bone px-2.5 py-1 text-ink/70 hover:border-accent hover:text-accent"
+              >
+                {e.label} ↓
+              </a>
+            ))}
+          </div>
         </div>
 
-        {/* ─── Sugerencias accionables (lo más importante arriba) ─── */}
+        {/* ─── Sugerencias IA (LLM analiza el contexto y propone acciones) ─── */}
+        {aiSuggestions.length > 0 && (
+          <section className="mt-8" id="ai-sugerencias">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              🤖 Acciones recomendadas por IA esta semana
+            </h2>
+            <p className="mt-1 text-sm text-ink/60">
+              Análisis del estado real del catálogo + funnel + búsquedas por
+              Claude. Cache 6h — refresca solo si los datos cambian
+              significativamente.
+            </p>
+            <ul className="mt-4 grid gap-3 lg:grid-cols-2">
+              {aiSuggestions.map((s, i) => (
+                <li
+                  key={i}
+                  className="rounded-3xl border border-line bg-gradient-to-br from-bone to-bone-soft p-5"
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-accent-deep">
+                    {s.category}
+                  </p>
+                  <h3 className="mt-2 font-display text-base font-semibold text-ink">
+                    {s.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-ink/75">{s.body}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* ─── Sugerencias por reglas (más rápidas y específicas) ─── */}
         <section className="mt-8" id="sugerencias">
           <h2 className="font-display text-xl font-semibold text-ink">
             🎯 Sugerencias para decidir hoy

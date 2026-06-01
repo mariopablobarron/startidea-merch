@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifyAdmins } from "@/lib/notify-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,6 +93,47 @@ export async function GET(req: Request) {
         await prisma.searchQuery.create({
           data: { query: q, queryLower, resultsCount: totalResults, ip, ua },
         });
+
+        // Si esta query (sin resultados) acumula ≥5 hits en últimas 24h
+        // y no se ha notificado en 48h, dispara push admin "demanda no cubierta".
+        if (totalResults === 0) {
+          const hitsLast24h = await prisma.searchQuery.count({
+            where: {
+              queryLower,
+              resultsCount: 0,
+              createdAt: { gte: new Date(Date.now() - 24 * 3600_000) },
+            },
+          });
+          if (hitsLast24h >= 5) {
+            // Dedup con SearchAlias.description como marca: si no hay alias,
+            // creamos uno inactivo como flag de "ya notificado en 48h".
+            const flagKey = `_notified_${queryLower}`;
+            const recent = await prisma.searchAlias.findUnique({
+              where: { queryLower: flagKey },
+              select: { updatedAt: true },
+            });
+            const notifiedRecently =
+              recent && Date.now() - recent.updatedAt.getTime() < 48 * 3600_000;
+            if (!notifiedRecently) {
+              await prisma.searchAlias.upsert({
+                where: { queryLower: flagKey },
+                create: {
+                  queryLower: flagKey,
+                  redirectTo: "/admin/insights#busquedas",
+                  description: `Notificación enviada por demanda sin cubrir`,
+                  active: false,
+                },
+                update: { updatedAt: new Date() },
+              });
+              void notifyAdmins({
+                title: `💎 Demanda no cubierta: «${q}»`,
+                body: `${hitsLast24h} búsquedas en 24h y 0 resultados`,
+                url: "/admin/insights#busquedas",
+                tag: `search-${queryLower}`,
+              }).catch(() => {});
+            }
+          }
+        }
       } catch {
         // Silencioso, no bloquea la búsqueda
       }
