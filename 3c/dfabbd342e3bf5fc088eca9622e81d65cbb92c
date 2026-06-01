@@ -1,0 +1,38 @@
+src/app/admin/propuestas/page.tsx
+  s_65877aa637ec34::t_b93fc10272d2c9 168
+  s_65877aa637ec34::t_ecf7cfd3916aef 16
+  s_65877aa637ec34::t_a8b634a568f1c6 98-99
+  s_65877aa637ec34::t_7d51e43583a960 209-226
+src/lib/insights/proposal-prediction.ts
+  s_65877aa637ec34::t_f9b5dd79330eb2 1-160
+src/lib/notify-admin.ts
+  s_65877aa637ec34::t_48ef1f463f6ba4 3,6-9,14-21
+src/app/admin/insights/notifications/NotificationsClient.tsx
+  s_65877aa637ec34::t_39d94c2d9b9703 104-128
+  s_65877aa637ec34::t_491dfc92befa53 13,16,20
+  s_65877aa637ec34::t_cafa427f9a5a77 43,45,53,56-57
+src/lib/slack-webhook.ts
+  s_65877aa637ec34::t_8581a02315ddf4 1-94
+src/app/api/admin/notification-rules/route.ts
+  s_65877aa637ec34::t_78c0e3d6c86729 21-30,37,50,52-54,56-58,62-82
+  s_65877aa637ec34::t_1eea3eb617ce8e 12
+src/app/admin/insights/notifications/page.tsx
+  s_65877aa637ec34::t_826c689c6ddb3c 18-21,40-41,43
+  s_65877aa637ec34::t_9bb7d39f3d0ef8 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3cdfabbd342e3bf5fc088eca9622e81d65cbb92c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
