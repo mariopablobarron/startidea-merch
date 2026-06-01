@@ -35,6 +35,7 @@ import { RecommenderProposalPdf } from "@/lib/recommender-proposal-pdf";
 import { sendProposalEmail } from "@/lib/proposal-mailer";
 import { notifyTelegram } from "@/lib/telegram";
 import { notifyAdmins } from "@/lib/notify-admin";
+import { isNotificationEnabled } from "@/lib/notification-rules";
 import type { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -269,12 +270,16 @@ export async function POST(req: Request) {
     `Total: ${(totals.totalCents / 100).toFixed(2)}€ (IVA incl.)\n` +
     `Items: ${items.length}`;
   void notifyTelegram(`📨 <b>Propuesta enviada</b>\n${summary}`).catch(() => {});
-  void notifyAdmins({
-    title: `📨 Propuesta ${proposalNumber} enviada`,
-    body: `${parsed.email} · ${(totals.totalCents / 100).toFixed(2)}€ · ${items.length} items`,
-    url: "/admin/propuestas",
-    tag: `proposal-${proposalNumber}`,
-  }).catch(() => {});
+  void (async () => {
+    if (await isNotificationEnabled("proposal_received")) {
+      await notifyAdmins({
+        title: `📨 Propuesta ${proposalNumber} enviada`,
+        body: `${parsed.email} · ${(totals.totalCents / 100).toFixed(2)}€ · ${items.length} items`,
+        url: "/admin/propuestas",
+        tag: `proposal-${proposalNumber}`,
+      });
+    }
+  })().catch(() => {});
 
   return NextResponse.json({
     ok: true,

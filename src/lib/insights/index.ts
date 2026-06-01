@@ -167,25 +167,62 @@ export type ConversionFunnel = {
   proposals30d: number;
   cartConvPct: number; // views → cart
   proposalConvPct: number; // cart → proposal
+  // Deltas vs periodo previo (días 31-60)
+  views30dDelta: number; // % cambio
+  recommender30dDelta: number;
+  proposals30dDelta: number;
 };
 
 export async function getConversionFunnel(): Promise<ConversionFunnel> {
   const since30d = new Date(Date.now() - 30 * 24 * 3600 * 1000);
-  const [views, carts, recs, props] = await Promise.all([
-    prisma.productView.aggregate({ _sum: { view30d: true } }),
+  const since60d = new Date(Date.now() - 60 * 24 * 3600 * 1000);
+
+  const [carts, recs30d, recsPrev, props30d, propsPrev, viewsPrev] = await Promise.all([
     prisma.productView.aggregate({ _sum: { cartAdd30d: true } }),
     prisma.recommenderQuery.count({ where: { createdAt: { gte: since30d } } }),
+    prisma.recommenderQuery.count({
+      where: { createdAt: { gte: since60d, lt: since30d } },
+    }),
     prisma.proposal.count({ where: { sentAt: { gte: since30d } } }),
+    prisma.proposal.count({
+      where: { sentAt: { gte: since60d, lt: since30d } },
+    }),
+    // Para views, usamos viewCount total como proxy del histórico
+    // (no tenemos un viewCount30d_prev guardado). Estimación aproximada
+    // basada en proporción de productos con tracking reciente.
+    prisma.productView.aggregate({
+      where: { lastViewedAt: { gte: since60d, lt: since30d } },
+      _sum: { view30d: true },
+    }),
   ]);
-  const views30d = views._sum.view30d ?? 0;
+
+  // views30d viene del agregado actual de view30d (rolling window).
+  // El _sum del periodo previo es aproximado porque view30d se resetea con
+  // el cron rollup — pero da una idea del trend.
+  const aggregateViewsNow = await prisma.productView.aggregate({
+    where: { lastViewedAt: { gte: since30d } },
+    _sum: { view30d: true },
+  });
+
+  const views30d = aggregateViewsNow._sum.view30d ?? 0;
+  const viewsPrevSum = viewsPrev._sum.view30d ?? 0;
   const cartAdds30d = carts._sum.cartAdd30d ?? 0;
+
+  function pctDelta(now: number, prev: number): number {
+    if (prev === 0) return now > 0 ? 100 : 0;
+    return Math.round(((now - prev) / prev) * 1000) / 10;
+  }
+
   return {
     views30d,
     cartAdds30d,
-    recommenderQueries30d: recs,
-    proposals30d: props,
+    recommenderQueries30d: recs30d,
+    proposals30d: props30d,
     cartConvPct: views30d > 0 ? Math.round((cartAdds30d / views30d) * 1000) / 10 : 0,
-    proposalConvPct: cartAdds30d > 0 ? Math.round((props / cartAdds30d) * 1000) / 10 : 0,
+    proposalConvPct: cartAdds30d > 0 ? Math.round((props30d / cartAdds30d) * 1000) / 10 : 0,
+    views30dDelta: pctDelta(views30d, viewsPrevSum),
+    recommender30dDelta: pctDelta(recs30d, recsPrev),
+    proposals30dDelta: pctDelta(props30d, propsPrev),
   };
 }
 

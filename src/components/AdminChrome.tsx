@@ -24,6 +24,9 @@ export function AdminChrome({ children }: { children: React.ReactNode }) {
               <Link href="/admin/insights" className="font-medium text-ink hover:text-accent">
                 Insights
               </Link>
+              <Link href="/admin/quick" className="hover:text-accent">
+                Quick
+              </Link>
               <Link href="/admin/quotes" className="hover:text-accent">
                 Cotizaciones
               </Link>

@@ -448,7 +448,11 @@ export default async function InsightsPage({
             <KpiCard
               label="Views catálogo"
               value={funnel.views30d.toLocaleString("es-ES")}
-              hint="Visitas únicas a fichas de producto"
+              hint={
+                funnel.views30dDelta !== 0
+                  ? `${funnel.views30dDelta > 0 ? "▲" : "▼"} ${Math.abs(funnel.views30dDelta).toFixed(1)}% vs 30d previos`
+                  : "Visitas únicas a fichas de producto"
+              }
             />
             <KpiCard
               label="Añadidos a carrito"
@@ -459,12 +463,20 @@ export default async function InsightsPage({
             <KpiCard
               label="Consultas recomendador"
               value={funnel.recommenderQueries30d.toLocaleString("es-ES")}
-              hint="Briefs procesados por la IA"
+              hint={
+                funnel.recommender30dDelta !== 0
+                  ? `${funnel.recommender30dDelta > 0 ? "▲" : "▼"} ${Math.abs(funnel.recommender30dDelta).toFixed(1)}% vs prev`
+                  : "Briefs procesados por la IA"
+              }
             />
             <KpiCard
               label="Propuestas enviadas"
               value={funnel.proposals30d.toLocaleString("es-ES")}
-              hint={`${funnel.proposalConvPct}% conversión carrito → propuesta`}
+              hint={
+                funnel.proposals30dDelta !== 0
+                  ? `${funnel.proposalConvPct}% conv · ${funnel.proposals30dDelta > 0 ? "▲" : "▼"} ${Math.abs(funnel.proposals30dDelta).toFixed(1)}% vs prev`
+                  : `${funnel.proposalConvPct}% conversión carrito → propuesta`
+              }
               highlight={funnel.proposalConvPct >= 15 ? "success" : funnel.proposalConvPct >= 5 ? "warn" : "danger"}
             />
           </div>

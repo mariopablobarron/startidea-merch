@@ -177,6 +177,18 @@ model Product {
   @@index([syncedAt])
 }
 
+/// AdminSetting — key/value para configuración del admin (notification
+/// rules, feature flags, umbrales, etc). Reemplaza tener N tablas de
+/// 1 fila cada una.
+///
+/// Convención de keys: snake_case. Value siempre JSON serializable.
+model AdminSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
 /// SearchAlias — redirige queries del navbar a una página/categoría
 /// concreta. Útil para que «teletrabajo» o «kit verano» lleven
 /// directamente al landing/categoría que mejor cubre la intención

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyAdmins } from "@/lib/notify-admin";
+import { getNotificationRules } from "@/lib/notification-rules";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -94,9 +95,14 @@ export async function GET(req: Request) {
           data: { query: q, queryLower, resultsCount: totalResults, ip, ua },
         });
 
-        // Si esta query (sin resultados) acumula ≥5 hits en últimas 24h
+        // Si esta query (sin resultados) acumula ≥threshold hits en últimas 24h
         // y no se ha notificado en 48h, dispara push admin "demanda no cubierta".
+        // Threshold y enable configurables desde /admin/insights/notifications.
         if (totalResults === 0) {
+          const rules = await getNotificationRules();
+          const rule = rules.search_no_results;
+          if (!rule.enabled) return;
+          const threshold = rule.threshold ?? 5;
           const hitsLast24h = await prisma.searchQuery.count({
             where: {
               queryLower,
@@ -104,7 +110,7 @@ export async function GET(req: Request) {
               createdAt: { gte: new Date(Date.now() - 24 * 3600_000) },
             },
           });
-          if (hitsLast24h >= 5) {
+          if (hitsLast24h >= threshold) {
             // Dedup con SearchAlias.description como marca: si no hay alias,
             // creamos uno inactivo como flag de "ya notificado en 48h".
             const flagKey = `_notified_${queryLower}`;
