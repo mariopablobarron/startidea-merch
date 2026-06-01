@@ -8,10 +8,31 @@ import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
-  title: "Recomendador inteligente · Encuentra el merchandising perfecto",
+  title: "Asistente de productos · Catálogo merchandising B2B España",
   description:
-    "Cuéntanos qué necesitas y nuestro asistente IA recomienda 3-5 productos en segundos. Brief libre, presupuesto, cantidad y filtro eco. Precio al instante en cada ficha.",
+    "Recomendador de productos del catálogo B2B de merchandising corporativo de TodoMerchandising (Startidea Málaga SL). Empresa española dada de alta en el registro mercantil. Productos personalizables con precio al instante: textil, drinkware, escritura, eventos.",
   alternates: { canonical: "https://merchandising.hubstartidea.es/recomendador" },
+  // Señales adicionales para classifiers ML de firewalls corporativos.
+  // Mejora "trust score" y reduce falsos positivos como "Malicious Websites".
+  other: {
+    "owner": "Startidea Málaga SL",
+    "contact": "pedidos@startidea.es",
+    "rating": "general",
+    "distribution": "global",
+    "language": "es",
+    "category": "B2B Merchandising Corporativo",
+  },
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    url: "https://merchandising.hubstartidea.es/recomendador",
+    title: "Asistente de productos · TodoMerchandising B2B",
+    description:
+      "Catálogo B2B legítimo de merchandising corporativo personalizable. Una iniciativa de Startidea Málaga SL.",
+    siteName: "TodoMerchandising",
+    locale: "es_ES",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TodoMerchandising" }],
+  },
 };
 
 export const dynamic = "force-dynamic";
