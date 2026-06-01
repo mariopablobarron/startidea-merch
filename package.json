@@ -64,6 +64,9 @@
       "prisma",
       "sharp",
       "unrs-resolver"
-    ]
+    ],
+    "overrides": {
+      "tmp@<0.2.6": "^0.2.6"
+    }
   }
 }

@@ -59,8 +59,8 @@ export function injectInternalLinks(
       // Regex con word boundaries — pero \b no funciona con acentos en JS.
       // Usamos un lookbehind/ahead que asegura que el carácter anterior y
       // siguiente NO son alfanuméricos ni acentos. Necesita ES2018+.
+      // term ya está saneado vía escapeRegex — falso positivo ReDoS.
       // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
-      // (term ya está saneado vía escapeRegex — falso positivo ReDoS)
       const re = new RegExp(
         `(?<![\\p{L}\\p{N}])(${escapeRegex(term)})(?![\\p{L}\\p{N}])`,
         "iu",
