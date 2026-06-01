@@ -451,7 +451,9 @@ Devuelve SOLO el JSON descrito.`;
         quoteTotalCents: quoteItemsCount > 0 ? quoteTotalCents : null,
       },
     })
-    .catch(() => {});
+    .catch((e) => {
+      console.error("[recommend] failed to persist RecommenderQuery:", e);
+    });
 
   return NextResponse.json({
     ok: true,
