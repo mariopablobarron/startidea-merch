@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
 import { AdminChrome } from "@/components/AdminChrome";
 import { getNotificationRules } from "@/lib/notification-rules";
+import { getSlackWebhookUrl } from "@/lib/slack-webhook";
 import { NotificationsClient } from "./NotificationsClient";
 
 export const metadata: Metadata = {
@@ -14,7 +15,10 @@ export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
   if (!(await isAdmin())) redirect("/admin/login");
-  const rules = await getNotificationRules();
+  const [rules, slackUrl] = await Promise.all([
+    getNotificationRules(),
+    getSlackWebhookUrl(),
+  ]);
   return (
     <AdminChrome>
       <div className="mx-auto max-w-3xl px-6 py-8">
@@ -33,10 +37,10 @@ export default async function NotificationsPage() {
           Reglas de notificación
         </h1>
         <p className="mt-1 text-sm text-ink/60">
-          Decide qué eventos disparan push a tu navegador admin. Los cambios
-          se aplican en &lt;1 minuto (cache server-side).
+          Decide qué eventos disparan push a tu navegador admin y/o tu canal
+          Slack/Discord. Los cambios se aplican en &lt;1 minuto.
         </p>
-        <NotificationsClient initial={rules} />
+        <NotificationsClient initial={rules} initialSlackUrl={slackUrl ?? ""} />
       </div>
     </AdminChrome>
   );

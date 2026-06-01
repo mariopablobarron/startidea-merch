@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { AdminChrome } from "@/components/AdminChrome";
 import { signProposalToken } from "@/lib/proposal-token";
 import type { ProposalQuoteItem } from "@/lib/proposal-types";
+import { predictProposalsBatch } from "@/lib/insights/proposal-prediction";
 
 export const metadata: Metadata = {
   title: "Propuestas (recomendador)",
@@ -94,6 +95,8 @@ export default async function PropuestasListPage({
       prisma.proposal.count({ where: { status: "accepted" } }),
     ]);
 
+  const probabilities = await predictProposalsBatch(proposals.map((p) => p.id));
+
   return (
     <AdminChrome>
       <div className="mx-auto max-w-7xl px-6 py-8">
@@ -162,6 +165,7 @@ export default async function PropuestasListPage({
                   Total (con IVA)
                 </th>
                 <th className="px-4 py-3 font-medium text-ink/70">Estado</th>
+                <th className="px-4 py-3 text-right font-medium text-ink/70">% cierre</th>
                 <th className="px-4 py-3 font-medium text-ink/70">Enviada</th>
                 <th className="px-4 py-3 font-medium text-ink/70">Abierta</th>
                 <th className="px-4 py-3 font-medium text-ink/70">PDF</th>
@@ -201,6 +205,24 @@ export default async function PropuestasListPage({
                       >
                         {STATUS_LABEL[p.status] ?? p.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {(() => {
+                        const prob = probabilities[p.id];
+                        if (prob === undefined) return <span className="text-ink/40">—</span>;
+                        const color =
+                          prob >= 70 ? "bg-emerald-100 text-emerald-700"
+                          : prob >= 40 ? "bg-amber-100 text-amber-700"
+                          : "bg-accent-wash text-accent-deep";
+                        return (
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-mono font-semibold ${color}`}
+                            title="Probabilidad estimada de cierre (heurística)"
+                          >
+                            {prob}%
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-xs text-ink/60">
                       {fmtDate(p.sentAt)}

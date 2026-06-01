@@ -10,11 +10,14 @@ import {
 
 export function NotificationsClient({
   initial,
+  initialSlackUrl,
 }: {
   initial: Record<NotificationEvent, NotificationRule>;
+  initialSlackUrl: string;
 }) {
   const router = useRouter();
   const [state, setState] = useState(initial);
+  const [slackUrl, setSlackUrl] = useState(initialSlackUrl);
   const [busy, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +40,9 @@ export function NotificationsClient({
 
   async function save() {
     setError(null);
-    const body: Record<string, { enabled?: boolean; threshold?: number }> = {};
+    const rulesBody: Record<string, { enabled?: boolean; threshold?: number }> = {};
     for (const ev of Object.keys(state) as NotificationEvent[]) {
-      body[ev] = {
+      rulesBody[ev] = {
         enabled: state[ev].enabled,
         threshold: state[ev].threshold,
       };
@@ -47,10 +50,11 @@ export function NotificationsClient({
     const res = await fetch("/api/admin/notification-rules", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ rules: rulesBody, slackWebhookUrl: slackUrl.trim() || null }),
     });
     if (!res.ok) {
-      setError("No se pudo guardar");
+      const data = await res.json().catch(() => ({}));
+      setError(data.message || "No se pudo guardar");
       return;
     }
     setSaved(true);
@@ -96,6 +100,31 @@ export function NotificationsClient({
           </div>
         );
       })}
+
+      <div className="rounded-3xl border border-line bg-bone p-5">
+        <p className="font-display text-base font-semibold text-ink">
+          Webhook Slack / Discord
+        </p>
+        <p className="mt-1 text-sm text-ink/65">
+          Recibe las mismas notificaciones en un canal de equipo. Pega la URL
+          del Incoming Webhook (Slack) o Webhook URL (Discord). Vacío =
+          desactivado.
+        </p>
+        <input
+          type="url"
+          placeholder="https://hooks.slack.com/services/T0.../B0.../..."
+          value={slackUrl}
+          onChange={(e) => {
+            setSlackUrl(e.target.value);
+            setSaved(false);
+          }}
+          className="mt-3 w-full rounded-full border border-line bg-bone-soft px-4 py-2 text-sm font-mono focus:border-accent focus:outline-none"
+        />
+        <p className="mt-2 text-[11px] text-ink/50">
+          Slack: <code>https://hooks.slack.com/services/...</code> ·
+          Discord: <code>https://discord.com/api/webhooks/...</code>
+        </p>
+      </div>
 
       {error && (
         <p className="rounded-2xl bg-accent-wash p-3 text-sm text-accent-deep">{error}</p>
