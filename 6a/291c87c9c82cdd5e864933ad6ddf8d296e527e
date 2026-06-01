@@ -1,0 +1,23 @@
+src/app/.well-known/security.txt/route.ts
+  s_65877aa637ec34::t_a6c3d582f16fe4 1-53
+src/app/recomendador/page.tsx
+  s_65877aa637ec34::t_1d621e14e22239 11,13,15-35
+src/app/humans.txt/route.ts
+  s_65877aa637ec34::t_60feb108355454 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6a291c87c9c82cdd5e864933ad6ddf8d296e527e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
