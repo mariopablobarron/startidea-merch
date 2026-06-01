@@ -1,0 +1,23 @@
+src/app/recursos/tabla-tallas-universales/page.tsx
+  s_65877aa637ec34::t_af09ff5641c3c7 1-288
+src/app/recursos/page.tsx
+  s_65877aa637ec34::t_606f37da524aea 66-91
+src/app/recursos/especificaciones-mockup/page.tsx
+  s_65877aa637ec34::t_db76673146feea 1-309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e2f7b586253e00feba47a3971fd16ae9f5abed3e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
