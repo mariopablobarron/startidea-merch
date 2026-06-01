@@ -462,6 +462,40 @@ Devuelve SOLO el JSON descrito.`;
     console.error("[recommend] failed to persist RecommenderQuery:", e);
   }
 
+  // Bump recommenderCount + view30d para productos recomendados/cotizados
+  void (async () => {
+    try {
+      const slugs = new Set<string>();
+      enriched.forEach((r) => { if (r) slugs.add(r.slug); });
+      enrichedQuoteItems.forEach((it) => {
+        if (!it.notFound && it.product?.slug) slugs.add(it.product.slug);
+      });
+      if (slugs.size === 0) return;
+      const prods = await prisma.product.findMany({
+        where: { slug: { in: Array.from(slugs) } },
+        select: { id: true },
+      });
+      await Promise.all(
+        prods.map((p) =>
+          prisma.productView.upsert({
+            where: { productId: p.id },
+            update: {
+              recommenderCount: { increment: 1 },
+              view30d: { increment: 1 },
+            },
+            create: {
+              productId: p.id,
+              recommenderCount: 1,
+              view30d: 1,
+            },
+          }),
+        ),
+      );
+    } catch (e) {
+      console.error("[recommend] track productView failed:", e);
+    }
+  })();
+
   return NextResponse.json({
     ok: true,
     mode: parsedRec.mode || (quoteItemsCount > 0 ? "quote" : "recommend"),

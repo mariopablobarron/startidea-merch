@@ -160,6 +160,76 @@ export async function getTopViewedProducts(limit = 20, window: "all" | "30d" = "
   }));
 }
 
+export type ConversionFunnel = {
+  views30d: number;
+  cartAdds30d: number;
+  recommenderQueries30d: number;
+  proposals30d: number;
+  cartConvPct: number; // views → cart
+  proposalConvPct: number; // cart → proposal
+};
+
+export async function getConversionFunnel(): Promise<ConversionFunnel> {
+  const since30d = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+  const [views, carts, recs, props] = await Promise.all([
+    prisma.productView.aggregate({ _sum: { view30d: true } }),
+    prisma.productView.aggregate({ _sum: { cartAdd30d: true } }),
+    prisma.recommenderQuery.count({ where: { createdAt: { gte: since30d } } }),
+    prisma.proposal.count({ where: { sentAt: { gte: since30d } } }),
+  ]);
+  const views30d = views._sum.view30d ?? 0;
+  const cartAdds30d = carts._sum.cartAdd30d ?? 0;
+  return {
+    views30d,
+    cartAdds30d,
+    recommenderQueries30d: recs,
+    proposals30d: props,
+    cartConvPct: views30d > 0 ? Math.round((cartAdds30d / views30d) * 1000) / 10 : 0,
+    proposalConvPct: cartAdds30d > 0 ? Math.round((props / cartAdds30d) * 1000) / 10 : 0,
+  };
+}
+
+export type CategoryRow = {
+  categoryId: string | null;
+  categoryName: string;
+  products: number;
+  views30d: number;
+  cartAdds30d: number;
+};
+
+export async function getTopCategories(limit = 10): Promise<CategoryRow[]> {
+  const rows = await prisma.$queryRaw<
+    Array<{
+      categoryid: string | null;
+      categoryname: string | null;
+      products: bigint;
+      views30d: bigint | null;
+      cartadds30d: bigint | null;
+    }>
+  >`
+    SELECT
+      c.id AS categoryid,
+      c.name AS categoryname,
+      COUNT(DISTINCT p.id) AS products,
+      COALESCE(SUM(pv."view30d"), 0) AS views30d,
+      COALESCE(SUM(pv."cartAdd30d"), 0) AS cartadds30d
+    FROM "Product" p
+    LEFT JOIN "Category" c ON c.id = p."categoryId"
+    LEFT JOIN "ProductView" pv ON pv."productId" = p.id
+    WHERE p.active = true
+    GROUP BY c.id, c.name
+    ORDER BY views30d DESC NULLS LAST, products DESC
+    LIMIT ${limit}
+  `;
+  return rows.map((r) => ({
+    categoryId: r.categoryid,
+    categoryName: r.categoryname || "Sin categoría",
+    products: Number(r.products),
+    views30d: Number(r.views30d ?? 0),
+    cartAdds30d: Number(r.cartadds30d ?? 0),
+  }));
+}
+
 export type Suggestion = {
   id: string;
   severity: "critical" | "warning" | "info" | "opportunity";

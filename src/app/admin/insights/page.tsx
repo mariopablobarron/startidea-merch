@@ -8,6 +8,8 @@ import {
   getSupplierStatuses,
   getTopViewedProducts,
   getSuggestions,
+  getConversionFunnel,
+  getTopCategories,
   type Suggestion,
 } from "@/lib/insights";
 
@@ -94,11 +96,13 @@ function KpiCard({
 export default async function InsightsPage() {
   if (!(await isAdmin())) redirect("/admin/login");
 
-  const [health, suppliers, top, suggestions] = await Promise.all([
+  const [health, suppliers, top, suggestions, funnel, categories] = await Promise.all([
     getCatalogHealth(),
     getSupplierStatuses(),
     getTopViewedProducts(20, "30d"),
     getSuggestions(),
+    getConversionFunnel(),
+    getTopCategories(10),
   ]);
 
   const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
@@ -273,6 +277,92 @@ export default async function InsightsPage() {
               </tbody>
             </table>
           </div>
+        </section>
+
+        {/* ─── Funnel ─── */}
+        <section className="mt-12" id="funnel">
+          <h2 className="font-display text-xl font-semibold text-ink">
+            🔻 Conversión últimos 30 días
+          </h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Del visitante al pedido cerrado. Tasas típicas B2B: 1-3% views→carrito · 10-25% carrito→propuesta.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              label="Views catálogo"
+              value={funnel.views30d.toLocaleString("es-ES")}
+              hint="Visitas únicas a fichas de producto"
+            />
+            <KpiCard
+              label="Añadidos a carrito"
+              value={funnel.cartAdds30d.toLocaleString("es-ES")}
+              hint={`${funnel.cartConvPct}% conversión views → carrito`}
+              highlight={funnel.cartConvPct >= 2 ? "success" : funnel.cartConvPct >= 1 ? "warn" : "danger"}
+            />
+            <KpiCard
+              label="Consultas recomendador"
+              value={funnel.recommenderQueries30d.toLocaleString("es-ES")}
+              hint="Briefs procesados por la IA"
+            />
+            <KpiCard
+              label="Propuestas enviadas"
+              value={funnel.proposals30d.toLocaleString("es-ES")}
+              hint={`${funnel.proposalConvPct}% conversión carrito → propuesta`}
+              highlight={funnel.proposalConvPct >= 15 ? "success" : funnel.proposalConvPct >= 5 ? "warn" : "danger"}
+            />
+          </div>
+        </section>
+
+        {/* ─── Categorías ─── */}
+        <section className="mt-12" id="categorias">
+          <h2 className="font-display text-xl font-semibold text-ink">
+            📊 Categorías por engagement (30 días)
+          </h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Qué categorías están moviendo el catálogo. Útil para decidir qué
+            potenciar en home, ads o newsletter.
+          </p>
+          {categories.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-line bg-bone-soft p-6 text-center text-sm text-ink/60">
+              Sin datos aún — el tracking empieza ahora.
+            </p>
+          ) : (
+            <div className="mt-4 overflow-x-auto rounded-3xl border border-line bg-bone">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead className="border-b border-line bg-bone-soft text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium text-ink/70">Categoría</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Productos</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Views 30d</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Carrito 30d</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Conv. %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((c) => {
+                    const conv = c.views30d > 0 ? Math.round((c.cartAdds30d / c.views30d) * 1000) / 10 : 0;
+                    return (
+                      <tr key={c.categoryId ?? "none"} className="border-b border-line/60">
+                        <td className="px-4 py-3 font-medium text-ink">{c.categoryName}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink/70">
+                          {c.products.toLocaleString("es-ES")}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums font-semibold text-ink">
+                          {c.views30d.toLocaleString("es-ES")}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink/70">
+                          {c.cartAdds30d.toLocaleString("es-ES")}
+                        </td>
+                        <td className={`px-4 py-3 text-right tabular-nums ${conv >= 2 ? "text-emerald-700 font-semibold" : "text-ink/55"}`}>
+                          {conv}%
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         {/* ─── Top productos ─── */}

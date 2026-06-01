@@ -225,6 +225,39 @@ export async function POST(req: Request) {
     // No crítico, seguimos
   }
 
+  // 6b. Bump proposalCount + lastCartAddAt en ProductView por cada item
+  // que tenga producto identificado (notFound se ignoran).
+  void (async () => {
+    try {
+      const slugs = items
+        .filter((it) => !it.notFound && it.product?.slug)
+        .map((it) => it.product!.slug);
+      if (slugs.length === 0) return;
+      const prods = await prisma.product.findMany({
+        where: { slug: { in: slugs } },
+        select: { id: true, slug: true },
+      });
+      await Promise.all(
+        prods.map((p) =>
+          prisma.productView.upsert({
+            where: { productId: p.id },
+            update: {
+              proposalCount: { increment: 1 },
+              cartAdd30d: { increment: 1 },
+            },
+            create: {
+              productId: p.id,
+              proposalCount: 1,
+              cartAdd30d: 1,
+            },
+          }),
+        ),
+      );
+    } catch (e) {
+      console.error("[proposal] track productView failed:", e);
+    }
+  })();
+
   // 7. Notificar a admin (canal interno Telegram)
   void notifyTelegram(
     `📨 <b>Propuesta enviada</b>\n` +

@@ -9,6 +9,7 @@ import {
   type PriceTier,
 } from "@/lib/pricing";
 import { addItem, type CartItemMarking } from "@/lib/cart-storage";
+import { trackProductEvent } from "@/lib/track-client";
 import { trackEvent } from "@/lib/track";
 import { trackAddToCart } from "@/lib/ads-events";
 import { spellConfetti } from "@/lib/spells/confetti";
@@ -347,6 +348,8 @@ export function ProductOrderForm({
       customerLogoFilename: withMarking ? logo?.filename ?? null : null,
       customerLogoSize: withMarking ? logo?.size ?? null : null,
     });
+    // Tracking: incrementa cartAddCount en ProductView (fire-and-forget)
+    trackProductEvent({ slug: productSlug }, "cart_add");
     setAddedAt(Date.now());
   }
 

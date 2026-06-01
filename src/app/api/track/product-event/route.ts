@@ -18,10 +18,15 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const BodySchema = z.object({
-  productId: z.string().min(1).max(40),
-  event: z.enum(["view", "cart_add", "proposal", "recommender"]),
-});
+const BodySchema = z
+  .object({
+    productId: z.string().min(1).max(40).optional(),
+    slug: z.string().min(1).max(120).optional(),
+    event: z.enum(["view", "cart_add", "proposal", "recommender"]),
+  })
+  .refine((b) => b.productId || b.slug, {
+    message: "productId or slug required",
+  });
 
 export async function POST(req: Request) {
   let body;
@@ -31,7 +36,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
   }
 
-  const { productId, event } = body;
+  // Resolver slug → productId si solo viene slug
+  let productId = body.productId;
+  if (!productId && body.slug) {
+    const p = await prisma.product.findUnique({
+      where: { slug: body.slug },
+      select: { id: true },
+    });
+    if (!p) return NextResponse.json({ ok: false, error: "NOT_FOUND" });
+    productId = p.id;
+  }
+  if (!productId) {
+    return NextResponse.json({ ok: false, error: "NO_PRODUCT" }, { status: 400 });
+  }
+
+  const { event } = body;
 
   try {
     // Increment según el evento. Upsert atómico para evitar race con
