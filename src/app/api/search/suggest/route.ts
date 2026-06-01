@@ -17,6 +17,26 @@ export async function GET(req: Request) {
     });
   }
 
+  // Antes de hacer la búsqueda, comprobar si hay alias admin para esta query.
+  // Si existe → devolver redirectTo y dejar que el cliente navegue.
+  const queryLower = q.toLowerCase();
+  const alias = await prisma.searchAlias.findUnique({
+    where: { queryLower },
+    select: { redirectTo: true, active: true },
+  });
+  if (alias?.active && alias.redirectTo) {
+    void prisma.searchAlias
+      .update({
+        where: { queryLower },
+        data: { hitCount: { increment: 1 } },
+      })
+      .catch(() => {});
+    return NextResponse.json(
+      { redirectTo: alias.redirectTo, products: [], categories: [] },
+      { headers: { "Cache-Control": "private, max-age=60" } },
+    );
+  }
+
   const [products, categories] = await Promise.all([
     prisma.product.findMany({
       where: {

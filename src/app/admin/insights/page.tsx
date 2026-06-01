@@ -13,8 +13,12 @@ import {
   getTopSearchQueries,
   getSearchQueriesNoResults,
   getHourlyHeatmap,
+  getOverpricedProducts,
   type Suggestion,
 } from "@/lib/insights";
+
+const EUR = (cents: number) =>
+  new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
 
 export const metadata: Metadata = {
   title: "Insights · Panel decisiones",
@@ -183,6 +187,7 @@ export default async function InsightsPage() {
     topSearches,
     noResultSearches,
     heatmap,
+    overpriced,
   ] = await Promise.all([
     getCatalogHealth(),
     getSupplierStatuses(),
@@ -193,6 +198,7 @@ export default async function InsightsPage() {
     getTopSearchQueries(15, "30d").catch(() => []),
     getSearchQueriesNoResults(15, "30d").catch(() => []),
     getHourlyHeatmap().catch(() => []),
+    getOverpricedProducts(10).catch(() => []),
   ]);
 
   const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
@@ -455,11 +461,72 @@ export default async function InsightsPage() {
           )}
         </section>
 
+        {/* ─── Outliers precio ─── */}
+        {overpriced.length > 0 && (
+          <section className="mt-12" id="overpriced">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              💰 Productos con precio anómalo
+            </h2>
+            <p className="mt-1 text-sm text-ink/60">
+              Su precio mínimo es &gt;2.5× la mediana de su categoría. Posibles
+              errores de import o productos premium mal categorizados.
+            </p>
+            <div className="mt-4 overflow-x-auto rounded-3xl border border-accent-wash bg-accent-wash/40">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead className="border-b border-accent-wash bg-accent-wash text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium text-ink/70">Producto</th>
+                    <th className="px-4 py-3 font-medium text-ink/70">Categoría</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Mín. producto</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Mediana cat.</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Multiplicador</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overpriced.map((p) => (
+                    <tr key={p.productId} className="border-b border-line/60">
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/catalogo/${p.slug}`}
+                          target="_blank"
+                          className="font-medium text-ink hover:text-accent"
+                        >
+                          {p.name.slice(0, 60)}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-ink/60">{p.category}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-ink/80">
+                        {EUR(p.minPriceCents)}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-ink/60">
+                        {EUR(p.categoryMedianCents)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="rounded-full bg-accent-deep px-2 py-0.5 text-xs font-semibold text-bone">
+                          {p.multiple}×
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
         {/* ─── Búsquedas ─── */}
         <section className="mt-12" id="busquedas">
-          <h2 className="font-display text-xl font-semibold text-ink">
-            🔍 Qué busca tu cliente (30 días)
-          </h2>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              🔍 Qué busca tu cliente (30 días)
+            </h2>
+            <Link
+              href="/admin/insights/search-aliases"
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              Gestionar alias →
+            </Link>
+          </div>
           <p className="mt-1 text-sm text-ink/60">
             Tracking de queries del buscador navbar. Las queries sin
             resultados son demanda real no cubierta.

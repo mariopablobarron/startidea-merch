@@ -303,6 +303,81 @@ export async function getHourlyHeatmap(): Promise<HourlyHeatmapCell[]> {
   }));
 }
 
+export type OverpricedProduct = {
+  productId: string;
+  slug: string;
+  name: string;
+  category: string;
+  minPriceCents: number;
+  categoryMedianCents: number;
+  multiple: number; // veces sobre la mediana de su categoría
+};
+
+/**
+ * Detecta productos cuyo precio mínimo (mejor tier) está significativamente
+ * por encima de la mediana de su categoría. Útil para detectar:
+ *   - errores de precio en bulk (Cifra 100€ → debería ser 10€)
+ *   - productos premium mal categorizados
+ *   - oportunidades de promoción para mover stock alto
+ *
+ * Threshold: >2.5× la mediana de la categoría.
+ */
+export async function getOverpricedProducts(limit = 10): Promise<OverpricedProduct[]> {
+  // Query agregada: precio mínimo de tier por producto, mediana por categoría,
+  // detecta outliers altos.
+  const rows = await prisma.$queryRaw<
+    Array<{
+      productid: string;
+      slug: string;
+      name: string;
+      categoryname: string | null;
+      minprice: number;
+      categorymedian: number;
+    }>
+  >`
+    WITH product_min AS (
+      SELECT
+        p.id AS productid,
+        p.slug,
+        p.name,
+        p."categoryId",
+        c.name AS categoryname,
+        MIN(pt."unitPriceCents") AS minprice
+      FROM "Product" p
+      LEFT JOIN "Category" c ON c.id = p."categoryId"
+      JOIN "ProductVariant" v ON v."productId" = p.id
+      JOIN "PriceTier" pt ON pt."variantId" = v.id
+      WHERE p.active = true AND p."categoryId" IS NOT NULL
+      GROUP BY p.id, p.slug, p.name, p."categoryId", c.name
+    ),
+    category_median AS (
+      SELECT
+        "categoryId",
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY minprice) AS categorymedian
+      FROM product_min
+      GROUP BY "categoryId"
+    )
+    SELECT pm.productid, pm.slug, pm.name, pm.categoryname,
+           pm.minprice, cm.categorymedian
+    FROM product_min pm
+    JOIN category_median cm ON cm."categoryId" = pm."categoryId"
+    WHERE cm.categorymedian > 0
+      AND pm.minprice > cm.categorymedian * 2.5
+    ORDER BY pm.minprice / cm.categorymedian DESC
+    LIMIT ${limit}
+  `;
+
+  return rows.map((r) => ({
+    productId: r.productid,
+    slug: r.slug,
+    name: r.name,
+    category: r.categoryname || "Sin categoría",
+    minPriceCents: Number(r.minprice),
+    categoryMedianCents: Number(r.categorymedian),
+    multiple: r.categorymedian > 0 ? Math.round((Number(r.minprice) / Number(r.categorymedian)) * 10) / 10 : 0,
+  }));
+}
+
 export type Suggestion = {
   id: string;
   severity: "critical" | "warning" | "info" | "opportunity";
@@ -435,6 +510,27 @@ export async function getSuggestions(): Promise<Suggestion[]> {
     }
   } catch {
     // tabla puede no existir aún en primer deploy
+  }
+
+  // 6c. Productos con precio anómalo vs categoría
+  try {
+    const overpriced = await getOverpricedProducts(5);
+    if (overpriced.length > 0) {
+      const top = overpriced
+        .slice(0, 3)
+        .map((p) => `${p.name.slice(0, 40)} (${p.multiple}×)`)
+        .join("; ");
+      suggestions.push({
+        id: "overpriced-products",
+        severity: "warning",
+        title: `${overpriced.length} productos con precio anómalo vs su categoría`,
+        body: `Su precio mínimo es >2.5× la mediana de la categoría. Posibles errores de import o productos premium mal categorizados. Top: ${top}`,
+        action: { label: "Ver listado", href: "/admin/insights#overpriced" },
+        metric: `${overpriced.length} outliers`,
+      });
+    }
+  } catch {
+    // ignora si query falla en first deploy
   }
 
   // 7. Sin cotizaciones recientes

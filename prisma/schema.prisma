@@ -177,6 +177,25 @@ model Product {
   @@index([syncedAt])
 }
 
+/// SearchAlias — redirige queries del navbar a una página/categoría
+/// concreta. Útil para que «teletrabajo» o «kit verano» lleven
+/// directamente al landing/categoría que mejor cubre la intención
+/// aunque ningún producto del catálogo se llame así literalmente.
+///
+/// Gestión desde /admin/insights/search-aliases.
+model SearchAlias {
+  id          String   @id @default(cuid())
+  queryLower  String   @unique // ej. "teletrabajo"
+  redirectTo  String // URL relativa: "/catalogo?q=mochila+termo" o "/categoria/eventos"
+  description String? // contexto para el admin
+  active      Boolean  @default(true)
+  hitCount    Int      @default(0) // cuántas veces se activó
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
+}
+
 /// SearchQuery — log de búsquedas del navbar para detectar demanda no
 /// cubierta. Si los clientes buscan "mascarilla N95" o "tablet 10
 /// pulgadas" y devuelve 0 resultados, son leads de catálogo para añadir.
