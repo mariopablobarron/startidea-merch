@@ -425,10 +425,12 @@ Devuelve SOLO el JSON descrito.`;
   const quoteItemsCount = enrichedQuoteItems.length;
 
   // Logging: guardar la consulta para análisis admin (incluye quoteItems
-  // si fue modo cotización).
+  // si fue modo cotización). Usamos await: el insert es rápido (<50ms),
+  // sin él el fire-and-forget no completaba antes de que Next terminara
+  // el handler en runtime nodejs containerizado.
   const resolvedMode = parsedRec.mode || (quoteItemsCount > 0 ? "quote" : "recommend");
-  void prisma.recommenderQuery
-    .create({
+  try {
+    await prisma.recommenderQuery.create({
       data: {
         brief,
         budget: budget ?? null,
@@ -450,10 +452,10 @@ Devuelve SOLO el JSON descrito.`;
             : Prisma.DbNull,
         quoteTotalCents: quoteItemsCount > 0 ? quoteTotalCents : null,
       },
-    })
-    .catch((e) => {
-      console.error("[recommend] failed to persist RecommenderQuery:", e);
     });
+  } catch (e) {
+    console.error("[recommend] failed to persist RecommenderQuery:", e);
+  }
 
   return NextResponse.json({
     ok: true,
