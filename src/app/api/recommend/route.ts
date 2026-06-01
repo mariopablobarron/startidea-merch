@@ -447,11 +447,13 @@ Devuelve SOLO el JSON descrito.`;
         ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
         ua: req.headers.get("user-agent")?.slice(0, 500) || null,
         mode: resolvedMode,
-        quoteItems:
-          quoteItemsCount > 0
-            ? (enrichedQuoteItems as unknown as Prisma.InputJsonValue)
-            : Prisma.DbNull,
-        quoteTotalCents: quoteItemsCount > 0 ? quoteTotalCents : null,
+        // Solo añadimos quoteItems si hay items; si no, undefined deja el campo null.
+        ...(quoteItemsCount > 0
+          ? {
+              quoteItems: enrichedQuoteItems as unknown as Prisma.InputJsonValue,
+              quoteTotalCents,
+            }
+          : {}),
       },
     });
   } catch (e) {
