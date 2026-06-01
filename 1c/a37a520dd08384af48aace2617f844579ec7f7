@@ -1,0 +1,26 @@
+src/app/recursos/guia-pantone-serigrafia-corporativa/page.tsx
+  s_65877aa637ec34::t_57822e69dad2d9 250
+  s_65877aa637ec34::t_c361a385ab2523 173-174
+  s_65877aa637ec34::t_7a25e420f7c660 1-97,99-172,175-249,251-363,365-387
+  s_65877aa637ec34::t_cbd2d7effe34ed 364
+  s_65877aa637ec34::t_1c3942e93d00bc 98
+src/app/recursos/page.tsx
+  s_65877aa637ec34::t_0bac2edebbffe6 38-66
+  s_65877aa637ec34::t_1a8ecf06bbdee8 84-95,97-122,126,129-137,139,143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1ca37a520dd08384af48aace2617f844579ec7f7",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
