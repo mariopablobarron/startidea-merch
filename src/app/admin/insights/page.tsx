@@ -849,9 +849,17 @@ export default async function InsightsPage({
         {/* ─── Errors ─── */}
         {errorSummary && errorSummary.last24h > 0 && (
           <section className="mt-12" id="errors">
-            <h2 className="font-display text-xl font-semibold text-ink">
-              🐛 Errores recientes (24h)
-            </h2>
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-display text-xl font-semibold text-ink">
+                🐛 Errores recientes (24h)
+              </h2>
+              <Link
+                href="/admin/insights/errors"
+                className="text-xs font-medium text-accent hover:underline"
+              >
+                Ver todos / gestionar →
+              </Link>
+            </div>
             <p className="mt-1 text-sm text-ink/60">
               Errores capturados server-side y client-side. Útil para detectar
               problemas sin depender de Sentry externo.
