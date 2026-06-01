@@ -1,0 +1,38 @@
+name: Metric snapshot diario
+
+# 03:35 UTC todos los días (5 min después del rollup ProductView).
+# Guarda KPIs del día en MetricSnapshot para gráficas históricas.
+
+on:
+  schedule:
+    - cron: "35 3 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: metric-snapshot
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar snapshot
+        env:
+          CRON_SECRET: ${{ secrets.MERCH_CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Falta secret MERCH_CRON_SECRET"
+            exit 1
+          fi
+          response=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://merchandising.hubstartidea.es/api/cron/metric-snapshot" \
+            -H "x-cron-secret: $CRON_SECRET")
+          body=$(echo "$response" | sed '$d')
+          code=$(echo "$response" | tail -n1)
+          echo "HTTP $code"
+          echo "$body"
+          if [ "$code" != "200" ]; then
+            echo "::error::Snapshot devolvió $code"
+            exit 1
+          fi

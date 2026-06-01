@@ -16,9 +16,11 @@ import {
   getOverpricedProducts,
   getCarmenStats,
   getCohortAnalysis,
+  getWeeklySeries,
   type Suggestion,
 } from "@/lib/insights";
 import { getAISuggestions } from "@/lib/insights/ai-suggestions";
+import { getErrorSummary } from "@/lib/insights/capture-error";
 
 const EUR = (cents: number) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -211,9 +213,11 @@ export default async function InsightsPage({
     getOverpricedProducts(10).catch(() => []),
     getCarmenStats().catch(() => null),
   ]);
-  const [aiSuggestions, cohorts] = await Promise.all([
+  const [aiSuggestions, cohorts, weeklySeries, errorSummary] = await Promise.all([
     getAISuggestions().catch(() => []),
     getCohortAnalysis().catch(() => []),
+    getWeeklySeries().catch(() => []),
+    getErrorSummary().catch(() => null),
   ]);
 
   const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
@@ -787,6 +791,110 @@ export default async function InsightsPage({
                     </ul>
                   )}
                 </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ─── Weekly series ─── */}
+        {weeklySeries.length >= 2 && (
+          <section className="mt-12" id="weekly-series">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              📈 Evolución semanal (últimos lunes)
+            </h2>
+            <p className="mt-1 text-sm text-ink/60">
+              Snapshot de KPIs cada lunes. Muestra la tendencia real sin
+              ruido diario.
+            </p>
+            <div className="mt-4 overflow-x-auto rounded-3xl border border-line bg-bone">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead className="border-b border-line bg-bone-soft text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium text-ink/70">Semana</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Views 30d</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Carrito 30d</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Propuestas 30d</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Conv. %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weeklySeries.map((w, i) => {
+                    const prev = i > 0 ? weeklySeries[i - 1] : null;
+                    const delta = prev && prev.proposals30d > 0
+                      ? Math.round(((w.proposals30d - prev.proposals30d) / prev.proposals30d) * 100)
+                      : null;
+                    return (
+                      <tr key={w.date} className={`border-b border-line/60 ${i === weeklySeries.length - 1 ? "bg-accent-wash/30 font-semibold" : ""}`}>
+                        <td className="px-4 py-3 font-mono text-xs text-ink/70">{w.date}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink/80">{w.views30d.toLocaleString("es-ES")}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink/80">{w.cartAdds30d}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink">
+                          {w.proposals30d}
+                          {delta !== null && delta !== 0 && (
+                            <span className={`ml-1 text-[10px] ${delta > 0 ? "text-emerald-700" : "text-accent-deep"}`}>
+                              {delta > 0 ? "▲" : "▼"}{Math.abs(delta)}%
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink/70">{w.proposalConvPct.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* ─── Errors ─── */}
+        {errorSummary && errorSummary.last24h > 0 && (
+          <section className="mt-12" id="errors">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              🐛 Errores recientes (24h)
+            </h2>
+            <p className="mt-1 text-sm text-ink/60">
+              Errores capturados server-side y client-side. Útil para detectar
+              problemas sin depender de Sentry externo.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3 mb-4">
+              <KpiCard
+                label="Total acumulado"
+                value={errorSummary.total.toLocaleString("es-ES")}
+                hint="Histórico completo"
+              />
+              <KpiCard
+                label="Sin resolver"
+                value={errorSummary.unresolved.toLocaleString("es-ES")}
+                highlight={errorSummary.unresolved > 0 ? "warn" : "success"}
+              />
+              <KpiCard
+                label="Últimas 24h"
+                value={errorSummary.last24h.toLocaleString("es-ES")}
+                highlight={errorSummary.last24h > 5 ? "danger" : undefined}
+              />
+            </div>
+            {errorSummary.topErrors.length > 0 && (
+              <div className="overflow-x-auto rounded-3xl border border-line bg-bone">
+                <table className="w-full min-w-[600px] text-sm">
+                  <thead className="border-b border-line bg-bone-soft text-left">
+                    <tr>
+                      <th className="px-4 py-3 font-medium text-ink/70">Mensaje</th>
+                      <th className="px-4 py-3 text-right font-medium text-ink/70">Hits 7d</th>
+                      <th className="px-4 py-3 font-medium text-ink/70">Último visto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {errorSummary.topErrors.map((e, i) => (
+                      <tr key={i} className="border-b border-line/60">
+                        <td className="px-4 py-3 font-mono text-[11px] text-ink/80">
+                          {e.message.slice(0, 120)}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-ink">{e.count}</td>
+                        <td className="px-4 py-3 text-xs text-ink/55">{fmtDate(e.lastSeen)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </section>

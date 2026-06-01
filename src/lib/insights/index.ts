@@ -490,6 +490,44 @@ export async function getCarmenStats(): Promise<CarmenStats> {
   };
 }
 
+export type WeeklySeriesPoint = {
+  date: string; // ISO yyyy-mm-dd
+  views30d: number;
+  cartAdds30d: number;
+  proposals30d: number;
+  proposalConvPct: number;
+};
+
+/**
+ * Devuelve los snapshots de los últimos 8 lunes para gráfica de
+ * tendencia. Útil para "esta semana vs hace 4 semanas".
+ */
+export async function getWeeklySeries(): Promise<WeeklySeriesPoint[]> {
+  const rows = await prisma.metricSnapshot.findMany({
+    orderBy: { date: "desc" },
+    take: 60, // ~2 meses para garantizar 8 lunes
+    select: {
+      date: true,
+      views30d: true,
+      cartAdds30d: true,
+      proposals30d: true,
+      proposalConvPct: true,
+    },
+  });
+  // Filtrar a lunes (dow=1)
+  const mondays = rows
+    .filter((r) => new Date(r.date).getUTCDay() === 1)
+    .slice(0, 8)
+    .reverse();
+  return mondays.map((r) => ({
+    date: r.date.toISOString().slice(0, 10),
+    views30d: r.views30d,
+    cartAdds30d: r.cartAdds30d,
+    proposals30d: r.proposals30d,
+    proposalConvPct: r.proposalConvPct,
+  }));
+}
+
 export type CohortRow = {
   cohort: string; // "2026-04"
   newCustomers: number;

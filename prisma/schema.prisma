@@ -177,6 +177,47 @@ model Product {
   @@index([syncedAt])
 }
 
+/// MetricSnapshot — snapshot diario de KPIs del dashboard.
+///
+/// Permite comparativas históricas reales («esta semana vs hace 4
+/// semanas») sin necesidad de recomputar agregados pesados.
+///
+/// Una fila por día. Cron diario 03:30 UTC (mismo que rollup) la inserta
+/// con los datos del momento. Limpia >180 días para mantener tabla pequeña.
+model MetricSnapshot {
+  date              DateTime @id @db.Date
+  views30d          Int      @default(0)
+  cartAdds30d       Int      @default(0)
+  recommenderQueries30d Int  @default(0)
+  proposals30d      Int      @default(0)
+  activeProducts    Int      @default(0)
+  variantsWithStock Int      @default(0)
+  cartConvPct       Float    @default(0)
+  proposalConvPct   Float    @default(0)
+  createdAt         DateTime @default(now())
+
+  @@index([date(sort: Desc)])
+}
+
+/// ErrorEvent — log de errores server-side capturados por captureError().
+///
+/// Útil para diagnosticar problemas sin depender de Sentry. El handler
+/// también dispara push admin si la rule está activa.
+model ErrorEvent {
+  id        String   @id @default(cuid())
+  message   String   @db.Text
+  stack     String?  @db.Text
+  context   String? // ruta, función, etc
+  severity  String   @default("error") // error | warning | info
+  url       String?
+  userAgent String?  @db.Text
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([severity, resolved])
+}
+
 /// AdminSetting — key/value para configuración del admin (notification
 /// rules, feature flags, umbrales, etc). Reemplaza tener N tablas de
 /// 1 fila cada una.
