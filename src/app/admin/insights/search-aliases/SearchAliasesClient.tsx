@@ -12,10 +12,16 @@ type AliasRow = {
   hitCount: number;
 };
 
-export function SearchAliasesClient({ initialAliases }: { initialAliases: AliasRow[] }) {
+export function SearchAliasesClient({
+  initialAliases,
+  prefillQuery = "",
+}: {
+  initialAliases: AliasRow[];
+  prefillQuery?: string;
+}) {
   const router = useRouter();
   const [list, setList] = useState(initialAliases);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(prefillQuery);
   const [redirectTo, setRedirectTo] = useState("");
   const [description, setDescription] = useState("");
   const [busy, startTransition] = useTransition();

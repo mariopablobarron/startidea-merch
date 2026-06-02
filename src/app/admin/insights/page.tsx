@@ -22,6 +22,7 @@ import {
 } from "@/lib/insights";
 import { getAISuggestions } from "@/lib/insights/ai-suggestions";
 import { getErrorSummary } from "@/lib/insights/capture-error";
+import { SuggestionActionButton } from "@/components/SuggestionActionButton";
 
 const EUR = (cents: number) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -332,6 +333,14 @@ export default async function InsightsPage({
                       {s.title}
                     </h3>
                     <p className="mt-2 text-sm text-ink/70">{s.body}</p>
+                    {s.oneClickAction && (
+                      <SuggestionActionButton
+                        label={s.oneClickAction.label}
+                        actionId={s.oneClickAction.actionId}
+                        payload={s.oneClickAction.payload}
+                        confirmText={s.oneClickAction.confirmText}
+                      />
+                    )}
                     {s.action && (
                       <Link
                         href={s.action.href}

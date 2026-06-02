@@ -18,8 +18,13 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-export default async function SearchAliasesPage() {
+export default async function SearchAliasesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ prefill?: string }>;
+}) {
   if (!(await isAdmin())) redirect("/admin/login");
+  const { prefill } = await searchParams;
   const rows = await prisma.searchAlias.findMany({
     orderBy: [{ active: "desc" }, { hitCount: "desc" }, { createdAt: "desc" }],
     take: 200,
@@ -58,6 +63,7 @@ export default async function SearchAliasesPage() {
             active: r.active,
             hitCount: r.hitCount,
           }))}
+          prefillQuery={prefill ?? ""}
         />
       </div>
     </AdminChrome>

@@ -640,6 +640,12 @@ export type Suggestion = {
   title: string;
   body: string;
   action?: { label: string; href: string };
+  oneClickAction?: {
+    label: string;
+    actionId: string; // identificador para /api/admin/insights/apply-suggestion
+    payload?: Record<string, unknown>;
+    confirmText?: string; // si lo lleva, requiere confirm() antes
+  };
   metric?: string;
 };
 
@@ -744,6 +750,11 @@ export async function getSuggestions(): Promise<Suggestion[]> {
       title: `${expired} promociones expiradas siguen activas`,
       body: "Promociones marcadas como activas pero cuya fecha de fin ya pasó. Limpiar para que no aparezcan en el panel.",
       action: { label: "Ver promociones", href: "/admin/promotions" },
+      oneClickAction: {
+        label: `🧹 Desactivar las ${expired}`,
+        actionId: "deactivate_expired_promotions",
+        confirmText: `¿Desactivar ${expired} promoción${expired > 1 ? "es" : ""} expirada${expired > 1 ? "s" : ""}?`,
+      },
     });
   }
 
@@ -755,12 +766,18 @@ export async function getSuggestions(): Promise<Suggestion[]> {
         .slice(0, 3)
         .map((r) => `«${r.query}» (${r.count})`)
         .join(", ");
+      const topQuery = noResults[0].query;
       suggestions.push({
         id: "search-no-results",
         severity: "opportunity",
         title: `${noResults.length} búsquedas frecuentes sin resultados`,
         body: `Top: ${top}. Estos son productos que tus visitantes buscan y no tienes — o no aparecen en la búsqueda. Valora añadirlos al catálogo o mejorar el SEO interno.`,
         action: { label: "Ver listado completo", href: "/admin/insights#busquedas" },
+        oneClickAction: {
+          label: `🔀 Crear alias para «${topQuery.slice(0, 30)}»`,
+          actionId: "open_create_alias",
+          payload: { query: topQuery },
+        },
         metric: `${noResults.length} queries 30d`,
       });
     }
