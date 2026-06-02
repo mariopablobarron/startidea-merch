@@ -1,0 +1,42 @@
+name: Health ping cada hora
+
+# Hace POST al webhook genérico cada hora. Si /api/integrations/event
+# acepta 200 → el sitio está vivo. Si devuelve 401/500/timeout →
+# falla el workflow (notification automática de GitHub).
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: health-ping
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping webhook
+        env:
+          WEBHOOK_SECRET: ${{ secrets.MERCH_WEBHOOK_SECRET }}
+        run: |
+          if [ -z "$WEBHOOK_SECRET" ]; then
+            echo "::warning::Falta MERCH_WEBHOOK_SECRET — health ping desactivado"
+            exit 0
+          fi
+          ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          response=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://merchandising.hubstartidea.es/api/integrations/event" \
+            -H "Content-Type: application/json" \
+            -H "x-webhook-secret: $WEBHOOK_SECRET" \
+            -d "{\"source\":\"github-actions\",\"type\":\"health_ping\",\"payload\":{\"ts\":\"$ts\",\"runner\":\"ubuntu-latest\"}}")
+          code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "HTTP $code"
+          echo "$body"
+          if [ "$code" != "200" ]; then
+            echo "::error::Webhook devolvió $code (sitio caído o secret rotado)"
+            exit 1
+          fi

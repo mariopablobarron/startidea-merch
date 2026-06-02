@@ -247,7 +247,13 @@ export default async function InsightsPage({
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-[11px]">
-            <span className="text-ink/55">Exportar:</span>
+            <a
+              href="/api/admin/insights/export-pdf"
+              className="rounded-full bg-ink px-3 py-1 font-semibold text-bone hover:bg-accent"
+            >
+              📄 PDF ejecutivo ↓
+            </a>
+            <span className="text-ink/55">CSV:</span>
             {[
               { type: "top-products", label: "Top productos" },
               { type: "search-queries", label: "Búsquedas" },
