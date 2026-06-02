@@ -1,0 +1,31 @@
+src/app/admin/page.tsx
+  s_65877aa637ec34::t_b28ac6e57aaa09 148-150
+src/app/admin/suppliers/makito/MakitoB2BClient.tsx
+  s_65877aa637ec34::t_e4aca9720014e4 1-183
+.env.example
+  s_65877aa637ec34::t_7704e0e05a98b5 31-39
+src/app/api/admin/suppliers/makito/test-b2b/route.ts
+  s_65877aa637ec34::t_b108e39a56e94f 1-80
+src/lib/suppliers/makito-b2b.ts
+  s_65877aa637ec34::t_a32a107c6030d3 1-256
+src/app/admin/suppliers/makito/page.tsx
+  s_65877aa637ec34::t_df4e2f9abf4bf3 1-157
+src/app/api/admin/suppliers/makito/mode/route.ts
+  s_65877aa637ec34::t_37fb26b7375bea 1-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1e856d03482b3e3fe932eeec506f9dc1542eb295",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
