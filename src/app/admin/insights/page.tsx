@@ -23,6 +23,7 @@ import {
 import { getAISuggestions } from "@/lib/insights/ai-suggestions";
 import { getErrorSummary } from "@/lib/insights/capture-error";
 import { SuggestionActionButton } from "@/components/SuggestionActionButton";
+import { ShareDashboardButton } from "@/components/admin/ShareDashboardButton";
 
 const EUR = (cents: number) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -253,6 +254,7 @@ export default async function InsightsPage({
             >
               📄 PDF ejecutivo ↓
             </a>
+            <ShareDashboardButton />
             <span className="text-ink/55">CSV:</span>
             {[
               { type: "top-products", label: "Top productos" },
