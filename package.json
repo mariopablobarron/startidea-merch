@@ -15,7 +15,10 @@
     "scripts:cron-stats": "bun scripts/cron-stats.ts",
     "scripts:audit-leaks": "bun scripts/audit-supplier-leaks.ts",
     "scripts:audit-security": "bun scripts/audit-security.ts",
-    "scripts:audit-headers": "bun scripts/audit-security-headers.ts"
+    "scripts:audit-headers": "bun scripts/audit-security-headers.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@elevenlabs/react": "^1.6.0",
@@ -50,12 +53,14 @@
     "@types/react": "^19.0.6",
     "@types/react-dom": "^19.0.3",
     "@types/web-push": "^3.6.4",
+    "@vitest/coverage-v8": "^4.1.8",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.18.0",
     "eslint-config-next": "15.5.18",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.8"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

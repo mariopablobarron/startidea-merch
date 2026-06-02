@@ -25,6 +25,7 @@
  * cliente. Solo aparece en admin y logs server-side.
  */
 import { prisma } from "@/lib/prisma";
+import { createTokenBucket } from "@/lib/suppliers/token-bucket";
 
 const API_BASE = process.env.MAKITO_B2B_BASE || "https://apis.makito.es";
 
@@ -79,45 +80,20 @@ export async function getActiveCredentials(): Promise<MakitoB2BCredentials> {
   return { mode, clientId, clientSecret };
 }
 
-// ─── Rate limiter token bucket ───────────────────────────────────────────
-// Local al proceso. Si arrancáramos varios workers paralelos hay que mover
-// esto a Redis — por ahora corremos un solo proceso Next.js.
-const RATE_CAPACITY = 100;
-const RATE_REFILL_PER_MIN = 25;
-const RATE_REFILL_PER_MS = RATE_REFILL_PER_MIN / 60_000;
-
-let rateTokens = RATE_CAPACITY;
-let rateLastRefillAt = Date.now();
-
-function refillBucket(): void {
-  const now = Date.now();
-  const elapsed = now - rateLastRefillAt;
-  if (elapsed <= 0) return;
-  const refilled = elapsed * RATE_REFILL_PER_MS;
-  rateTokens = Math.min(RATE_CAPACITY, rateTokens + refilled);
-  rateLastRefillAt = now;
-}
+// ─── Rate limiter (capacidad 100, recarga 25/min según docs Makito) ─────
+// Si arrancáramos varios workers paralelos hay que mover esto a Redis —
+// por ahora un solo proceso Next.js.
+const rateBucket = createTokenBucket({
+  capacity: 100,
+  refillPerMinute: 25,
+});
 
 async function consumeToken(): Promise<void> {
-  refillBucket();
-  if (rateTokens >= 1) {
-    rateTokens -= 1;
-    return;
-  }
-  // Calcular cuánto hay que esperar hasta tener al menos 1 token
-  const needed = 1 - rateTokens;
-  const waitMs = Math.ceil(needed / RATE_REFILL_PER_MS) + 50; // +50 ms colchón
-  await new Promise((res) => setTimeout(res, waitMs));
-  return consumeToken(); // recursivo, recompone bucket
+  return rateBucket.consume();
 }
 
 export function getRateBucketStatus() {
-  refillBucket();
-  return {
-    tokens: Math.floor(rateTokens),
-    capacity: RATE_CAPACITY,
-    refillPerMinute: RATE_REFILL_PER_MIN,
-  };
+  return rateBucket.status();
 }
 
 // ─── Auth JWT (cacheado in-memory) ───────────────────────────────────────
