@@ -1,8 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+
+export type EmailCardVariant = {
+  experimentId: string | null;
+  variantKey: string | null;
+  config: {
+    eyebrow: string;
+    title: string;
+    body: string;
+    ctaLabel: string;
+  };
+};
+
+function trackExperimentEvent(
+  emailCard: EmailCardVariant | undefined,
+  event: string,
+): void {
+  if (!emailCard?.experimentId || !emailCard.variantKey) return;
+  if (typeof window === "undefined") return;
+  try {
+    fetch("/api/track/experiment-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        experimentId: emailCard.experimentId,
+        variantKey: emailCard.variantKey,
+        event,
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // ignore
+  }
+}
 
 type Recommendation = {
   slug: string;
@@ -83,7 +116,15 @@ const TECHNIQUE_LABEL: Record<string, string> = {
   tampografia: "Tampografía",
 };
 
-export function Recommender() {
+export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}) {
+  const card =
+    emailCard?.config ?? {
+      eyebrow: "📧 Quédate la propuesta firmada",
+      title: "¿Te la mandamos en PDF a tu email?",
+      body: "Recibes la propuesta nº PROP-2026-XXXX con detalle por producto, IVA y condiciones — lista para reenviar a finanzas o adjuntar al pedido.",
+      ctaLabel: "Enviar propuesta",
+    };
+  const experiment = emailCard ?? null;
   const [brief, setBrief] = useState("");
   const [budget, setBudget] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -96,6 +137,21 @@ export function Recommender() {
   const [emailInput, setEmailInput] = useState("");
   const [proposalState, setProposalState] = useState<ProposalState>({ status: "idle" });
 
+  // A/B: trackea "view" cuando el card de email es VISIBLE por primera vez
+  // (i.e. cuando llega un resultado con quoteItems). Dedup por session.
+  const cardVisible =
+    !!result &&
+    "quoteItems" in result &&
+    !!result.quoteItems?.length &&
+    !!result.quoteTotalCents;
+  useEffect(() => {
+    if (!cardVisible || !experiment) return;
+    const key = `exp:view:${experiment.experimentId}`;
+    if (typeof window === "undefined" || sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    trackExperimentEvent(experiment, "view");
+  }, [cardVisible, experiment]);
+
   async function handleSendProposal(e: React.FormEvent) {
     e.preventDefault();
     if (!result || !("quoteItems" in result) || !result.quoteItems?.length) return;
@@ -105,6 +161,7 @@ export function Recommender() {
       return;
     }
     setProposalState({ status: "sending" });
+    trackExperimentEvent(experiment ?? undefined, "cart_add");
     try {
       const res = await fetch("/api/proposal/send", {
         method: "POST",
@@ -129,6 +186,7 @@ export function Recommender() {
         downloadUrl: data.downloadUrl,
         emailFailed: !!data.emailFailed,
       });
+      trackExperimentEvent(experiment ?? undefined, "proposal");
     } catch (err) {
       setProposalState({
         status: "error",
@@ -487,16 +545,12 @@ export function Recommender() {
                 ) : (
                   <form onSubmit={handleSendProposal}>
                     <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
-                      📧 Quédate la propuesta firmada
+                      {card.eyebrow}
                     </p>
                     <h3 className="mt-2 font-display text-xl font-semibold text-ink">
-                      ¿Te la mandamos en PDF a tu email?
+                      {card.title}
                     </h3>
-                    <p className="mt-2 text-sm text-ink/70">
-                      Recibes la propuesta nº PROP-2026-XXXX con detalle por
-                      producto, IVA y condiciones — lista para reenviar a
-                      finanzas o adjuntar al pedido.
-                    </p>
+                    <p className="mt-2 text-sm text-ink/70">{card.body}</p>
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                       <input
                         type="email"
@@ -520,7 +574,7 @@ export function Recommender() {
                       >
                         {proposalState.status === "sending"
                           ? "Generando PDF…"
-                          : "Enviar propuesta"}
+                          : card.ctaLabel}
                       </button>
                     </div>
                     {proposalState.status === "error" && (

@@ -528,6 +528,22 @@ export async function getWeeklySeries(): Promise<WeeklySeriesPoint[]> {
   }));
 }
 
+export type ReferrerRow = {
+  host: string;
+  path: string | null;
+  visits: number;
+  lastSeenAt: Date;
+};
+
+export async function getTopReferrers(limit = 15): Promise<ReferrerRow[]> {
+  const rows = await prisma.referrerLog.findMany({
+    orderBy: { visits: "desc" },
+    take: limit,
+    select: { host: true, path: true, visits: true, lastSeenAt: true },
+  });
+  return rows;
+}
+
 export type CohortRow = {
   cohort: string; // "2026-04"
   newCustomers: number;

@@ -17,6 +17,7 @@ import {
   getCarmenStats,
   getCohortAnalysis,
   getWeeklySeries,
+  getTopReferrers,
   type Suggestion,
 } from "@/lib/insights";
 import { getAISuggestions } from "@/lib/insights/ai-suggestions";
@@ -213,11 +214,12 @@ export default async function InsightsPage({
     getOverpricedProducts(10).catch(() => []),
     getCarmenStats().catch(() => null),
   ]);
-  const [aiSuggestions, cohorts, weeklySeries, errorSummary] = await Promise.all([
+  const [aiSuggestions, cohorts, weeklySeries, errorSummary, referrers] = await Promise.all([
     getAISuggestions().catch(() => []),
     getCohortAnalysis().catch(() => []),
     getWeeklySeries().catch(() => []),
     getErrorSummary().catch(() => null),
+    getTopReferrers(15).catch(() => []),
   ]);
 
   const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
@@ -905,6 +907,44 @@ export default async function InsightsPage({
                 </table>
               </div>
             )}
+          </section>
+        )}
+
+        {/* ─── Referrals ─── */}
+        {referrers.length > 0 && (
+          <section className="mt-12" id="referrers">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              🔗 Sitios que te enlazan
+            </h2>
+            <p className="mt-1 text-sm text-ink/60">
+              Hosts externos desde los que llegan visitantes. Útil para detectar
+              menciones orgánicas, newsletters externas o búsquedas que están
+              moviendo tráfico.
+            </p>
+            <div className="mt-4 overflow-x-auto rounded-3xl border border-line bg-bone">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead className="border-b border-line bg-bone-soft text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium text-ink/70">Host</th>
+                    <th className="px-4 py-3 font-medium text-ink/70">Landing</th>
+                    <th className="px-4 py-3 text-right font-medium text-ink/70">Visitas</th>
+                    <th className="px-4 py-3 font-medium text-ink/70">Última visita</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {referrers.map((r) => (
+                    <tr key={r.host} className="border-b border-line/60">
+                      <td className="px-4 py-3 font-mono text-xs text-ink/85">{r.host}</td>
+                      <td className="px-4 py-3 font-mono text-[11px] text-ink/55 truncate">
+                        {r.path || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums font-semibold text-ink">{r.visits}</td>
+                      <td className="px-4 py-3 text-xs text-ink/55">{fmtDate(r.lastSeenAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         )}
 

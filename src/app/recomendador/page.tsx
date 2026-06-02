@@ -2,10 +2,40 @@ import type { Metadata } from "next";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
-import { Recommender } from "@/components/Recommender";
+import { Recommender, type EmailCardVariant } from "@/components/Recommender";
 import { prisma } from "@/lib/prisma";
 import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
+import { getActiveVariant } from "@/lib/experiments";
+import { getOrCreateAnonId } from "@/lib/anon-id";
+
+const EMAIL_CARD_SLUG = "rec.proposal_card_title";
+
+const DEFAULT_EMAIL_CARD: EmailCardVariant = {
+  experimentId: null,
+  variantKey: null,
+  config: {
+    eyebrow: "📧 Quédate la propuesta firmada",
+    title: "¿Te la mandamos en PDF a tu email?",
+    body: "Recibes la propuesta nº PROP-2026-XXXX con detalle por producto, IVA y condiciones — lista para reenviar a finanzas o adjuntar al pedido.",
+    ctaLabel: "Enviar propuesta",
+  },
+};
+
+async function getEmailCardVariant(): Promise<EmailCardVariant> {
+  try {
+    const anonId = await getOrCreateAnonId();
+    const v = await getActiveVariant(EMAIL_CARD_SLUG, anonId);
+    if (!v) return DEFAULT_EMAIL_CARD;
+    return {
+      experimentId: v.experimentId,
+      variantKey: v.variantKey,
+      config: { ...DEFAULT_EMAIL_CARD.config, ...(v.config as Record<string, string>) },
+    };
+  } catch {
+    return DEFAULT_EMAIL_CARD;
+  }
+}
 
 export const metadata: Metadata = {
   title: "Asistente de productos · Catálogo merchandising B2B España",
@@ -54,7 +84,10 @@ function formatCount(n: number): string {
 }
 
 export default async function RecomendadorPage() {
-  const productCount = await getProductCount();
+  const [productCount, emailCard] = await Promise.all([
+    getProductCount(),
+    getEmailCardVariant(),
+  ]);
   const countLabel = formatCount(productCount);
   return (
     <>
@@ -79,7 +112,7 @@ export default async function RecomendadorPage() {
 
         <section className="py-16 lg:py-20">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
-            <Recommender />
+            <Recommender emailCard={emailCard} />
           </div>
         </section>
 

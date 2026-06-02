@@ -6,6 +6,7 @@ import { CompareBanner } from "@/components/CompareBanner";
 import { CartBanner } from "@/components/CartBanner";
 import { PWARegister } from "@/components/PWARegister";
 import { GlobalErrorTracker } from "@/components/GlobalErrorTracker";
+import { ReferrerTracker } from "@/components/ReferrerTracker";
 // OnboardingTour automático sustituido por Tour on-demand vía TourLauncher
 // en navbar. El antiguo tour interrumpía en móvil y se eliminó por UX.
 import { Tour } from "@/components/Tour";
@@ -117,6 +118,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Tour />
         <PWARegister />
         <GlobalErrorTracker />
+        <ReferrerTracker />
         <Analytics />
         <CookieBanner />
         <EmailCapturePopup />

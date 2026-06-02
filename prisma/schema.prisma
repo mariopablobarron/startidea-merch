@@ -177,6 +177,27 @@ model Product {
   @@index([syncedAt])
 }
 
+/// ReferrerLog — agregado de visitas por host externo de procedencia.
+///
+/// Una fila por host (limpio sin www). Counter incrementa cuando un
+/// visitor llega desde ese host. Sirve para detectar qué sitios externos
+/// te están enviando tráfico sin instalar GA o similar.
+///
+/// Path opcional como string para casos de medios largos. Limit del
+/// path a 200 chars para no inflar.
+model ReferrerLog {
+  id          String   @id @default(cuid())
+  host        String // ej. "linkedin.com"
+  path        String? // primer path observado
+  visits      Int      @default(1)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @updatedAt
+
+  @@unique([host])
+  @@index([visits(sort: Desc)])
+  @@index([lastSeenAt(sort: Desc)])
+}
+
 /// Experiment — A/B test sobre el catálogo o recomendador.
 ///
 /// Cada experiment tiene 2-4 variantes con copy/config JSON. La asignación
