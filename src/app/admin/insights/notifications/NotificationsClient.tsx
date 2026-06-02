@@ -30,6 +30,23 @@ export function NotificationsClient({
     setSaved(false);
   }
 
+  function toggleChannel(
+    event: NotificationEvent,
+    channel: "push" | "slack",
+  ) {
+    setState((s) => {
+      const current = s[event].channels ?? { push: true, slack: true };
+      const next = { ...current, [channel]: !current[channel] };
+      // si quedan ambos a false, reactiva el que tocaste (no permitir 0 canales)
+      if (!next.push && !next.slack) next[channel] = true;
+      return {
+        ...s,
+        [event]: { ...s[event], channels: next },
+      };
+    });
+    setSaved(false);
+  }
+
   function setThreshold(event: NotificationEvent, value: number) {
     setState((s) => ({
       ...s,
@@ -40,11 +57,19 @@ export function NotificationsClient({
 
   async function save() {
     setError(null);
-    const rulesBody: Record<string, { enabled?: boolean; threshold?: number }> = {};
+    const rulesBody: Record<
+      string,
+      {
+        enabled?: boolean;
+        threshold?: number;
+        channels?: { push: boolean; slack: boolean };
+      }
+    > = {};
     for (const ev of Object.keys(state) as NotificationEvent[]) {
       rulesBody[ev] = {
         enabled: state[ev].enabled,
         threshold: state[ev].threshold,
+        channels: state[ev].channels,
       };
     }
     const res = await fetch("/api/admin/notification-rules", {
@@ -63,40 +88,81 @@ export function NotificationsClient({
 
   return (
     <div className="mt-8 space-y-4">
+      {/* Header de la matriz */}
+      <div className="rounded-3xl border border-line bg-bone-soft p-4">
+        <p className="text-xs text-ink/65">
+          Cada evento puede ir por <strong>push browser</strong> (alerta inmediata
+          en tu equipo) o <strong>Slack/Discord</strong> (canal de equipo, queda
+          histórico). Si desactivas el evento, no se envía por ninguno.
+        </p>
+      </div>
+
       {NOTIFICATION_EVENTS.map(({ event, label, help }) => {
         const rule = state[event];
+        const channels = rule.channels ?? { push: true, slack: true };
         return (
           <div
             key={event}
-            className="flex flex-col gap-3 rounded-3xl border border-line bg-bone p-5 sm:flex-row sm:items-start sm:justify-between"
+            className="rounded-3xl border border-line bg-bone p-5"
           >
-            <div className="flex-1">
-              <p className="font-display text-base font-semibold text-ink">{label}</p>
-              <p className="mt-1 text-sm text-ink/65">{help}</p>
-              {typeof rule.threshold === "number" && (
-                <label className="mt-3 inline-flex items-center gap-2 text-xs text-ink/70">
-                  <span>Umbral:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={1000}
-                    value={rule.threshold}
-                    onChange={(e) => setThreshold(event, parseInt(e.target.value) || 1)}
-                    className="w-20 rounded border border-line bg-bone-soft px-2 py-1 font-mono text-xs"
-                  />
-                </label>
-              )}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex-1">
+                <p className="font-display text-base font-semibold text-ink">{label}</p>
+                <p className="mt-1 text-sm text-ink/65">{help}</p>
+                {typeof rule.threshold === "number" && (
+                  <label className="mt-3 inline-flex items-center gap-2 text-xs text-ink/70">
+                    <span>Umbral:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={1000}
+                      value={rule.threshold}
+                      onChange={(e) => setThreshold(event, parseInt(e.target.value) || 1)}
+                      className="w-20 rounded border border-line bg-bone-soft px-2 py-1 font-mono text-xs"
+                    />
+                  </label>
+                )}
+              </div>
+              <button
+                onClick={() => toggle(event)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  rule.enabled
+                    ? "bg-social text-bone"
+                    : "bg-bone-soft text-ink/60 hover:bg-bone"
+                }`}
+              >
+                {rule.enabled ? "✓ Activo" : "Inactivo"}
+              </button>
             </div>
-            <button
-              onClick={() => toggle(event)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                rule.enabled
-                  ? "bg-social text-bone"
-                  : "bg-bone-soft text-ink/60 hover:bg-bone"
-              }`}
-            >
-              {rule.enabled ? "✓ Activo" : "Inactivo"}
-            </button>
+            {rule.enabled && (
+              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-ink/55">
+                  Canales:
+                </span>
+                <button
+                  onClick={() => toggleChannel(event, "push")}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    channels.push
+                      ? "border-accent bg-accent-wash text-accent-deep"
+                      : "border-line bg-bone-soft text-ink/45 hover:text-ink/70"
+                  }`}
+                  title="Push al navegador admin (alerta inmediata)"
+                >
+                  <span>{channels.push ? "✓" : "○"}</span> 🔔 Push browser
+                </button>
+                <button
+                  onClick={() => toggleChannel(event, "slack")}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    channels.slack
+                      ? "border-accent bg-accent-wash text-accent-deep"
+                      : "border-line bg-bone-soft text-ink/45 hover:text-ink/70"
+                  }`}
+                  title="Webhook Slack/Discord (canal equipo, queda histórico)"
+                >
+                  <span>{channels.slack ? "✓" : "○"}</span> 💬 Slack/Discord
+                </button>
+              </div>
+            )}
           </div>
         );
       })}

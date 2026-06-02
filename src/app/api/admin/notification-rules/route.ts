@@ -34,7 +34,17 @@ export async function POST(req: Request) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "UNAUTH" }, { status: 401 });
   }
-  let body: { rules?: Record<string, { enabled?: boolean; threshold?: number }>; slackWebhookUrl?: string | null } = {};
+  let body: {
+    rules?: Record<
+      string,
+      {
+        enabled?: boolean;
+        threshold?: number;
+        channels?: { push?: boolean; slack?: boolean };
+      }
+    >;
+    slackWebhookUrl?: string | null;
+  } = {};
   try {
     body = await req.json();
   } catch {
@@ -47,7 +57,14 @@ export async function POST(req: Request) {
     "carmen_session",
     "stock_critical",
   ];
-  const safeRules: Record<string, { enabled?: boolean; threshold?: number }> = {};
+  const safeRules: Record<
+    string,
+    {
+      enabled?: boolean;
+      threshold?: number;
+      channels?: { push: boolean; slack: boolean };
+    }
+  > = {};
   for (const ev of known) {
     if (body.rules?.[ev]) {
       safeRules[ev] = {
@@ -56,6 +73,12 @@ export async function POST(req: Request) {
           typeof body.rules[ev].threshold === "number"
             ? body.rules[ev].threshold
             : undefined,
+        channels: body.rules[ev].channels
+          ? {
+              push: !!body.rules[ev].channels?.push,
+              slack: !!body.rules[ev].channels?.slack,
+            }
+          : undefined,
       };
     }
   }

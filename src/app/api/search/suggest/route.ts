@@ -131,12 +131,15 @@ export async function GET(req: Request) {
                 },
                 update: { updatedAt: new Date() },
               });
-              void notifyAdmins({
-                title: `💎 Demanda no cubierta: «${q}»`,
-                body: `${hitsLast24h} búsquedas en 24h y 0 resultados`,
-                url: "/admin/insights#busquedas",
-                tag: `search-${queryLower}`,
-              }).catch(() => {});
+              void notifyAdmins(
+                {
+                  title: `💎 Demanda no cubierta: «${q}»`,
+                  body: `${hitsLast24h} búsquedas en 24h y 0 resultados`,
+                  url: "/admin/insights#busquedas",
+                  tag: `search-${queryLower}`,
+                },
+                { event: "search_no_results" },
+              ).catch(() => {});
             }
           }
         }

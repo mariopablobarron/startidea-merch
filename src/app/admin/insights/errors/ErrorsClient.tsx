@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type ErrorRow = {
@@ -125,6 +126,12 @@ export function ErrorsClient({ initialErrors }: { initialErrors: ErrorRow[] }) {
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
+                    <Link
+                      href={`/admin/insights/errors/${e.id}`}
+                      className="rounded-full bg-accent-wash px-3 py-1 text-center text-[11px] font-medium text-accent-deep hover:bg-accent hover:text-bone"
+                    >
+                      Detalle →
+                    </Link>
                     {e.stack && (
                       <button
                         onClick={() => setExpanded(isExpanded ? null : e.id)}

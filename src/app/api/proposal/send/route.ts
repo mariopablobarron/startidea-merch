@@ -272,12 +272,15 @@ export async function POST(req: Request) {
   void notifyTelegram(`📨 <b>Propuesta enviada</b>\n${summary}`).catch(() => {});
   void (async () => {
     if (await isNotificationEnabled("proposal_received")) {
-      await notifyAdmins({
-        title: `📨 Propuesta ${proposalNumber} enviada`,
-        body: `${parsed.email} · ${(totals.totalCents / 100).toFixed(2)}€ · ${items.length} items`,
-        url: "/admin/propuestas",
-        tag: `proposal-${proposalNumber}`,
-      });
+      await notifyAdmins(
+        {
+          title: `📨 Propuesta ${proposalNumber} enviada`,
+          body: `${parsed.email} · ${(totals.totalCents / 100).toFixed(2)}€ · ${items.length} items`,
+          url: "/admin/propuestas",
+          tag: `proposal-${proposalNumber}`,
+        },
+        { event: "proposal_received" },
+      );
     }
   })().catch(() => {});
 

@@ -13,22 +13,49 @@ export type NotificationEvent =
   | "carmen_session"
   | "stock_critical";
 
+export type NotificationChannels = {
+  push: boolean;
+  slack: boolean;
+};
+
 export type NotificationRule = {
   event: NotificationEvent;
   enabled: boolean;
+  channels?: NotificationChannels;
   threshold?: number; // umbral si aplica (ej. ≥5 hits/24h)
 };
 
+const ALL_CHANNELS: NotificationChannels = { push: true, slack: true };
+const PUSH_ONLY: NotificationChannels = { push: true, slack: false };
+
 const DEFAULTS: Record<NotificationEvent, NotificationRule> = {
-  proposal_received: { event: "proposal_received", enabled: true },
-  recommender_query: { event: "recommender_query", enabled: false },
+  proposal_received: {
+    event: "proposal_received",
+    enabled: true,
+    channels: ALL_CHANNELS,
+  },
+  recommender_query: {
+    event: "recommender_query",
+    enabled: false,
+    channels: PUSH_ONLY,
+  },
   search_no_results: {
     event: "search_no_results",
     enabled: true,
     threshold: 5,
+    channels: ALL_CHANNELS,
   },
-  carmen_session: { event: "carmen_session", enabled: false },
-  stock_critical: { event: "stock_critical", enabled: true, threshold: 10 },
+  carmen_session: {
+    event: "carmen_session",
+    enabled: false,
+    channels: PUSH_ONLY,
+  },
+  stock_critical: {
+    event: "stock_critical",
+    enabled: true,
+    threshold: 10,
+    channels: ALL_CHANNELS,
+  },
 };
 
 export const NOTIFICATION_EVENTS: { event: NotificationEvent; label: string; help: string }[] = [
@@ -84,6 +111,15 @@ export async function getNotificationRules(): Promise<Record<NotificationEvent, 
 export async function isNotificationEnabled(event: NotificationEvent): Promise<boolean> {
   const rules = await getNotificationRules();
   return rules[event]?.enabled ?? false;
+}
+
+export async function getEnabledChannels(
+  event: NotificationEvent,
+): Promise<NotificationChannels> {
+  const rules = await getNotificationRules();
+  const rule = rules[event];
+  if (!rule?.enabled) return { push: false, slack: false };
+  return rule.channels ?? ALL_CHANNELS;
 }
 
 export async function getNotificationThreshold(event: NotificationEvent): Promise<number | undefined> {
