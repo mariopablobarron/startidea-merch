@@ -67,7 +67,7 @@ gh run list --workflow="Deploy a producción (merchandising.hubstartidea.es)" --
    - **Timeout build 15m** → load del VPS alto. Esperar 5min, reintentar.
    - **Build error real** → leer log completo, fix, re-push.
 3. Si la imagen Docker ya se construyó pero el switch falló: SSH al VPS y
-   `cd /root/startidea-merch && docker compose up -d app` manualmente.
+   `cd /docker/startidea-merch && docker compose up -d app` manualmente.
 
 ### Smoke test post-deploy
 
@@ -86,7 +86,7 @@ for p in ['/', '/admin', '/admin/insights', '/catalogo', '/recomendador']:
 
 - **GitHub Actions** (`Settings > Secrets`): solo `VPS_SSH_KEY` (clave restringida
   con `command="..."` en authorized_keys del VPS — solo ejecuta el script de deploy).
-- **VPS `/root/startidea-merch/.env`**: todas las credenciales runtime.
+- **VPS `/docker/startidea-merch/.env`**: todas las credenciales runtime.
   El `docker-compose.yml` tiene `env_file: .env`, así que toda var nueva
   añadida al `.env` llega al container con `docker compose up -d app`.
 - **NO usamos Coolify** para gestionar este `.env` aunque otras apps del VPS
@@ -115,7 +115,7 @@ Plantilla completa en `.env.example` (vacío de valores reales, nunca commitear 
 
 ```bash
 ssh root@72.61.195.108
-cd /root/startidea-merch
+cd /docker/startidea-merch
 nano .env        # añade `NUEVA_VAR=valor`
 docker compose up -d app    # ~5s recarga sin perder estado de BD
 ```
@@ -301,7 +301,7 @@ CI no corre tests aún (TODO: añadir step `pnpm test` a `ci.yml`).
 1. `gh run view <runId> --log` → ver dónde se cayó
 2. SSH al VPS, `docker compose ps` para ver si la app vieja sigue corriendo
 3. Si la imagen nueva ya se construyó: `docker compose up -d app`
-4. Si no: `cd /root/startidea-merch && git pull && docker compose build app && docker compose up -d app`
+4. Si no: `cd /docker/startidea-merch && git pull && docker compose build app && docker compose up -d app`
 
 ### Anomalía push a las 4 AM y nada está mal
 
