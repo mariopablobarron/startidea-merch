@@ -177,6 +177,32 @@ model Product {
   @@index([syncedAt])
 }
 
+/// SuggestionActionLog — histórico de acciones one-click aplicadas
+/// desde el dashboard. Útil para auditoría ("¿quién desactivó esas
+/// promos hace 2 semanas?") y para deshacer si algo se hace mal.
+model SuggestionActionLog {
+  id        String   @id @default(cuid())
+  actionId  String // ej "deactivate_expired_promotions"
+  payload   Json? // body enviado
+  result    Json? // respuesta del handler (message + affected counts)
+  appliedBy String? // email admin si disponible
+  appliedAt DateTime @default(now())
+
+  @@index([appliedAt(sort: Desc)])
+  @@index([actionId])
+}
+
+/// SuggestionSnooze — sugerencias pospuestas por el admin. Mientras
+/// hay snooze activo, no aparecen en /admin/insights ni en email digest.
+model SuggestionSnooze {
+  suggestionId  String   @id // ej "expired-promotions"
+  snoozedUntil  DateTime
+  snoozedReason String?
+  createdAt     DateTime @default(now())
+
+  @@index([snoozedUntil])
+}
+
 /// ReferrerLog — agregado de visitas por host externo de procedencia.
 ///
 /// Una fila por host (limpio sin www). Counter incrementa cuando un

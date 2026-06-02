@@ -299,6 +299,15 @@ export default async function InsightsPage({
 
         {/* ─── Sugerencias por reglas (más rápidas y específicas) ─── */}
         <section className="mt-8" id="sugerencias">
+          <div className="flex items-baseline justify-between gap-3">
+            <div /> {/* placeholder para alinear */}
+            <Link
+              href="/admin/insights/actions-log"
+              className="text-xs font-medium text-ink/55 hover:text-accent"
+            >
+              Histórico de acciones →
+            </Link>
+          </div>
           <h2 className="font-display text-xl font-semibold text-ink">
             🎯 Sugerencias para decidir hoy
           </h2>
@@ -341,14 +350,21 @@ export default async function InsightsPage({
                         confirmText={s.oneClickAction.confirmText}
                       />
                     )}
-                    {s.action && (
-                      <Link
-                        href={s.action.href}
-                        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
-                      >
-                        {s.action.label} →
-                      </Link>
-                    )}
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                      {s.action && (
+                        <Link
+                          href={s.action.href}
+                          className="font-medium text-accent hover:underline"
+                        >
+                          {s.action.label} →
+                        </Link>
+                      )}
+                      <SuggestionActionButton
+                        label="💤 Snooze 7d"
+                        actionId="snooze_suggestion"
+                        payload={{ suggestionId: s.id, days: 7 }}
+                      />
+                    </div>
                   </li>
                 );
               })}

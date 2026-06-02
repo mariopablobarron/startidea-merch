@@ -662,6 +662,15 @@ export async function getSuggestions(): Promise<Suggestion[]> {
   const health = await getCatalogHealth();
   const suppliers = await getSupplierStatuses();
 
+  // Snooze: filtra al final las que tienen snoozedUntil > NOW().
+  const snoozed = await prisma.suggestionSnooze
+    .findMany({
+      where: { snoozedUntil: { gt: new Date() } },
+      select: { suggestionId: true },
+    })
+    .catch(() => []);
+  const snoozedIds = new Set(snoozed.map((s) => s.suggestionId));
+
   // 1. Sync proveedores stale
   for (const s of suppliers) {
     if (s.hoursStaleStock !== null && s.hoursStaleStock > 26) {
@@ -829,5 +838,25 @@ export async function getSuggestions(): Promise<Suggestion[]> {
     });
   }
 
-  return suggestions;
+  // 8. Errores resueltos acumulados — limpieza
+  try {
+    const resolvedErrors = await prisma.errorEvent.count({ where: { resolved: true } });
+    if (resolvedErrors >= 20) {
+      suggestions.push({
+        id: "clear-resolved-errors",
+        severity: "info",
+        title: `${resolvedErrors} errores resueltos esperando limpieza`,
+        body: "Errors marcados como resueltos ocupan la tabla sin dar valor. Limpia para mantener la BD ágil.",
+        action: { label: "Ver errores", href: "/admin/insights/errors" },
+        oneClickAction: {
+          label: `🗑 Borrar los ${resolvedErrors}`,
+          actionId: "clear_resolved_errors",
+          confirmText: `¿Borrar ${resolvedErrors} errores resueltos?`,
+        },
+      });
+    }
+  } catch { /* tabla puede no existir */ }
+
+  // Filtrar snoozed
+  return suggestions.filter((s) => !snoozedIds.has(s.id));
 }
