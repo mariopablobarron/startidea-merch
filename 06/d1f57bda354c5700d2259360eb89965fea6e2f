@@ -1,0 +1,28 @@
+src/components/admin/ShareDashboardButton.tsx
+  s_65877aa637ec34::t_7a25cf7dcde6ed 1-123
+src/app/api/admin/insights/share-url/route.ts
+  s_65877aa637ec34::t_c56deb2d294ad0 1-41
+src/lib/dashboard-share.ts
+  s_65877aa637ec34::t_05e02a2fdbf5a4 1-55
+src/app/share/dashboard/[token]/page.tsx
+  s_65877aa637ec34::t_2a7243098c18b9 1-237
+src/app/admin/insights/page.tsx
+  s_65877aa637ec34::t_fab6994b596deb 257
+  s_65877aa637ec34::t_28d2cfbe07aa95 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "06d1f57bda354c5700d2259360eb89965fea6e2f",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
