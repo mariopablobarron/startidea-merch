@@ -1,0 +1,39 @@
+src/app/api/admin/errors/[id]/pin/route.ts
+  s_65877aa637ec34::t_b0c25e2cdbce29 1-67
+src/app/admin/insights/errors/[id]/page.tsx
+  s_65877aa637ec34::t_42e999548da026 15
+  s_65877aa637ec34::t_6ac2b42876113c 140
+  s_65877aa637ec34::t_1d07f06c144521 40-41
+src/app/admin/insights/errors/[id]/ErrorDetailActions.tsx
+  s_65877aa637ec34::t_3e7e623a62c1e1 10,15,20-21,51-66,68-148
+src/lib/insights/pinned-errors.ts
+  s_65877aa637ec34::t_c6aafa815f97cd 1-98
+src/app/api/admin/errors/route.ts
+  s_65877aa637ec34::t_0e6b7b5bd6aa34 29-33
+  s_65877aa637ec34::t_1618f0d0b5125a 47-48,53
+  s_65877aa637ec34::t_57c15a4da36c97 9
+src/app/api/cron/auto-resolve-errors/route.ts
+  s_65877aa637ec34::t_351d59ad836b94 122-124,131
+  s_65877aa637ec34::t_5aac963be08a7b 23
+src/lib/insights/pinned-errors.test.ts
+  s_65877aa637ec34::t_3df338fd46552d 1-201
+src/lib/insights/index.ts
+  s_65877aa637ec34::t_bcfb0eb1d306b4 925-970
+  s_65877aa637ec34::t_d8c00e946a0c9b 8-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "825a620c70b5dcffb1c3e670324bba144c274bae",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
