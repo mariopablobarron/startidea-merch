@@ -1,0 +1,27 @@
+src/app/api/cron/insights-digest/route.ts
+  s_65877aa637ec34::t_69e74fc606fc19 13,15,25,27
+  s_65877aa637ec34::t_2ea9c49caf3a4e 50,57,60-104
+  s_65877aa637ec34::t_4fc389b55d8e4b 225,231-233
+src/app/api/cron/metric-snapshot/route.ts
+  s_65877aa637ec34::t_b39442023a51f6 12-13
+  s_65877aa637ec34::t_f03e85435a0d27 63-94,99
+src/lib/resend.ts
+  s_65877aa637ec34::t_308fae13927716 11-15,22
+  s_65877aa637ec34::t_d5ff39f90eebd1 63-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7ccb7ed52762307d35a9143c3fb66ececb7aba8d",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
