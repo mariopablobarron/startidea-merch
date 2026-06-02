@@ -838,6 +838,69 @@ export async function getSuggestions(): Promise<Suggestion[]> {
     });
   }
 
+  // 7b. Anomaly detection vs histórico (MetricSnapshot)
+  try {
+    const since14d = new Date(Date.now() - 14 * 24 * 3600_000);
+    const snapshots = await prisma.metricSnapshot.findMany({
+      where: { date: { gte: since14d } },
+      orderBy: { date: "desc" },
+      take: 14,
+    });
+    // Necesitamos al menos 7 días para tener baseline robusto
+    if (snapshots.length >= 7) {
+      const recent = snapshots.slice(0, 3); // últimos 3 días
+      const baseline = snapshots.slice(3, 10); // 7 días previos como baseline
+
+      const avgRecent = (key: keyof (typeof snapshots)[0]) =>
+        recent.reduce((sum, s) => sum + ((s[key] as number) ?? 0), 0) / recent.length;
+      const avgBaseline = (key: keyof (typeof snapshots)[0]) =>
+        baseline.reduce((sum, s) => sum + ((s[key] as number) ?? 0), 0) / baseline.length;
+
+      const viewsRecent = avgRecent("views30d");
+      const viewsBaseline = avgBaseline("views30d");
+      if (viewsBaseline >= 50) {
+        const drop = ((viewsRecent - viewsBaseline) / viewsBaseline) * 100;
+        if (drop <= -30) {
+          suggestions.push({
+            id: "anomaly-views-drop",
+            severity: "critical",
+            title: `Views cayeron ${Math.abs(Math.round(drop))}% vs últimos 7 días`,
+            body: `Media últimos 3 días: ${Math.round(viewsRecent)} views. Baseline: ${Math.round(viewsBaseline)}. Posibles causas: bloqueo firewall, cambio SEO, caída deploy, fin de campaña.`,
+            action: { label: "Ver heatmap", href: "/admin/insights#heatmap" },
+            metric: `${Math.abs(Math.round(drop))}% drop`,
+          });
+        } else if (drop >= 50) {
+          suggestions.push({
+            id: "anomaly-views-spike",
+            severity: "opportunity",
+            title: `Views subieron ${Math.round(drop)}% vs últimos 7 días`,
+            body: `Algo se está disparando. Revisa referrers, redes sociales y top productos para entender qué está moviendo tráfico. Si es campaña tuya, asegura que el funnel aguanta.`,
+            action: { label: "Ver referrers", href: "/admin/insights#referrers" },
+            metric: `+${Math.round(drop)}% vs baseline`,
+          });
+        }
+      }
+
+      const propsRecent = avgRecent("proposals30d");
+      const propsBaseline = avgBaseline("proposals30d");
+      if (propsBaseline >= 5) {
+        const propsDrop = ((propsRecent - propsBaseline) / propsBaseline) * 100;
+        if (propsDrop <= -25) {
+          suggestions.push({
+            id: "anomaly-proposals-drop",
+            severity: "warning",
+            title: `Propuestas enviadas caen ${Math.abs(Math.round(propsDrop))}%`,
+            body: `Media últimos 3 días: ${propsRecent.toFixed(1)} propuestas/día. Baseline: ${propsBaseline.toFixed(1)}. Revisa el funnel — ¿llega menos gente al recomendador o convierten peor?`,
+            action: { label: "Ver propuestas", href: "/admin/propuestas" },
+            metric: `${Math.abs(Math.round(propsDrop))}% drop`,
+          });
+        }
+      }
+    }
+  } catch {
+    // sin snapshots aún (primer deploy)
+  }
+
   // 8. Errores resueltos acumulados — limpieza
   try {
     const resolvedErrors = await prisma.errorEvent.count({ where: { resolved: true } });

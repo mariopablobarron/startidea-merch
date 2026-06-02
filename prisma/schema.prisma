@@ -177,6 +177,29 @@ model Product {
   @@index([syncedAt])
 }
 
+/// IncomingWebhookEvent — eventos disparados por sistemas externos.
+///
+/// El admin define un secret en AdminSetting.incoming_webhook_secret y
+/// pasa la URL a Zapier/Make/n8n/cron externo/lo que sea. Cada POST
+/// con el header x-webhook-secret correcto crea una fila aquí.
+///
+/// Útil para:
+///   - Capturar respuestas de formularios externos (Typeform, Tally)
+///   - Sync con CRM/Airtable (cuando se cierra un trato → log)
+///   - Notificaciones de proveedores ("pedido entregado")
+///   - Métricas custom no incluidas en el dashboard estándar
+model IncomingWebhookEvent {
+  id          String   @id @default(cuid())
+  source      String // ej "typeform", "zapier", "make", custom
+  type        String // ej "form_submitted", "order_delivered"
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([source, type])
+}
+
 /// SuggestionActionLog — histórico de acciones one-click aplicadas
 /// desde el dashboard. Útil para auditoría ("¿quién desactivó esas
 /// promos hace 2 semanas?") y para deshacer si algo se hace mal.
