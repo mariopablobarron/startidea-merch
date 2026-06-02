@@ -11,6 +11,7 @@ import { notFound, redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
 import { AdminChrome } from "@/components/AdminChrome";
 import { prisma } from "@/lib/prisma";
+import { messageSignature } from "@/lib/insights/error-signature";
 import { ErrorDetailActions } from "./ErrorDetailActions";
 
 export const metadata: Metadata = {
@@ -18,15 +19,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";
-
-// firma estable del mensaje — primeras palabras alfanuméricas para agrupar
-function messageSignature(msg: string): string {
-  return msg
-    .replace(/\d+/g, "N") // 12345 → N
-    .replace(/0x[a-f0-9]+/gi, "0xH") // hex addresses
-    .replace(/["'`]/g, "")
-    .slice(0, 120);
-}
 
 const SEVERITY_STYLE: Record<string, string> = {
   error: "bg-rose-50 text-rose-700 border-rose-200",
