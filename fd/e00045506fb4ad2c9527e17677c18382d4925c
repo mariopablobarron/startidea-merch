@@ -1,0 +1,38 @@
+src/app/api/search/suggest/route.ts
+  s_65877aa637ec34::t_dd0dc998652df8 134-142
+src/app/admin/insights/errors/[id]/page.tsx
+  s_65877aa637ec34::t_cadc44f76968d2 1-253
+src/lib/notify-admin.ts
+  s_65877aa637ec34::t_3e384141e2299b 4-7,10,14-17,21-28,30-36,39
+src/app/api/admin/notification-rules/route.ts
+  s_65877aa637ec34::t_37be90f4ee0b96 37-47,60-67,76-81
+src/app/admin/insights/errors/ErrorsClient.tsx
+  s_65877aa637ec34::t_2ce9a904be21ae 4
+  s_65877aa637ec34::t_42bece0683e3c0 129-134
+src/app/api/proposal/send/route.ts
+  s_65877aa637ec34::t_543760846b0a2d 275-283
+src/lib/notification-rules.ts
+  s_65877aa637ec34::t_90f2879bda3d0a 116-124
+  s_65877aa637ec34::t_fec8969faacc9e 16-20,24,28-30,32-41,46-57
+src/app/admin/insights/errors/[id]/ErrorDetailActions.tsx
+  s_65877aa637ec34::t_707f634cd60982 20,23,31-33
+  s_65877aa637ec34::t_2345c6c9fb4369 1-19,21-22,24-30,34-75
+src/app/admin/insights/notifications/NotificationsClient.tsx
+  s_65877aa637ec34::t_751fc405d4cfc4 33-49,60-67,72,91-99,102,106,108-135,137-165
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "fde00045506fb4ad2c9527e17677c18382d4925c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
