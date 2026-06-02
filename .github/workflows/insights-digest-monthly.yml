@@ -1,0 +1,38 @@
+name: Insights monthly digest
+
+# Día 1 de cada mes a las 09:00 UTC (10:00 Madrid en invierno CET, 11:00 verano CEST).
+# Comparativa "mes pasado vs mes anterior" por email.
+
+on:
+  schedule:
+    - cron: "0 9 1 * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: insights-digest-monthly
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar digest mensual
+        env:
+          CRON_SECRET: ${{ secrets.MERCH_CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Falta secret MERCH_CRON_SECRET"
+            exit 1
+          fi
+          response=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://merchandising.hubstartidea.es/api/cron/insights-digest-monthly" \
+            -H "x-cron-secret: $CRON_SECRET")
+          body=$(echo "$response" | sed '$d')
+          code=$(echo "$response" | tail -n1)
+          echo "HTTP $code"
+          echo "$body"
+          if [ "$code" != "200" ]; then
+            echo "::error::Digest mensual devolvió $code"
+            exit 1
+          fi
