@@ -1,0 +1,32 @@
+src/lib/dashboard-share.test.ts
+  s_65877aa637ec34::t_1227f109edf05e 1-99
+src/lib/suppliers/makito-b2b.ts
+  s_65877aa637ec34::t_c8925c49ad24e4 28
+  s_65877aa637ec34::t_3f15e45eb5b004 83-89,92,96
+OPERATIONS.md
+  s_65877aa637ec34::t_55b3967295e70b 1-331
+vitest.config.ts
+  s_65877aa637ec34::t_5e4687503a1ef3 1-18
+src/lib/suppliers/token-bucket.ts
+  s_65877aa637ec34::t_226528ef094d32 1-73
+src/lib/suppliers/token-bucket.test.ts
+  s_65877aa637ec34::t_8563f4aad0491a 1-97
+src/lib/insights/compare.test.ts
+  s_65877aa637ec34::t_dc7b28d18504d1 1-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "eb336d2745bf2c83a541ab6c0119baa84ae39803",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
