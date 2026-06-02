@@ -254,6 +254,12 @@ export default async function InsightsPage({
             >
               📄 PDF ejecutivo ↓
             </a>
+            <a
+              href="/admin/insights/compare"
+              className="rounded-full border border-ink/20 bg-bone-soft px-3 py-1 font-medium text-ink/75 hover:bg-bone hover:text-ink"
+            >
+              📊 Comparar periodos
+            </a>
             <ShareDashboardButton />
             <span className="text-ink/55">CSV:</span>
             {[
