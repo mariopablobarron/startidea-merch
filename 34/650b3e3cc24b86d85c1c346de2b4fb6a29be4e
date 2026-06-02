@@ -1,0 +1,23 @@
+src/app/api/admin/insights/export-pdf/route.ts
+  s_65877aa637ec34::t_4201653acb522d 1-90
+src/app/admin/insights/page.tsx
+  s_65877aa637ec34::t_66d3f3a6b95b10 250-256
+src/lib/insights/dashboard-pdf.tsx
+  s_65877aa637ec34::t_4d0c7c71b559b0 1-338
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "34650b3e3cc24b86d85c1c346de2b4fb6a29be4e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
