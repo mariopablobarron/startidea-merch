@@ -50,9 +50,9 @@ export default async function MakitoSupplierPage() {
         </h1>
         <p className="mt-1 text-sm text-ink/60">
           Cliente HTTP con auth JWT + token bucket (100 capacidad, recarga
-          25/min). Las credenciales viven solo en <code>/root/.env</code> del
-          VPS, jamás en el repo. El nombre Makito no aparece en ningún sitio
-          público.
+          25/min). Las credenciales viven solo en{" "}
+          <code>/docker/startidea-merch/.env</code> del VPS, jamás en el repo.
+          El nombre Makito no aparece en ningún sitio público.
         </p>
 
         {/* Estado de credenciales en VPS */}
@@ -136,9 +136,9 @@ export default async function MakitoSupplierPage() {
             </h2>
             <p className="mt-2 text-sm text-amber-900/85">
               SSH a <code>root@72.61.195.108</code>, edita
-              <code> /root/startidea-merch/.env</code> y añade las 4 variables.
-              Luego <code>docker compose up -d app</code> recarga el container
-              en segundos sin perder estado.
+              <code> /docker/startidea-merch/.env</code> y añade las 4
+              variables. Luego <code>docker compose up -d app</code> recarga el
+              container en segundos sin perder estado.
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl bg-ink/95 p-4 font-mono text-[11px] leading-relaxed text-bone/90">
 {`# Sandbox (pedidos no se procesan)
