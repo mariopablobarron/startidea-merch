@@ -1,0 +1,33 @@
+.github/workflows/lighthouse-ci.yml
+  s_65877aa637ec34::t_8537f1a7d73498 1-60
+src/app/admin/insights/experiments/page.tsx
+  s_65877aa637ec34::t_dbeb3f0505a152 1-69
+prisma/migrations/20260602_add_experiment/migration.sql
+  s_65877aa637ec34::t_2d413f64bdc44d 1-44
+prisma/schema.prisma
+  s_65877aa637ec34::t_e5b10167ea3843 180-218
+src/app/api/track/experiment-event/route.ts
+  s_65877aa637ec34::t_4a08f44c13df6d 1-31
+src/app/admin/insights/experiments/ExperimentsClient.tsx
+  s_65877aa637ec34::t_cc0e07b5511589 1-226
+src/lib/experiments.ts
+  s_65877aa637ec34::t_09c47e5ebc045f 1-187
+src/app/api/admin/experiments/route.ts
+  s_65877aa637ec34::t_ca38523077c908 1-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c644bb2a3ab7a674e5ce963d1a15cb143a495697",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
