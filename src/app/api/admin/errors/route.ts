@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
+import { unpinError, cleanupResolvedPins } from "@/lib/insights/pinned-errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,11 @@ export async function PATCH(req: Request) {
     where: { id: body.id },
     data: { resolved: !!body.resolved },
   });
+  // Si lo marcamos resolved, des-pinnea automáticamente (no tiene sentido
+  // tener un bug "resuelto" como sugerencia activa).
+  if (body.resolved) {
+    await unpinError(body.id).catch(() => {});
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -38,9 +44,12 @@ export async function DELETE(req: Request) {
 
   if (all === "resolved") {
     const r = await prisma.errorEvent.deleteMany({ where: { resolved: true } });
+    // Limpia pins huérfanos (sus errorEvent ya no existen)
+    await cleanupResolvedPins().catch(() => {});
     return NextResponse.json({ ok: true, deleted: r.count });
   }
   if (!id) return NextResponse.json({ error: "MISSING_ID" }, { status: 400 });
   await prisma.errorEvent.delete({ where: { id } }).catch(() => {});
+  await unpinError(id).catch(() => {});
   return NextResponse.json({ ok: true });
 }

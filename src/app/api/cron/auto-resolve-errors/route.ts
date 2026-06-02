@@ -20,6 +20,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { messageSignature } from "@/lib/insights/error-signature";
+import { cleanupResolvedPins } from "@/lib/insights/pinned-errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -118,12 +119,16 @@ export async function POST(req: Request) {
     errorsResolved = r.count;
   }
 
+  // Si cerramos errors, limpia pins huérfanos automáticamente
+  const pinCleanup = await cleanupResolvedPins().catch(() => ({ removed: 0, remaining: 0 }));
+
   return NextResponse.json({
     ok: true,
     scanned: staleCandidates.length,
     groupsChecked: groups.size,
     groupsClosed,
     errorsResolved,
+    pinsRemoved: pinCleanup.removed,
     thresholdDays: STALE_DAYS,
   });
 }

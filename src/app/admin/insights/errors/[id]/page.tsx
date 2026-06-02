@@ -12,6 +12,7 @@ import { isAdmin } from "@/lib/admin-session";
 import { AdminChrome } from "@/components/AdminChrome";
 import { prisma } from "@/lib/prisma";
 import { messageSignature } from "@/lib/insights/error-signature";
+import { isPinned } from "@/lib/insights/pinned-errors";
 import { ErrorDetailActions } from "./ErrorDetailActions";
 
 export const metadata: Metadata = {
@@ -35,6 +36,8 @@ export default async function ErrorDetailPage({
   const { id } = await params;
   const error = await prisma.errorEvent.findUnique({ where: { id } });
   if (!error) notFound();
+
+  const pinned = await isPinned(error.id);
 
   // Buscar similares: mismo context + mismas primeras 80 chars normalizados
   const signature = messageSignature(error.message);
@@ -134,6 +137,7 @@ export default async function ErrorDetailPage({
             errorId={error.id}
             resolved={error.resolved}
             signature={signature}
+            pinned={pinned}
           />
         </div>
 

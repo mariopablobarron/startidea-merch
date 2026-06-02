@@ -5,6 +5,8 @@
  * shape JSON-friendly serializable por Next sin Decimal/BigInt issues.
  */
 import { prisma } from "@/lib/prisma";
+import { getPinnedErrors } from "@/lib/insights/pinned-errors";
+import { messageSignature } from "@/lib/insights/error-signature";
 
 export type CatalogHealth = {
   totalProducts: number;
@@ -919,6 +921,52 @@ export async function getSuggestions(): Promise<Suggestion[]> {
       });
     }
   } catch { /* tabla puede no existir */ }
+
+  // N. Pinned errors → sugerencias accionables. Cada pin se traduce
+  // en una suggestion con conteo de ocurrencias recurrentes en 30d.
+  try {
+    const pins = await getPinnedErrors();
+    if (pins.length > 0) {
+      const since30d = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+      // Cargamos ErrorEvent recientes con mismo context para contar
+      // ocurrencias de cada firma. Una query por context, en paralelo.
+      const contexts = Array.from(new Set(pins.map((p) => p.context)));
+      const eventsByContext = new Map<string, { message: string }[]>();
+      await Promise.all(
+        contexts.map(async (ctx) => {
+          const events = await prisma.errorEvent.findMany({
+            where: { context: ctx, createdAt: { gte: since30d } },
+            select: { message: true },
+            take: 500,
+          });
+          eventsByContext.set(ctx ?? "", events);
+        }),
+      );
+      for (const pin of pins) {
+        const events = eventsByContext.get(pin.context ?? "") ?? [];
+        const occurrences = events.filter(
+          (e) => messageSignature(e.message) === pin.signature,
+        ).length;
+        suggestions.push({
+          id: `pinned-error-${pin.errorId}`,
+          severity: occurrences >= 5 ? "critical" : "warning",
+          title:
+            occurrences > 0
+              ? `Bug recurrente: ${pin.message.slice(0, 80)}`
+              : `Bug pinneado sin ocurrencias recientes`,
+          body:
+            occurrences === 0
+              ? `Marcaste este error como prioritario pero no hay ocurrencias nuevas en 30 días. Considera resolver y des-pinnear.`
+              : `${occurrences} ocurrencias en 30 días con firma «${pin.signature.slice(0, 60)}». Context: ${pin.context ?? "—"}. ${pin.note ? `Nota: ${pin.note}` : ""}`,
+          action: {
+            label: "Ver detalle",
+            href: `/admin/insights/errors/${pin.errorId}`,
+          },
+          metric: occurrences > 0 ? `${occurrences} hits 30d` : "sin nueva",
+        });
+      }
+    }
+  } catch { /* falla silenciosa, no rompe el dashboard */ }
 
   // Filtrar snoozed
   return suggestions.filter((s) => !snoozedIds.has(s.id));
