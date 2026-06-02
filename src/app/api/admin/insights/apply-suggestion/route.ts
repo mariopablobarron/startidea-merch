@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
+import { notifyAdmins } from "@/lib/notify-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,6 +63,45 @@ async function runAction(
     case "unsnooze_all": {
       const r = await prisma.suggestionSnooze.deleteMany({});
       return { message: `${r.count} snooze(s) cancelado(s)` };
+    }
+    case "trigger_weekly_digest": {
+      // Dispara manualmente el digest sin esperar al lunes
+      const cronSecret = process.env.CRON_SECRET;
+      const siteUrl =
+        process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+      if (!cronSecret) {
+        throw new Error("CRON_SECRET no configurado");
+      }
+      const res = await fetch(`${siteUrl}/api/cron/insights-digest`, {
+        method: "POST",
+        headers: { "x-cron-secret": cronSecret },
+      });
+      if (!res.ok) {
+        throw new Error(`digest devolvió ${res.status}`);
+      }
+      return { message: "Weekly digest enviado al inbox del admin" };
+    }
+    case "trigger_metric_snapshot": {
+      const cronSecret = process.env.CRON_SECRET;
+      const siteUrl =
+        process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+      if (!cronSecret) throw new Error("CRON_SECRET no configurado");
+      const res = await fetch(`${siteUrl}/api/cron/metric-snapshot`, {
+        method: "POST",
+        headers: { "x-cron-secret": cronSecret },
+      });
+      if (!res.ok) throw new Error(`snapshot devolvió ${res.status}`);
+      return { message: "Snapshot diario creado / actualizado" };
+    }
+    case "test_notification": {
+      const now = new Date().toLocaleTimeString("es-ES");
+      await notifyAdmins({
+        title: "🧪 Test desde Insights",
+        body: `Disparado a las ${now} desde el panel`,
+        url: "/admin/insights",
+        tag: `test-${Date.now()}`,
+      });
+      return { message: "Test enviado a todos los canales activos" };
     }
     default:
       throw new Error("UNKNOWN_ACTION");

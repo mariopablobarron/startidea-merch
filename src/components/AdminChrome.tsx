@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { clearAdminSession } from "@/lib/admin-session";
+import { AdminShortcuts } from "@/components/admin/AdminShortcuts";
 
 async function logoutAction() {
   "use server";
@@ -48,6 +49,7 @@ export function AdminChrome({ children }: { children: React.ReactNode }) {
           </form>
         </div>
       </header>
+      <AdminShortcuts />
       <main>{children}</main>
     </div>
   );

@@ -267,6 +267,36 @@ export default async function InsightsPage({
           </div>
         </div>
 
+        {/* ─── Acciones rápidas ─── */}
+        <section className="mt-8" id="quick-actions">
+          <h2 className="font-display text-xl font-semibold text-ink">
+            ⚡ Acciones rápidas
+          </h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Disparar tareas manualmente sin esperar a que se ejecute el cron.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <SuggestionActionButton
+              label="📧 Enviar weekly digest ahora"
+              actionId="trigger_weekly_digest"
+              confirmText="¿Disparar el email semanal ahora mismo?"
+            />
+            <SuggestionActionButton
+              label="📸 Snapshot diario ahora"
+              actionId="trigger_metric_snapshot"
+            />
+            <SuggestionActionButton
+              label="🔔 Test notificación push + Slack"
+              actionId="test_notification"
+            />
+            <SuggestionActionButton
+              label="🌅 Reactivar todas las sugerencias snoozed"
+              actionId="unsnooze_all"
+              confirmText="¿Cancelar todos los snoozes activos?"
+            />
+          </div>
+        </section>
+
         {/* ─── Sugerencias IA (LLM analiza el contexto y propone acciones) ─── */}
         {aiSuggestions.length > 0 && (
           <section className="mt-8" id="ai-sugerencias">
