@@ -8,12 +8,18 @@ export const resend = apiKey ? new Resend(apiKey) : null;
 export const RESEND_FROM = process.env.RESEND_FROM ?? "TodoMerchandising <pedidos@startidea.es>";
 export const RESEND_TO_INTERNAL = process.env.RESEND_TO_INTERNAL ?? "mariopablobarron@gmail.com";
 
+export type SendEmailAttachment = {
+  filename: string;
+  content: Buffer;
+};
+
 export type SendEmailParams = {
   from?: string;
   to: string | string[];
   replyTo?: string;
   subject: string;
   html: string;
+  attachments?: SendEmailAttachment[];
   /**
    * Etiqueta para identificar el contexto en alertas Telegram cuando
    * falla. Ejemplos: "cart-quote · client confirmation", "stripe paid
@@ -54,6 +60,9 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       replyTo: params.replyTo,
       subject: params.subject,
       html: params.html,
+      ...(params.attachments && params.attachments.length > 0
+        ? { attachments: params.attachments }
+        : {}),
     });
     // El SDK devuelve { data: { id }, error: null } o { data: null, error: {...} }
     if ("error" in result && result.error) {

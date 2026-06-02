@@ -10,7 +10,9 @@
  *
  * Programado: lunes 08:00 UTC (workflow GitHub Actions).
  */
+import { createElement, type ReactElement } from "react";
 import { NextResponse } from "next/server";
+import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { requireCronSecret } from "@/lib/auth";
 import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import {
@@ -20,7 +22,9 @@ import {
   getTopViewedProducts,
   getTopSearchQueries,
   getSearchQueriesNoResults,
+  getSupplierStatuses,
 } from "@/lib/insights";
+import { DashboardReport } from "@/lib/insights/dashboard-pdf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,14 +47,61 @@ export async function POST(req: Request) {
   if (!auth.ok)
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
-  const [health, funnel, suggestions, top, topSearches, noResults] = await Promise.all([
+  const [health, funnel, suggestions, top, topSearches, noResults, suppliers] = await Promise.all([
     getCatalogHealth(),
     getConversionFunnel(),
     getSuggestions(),
     getTopViewedProducts(5, "30d"),
     getTopSearchQueries(5, "7d").catch(() => []),
     getSearchQueriesNoResults(5, "7d").catch(() => []),
+    getSupplierStatuses().catch(() => []),
   ]);
+
+  // Generar PDF para adjuntar
+  let pdfBuffer: Buffer | null = null;
+  try {
+    const SUPPLIER_LABEL: Record<string, string> = {
+      midocean: "MidOcean",
+      makito: "Makito",
+      cifra: "Cifra",
+    };
+    pdfBuffer = await renderToBuffer(
+      createElement(DashboardReport, {
+        data: {
+          date: new Date(),
+          health: {
+            activeProducts: health.activeProducts,
+            totalVariants: health.totalVariants,
+            pctStock: health.pctStock,
+            pctImage: health.pctImage,
+          },
+          funnel: {
+            views30d: funnel.views30d,
+            cartAdds30d: funnel.cartAdds30d,
+            recommenderQueries30d: funnel.recommenderQueries30d,
+            proposals30d: funnel.proposals30d,
+            cartConvPct: funnel.cartConvPct,
+            proposalConvPct: funnel.proposalConvPct,
+            proposals30dDelta: funnel.proposals30dDelta,
+          },
+          suggestions: suggestions.map((s) => ({
+            id: s.id, severity: s.severity, title: s.title, body: s.body,
+          })),
+          topProducts: top.map((p) => ({
+            name: p.name, view30d: p.view30d,
+            cartAddCount: p.cartAddCount, proposalCount: p.proposalCount,
+          })),
+          suppliers: suppliers.map((s) => ({
+            supplier: SUPPLIER_LABEL[s.supplier] ?? s.supplier,
+            products: s.products,
+            pctStock: s.pctStock,
+          })),
+        },
+      }) as unknown as ReactElement<DocumentProps>,
+    );
+  } catch (e) {
+    console.error("[digest] PDF render failed:", e);
+  }
 
   const week = new Intl.DateTimeFormat("es-ES", {
     day: "numeric",
@@ -171,11 +222,15 @@ ${(topSearches.length > 0 || noResults.length > 0) ? `
 </table>
 </body></html>`;
 
+  const filename = `todomerch-insights-${new Date().toISOString().slice(0, 10)}.pdf`;
   const result = await sendEmail({
     to: RESEND_TO_INTERNAL,
     subject,
     html,
     context: "insights weekly digest",
+    ...(pdfBuffer
+      ? { attachments: [{ filename, content: pdfBuffer }] }
+      : {}),
   });
 
   return NextResponse.json({

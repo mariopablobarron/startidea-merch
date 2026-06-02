@@ -9,7 +9,8 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getCatalogHealth, getConversionFunnel } from "@/lib/insights";
+import { getCatalogHealth, getConversionFunnel, getSuggestions } from "@/lib/insights";
+import { notifyAdmins } from "@/lib/notify-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,9 +60,42 @@ export async function POST(req: Request) {
     where: { date: { lt: cutoff } },
   });
 
+  // Anomaly check: evaluar sugerencias y notificar admin si hay critical
+  // que NO se hayan notificado en 24h. Dedup vía AdminSetting key
+  // "anomaly_last_notified_<suggestionId>".
+  let anomalyPushes = 0;
+  try {
+    const suggestions = await getSuggestions();
+    const criticals = suggestions.filter((s) => s.severity === "critical");
+    for (const c of criticals) {
+      const key = `anomaly_last_notified_${c.id}`;
+      const last = await prisma.adminSetting.findUnique({
+        where: { key },
+        select: { value: true },
+      });
+      const lastTs = typeof last?.value === "number" ? last.value : 0;
+      if (Date.now() - lastTs < 24 * 3600_000) continue;
+      await notifyAdmins({
+        title: `🚨 ${c.title}`,
+        body: c.body.slice(0, 200),
+        url: c.action?.href ?? "/admin/insights#sugerencias",
+        tag: `anomaly-${c.id}`,
+      });
+      await prisma.adminSetting.upsert({
+        where: { key },
+        create: { key, value: Date.now() },
+        update: { value: Date.now() },
+      });
+      anomalyPushes++;
+    }
+  } catch (e) {
+    console.error("[snapshot] anomaly check failed:", e);
+  }
+
   return NextResponse.json({
     ok: true,
     snapshot_date: today.toISOString(),
     cleaned_old: cleaned.count,
+    anomaly_pushes_sent: anomalyPushes,
   });
 }
