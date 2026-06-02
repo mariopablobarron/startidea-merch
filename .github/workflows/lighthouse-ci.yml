@@ -1,0 +1,60 @@
+name: Lighthouse CI weekly
+
+# Lunes 09:00 UTC — corre Lighthouse contra producción y guarda
+# resultados como artifact + log en step summary. Útil para detectar
+# regresiones de performance semana a semana.
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch: {}
+
+concurrency:
+  group: lighthouse-ci
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install Lighthouse
+        run: npm install -g lighthouse@12
+
+      - name: Run audit
+        run: |
+          set -e
+          URLS=(
+            "https://merchandising.hubstartidea.es/"
+            "https://merchandising.hubstartidea.es/recomendador"
+            "https://merchandising.hubstartidea.es/catalogo"
+          )
+          mkdir -p reports
+          echo "## Lighthouse audit results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | Performance | LCP | CLS | TBT |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|------------:|----:|----:|----:|" >> $GITHUB_STEP_SUMMARY
+
+          for url in "${URLS[@]}"; do
+            slug=$(echo "$url" | sed 's|https://||;s|/|_|g')
+            output="reports/${slug}.json"
+            lighthouse "$url" \
+              --output=json \
+              --output-path="$output" \
+              --chrome-flags="--headless --no-sandbox" \
+              --quiet || true
+
+            if [ ! -f "$output" ]; then continue; fi
+            perf=$(jq '.categories.performance.score * 100' "$output" 2>/dev/null | xargs printf "%.0f" 2>/dev/null || echo "?")
+            lcp=$(jq '.audits["largest-contentful-paint"].numericValue / 1000' "$output" 2>/dev/null | xargs printf "%.1fs" 2>/dev/null || echo "?")
+            cls=$(jq '.audits["cumulative-layout-shift"].numericValue' "$output" 2>/dev/null | xargs printf "%.3f" 2>/dev/null || echo "?")
+            tbt=$(jq '.audits["total-blocking-time"].numericValue' "$output" 2>/dev/null | xargs printf "%.0fms" 2>/dev/null || echo "?")
+            echo "| $url | ${perf} | ${lcp} | ${cls} | ${tbt} |" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: reports/
+          retention-days: 30

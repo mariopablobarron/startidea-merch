@@ -177,6 +177,45 @@ model Product {
   @@index([syncedAt])
 }
 
+/// Experiment — A/B test sobre el catálogo o recomendador.
+///
+/// Cada experiment tiene 2-4 variantes con copy/config JSON. La asignación
+/// del visitante es determinística por hash(anonId + slug) para que el
+/// mismo visitante vea siempre la misma variante. Eventos se loguean en
+/// ExperimentEvent (view/cart_add/proposal).
+///
+/// Solo 1 experiment activo por slug a la vez. Resultados visibles en
+/// /admin/insights/experiments con z-test básico.
+model Experiment {
+  id          String              @id @default(cuid())
+  slug        String              @unique // ej. "rec.proposal_card_title"
+  name        String
+  description String?             @db.Text
+  active      Boolean             @default(false)
+  variants    Json // [{key:"A", weight:50, config:{...}}, {key:"B", weight:50, config:{...}}]
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  events      ExperimentEvent[]
+
+  @@index([active])
+}
+
+/// ExperimentEvent — evento agregable por experiment+variant+event.
+model ExperimentEvent {
+  id           String     @id @default(cuid())
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  experimentId String
+  variantKey   String // "A" | "B" | ...
+  event        String // "view" | "cart_add" | "proposal" | "conversion"
+  anonId       String? // hash visitante (no PII)
+  createdAt    DateTime   @default(now())
+
+  @@index([experimentId, variantKey, event])
+  @@index([createdAt])
+}
+
 /// MetricSnapshot — snapshot diario de KPIs del dashboard.
 ///
 /// Permite comparativas históricas reales («esta semana vs hace 4
