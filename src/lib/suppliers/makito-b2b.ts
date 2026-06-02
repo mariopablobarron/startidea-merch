@@ -1,0 +1,256 @@
+/**
+ * Cliente para la API B2B oficial de Makito (apis.makito.es).
+ *
+ * Distinto del cliente legacy en `makito.ts` (data.makito.es), que se
+ * mantiene en paralelo para no romper sincronizaciones existentes.
+ *
+ * Auth: POST /access/auth/login con { clientId, clientSecret } → JWT bearer.
+ *
+ * Rate limiting interno: token bucket (capacidad 100, recarga 25/min) según
+ * los límites publicados por Makito. Si nos quedamos sin tokens, esperamos
+ * hasta que se recarguen — no devolvemos 429 al caller.
+ *
+ * Modo sandbox vs producción: se gestiona con AdminSetting (key `makito_b2b_mode`)
+ * para poder alternar sin redeploy. Si el AdminSetting está vacío, por defecto
+ * se usa `sandbox` para evitar que un test cree pedidos reales por error.
+ *
+ * Env vars (en /root/.env del VPS, cargadas por docker-compose env_file):
+ *   - MAKITO_B2B_BASE                 (opcional, default https://apis.makito.es)
+ *   - MAKITO_B2B_SANDBOX_CLIENT_ID
+ *   - MAKITO_B2B_SANDBOX_CLIENT_SECRET
+ *   - MAKITO_B2B_PROD_CLIENT_ID
+ *   - MAKITO_B2B_PROD_CLIENT_SECRET
+ *
+ * NUNCA logamos las credenciales ni mencionamos "makito" en respuestas al
+ * cliente. Solo aparece en admin y logs server-side.
+ */
+import { prisma } from "@/lib/prisma";
+
+const API_BASE = process.env.MAKITO_B2B_BASE || "https://apis.makito.es";
+
+export type MakitoB2BMode = "sandbox" | "production";
+
+export type MakitoB2BCredentials = {
+  mode: MakitoB2BMode;
+  clientId: string;
+  clientSecret: string;
+};
+
+// ─── Mode toggle (persistido en AdminSetting) ────────────────────────────
+export async function getMakitoB2BMode(): Promise<MakitoB2BMode> {
+  try {
+    const row = await prisma.adminSetting.findUnique({
+      where: { key: "makito_b2b_mode" },
+      select: { value: true },
+    });
+    const v = row?.value;
+    if (v === "production" || v === "sandbox") return v;
+  } catch {
+    // BD no disponible o key no existe → default sandbox por seguridad
+  }
+  return "sandbox";
+}
+
+export async function setMakitoB2BMode(mode: MakitoB2BMode): Promise<void> {
+  await prisma.adminSetting.upsert({
+    where: { key: "makito_b2b_mode" },
+    create: { key: "makito_b2b_mode", value: mode },
+    update: { value: mode },
+  });
+  // invalidar caches en memoria por cambio de credenciales
+  tokenCache = null;
+}
+
+export async function getActiveCredentials(): Promise<MakitoB2BCredentials> {
+  const mode = await getMakitoB2BMode();
+  const clientId =
+    mode === "production"
+      ? process.env.MAKITO_B2B_PROD_CLIENT_ID
+      : process.env.MAKITO_B2B_SANDBOX_CLIENT_ID;
+  const clientSecret =
+    mode === "production"
+      ? process.env.MAKITO_B2B_PROD_CLIENT_SECRET
+      : process.env.MAKITO_B2B_SANDBOX_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      `Credenciales Makito B2B (${mode}) no configuradas — pega MAKITO_B2B_${mode === "production" ? "PROD" : "SANDBOX"}_CLIENT_ID/SECRET en /root/.env del VPS`,
+    );
+  }
+  return { mode, clientId, clientSecret };
+}
+
+// ─── Rate limiter token bucket ───────────────────────────────────────────
+// Local al proceso. Si arrancáramos varios workers paralelos hay que mover
+// esto a Redis — por ahora corremos un solo proceso Next.js.
+const RATE_CAPACITY = 100;
+const RATE_REFILL_PER_MIN = 25;
+const RATE_REFILL_PER_MS = RATE_REFILL_PER_MIN / 60_000;
+
+let rateTokens = RATE_CAPACITY;
+let rateLastRefillAt = Date.now();
+
+function refillBucket(): void {
+  const now = Date.now();
+  const elapsed = now - rateLastRefillAt;
+  if (elapsed <= 0) return;
+  const refilled = elapsed * RATE_REFILL_PER_MS;
+  rateTokens = Math.min(RATE_CAPACITY, rateTokens + refilled);
+  rateLastRefillAt = now;
+}
+
+async function consumeToken(): Promise<void> {
+  refillBucket();
+  if (rateTokens >= 1) {
+    rateTokens -= 1;
+    return;
+  }
+  // Calcular cuánto hay que esperar hasta tener al menos 1 token
+  const needed = 1 - rateTokens;
+  const waitMs = Math.ceil(needed / RATE_REFILL_PER_MS) + 50; // +50 ms colchón
+  await new Promise((res) => setTimeout(res, waitMs));
+  return consumeToken(); // recursivo, recompone bucket
+}
+
+export function getRateBucketStatus() {
+  refillBucket();
+  return {
+    tokens: Math.floor(rateTokens),
+    capacity: RATE_CAPACITY,
+    refillPerMinute: RATE_REFILL_PER_MIN,
+  };
+}
+
+// ─── Auth JWT (cacheado in-memory) ───────────────────────────────────────
+let tokenCache:
+  | { token: string; obtainedAt: number; mode: MakitoB2BMode }
+  | null = null;
+// JWTs típicos duran 1h; refrescamos a los 50min para tener margen
+const TOKEN_TTL_MS = 50 * 60_000;
+
+async function loginB2B(creds: MakitoB2BCredentials): Promise<string> {
+  await consumeToken(); // login también cuenta como petición
+  const res = await fetch(`${API_BASE}/access/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      clientId: creds.clientId,
+      clientSecret: creds.clientSecret,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `Makito B2B login ${res.status} (${creds.mode}): ${body.slice(0, 200)}`,
+    );
+  }
+  const data = (await res.json()) as { token?: string };
+  if (!data.token || data.token.length < 20) {
+    throw new Error("Makito B2B login: respuesta sin token JWT válido");
+  }
+  return data.token;
+}
+
+async function getToken(forceRefresh = false): Promise<string> {
+  const creds = await getActiveCredentials();
+  if (
+    !forceRefresh &&
+    tokenCache &&
+    tokenCache.mode === creds.mode &&
+    Date.now() - tokenCache.obtainedAt < TOKEN_TTL_MS
+  ) {
+    return tokenCache.token;
+  }
+  const token = await loginB2B(creds);
+  tokenCache = { token, obtainedAt: Date.now(), mode: creds.mode };
+  return token;
+}
+
+// ─── fetchB2B wrapper con auth + retry 401 + rate limit ──────────────────
+export type FetchB2BOptions = {
+  method?: "GET" | "POST" | "PUT" | "DELETE";
+  body?: unknown;
+  query?: Record<string, string | number | undefined>;
+  /** Si true (default), añade ?format=JSON para forzar JSON en endpoints multi-formato */
+  forceJson?: boolean;
+};
+
+export async function fetchB2B<T = unknown>(
+  path: string,
+  opts: FetchB2BOptions = {},
+): Promise<T> {
+  const { method = "GET", body, query = {}, forceJson = true } = opts;
+
+  await consumeToken();
+  const token = await getToken();
+
+  const url = new URL(
+    path.startsWith("/") ? `${API_BASE}${path}` : `${API_BASE}/${path}`,
+  );
+  if (forceJson && !url.searchParams.has("format")) {
+    url.searchParams.set("format", "JSON");
+  }
+  for (const [k, v] of Object.entries(query)) {
+    if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
+  }
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json",
+  };
+  let payload: string | undefined;
+  if (body !== undefined && body !== null) {
+    headers["Content-Type"] = "application/json";
+    payload = JSON.stringify(body);
+  }
+
+  let res = await fetch(url.toString(), {
+    method,
+    headers,
+    body: payload,
+  });
+
+  // 401 → token expirado: forzar refresh y reintentar una vez
+  if (res.status === 401) {
+    await consumeToken();
+    const fresh = await getToken(true);
+    headers.Authorization = `Bearer ${fresh}`;
+    res = await fetch(url.toString(), { method, headers, body: payload });
+  }
+
+  if (!res.ok) {
+    const bodyTxt = await res.text().catch(() => "");
+    throw new Error(
+      `Makito B2B ${method} ${path} → ${res.status}: ${bodyTxt.slice(0, 300)}`,
+    );
+  }
+
+  // Algunos endpoints devuelven 204 No Content
+  if (res.status === 204) return undefined as unknown as T;
+
+  const text = await res.text();
+  if (!text) return undefined as unknown as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(
+      `Makito B2B ${path}: respuesta no era JSON válido (${text.slice(0, 200)})`,
+    );
+  }
+}
+
+// ─── Helpers de conveniencia ─────────────────────────────────────────────
+
+/** Lista de países ISO disponibles para envío. Endpoint ligero, ideal para ping. */
+export async function getCountries() {
+  return fetchB2B<unknown[]>("/orders/countries");
+}
+
+/** Lista de regiones (geo + comercial). */
+export async function getRegions() {
+  return fetchB2B<unknown[]>("/orders/regions");
+}
+
+/** Colores de marcaje disponibles. */
+export async function getPrintColors() {
+  return fetchB2B<unknown[]>("/orders/colors");
+}
