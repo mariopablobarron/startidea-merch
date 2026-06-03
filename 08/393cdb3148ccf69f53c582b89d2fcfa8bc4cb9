@@ -1,0 +1,25 @@
+src/app/api/recommend/route.ts
+  s_65877aa637ec34::t_c089480de9c846 464,467-469
+  s_65877aa637ec34::t_b46c70c2c80db7 5
+  s_65877aa637ec34::t_893079c21ad3aa 504,508
+  s_65877aa637ec34::t_2b3b6beacd95a5 505-507
+  s_65877aa637ec34::t_1c34d3e33b0a50 465-466,470
+src/lib/suppliers/cifra.test.ts
+  s_65877aa637ec34::t_49ed648310cd13 1-175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "08393cdb3148ccf69f53c582b89d2fcfa8bc4cb9",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
