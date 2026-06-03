@@ -1,0 +1,39 @@
+name: AI usage alert diaria
+
+# Diario 10:00 UTC (11:00 Madrid invierno, 12:00 verano).
+# Computa coste IA del día anterior. Si supera umbral, push admin.
+# Anti-spam: solo alerta si día -2 no pasó (evita ruido consecutivo).
+
+on:
+  schedule:
+    - cron: "0 10 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: ai-usage-alert
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar alerta gasto IA
+        env:
+          CRON_SECRET: ${{ secrets.MERCH_CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Falta secret MERCH_CRON_SECRET"
+            exit 1
+          fi
+          response=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://merchandising.hubstartidea.es/api/cron/ai-usage-alert" \
+            -H "x-cron-secret: $CRON_SECRET")
+          body=$(echo "$response" | sed '$d')
+          code=$(echo "$response" | tail -n1)
+          echo "HTTP $code"
+          echo "$body"
+          if [ "$code" != "200" ]; then
+            echo "::error::ai-usage-alert devolvió $code"
+            exit 1
+          fi
