@@ -1,0 +1,26 @@
+src/app/admin/team/TeamClient.tsx
+  s_65877aa637ec34::t_60bc34eb769969 1-337
+src/app/admin/team/page.tsx
+  s_65877aa637ec34::t_3c2e9b979302e1 2-4,6-8,12,17
+  s_65877aa637ec34::t_c53705f7365c9e 68-75
+src/app/api/admin/team/route.ts
+  s_65877aa637ec34::t_c532e30707cd9f 1-106
+src/app/api/admin/team/[id]/route.ts
+  s_65877aa637ec34::t_fc91904698201f 1-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "367b50b96f5e5231fea65b5e442aecf964f78df2",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
