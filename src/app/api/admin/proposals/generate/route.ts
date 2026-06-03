@@ -134,6 +134,12 @@ Cantidad total objetivo: ${totalQty} unidades${budget ? `\nPresupuesto orientati
 
 Devuelve la propuesta como JSON descrita arriba.`;
 
+  // Timeout explícito 45s. Si OpenRouter se queda colgado, abortamos
+  // antes de que Next.js corte la request entera (maxDuration=60).
+  // Loggeamos elapsed para diagnóstico.
+  const aiStartedAt = Date.now();
+  const aiController = new AbortController();
+  const aiTimeout = setTimeout(() => aiController.abort(), 45_000);
   let aiRes: Response;
   try {
     aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -155,13 +161,28 @@ Devuelve la propuesta como JSON descrita arriba.`;
           { role: "user", content: userPrompt },
         ],
       }),
+      signal: aiController.signal,
     });
   } catch (err) {
+    clearTimeout(aiTimeout);
+    const elapsedMs = Date.now() - aiStartedAt;
+    const isAbort = err instanceof Error && err.name === "AbortError";
     return NextResponse.json(
-      { error: "Fallo al llamar a OpenRouter", detail: err instanceof Error ? err.message : String(err) },
+      {
+        error: isAbort
+          ? `OpenRouter no respondió en 45s (timeout)`
+          : "Fallo al llamar a OpenRouter",
+        detail: err instanceof Error ? err.message : String(err),
+        elapsedMs,
+        hint: isAbort
+          ? "Modelo lento o saturado. Reintenta — si vuelve a pasar, " +
+            "puede haber un problema en OpenRouter o créditos agotados."
+          : undefined,
+      },
       { status: 502 },
     );
   }
+  clearTimeout(aiTimeout);
   if (!aiRes.ok) {
     const detail = (await aiRes.text().catch(() => "")).slice(0, 500);
     return NextResponse.json({ error: "OpenRouter error", status: aiRes.status, detail }, { status: 502 });
