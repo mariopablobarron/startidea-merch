@@ -1,0 +1,23 @@
+src/app/admin/insights/ai-usage/page.tsx
+  s_65877aa637ec34::t_b7cef3621ee46a 1-290
+src/app/admin/insights/page.tsx
+  s_65877aa637ec34::t_554228c5488c61 774-784
+src/app/api/cron/ai-usage-alert/route.test.ts
+  s_65877aa637ec34::t_8c1638cbd141cb 1-173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "aa57bac4eb88fb27310b2964338c1bc4218ab07f",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
