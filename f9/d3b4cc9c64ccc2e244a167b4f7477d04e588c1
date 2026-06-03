@@ -1,0 +1,24 @@
+src/app/admin/page.tsx
+  s_65877aa637ec34::t_f3775b480bd1df 157-159
+src/lib/suppliers/makito-b2b.test.ts
+  s_65877aa637ec34::t_3a8012b077dc44 1-135
+src/app/admin/team/page.tsx
+  s_65877aa637ec34::t_6da2712791ba35 11-12
+  s_65877aa637ec34::t_21216dd93edb80 1-10,13-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f9d3b4cc9c64ccc2e244a167b4f7477d04e588c1",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
