@@ -192,6 +192,7 @@ explícita** (dump + restore + cambio de nombre).
 | `insights-digest.yml` | lunes 08:00 UTC | email digest semanal + PDF |
 | `insights-digest-monthly.yml` | día 1 09:00 UTC | comparativa M-vs-M por email |
 | `ai-usage-alert.yml` | diario 10:00 UTC | push si coste IA del día previo > umbral |
+| `cron-watchdog.yml` | diario 11:00 UTC | avisa si crons trackeados llevan >umbral sin run o último falló |
 | `lighthouse-ci.yml` | diario | Core Web Vitals |
 | `health-ping.yml` | cada 10 min | uptime ping monitor externo |
 
