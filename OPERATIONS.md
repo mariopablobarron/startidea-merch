@@ -184,15 +184,35 @@ explícita** (dump + restore + cambio de nombre).
 
 ### En GitHub Actions
 
-| Workflow | Cuando |
-|---|---|
-| `metric-snapshot.yml` | cada hora (snapshots para anomaly detection + deltas) |
-| `product-view-rollup.yml` | diario (rolling de viewCount30d) |
-| `insights-digest.yml` | semanal (email digest con PDF adjunto) |
-| `lighthouse-ci.yml` | diario (Core Web Vitals) |
-| `health-ping.yml` | cada 10 min (uptime ping a uptime monitor externo) |
+| Workflow | Cuando | Qué hace |
+|---|---|---|
+| `metric-snapshot.yml` | cada hora | snapshots de KPIs para anomaly + deltas |
+| `product-view-rollup.yml` | diario 03:00 UTC | rolling de viewCount30d |
+| `auto-resolve-errors.yml` | diario 04:15 UTC | cierra ErrorEvent ≥30d sin nuevas |
+| `insights-digest.yml` | lunes 08:00 UTC | email digest semanal + PDF |
+| `insights-digest-monthly.yml` | día 1 09:00 UTC | comparativa M-vs-M por email |
+| `ai-usage-alert.yml` | diario 10:00 UTC | push si coste IA del día previo > umbral |
+| `lighthouse-ci.yml` | diario | Core Web Vitals |
+| `health-ping.yml` | cada 10 min | uptime ping monitor externo |
 
-Endpoints invocados llevan `Authorization: Bearer $CRON_SECRET`.
+Endpoints invocados llevan header `x-cron-secret: $CRON_SECRET`.
+
+### Observabilidad de los crons
+
+Los crons decorados con `wrapCronHandler()` (de `src/lib/cron-tracking.ts`)
+guardan sus últimas 20 ejecuciones en `AdminSetting.cron_runs_*` (sin
+migración Prisma). Visible en:
+
+- **`/admin/insights/crons`** — tabla por cron con timestamps, duración,
+  status, tasa de éxito, último OK / último fallo
+- Chip "⏰ Crons" en `/admin/insights`
+
+Integrados hasta ahora:
+- `ai-usage-alert`
+- `auto-resolve-errors`
+
+Para añadir más: importar `wrapCronHandler` y reemplazar
+`export async function POST` por `export const POST = wrapCronHandler("name", async (req) => {...})`.
 
 ### En el VPS
 

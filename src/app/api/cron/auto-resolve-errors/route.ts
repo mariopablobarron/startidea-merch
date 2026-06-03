@@ -21,13 +21,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { messageSignature } from "@/lib/insights/error-signature";
 import { cleanupResolvedPins } from "@/lib/insights/pinned-errors";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const STALE_DAYS = 30;
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("auto-resolve-errors", async (req: Request) => {
   // Auth: cron-secret
   const secretHeader =
     req.headers.get("x-cron-secret") ||
@@ -131,7 +132,7 @@ export async function POST(req: Request) {
     pinsRemoved: pinCleanup.removed,
     thresholdDays: STALE_DAYS,
   });
-}
+});
 
 // GET para fácil debugging sin disparar nada (devuelve dry-run conteos)
 export async function GET(req: Request) {

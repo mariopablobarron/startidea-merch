@@ -264,6 +264,12 @@ export default async function InsightsPage({
             >
               📊 Comparar periodos
             </a>
+            <a
+              href="/admin/insights/crons"
+              className="rounded-full border border-ink/20 bg-bone-soft px-3 py-1 font-medium text-ink/75 hover:bg-bone hover:text-ink"
+            >
+              ⏰ Crons
+            </a>
             <ShareDashboardButton />
             <span className="text-ink/55">CSV:</span>
             {[

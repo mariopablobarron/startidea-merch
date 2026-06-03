@@ -19,6 +19,7 @@ import { requireCronSecret } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { estimateCostEur } from "@/lib/insights/ai-usage";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,7 +65,7 @@ async function getCostForRange(from: Date, to: Date): Promise<number> {
   return total;
 }
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("ai-usage-alert", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok)
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
@@ -115,7 +116,7 @@ export async function POST(req: Request) {
         ? "No superó umbral, sin alerta"
         : "Ya estaba alto ayer, anti-spam (alerta solo el primer día)",
   });
-}
+});
 
 // GET para debug manual (mismo handler, mismo secret check)
 export const GET = POST;
