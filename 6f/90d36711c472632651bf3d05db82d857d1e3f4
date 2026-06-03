@@ -1,0 +1,25 @@
+src/lib/suppliers/midocean-mode.test.ts
+  s_65877aa637ec34::t_8c8ab5995ce4df 1-134
+OPERATIONS.md
+  s_65877aa637ec34::t_9d01c310d07509 270-275,277,279,281-288,295-297
+  s_65877aa637ec34::t_3432b80667980d 234-239,241-243,246-251,259
+src/app/layout.tsx
+  s_65877aa637ec34::t_b2463a24cca88d 1
+  s_65877aa637ec34::t_03d5513988687c 79-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6f90d36711c472632651bf3d05db82d857d1e3f4",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
