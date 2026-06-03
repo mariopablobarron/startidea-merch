@@ -42,14 +42,27 @@ fi
 
 cd "$WORKDIR" || exit 1
 
-# Patrones de archivos basura
+# Patrones de archivos basura. Cuidado: shell globbing puede expandir
+# en orden distinto al esperado — usamos un set para deduplicar matches.
 PATTERNS=(
   ".env.bak"
   ".env.bak.*"
   ".env.*.bak"
-  "docker-compose.yml.bak*"
+  "docker-compose.yml.bak"
+  "docker-compose.yml.bak.*"
   "docker-compose.*.bak"
 )
+
+# Set para evitar contar dos veces el mismo archivo si varios patrones
+# lo matchean (ej. docker-compose.yml.bak matchea 2 patrones).
+declare -A SEEN
+add_unique() {
+  local f="$1"
+  if [ -z "${SEEN[$f]:-}" ]; then
+    SEEN[$f]=1
+    echo "$f"
+  fi
+}
 
 # Crear destino con permisos seguros
 if [ "$APPLY" = "1" ]; then
@@ -60,21 +73,30 @@ fi
 TOTAL=0
 SIZE_BYTES=0
 
+# Recolectar candidatos únicos
+UNIQUE_FILES=()
 for pattern in "${PATTERNS[@]}"; do
   # shellcheck disable=SC2086
   for f in $pattern; do
     [ -e "$f" ] || continue
-    SIZE=$(stat -c%s "$f" 2>/dev/null || echo 0)
-    SIZE_BYTES=$((SIZE_BYTES + SIZE))
-    TOTAL=$((TOTAL + 1))
-    if [ "$APPLY" = "1" ]; then
-      mv -f "$f" "$BACKUP_ROOT/$f"
-      chmod 600 "$BACKUP_ROOT/$f"
-      log "MOVIDO: $f → $BACKUP_ROOT/$f ($SIZE bytes)"
-    else
-      log "[dry-run] movería: $f ($SIZE bytes)"
+    if [ -z "${SEEN[$f]:-}" ]; then
+      SEEN[$f]=1
+      UNIQUE_FILES+=("$f")
     fi
   done
+done
+
+for f in "${UNIQUE_FILES[@]}"; do
+  SIZE=$(stat -c%s "$f" 2>/dev/null || echo 0)
+  SIZE_BYTES=$((SIZE_BYTES + SIZE))
+  TOTAL=$((TOTAL + 1))
+  if [ "$APPLY" = "1" ]; then
+    mv -f "$f" "$BACKUP_ROOT/$f"
+    chmod 600 "$BACKUP_ROOT/$f"
+    log "MOVIDO: $f → $BACKUP_ROOT/$f ($SIZE bytes)"
+  else
+    log "[dry-run] movería: $f ($SIZE bytes)"
+  fi
 done
 
 if [ "$TOTAL" = "0" ]; then

@@ -10,9 +10,10 @@
  *   admin sin disparar pedidos reales (que cuestan dinero).
  */
 
+import { getMidoceanLiveOrders } from "./midocean-mode";
+
 const BASE = process.env.MIDOCEAN_API_BASE || "https://api.midocean.com";
 const API_KEY = process.env.MIDOCEAN_API_KEY || "";
-const LIVE = process.env.MIDOCEAN_LIVE_ORDERS === "true";
 const CUSTOMER_NUMBER = process.env.MIDOCEAN_CUSTOMER_NUMBER; // p.ej. "80869510"
 
 function headers(): Record<string, string> {
@@ -65,11 +66,12 @@ export const midoceanOrders = {
     if (!API_KEY) {
       return { dryRun: true, payload, reason: "MIDOCEAN_API_KEY no configurada" };
     }
-    if (!LIVE) {
+    const live = await getMidoceanLiveOrders();
+    if (!live) {
       return {
         dryRun: true,
         payload,
-        reason: "MIDOCEAN_LIVE_ORDERS != true (modo simulación)",
+        reason: "midocean_live_orders=false (modo simulación)",
       };
     }
     const res = await fetch(`${BASE}/gateway/order/2.1?method=create`, {
@@ -120,7 +122,7 @@ function extractOrderId(raw: unknown): string | undefined {
 export const midoceanProofs = {
   async approve(proofId: string): Promise<{ ok: boolean; status: number; raw?: unknown; error?: string }> {
     if (!API_KEY) return { ok: false, status: 0, error: "MIDOCEAN_API_KEY no configurada" };
-    if (!LIVE) {
+    if (!(await getMidoceanLiveOrders())) {
       return { ok: true, status: 0, raw: { dryRun: true, action: "approve", proofId } };
     }
     const res = await fetch(`${BASE}/gateway/proof/1.0?method=approve`, {
@@ -136,7 +138,7 @@ export const midoceanProofs = {
 
   async reject(proofId: string, reason: string): Promise<{ ok: boolean; status: number; raw?: unknown; error?: string }> {
     if (!API_KEY) return { ok: false, status: 0, error: "MIDOCEAN_API_KEY no configurada" };
-    if (!LIVE) {
+    if (!(await getMidoceanLiveOrders())) {
       return { ok: true, status: 0, raw: { dryRun: true, action: "reject", proofId, reason } };
     }
     const res = await fetch(`${BASE}/gateway/proof/1.0?method=reject`, {
@@ -152,7 +154,7 @@ export const midoceanProofs = {
 
   async addArtwork(proofId: string, artworkUrl: string): Promise<{ ok: boolean; status: number; raw?: unknown; error?: string }> {
     if (!API_KEY) return { ok: false, status: 0, error: "MIDOCEAN_API_KEY no configurada" };
-    if (!LIVE) {
+    if (!(await getMidoceanLiveOrders())) {
       return { ok: true, status: 0, raw: { dryRun: true, action: "addArtwork", proofId, artworkUrl } };
     }
     const res = await fetch(`${BASE}/gateway/proof/1.0?method=addartwork`, {

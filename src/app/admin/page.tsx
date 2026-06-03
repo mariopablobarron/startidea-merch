@@ -145,8 +145,14 @@ export default function AdminDashboardPage() {
               <Link href="/admin/coupons" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
                 Cupones
               </Link>
+              <Link href="/admin/suppliers/midocean" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
+                🔌 MidOcean
+              </Link>
               <Link href="/admin/suppliers/makito" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
-                🔌 Makito B2B
+                🔌 Makito
+              </Link>
+              <Link href="/admin/suppliers/cifra" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
+                🔌 Cifra
               </Link>
               <Link href="/admin/proposals/new" className="rounded-full bg-accent px-3 py-1.5 text-bone hover:bg-accent-dark">
                 ⚡ Nueva propuesta IA

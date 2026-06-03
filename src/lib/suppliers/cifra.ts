@@ -128,6 +128,96 @@ export function fetchProducts(lang: string = DEFAULT_LANG): Promise<CifraProduct
   return call<CifraProduct[]>(`/products/${TOKEN}/${lang}`);
 }
 
+/**
+ * Ping ligero: hace GET al endpoint de productos pero sólo lee headers/
+ * primeros bytes para validar credenciales sin descargar el catálogo
+ * completo (~MB). Si la BD no acepta cancelaciones tempranas, este
+ * ping cargará el listado entero — es coste asumible para diagnóstico.
+ */
+export async function ping(): Promise<
+  { ok: true; itemsSampled: number } | { ok: false; reason: string }
+> {
+  if (!TOKEN) return { ok: false, reason: "CIFRA_API_TOKEN no configurado" };
+  try {
+    const res = await fetch(`${BASE_URL}/products/${TOKEN}/${DEFAULT_LANG}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return { ok: false, reason: `HTTP ${res.status} ${res.statusText}` };
+    }
+    // Sólo necesitamos que el token sea válido — abortamos antes de parsear todo
+    const text = await res.text();
+    try {
+      const data = JSON.parse(text);
+      if (Array.isArray(data)) {
+        return { ok: true, itemsSampled: data.length };
+      }
+      return { ok: false, reason: "Respuesta no es array de productos" };
+    } catch {
+      return {
+        ok: false,
+        reason: `Respuesta no JSON: ${text.slice(0, 100)}`,
+      };
+    }
+  } catch (e) {
+    return { ok: false, reason: e instanceof Error ? e.message : "fetch error" };
+  }
+}
+
+/**
+ * Diagnostic: devuelve sample de N productos con todos los campos
+ * relevantes para detectar problemas (stock = 0, precio = 0, formato
+ * inesperado). Usado por /admin/suppliers/cifra para confirmar bugs.
+ */
+export async function diagnoseProducts(sampleSize = 5): Promise<{
+  ok: boolean;
+  totalCount: number;
+  withStock: number;
+  withZeroStock: number;
+  withPrice: number;
+  sample: CifraProduct[];
+  message?: string;
+}> {
+  if (!TOKEN) {
+    return {
+      ok: false,
+      totalCount: 0,
+      withStock: 0,
+      withZeroStock: 0,
+      withPrice: 0,
+      sample: [],
+      message: "CIFRA_API_TOKEN no configurado",
+    };
+  }
+  try {
+    const all = await fetchProducts();
+    const withStock = all.filter((p) => p.quantity > 0).length;
+    const withZeroStock = all.filter((p) => p.quantity === 0).length;
+    const withPrice = all.filter(
+      (p) => p.price_pvp && parseFloat(p.price_pvp) > 0,
+    ).length;
+    return {
+      ok: true,
+      totalCount: all.length,
+      withStock,
+      withZeroStock,
+      withPrice,
+      sample: all.slice(0, sampleSize),
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      totalCount: 0,
+      withStock: 0,
+      withZeroStock: 0,
+      withPrice: 0,
+      sample: [],
+      message: e instanceof Error ? e.message : "error",
+    };
+  }
+}
+
 /** Precios escalonados por cantidad (pricelist distribuidor). */
 export function fetchPriceTiers(): Promise<CifraPriceTier[]> {
   return call<CifraPriceTier[]>(`/prices/${TOKEN}`);
