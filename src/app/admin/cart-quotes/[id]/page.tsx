@@ -76,22 +76,17 @@ const STATUSES = ["NEW", "IN_PROGRESS", "SENT", "CONFIRMED", "ORDERED", "ARCHIVE
 
 export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [secret, setSecret] = useState("");
   const [cart, setCart] = useState<Cart | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
 
+  // Auth: cookie merch_admin (sesión nueva). El backend acepta también
+  // el header legacy X-Admin-Secret pero no lo enviamos — la cookie
+  // basta. Antes esto esperaba a un sessionStorage que normalmente está
+  // vacío en sesiones cookie-based, y la página se quedaba en "Cargando…".
   useEffect(() => {
-    try {
-      const s = sessionStorage.getItem("merch:admin");
-      if (s) setSecret(s);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    if (!secret) return;
-    fetch(`/api/admin/cart-quotes/${id}`, { headers: { "X-Admin-Secret": secret } })
+    fetch(`/api/admin/cart-quotes/${id}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.error) setError(d.error);
@@ -100,12 +95,12 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
           setNotes(d.internalNotes || "");
         }
       });
-  }, [secret, id]);
+  }, [id]);
 
   async function patch(payload: { status?: string; internalNotes?: string }) {
     const res = await fetch(`/api/admin/cart-quotes/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -261,26 +256,25 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
         )}
 
         {/* PDF de propuesta */}
-        <ProposalPdfButton cartId={id} secret={secret} />
+        <ProposalPdfButton cartId={id} />
 
         {/* Pago Stripe */}
-        <PaymentLinkPanel cartId={id} secret={secret} cart={cart} onUpdate={(c) => setCart((prev) => (prev ? { ...prev, ...c } : null))} />
+        <PaymentLinkPanel cartId={id} cart={cart} onUpdate={(c) => setCart((prev) => (prev ? { ...prev, ...c } : null))} />
 
         {/* Acciones MidOcean */}
-        <OrderActions cartId={id} secret={secret} />
+        <OrderActions cartId={id} />
       </div>
     </main>
   );
 }
 
-function ProposalPdfButton({ cartId, secret }: { cartId: string; secret: string }) {
+function ProposalPdfButton({ cartId }: { cartId: string }) {
   const [busy, setBusy] = useState(false);
   async function open(forceDownload: boolean) {
     setBusy(true);
     try {
       const res = await fetch(
         `/api/admin/cart-quotes/${cartId}/proposal${forceDownload ? "?download=1" : ""}`,
-        { headers: { "X-Admin-Secret": secret } },
       );
       if (!res.ok) {
         alert("Error generando PDF");
@@ -325,12 +319,10 @@ function ProposalPdfButton({ cartId, secret }: { cartId: string; secret: string 
 
 function PaymentLinkPanel({
   cartId,
-  secret,
   cart,
   onUpdate,
 }: {
   cartId: string;
-  secret: string;
   cart: Cart;
   onUpdate: (next: Partial<Cart>) => void;
 }) {
@@ -348,7 +340,7 @@ function PaymentLinkPanel({
     try {
       const res = await fetch(`/api/admin/cart-quotes/${cartId}/payment-link`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           acceptedTotalCents: Math.round(acceptedTotal * 100),
           depositPercent,
@@ -436,7 +428,7 @@ function PaymentLinkPanel({
   );
 }
 
-function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
+function OrderActions({ cartId }: { cartId: string }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<unknown>(null);
   const [proofUrl, setProofUrl] = useState("");
@@ -447,7 +439,6 @@ function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
     try {
       const res = await fetch(`/api/admin/cart-quotes/${cartId}/place-order`, {
         method: "POST",
-        headers: { "X-Admin-Secret": secret },
       });
       setResult(await res.json());
     } finally {
@@ -466,7 +457,6 @@ function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
       const res = await fetch(`/api/admin/cart-quotes/${cartId}/simulate-payment`, {
         method: "POST",
         credentials: "include",
-        headers: { "X-Admin-Secret": secret },
       });
       const data = await res.json();
       setResult(data);
@@ -481,9 +471,7 @@ function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
   async function loadTracking() {
     setBusy(true);
     try {
-      const res = await fetch(`/api/admin/cart-quotes/${cartId}/tracking`, {
-        headers: { "X-Admin-Secret": secret },
-      });
+      const res = await fetch(`/api/admin/cart-quotes/${cartId}/tracking`);
       setResult(await res.json());
     } finally {
       setBusy(false);
@@ -496,7 +484,7 @@ function OrderActions({ cartId, secret }: { cartId: string; secret: string }) {
     try {
       const res = await fetch(`/api/admin/cart-quotes/${cartId}/proofs`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ artworkUrl: proofUrl }),
       });
       setResult(await res.json());
