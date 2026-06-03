@@ -1,0 +1,29 @@
+OPERATIONS.md
+  s_65877aa637ec34::t_01912ba769e830 123-150
+scripts/cleanup-vps-backups.sh
+  s_65877aa637ec34::t_22c62e5da9f020 1-100
+scripts/deploy.sh
+  s_65877aa637ec34::t_a55bfe5f4aae95 40,42-44,48,57,59-82
+src/app/admin/proposals/new/page.tsx
+  s_65877aa637ec34::t_a01e6ee20d8c3e 3
+  s_65877aa637ec34::t_8fbb00b7429308 43-44,47
+  s_65877aa637ec34::t_bab5ce8be7ea7f 182
+.gitignore
+  s_65877aa637ec34::t_0fee74ea1c29b4 12-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b0b6a95d25c59f5f3d3ae2c69c7257d1ca24ea46",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
