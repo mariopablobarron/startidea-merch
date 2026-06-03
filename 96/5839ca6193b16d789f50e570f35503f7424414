@@ -1,0 +1,21 @@
+src/app/api/admin/team/[id]/route.test.ts
+  s_65877aa637ec34::t_3b0bde716f6cf8 1-211
+src/app/api/admin/team/route.test.ts
+  s_65877aa637ec34::t_02dc24703408a0 1-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "965839ca6193b16d789f50e570f35503f7424414",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
