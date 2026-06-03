@@ -1,0 +1,33 @@
+src/app/api/cron/insights-digest/route.ts
+  s_65877aa637ec34::t_ce3751f80ff306 247
+  s_65877aa637ec34::t_dd35b9538ca052 28
+  s_65877aa637ec34::t_26eed81eb26863 46
+src/app/api/cron/insights-digest-monthly/route.ts
+  s_65877aa637ec34::t_ad4ac115fbc08a 22
+  s_65877aa637ec34::t_33fcfb1ec39a84 58
+  s_65877aa637ec34::t_2e0f01129fd1c2 211
+OPERATIONS.md
+  s_65877aa637ec34::t_9ebb728e56ebd1 210,213-223
+src/app/api/cron/product-view-rollup/route.ts
+  s_65877aa637ec34::t_02c87776946dcf 60
+  s_65877aa637ec34::t_31e996b832f48a 18,25
+src/app/api/cron/metric-snapshot/route.ts
+  s_65877aa637ec34::t_a0e7af8042122e 14,19
+  s_65877aa637ec34::t_b7190a94e11b4d 102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "423509cb1f1d516b92d61adf2ae100f81dafe17b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
