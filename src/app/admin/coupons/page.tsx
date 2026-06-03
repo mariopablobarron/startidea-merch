@@ -38,7 +38,6 @@ type AffiliateOption = {
 };
 
 export default function AdminCouponsPage() {
-  const [secret, setSecret] = useState("");
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [affiliates, setAffiliates] = useState<AffiliateOption[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -57,29 +56,21 @@ export default function AdminCouponsPage() {
   const [overrideCred, setOverrideCred] = useState("");
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    try {
-      const s = sessionStorage.getItem("merch:admin");
-      if (s) setSecret(s);
-    } catch {}
-  }, []);
-
+  // Auth: cookie merch_admin via /api/admin/auth. El backend ya acepta
+  // ambos (cookie y header legacy) — el header X-Admin-Secret es opcional.
   async function load() {
-    if (!secret) return;
-    const res = await fetch("/api/admin/coupons", { headers: { "X-Admin-Secret": secret } });
+    const res = await fetch("/api/admin/coupons");
     const data = await res.json();
     if (!res.ok) setError(data.error || "Error");
     else {
       setCoupons(data.coupons || []);
       setAffiliates(data.affiliates || []);
-      sessionStorage.setItem("merch:admin", secret);
     }
   }
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [secret]);
+  }, []);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -104,7 +95,7 @@ export default function AdminCouponsPage() {
       };
       const res = await fetch("/api/admin/coupons", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -127,7 +118,7 @@ export default function AdminCouponsPage() {
   async function toggle(id: string, active: boolean) {
     await fetch("/api/admin/coupons", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, active: !active }),
     });
     await load();
@@ -142,13 +133,6 @@ export default function AdminCouponsPage() {
             <h1 className="font-display text-3xl font-semibold text-ink">Cupones de descuento</h1>
             <p className="mt-1 text-sm text-ink/60">{coupons.length} en total · {coupons.filter((c) => c.active).length} activos</p>
           </div>
-          <input
-            type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            placeholder="X-Admin-Secret"
-            className="w-72 rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
-          />
         </header>
 
         {error && <p className="mt-4 rounded-lg bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}

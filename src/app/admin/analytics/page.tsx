@@ -31,32 +31,23 @@ type AnalyticsData = {
 };
 
 export default function AdminAnalyticsPage() {
-  const [secret, setSecret] = useState("");
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
 
+  // Auth: cookie merch_admin — el backend acepta cookie o header X-Admin-Secret.
   useEffect(() => {
-    try {
-      const s = sessionStorage.getItem("merch:admin");
-      if (s) setSecret(s);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    if (!secret) return;
-    fetch(`/api/admin/analytics?days=${days}`, { headers: { "X-Admin-Secret": secret } })
+    fetch(`/api/admin/analytics?days=${days}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.error) setError(d.error);
         else {
           setData(d);
-          sessionStorage.setItem("merch:admin", secret);
           setError(null);
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Error de red"));
-  }, [secret, days]);
+  }, [days]);
 
   return (
     <main className="min-h-screen bg-bone-soft p-8">
@@ -101,18 +92,11 @@ export default function AdminAnalyticsPage() {
               <option value={90}>90 días</option>
               <option value={180}>180 días</option>
             </select>
-            <input
-              type="password"
-              placeholder="X-Admin-Secret"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              className="w-72 rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
-            />
           </div>
         </header>
 
         {error && <p className="mb-4 rounded-lg bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}
-        {!data && !error && secret && <p className="text-sm text-ink/60">Cargando…</p>}
+        {!data && !error && <p className="text-sm text-ink/60">Cargando…</p>}
 
         {data && (
           <>

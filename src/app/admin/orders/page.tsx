@@ -72,27 +72,18 @@ const STAGE_COLOR: Record<Stage, string> = {
 };
 
 export default function AdminOrdersPage() {
-  const [secret, setSecret] = useState("");
   const [filter, setFilter] = useState<"active" | "all" | "stale">("active");
   const [data, setData] = useState<Order[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const s = sessionStorage.getItem("merch:admin");
-      if (s) setSecret(s);
-    } catch {}
-  }, []);
-
+  // Auth: cookie merch_admin — el backend acepta cookie o header X-Admin-Secret.
   async function load() {
-    if (!secret) return;
-    const res = await fetch(`/api/admin/orders?filter=${filter}`, { headers: { "X-Admin-Secret": secret } });
+    const res = await fetch(`/api/admin/orders?filter=${filter}`);
     const json = await res.json();
     if (!res.ok) setError(json.error);
     else {
       setData(json.items || []);
-      sessionStorage.setItem("merch:admin", secret);
       setError(null);
     }
   }
@@ -100,12 +91,12 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [secret, filter]);
+  }, [filter]);
 
   async function refreshTracking(id: string) {
     setRefreshing(id);
     try {
-      await fetch(`/api/admin/cart-quotes/${id}/tracking`, { headers: { "X-Admin-Secret": secret } });
+      await fetch(`/api/admin/cart-quotes/${id}/tracking`);
       await load();
     } finally {
       setRefreshing(null);
@@ -143,13 +134,6 @@ export default function AdminOrdersPage() {
                 </button>
               ))}
             </div>
-            <input
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              placeholder="X-Admin-Secret"
-              className="w-64 rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
-            />
           </div>
         </header>
 
