@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { captureError } from "@/lib/insights/capture-error";
 import {
   estimateBaseCentsFromName,
   defaultTiersFromBase,
@@ -460,6 +461,13 @@ Devuelve SOLO el JSON descrito.`;
     queryId = created.id;
   } catch (e) {
     console.error("[recommend] failed to persist RecommenderQuery:", e);
+    // También en /admin/insights/errors para que se vea en el panel.
+    // captureError es síncrono y fire-and-forget; tiene cooldown propio.
+    captureError(e, {
+      context: "api/recommend/persist",
+      severity: "error",
+      notifyAdmin: true,
+    });
   }
 
   // Bump recommenderCount + view30d para productos recomendados/cotizados
@@ -493,6 +501,11 @@ Devuelve SOLO el JSON descrito.`;
       );
     } catch (e) {
       console.error("[recommend] track productView failed:", e);
+      captureError(e, {
+        context: "api/recommend/track-views",
+        severity: "warning",
+        notifyAdmin: false, // baja prioridad: no rompe la UX
+      });
     }
   })();
 
