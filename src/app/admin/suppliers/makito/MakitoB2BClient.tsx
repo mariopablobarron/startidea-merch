@@ -20,6 +20,10 @@ type TestResult =
       elapsedMs?: number;
     };
 
+type SyncResult =
+  | { ok: true; status: "queued"; message: string }
+  | { ok: false; status?: string; message: string; startedAt?: string };
+
 export function MakitoB2BClient({
   initialMode,
   sandboxLoaded,
@@ -34,7 +38,28 @@ export function MakitoB2BClient({
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
   const [switchingTo, setSwitchingTo] = useState<"sandbox" | "production" | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [, startTransition] = useTransition();
+
+  async function runSyncLegacy() {
+    if (
+      !confirm(
+        "Disparar sync LEGACY de Makito (API data.makito.es, XML feeds). Tarda ~5-13 min. Es el que rellena la BD actualmente. ¿Continuar?",
+      )
+    )
+      return;
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch("/api/admin/suppliers/makito/sync-legacy", { method: "POST" });
+      setSyncResult((await res.json()) as SyncResult);
+    } catch (err) {
+      setSyncResult({ ok: false, message: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function changeMode(next: "sandbox" | "production") {
     if (next === mode) return;
@@ -175,6 +200,48 @@ export function MakitoB2BClient({
                 </pre>
               </details>
             )}
+          </div>
+        )}
+      </section>
+
+      {/* Sync legacy (data.makito.es XML feeds) */}
+      <section className="mt-8">
+        <h2 className="font-display text-base font-semibold text-ink">
+          Sincronizar catálogo (legacy)
+        </h2>
+        <p className="mt-1 text-xs text-ink/55">
+          Sync vía API legacy <code>data.makito.es</code> + feeds XML. Es el
+          que actualmente rellena la BD (~4.450 productos). El cron automático
+          corre diario a las 01:00 UTC. La integración B2B nueva
+          (apis.makito.es) está en Fase 2 discovery — abajo.
+        </p>
+        <button
+          onClick={runSyncLegacy}
+          disabled={syncing}
+          className="mt-3 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {syncing ? "Encolando…" : "🔄 Sync legacy ahora"}
+        </button>
+        {syncResult && (
+          <div
+            className={`mt-4 rounded-2xl border p-4 ${
+              syncResult.ok
+                ? "border-emerald-200 bg-emerald-50/60"
+                : "border-rose-200 bg-rose-50/60"
+            }`}
+          >
+            <p
+              className={`text-sm font-semibold ${
+                syncResult.ok ? "text-emerald-800" : "text-rose-800"
+              }`}
+            >
+              {syncResult.ok
+                ? "✓ Sync iniciado"
+                : syncResult.status === "in_progress"
+                  ? "⏳ Sync ya en curso"
+                  : "✗ Error"}
+            </p>
+            <p className="mt-1 text-xs text-ink/75">{syncResult.message}</p>
           </div>
         )}
       </section>

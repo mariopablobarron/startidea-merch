@@ -7,6 +7,10 @@ type TestResult =
   | { ok: true; elapsedMs: number; message: string }
   | { ok: false; stage: string; message: string; elapsedMs?: number };
 
+type SyncResult =
+  | { ok: true; status: "queued"; message: string }
+  | { ok: false; status?: string; message: string; startedAt?: string };
+
 export function MidoceanClient({
   initialLive,
   initialSource,
@@ -26,7 +30,23 @@ export function MidoceanClient({
   const [switching, setSwitching] = useState(false);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [, startTransition] = useTransition();
+
+  async function runSyncNow() {
+    if (!confirm("¿Disparar sync completo de MidOcean ahora? Tarda ~5-15 min en background.")) return;
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch("/api/admin/suppliers/midocean/sync-now", { method: "POST" });
+      setSyncResult((await res.json()) as SyncResult);
+    } catch (err) {
+      setSyncResult({ ok: false, message: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function toggleLive(next: boolean) {
     if (next === live) return;
@@ -170,6 +190,47 @@ export function MidoceanClient({
                 : `✗ Error en stage: ${result.stage}`}
             </p>
             <p className="mt-1 text-xs text-ink/75">{result.message}</p>
+          </div>
+        )}
+      </section>
+
+      {/* Sync ahora */}
+      <section className="mt-8">
+        <h2 className="font-display text-base font-semibold text-ink">
+          Sincronizar catálogo
+        </h2>
+        <p className="mt-1 text-xs text-ink/55">
+          Descarga productos + stock + precios de MidOcean y los vuelca a la BD.
+          Tarda 5-15 min en background. El cron automático corre diario a las
+          01:30 UTC.
+        </p>
+        <button
+          onClick={runSyncNow}
+          disabled={syncing || !apiKeyLoaded}
+          className="mt-3 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {syncing ? "Encolando…" : "🔄 Sync ahora"}
+        </button>
+        {syncResult && (
+          <div
+            className={`mt-4 rounded-2xl border p-4 ${
+              syncResult.ok
+                ? "border-emerald-200 bg-emerald-50/60"
+                : "border-rose-200 bg-rose-50/60"
+            }`}
+          >
+            <p
+              className={`text-sm font-semibold ${
+                syncResult.ok ? "text-emerald-800" : "text-rose-800"
+              }`}
+            >
+              {syncResult.ok
+                ? "✓ Sync iniciado"
+                : syncResult.status === "in_progress"
+                  ? "⏳ Sync ya en curso"
+                  : "✗ Error"}
+            </p>
+            <p className="mt-1 text-xs text-ink/75">{syncResult.message}</p>
           </div>
         )}
       </section>
