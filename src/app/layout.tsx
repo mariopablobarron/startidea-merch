@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Montserrat, Montserrat_Alternates } from "next/font/google";
 import "./globals.css";
@@ -69,12 +69,17 @@ export const metadata: Metadata = {
   },
   robots: { index: true, follow: true },
   manifest: "/manifest.json",
-  themeColor: "#F4EFE6", // crema — fondo por defecto manual Startidea
   appleWebApp: {
     capable: true,
     title: "TodoMerch",
     statusBarStyle: "black-translucent",
   },
+};
+
+// Next.js 15 movió themeColor, viewport y colorScheme a un export aparte.
+// Antes vivía en `metadata.themeColor` (deprecated en 14, warning en 15).
+export const viewport: Viewport = {
+  themeColor: "#F4EFE6", // crema — fondo por defecto manual Startidea
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

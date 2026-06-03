@@ -231,11 +231,24 @@ Endpoints invocados llevan `Authorization: Bearer $CRON_SECRET`.
 
 ## 8. Integraciones de proveedores
 
-### MidOcean
+Los 3 proveedores tienen panel unificado en `/admin/suppliers/<code>`:
+- Estado de credenciales en env (verde/ámbar)
+- Botón "Probar conexión" → endpoint ligero del proveedor
+- Toggle de modo (sandbox↔producción o live↔simulación) persistido en
+  `AdminSetting`, alternable sin redeploy
+- Sub-herramientas específicas según el proveedor
 
-- API REST con API key
+### MidOcean (`api.midocean.com`)
+
+- API REST con header `x-Gateway-APIKey`
 - Sync activo: productos, stock, precios
 - 2.403 productos en BD
+- Cliente: `src/lib/suppliers/midocean.ts` (sync) + `midocean-orders.ts` (POST orders)
+- Panel: `/admin/suppliers/midocean`
+- **Toggle live orders sin redeploy** vía `AdminSetting.midocean_live_orders`
+  (sobreescribe el env `MIDOCEAN_LIVE_ORDERS`). Helper:
+  `src/lib/suppliers/midocean-mode.ts` con cache 60s.
+- Env críticas: `MIDOCEAN_API_KEY`, `MIDOCEAN_CUSTOMER_NUMBER`, `MIDOCEAN_API_BASE`
 
 ### Makito legacy (`data.makito.es`)
 
@@ -243,6 +256,7 @@ Endpoints invocados llevan `Authorization: Bearer $CRON_SECRET`.
 - Feeds XML con token URL
 - 4.450 productos en BD
 - Cliente: `src/lib/suppliers/makito.ts`
+- Sigue convivieron con la API B2B nueva (canales independientes)
 
 ### Makito API B2B oficial (`apis.makito.es`) — NUEVO
 
@@ -253,21 +267,34 @@ Endpoints invocados llevan `Authorization: Bearer $CRON_SECRET`.
 - Panel: `/admin/suppliers/makito` con toggle sandbox↔prod sin redeploy
 - Endpoints disponibles: `/catalog/files`, `/stock/files`, `/price-list/files`,
   `/orders`, `/orders/countries`, `/orders/regions`, `/orders/colors`
-- Estado: **Fase 1 completa** (auth + rate limiter + test endpoint).
-  Fase 2 (catálogo), Fase 3 (stock+precios), Fase 4 (pedidos) pendientes.
+- Estado:
+  · **Fase 1 completa** (auth + rate limiter + test endpoint)
+  · **Fase 2 discovery** (panel admin descubre formato de /catalog/files,
+    /stock/files, /price-list/files, /print-config/files sin tocar BD)
+  · Fase 3 (parser + UPSERT real) pendiente — diseño tras ver shape Fase 2
+  · Fase 4 (pedidos via POST /orders) pendiente
 
-### Cifra
+### Cifra (`api.cifrashop.com`)
 
+- API REST con token UUID en path: `/products/<TOKEN>`
 - 2.497 productos en BD
-- **Stock = 0% actual** (problema conocido — endpoint stock Cifra no integrado)
+- Cliente: `src/lib/suppliers/cifra.ts` (fetch + ping + diagnoseProducts)
+- Panel: `/admin/suppliers/cifra` + subpáginas `/quote` y `/marking-rates`
+- **Stock = 0% en producción** (problema conocido). Para diagnosticar:
+  abre `/admin/suppliers/cifra` y pulsa "🔬 Diagnosticar stock" — descarga
+  catálogo entero y reporta % con stock + muestra de 5 productos. Si todos
+  `quantity = 0`, el problema viene del proveedor (token caducado o cambio
+  de formato).
+- Env: `CIFRA_API_TOKEN`, `CIFRA_API_BASE`, `CIFRA_LANG`
 
 ### Reglas de seguridad de proveedores
 
 - 🔒 `rule_no_supplier_exposure`: NUNCA mencionamos a MidOcean/Makito/Cifra
   en copy público. UI muestra solo `internalRef` (STM-XXX), nunca
   `supplierRef` (MO-XXX).
-- 🔒 Imágenes proxy via `/api/m/<hash>` — nunca `cdn1.midocean.com` directo.
-- 🔒 Credenciales solo en `/root/.env` del VPS, jamás en repo.
+- 🔒 Imágenes proxy via `/api/m/<hash>` — nunca `cdn1.midocean.com`,
+  `imgresources.makito.es` ni `publicatalogue.com` directo.
+- 🔒 Credenciales solo en `/docker/startidea-merch/.env` del VPS, jamás en repo.
 
 ## 9. Dashboard compartible read-only
 
