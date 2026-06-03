@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -21,7 +21,6 @@ type GenerateResult = {
 };
 
 export default function AdminProposalsNewPage() {
-  const [secret, setSecret] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
@@ -35,22 +34,17 @@ export default function AdminProposalsNewPage() {
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const s = sessionStorage.getItem("merch:admin");
-      if (s) setSecret(s);
-    } catch {}
-  }, []);
-
   async function generate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setResult(null);
     setBusy(true);
     try {
+      // Auth: cookie de sesión admin (merch_admin) — requireAdminSecret
+      // del backend la acepta sin necesidad del header legacy X-Admin-Secret.
       const res = await fetch("/api/admin/proposals/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contact: { name, email, company: company || undefined, phone: phone || undefined },
           brief,
@@ -65,7 +59,6 @@ export default function AdminProposalsNewPage() {
         setError(data.error || "Error generando propuesta");
       } else {
         setResult(data);
-        sessionStorage.setItem("merch:admin", secret);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de red");
@@ -155,14 +148,6 @@ export default function AdminProposalsNewPage() {
               </label>
             </div>
 
-            <input
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              placeholder="X-Admin-Secret"
-              required
-              className="w-full rounded-xl border border-line bg-bone px-3 py-2.5 text-sm outline-none focus:border-accent"
-            />
           </div>
 
           <div className="space-y-4">
@@ -194,7 +179,7 @@ export default function AdminProposalsNewPage() {
 
             <button
               type="submit"
-              disabled={busy || brief.length < 20 || !secret}
+              disabled={busy || brief.length < 20}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-3.5 text-sm font-medium text-bone hover:bg-accent-dark disabled:opacity-40"
             >
               {busy ? "Analizando catálogo y construyendo propuesta…" : "Generar propuesta IA →"}

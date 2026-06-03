@@ -120,6 +120,34 @@ nano .env        # añade `NUEVA_VAR=valor`
 docker compose up -d app    # ~5s recarga sin perder estado de BD
 ```
 
+### Higiene del WORKDIR del VPS
+
+Patrón histórico: cuando se rotaba un secret, se hacía `cp .env .env.bak.<ts>.pre-X`
+en el mismo `/docker/startidea-merch/`. Esto genera basura que delata qué se
+ha rotado y deja historial de secrets accesible vía SSH al VPS. Resolver:
+
+```bash
+# Dry-run: ver qué se movería sin tocar nada
+ssh root@72.61.195.108 'cd /docker/startidea-merch && ./scripts/cleanup-vps-backups.sh'
+
+# Aplicar de verdad — mueve a /root/.backups/startidea-merch/ con perms 700/600
+ssh root@72.61.195.108 'cd /docker/startidea-merch && ./scripts/cleanup-vps-backups.sh --apply'
+```
+
+Patrón nuevo recomendado para futuras rotaciones:
+- Backup **fuera** del WORKDIR: `cp .env /root/.backups/startidea-merch/.env.bak.$(date +%s).pre-X`
+- Permisos restrictivos: `chmod 600 /root/.backups/startidea-merch/.env.bak.*`
+- Retención automática: el script de cleanup limpia >30 días.
+
+### docker-compose.override.yml
+
+⚠️ Este archivo, si existe en el WORKDIR, modifica el `docker-compose.yml`
+versionado **silenciosamente**. Como NO está en git, lo que corre en producción
+puede divergir del repo.
+
+Convención: NO usar `docker-compose.override.yml`. Si necesitas overrides para
+producción, incorpóralos al `docker-compose.yml` versionado tras revisión.
+
 ## 5. Base de datos (Postgres)
 
 - Container: `merch-db` (postgres:16-alpine, network `merch_net`)

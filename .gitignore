@@ -9,6 +9,17 @@ build
 .env*.local
 !.env.example
 
+# Backups operativos del VPS — nunca al repo (riesgo leak secrets)
+.env.bak
+.env.bak.*
+.env.*.bak
+docker-compose.override.yml
+docker-compose.*.bak
+docker-compose.yml.bak*
+
+# User-generated content del VPS (carpeta de uploads de pedidos/proofs)
+uploads/
+
 *.tsbuildinfo
 next-env.d.ts
 
