@@ -1,0 +1,23 @@
+.env.example
+  s_65877aa637ec34::t_6c63e5991ed8cf 73-75
+.github/workflows/ai-usage-alert.yml
+  s_65877aa637ec34::t_531317a0db9f7a 1-39
+src/app/api/cron/ai-usage-alert/route.ts
+  s_65877aa637ec34::t_771f1092954a03 1-121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "973261fd70b9fedbd53091d033041070d46e48be",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
