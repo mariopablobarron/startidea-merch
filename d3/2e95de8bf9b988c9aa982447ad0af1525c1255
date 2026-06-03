@@ -1,0 +1,26 @@
+.gitignore
+  s_65877aa637ec34::t_d0cb35980f763b 20-22
+OPERATIONS.md
+  s_65877aa637ec34::t_fc07dc015bae09 142,144,146-164
+scripts/deploy.sh
+  s_65877aa637ec34::t_53c796ddc18514 38
+  s_65877aa637ec34::t_7fd709bd2eeec4 22
+docker-compose.prod.yml
+  s_65877aa637ec34::t_d39ea0e517db3a 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d32e95de8bf9b988c9aa982447ad0af1525c1255",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
