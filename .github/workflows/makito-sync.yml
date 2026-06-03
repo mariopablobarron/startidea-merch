@@ -1,0 +1,38 @@
+name: Makito sync diario
+
+# Diario 01:00 UTC. Sync catálogo legacy (XML feeds) Makito → BD.
+# Sync masivo: ~5-10 min en background.
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: makito-sync
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar makito-sync
+        env:
+          CRON_SECRET: ${{ secrets.MERCH_CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Falta secret MERCH_CRON_SECRET"
+            exit 1
+          fi
+          response=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://merchandising.hubstartidea.es/api/cron/makito-sync" \
+            -H "x-cron-secret: $CRON_SECRET")
+          body=$(echo "$response" | sed '$d')
+          code=$(echo "$response" | tail -n1)
+          echo "HTTP $code"
+          echo "$body"
+          if [ "$code" != "202" ] && [ "$code" != "200" ]; then
+            echo "::error::makito-sync devolvió $code"
+            exit 1
+          fi

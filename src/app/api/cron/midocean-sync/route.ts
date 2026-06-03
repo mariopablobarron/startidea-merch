@@ -3,6 +3,7 @@ import { requireCronSecret } from "@/lib/auth";
 import { runMidoceanSync } from "@/lib/suppliers/midocean-sync";
 import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export const maxDuration = 600;
  *   POST /api/cron/midocean-sync   X-Cron-Secret  → dispara
  *   GET  /api/cron/midocean-sync   X-Cron-Secret  → consulta estado
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("midocean-sync", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
     { ok: true, status: "queued", message: "Sync iniciado en background. Consulta GET para el estado." },
     { status: 202 },
   );
-}
+});
 
 export async function GET(req: Request) {
   const auth = requireCronSecret(req);

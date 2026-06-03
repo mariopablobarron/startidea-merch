@@ -1,0 +1,39 @@
+name: Embeddings sync diario
+
+# Diario 05:00 UTC, después de TODOS los syncs de proveedores (01:00-03:00).
+# Genera embeddings de productos nuevos/modificados para búsqueda semántica
+# del recomendador IA.
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: embeddings-sync
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar embeddings-sync
+        env:
+          CRON_SECRET: ${{ secrets.MERCH_CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Falta secret MERCH_CRON_SECRET"
+            exit 1
+          fi
+          response=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://merchandising.hubstartidea.es/api/cron/embeddings-sync" \
+            -H "x-cron-secret: $CRON_SECRET")
+          body=$(echo "$response" | sed '$d')
+          code=$(echo "$response" | tail -n1)
+          echo "HTTP $code"
+          echo "$body"
+          if [ "$code" != "202" ] && [ "$code" != "200" ]; then
+            echo "::error::embeddings-sync devolvió $code"
+            exit 1
+          fi

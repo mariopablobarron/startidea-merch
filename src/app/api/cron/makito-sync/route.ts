@@ -3,6 +3,7 @@ import { requireCronSecret } from "@/lib/auth";
 import { runMakitoSync } from "@/lib/suppliers/makito-sync";
 import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export const maxDuration = 800; // 13 min — XML 17MB + parse + upsert 4482 pro
  *   POST /api/cron/makito-sync   X-Cron-Secret  → dispara
  *   GET  /api/cron/makito-sync   X-Cron-Secret  → consulta estado
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("makito-sync", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
     },
     { status: 202 },
   );
-}
+});
 
 export async function GET(req: Request) {
   const auth = requireCronSecret(req);

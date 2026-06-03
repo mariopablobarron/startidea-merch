@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { runMakitoMarkingEnrich } from "@/lib/suppliers/makito-marking-enrich";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export const maxDuration = 800;
  *   POST /api/cron/makito-marking-enrich?limit=10  → modo test
  *   POST /api/cron/makito-marking-enrich            → todos
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("makito-marking-enrich", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -41,4 +42,4 @@ export async function POST(req: Request) {
     },
     { status: 202 },
   );
-}
+});

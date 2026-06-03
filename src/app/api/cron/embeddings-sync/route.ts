@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { generateEmbedding, embeddingTextForProduct } from "@/lib/embeddings";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "openai/text-embedding-3-
  * Llamar diariamente (idempotente). Tras unos días, todo el catálogo
  * tendrá embeddings y solo procesará productos nuevos del sync.
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("embeddings-sync", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -67,7 +68,7 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, processed, failed, batchSize: batch, candidates: candidates.length });
-}
+});
 
 export async function GET(req: Request) {
   const auth = requireCronSecret(req);
