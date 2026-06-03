@@ -1,0 +1,35 @@
+src/app/api/cron/auto-resolve-errors/route.ts
+  s_65877aa637ec34::t_f30e3d2f93cdbd 24
+  s_65877aa637ec34::t_7552c627f110ee 135
+  s_65877aa637ec34::t_1a0be2a339a7f7 31
+src/app/api/cron/ai-usage-alert/route.ts
+  s_65877aa637ec34::t_78b7b33abf36ac 22
+  s_65877aa637ec34::t_6de51856e2e98c 119
+  s_65877aa637ec34::t_8cfe5c2a3502da 68
+src/lib/cron-tracking.test.ts
+  s_65877aa637ec34::t_10313a709d9ee6 1-186
+src/lib/cron-tracking.ts
+  s_65877aa637ec34::t_92df235a583f97 1-130
+OPERATIONS.md
+  s_65877aa637ec34::t_f32fbdbb3f4e71 187-215
+src/app/admin/insights/page.tsx
+  s_65877aa637ec34::t_0cf4cca7fe0c6d 267-272
+src/app/admin/insights/crons/page.tsx
+  s_65877aa637ec34::t_ffc075ceb39ad2 1-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a51894912aa4e2be5a8a8c0cb36b122e43180b29",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
