@@ -11,11 +11,12 @@ import { requireCronSecret } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCatalogHealth, getConversionFunnel, getSuggestions } from "@/lib/insights";
 import { notifyAdmins } from "@/lib/notify-admin";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("metric-snapshot", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok)
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
@@ -98,4 +99,4 @@ export async function POST(req: Request) {
     cleaned_old: cleaned.count,
     anomaly_pushes_sent: anomalyPushes,
   });
-}
+});

@@ -15,13 +15,14 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const DAY_MS = 24 * 3600 * 1000;
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("product-view-rollup", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok)
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
@@ -56,4 +57,4 @@ export async function POST(req: Request) {
     cleanedInactive: cleaned.count,
     durationMs,
   });
-}
+});

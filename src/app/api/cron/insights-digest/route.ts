@@ -25,6 +25,7 @@ import {
   getSupplierStatuses,
 } from "@/lib/insights";
 import { DashboardReport } from "@/lib/insights/dashboard-pdf";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,7 +43,7 @@ const SEVERITY_EMOJI: Record<string, string> = {
   info: "ℹ️",
 };
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("insights-digest", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok)
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
@@ -243,7 +244,7 @@ ${(topSearches.length > 0 || noResults.length > 0) ? `
       suggestionsCount: suggestions.length,
     },
   });
-}
+});
 
 // Permitir disparo manual con GET para debug desde browser admin
 export const GET = POST;

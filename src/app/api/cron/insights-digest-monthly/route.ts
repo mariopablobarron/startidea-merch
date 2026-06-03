@@ -19,6 +19,7 @@ import {
   resolvePreset,
 } from "@/lib/insights/compare";
 import { getSuggestions } from "@/lib/insights";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +55,7 @@ function monthLabel(d: Date): string {
   }).format(d);
 }
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("insights-digest-monthly", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok)
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
@@ -207,7 +208,7 @@ ${
     })),
     suggestionsCount: suggestions.length,
   });
-}
+});
 
 // Permitir disparo manual con GET para debug desde browser admin
 export const GET = POST;

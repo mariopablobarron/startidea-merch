@@ -207,9 +207,20 @@ migración Prisma). Visible en:
   status, tasa de éxito, último OK / último fallo
 - Chip "⏰ Crons" en `/admin/insights`
 
-Integrados hasta ahora:
+Integrados hasta ahora (6/8 activos en GH Actions):
 - `ai-usage-alert`
 - `auto-resolve-errors`
+- `metric-snapshot`
+- `product-view-rollup`
+- `insights-digest` (weekly)
+- `insights-digest-monthly`
+
+Pendientes de integrar (otros 16 crons sin tracking aún):
+abandoned-cart-drip, abandoned-reminders, backup-db, cifra-sync,
+embeddings-sync, improve-descriptions, makito-marking-enrich, makito-sync,
+midocean-print-pricelist-sync, midocean-sync, post-order-drip,
+publish-scheduled, refresh-tracking, review-invite, stock-alert,
+webhook-retry.
 
 Para añadir más: importar `wrapCronHandler` y reemplazar
 `export async function POST` por `export const POST = wrapCronHandler("name", async (req) => {...})`.
