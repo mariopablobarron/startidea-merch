@@ -3,6 +3,7 @@ import { requireCronSecret } from "@/lib/auth";
 import { runCifraSync } from "@/lib/suppliers/cifra-sync";
 import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export const maxDuration = 600;
  *
  * Estado se guarda en `SupplierSync` (supplier=cifra).
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("cifra-sync", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
     },
     { status: 202 },
   );
-}
+});
 
 export async function GET(req: Request) {
   const auth = requireCronSecret(req);

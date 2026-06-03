@@ -1,0 +1,46 @@
+name: Cifra sync diario
+
+# Diario 02:30 UTC (03:30 Madrid invierno, 04:30 verano).
+# Antes del rollup (03:00) y metric-snapshot (03:35).
+#
+# Sincroniza catálogo + stock + precios Cifra → BD local.
+# El sync es fire-and-forget; el endpoint vuelve en 200 ms con
+# 202 Accepted y persiste resultado en SupplierSync.
+#
+# Si vuelve a fallar de forma silenciosa, el cron-watchdog avisa
+# (porque cifra-sync ya pasa por wrapCronHandler).
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: cifra-sync
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar cifra-sync
+        env:
+          CRON_SECRET: ${{ secrets.MERCH_CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Falta secret MERCH_CRON_SECRET"
+            exit 1
+          fi
+          response=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://merchandising.hubstartidea.es/api/cron/cifra-sync" \
+            -H "x-cron-secret: $CRON_SECRET")
+          body=$(echo "$response" | sed '$d')
+          code=$(echo "$response" | tail -n1)
+          echo "HTTP $code"
+          echo "$body"
+          # 202 Accepted es el caso normal (fire-and-forget); 200 también ok
+          if [ "$code" != "202" ] && [ "$code" != "200" ]; then
+            echo "::error::cifra-sync devolvió $code (esperado 202)"
+            exit 1
+          fi

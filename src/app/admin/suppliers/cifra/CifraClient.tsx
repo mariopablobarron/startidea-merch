@@ -22,11 +22,26 @@ type DiagnoseResult = {
   message?: string;
 };
 
+type SyncResult =
+  | {
+      ok: true;
+      status: "queued";
+      message: string;
+    }
+  | {
+      ok: false;
+      status?: string;
+      message: string;
+      startedAt?: string;
+    };
+
 export function CifraClient({ tokenLoaded }: { tokenLoaded: boolean }) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnoseResult, setDiagnoseResult] = useState<DiagnoseResult | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
 
   async function runTest() {
     setTesting(true);
@@ -62,6 +77,25 @@ export function CifraClient({ tokenLoaded }: { tokenLoaded: boolean }) {
       });
     } finally {
       setDiagnosing(false);
+    }
+  }
+
+  async function runSyncNow() {
+    if (!confirm("¿Disparar sync completo de Cifra ahora? Tarda ~2-5 min en background.")) return;
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch("/api/admin/suppliers/cifra/sync-now", {
+        method: "POST",
+      });
+      setSyncResult((await res.json()) as SyncResult);
+    } catch (err) {
+      setSyncResult({
+        ok: false,
+        message: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -211,6 +245,53 @@ export function CifraClient({ tokenLoaded }: { tokenLoaded: boolean }) {
           <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/60 p-4 text-sm text-rose-800">
             ✗ {diagnoseResult.message}
           </p>
+        )}
+      </section>
+
+      {/* Sync ahora */}
+      <section className="mt-8">
+        <h2 className="font-display text-base font-semibold text-ink">
+          Sincronizar catálogo
+        </h2>
+        <p className="mt-1 text-xs text-ink/55">
+          Descarga el catálogo + stock + precios de Cifra y los vuelca a la BD.
+          Tarda 2-5 min en background. El cron automático corre diario a las
+          02:30 UTC; este botón es para forzar uno fuera de horario.
+        </p>
+        <button
+          onClick={runSyncNow}
+          disabled={syncing || !tokenLoaded}
+          className="mt-3 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {syncing ? "Encolando…" : "🔄 Sync ahora"}
+        </button>
+
+        {syncResult && (
+          <div
+            className={`mt-4 rounded-2xl border p-4 ${
+              syncResult.ok
+                ? "border-emerald-200 bg-emerald-50/60"
+                : "border-rose-200 bg-rose-50/60"
+            }`}
+          >
+            <p
+              className={`text-sm font-semibold ${
+                syncResult.ok ? "text-emerald-800" : "text-rose-800"
+              }`}
+            >
+              {syncResult.ok
+                ? "✓ Sync iniciado"
+                : syncResult.status === "in_progress"
+                  ? "⏳ Sync ya en curso"
+                  : "✗ Error"}
+            </p>
+            <p className="mt-1 text-xs text-ink/75">{syncResult.message}</p>
+            {!syncResult.ok && syncResult.startedAt && (
+              <p className="mt-1 text-[11px] text-ink/55">
+                Iniciado: {new Date(syncResult.startedAt).toLocaleString("es-ES")}
+              </p>
+            )}
+          </div>
         )}
       </section>
     </>
