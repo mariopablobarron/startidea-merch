@@ -1,0 +1,27 @@
+.github/workflows/cifra-sync.yml
+  s_65877aa637ec34::t_0ed1cac9834918 1-46
+src/app/admin/suppliers/cifra/CifraClient.tsx
+  s_65877aa637ec34::t_6571603974f514 250-296
+  s_65877aa637ec34::t_7bc196c1c4ec49 83-101
+  s_65877aa637ec34::t_377bdf25dbdc85 25-37,43-44
+src/app/api/admin/suppliers/cifra/sync-now/route.ts
+  s_65877aa637ec34::t_e4c3d1e6cf7668 1-77
+src/app/api/cron/cifra-sync/route.ts
+  s_65877aa637ec34::t_2b29f91cef5951 21,55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4d02ad8bb549d9248cbadbdf0a021d867f186e8e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
