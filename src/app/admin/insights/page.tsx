@@ -216,12 +216,16 @@ export default async function InsightsPage({
     getOverpricedProducts(10).catch(() => []),
     getCarmenStats().catch(() => null),
   ]);
-  const [aiSuggestions, cohorts, weeklySeries, errorSummary, referrers] = await Promise.all([
+  const [aiSuggestions, cohorts, weeklySeries, errorSummary, referrers, aiUsage] = await Promise.all([
     getAISuggestions().catch(() => []),
     getCohortAnalysis().catch(() => []),
     getWeeklySeries().catch(() => []),
     getErrorSummary().catch(() => null),
     getTopReferrers(15).catch(() => []),
+    (async () => {
+      const { getAiUsageStats } = await import("@/lib/insights/ai-usage");
+      return getAiUsageStats(30).catch(() => null);
+    })(),
   ]);
 
   const totalViews30d = top.reduce((sum, p) => sum + p.view30d, 0);
@@ -763,6 +767,96 @@ export default async function InsightsPage({
           </p>
           <Heatmap cells={heatmap} />
         </section>
+
+        {/* ─── Uso IA (OpenRouter) ─── */}
+        {aiUsage && aiUsage.totalQueries > 0 && (
+          <section className="mt-12" id="ai-usage">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              🤖 Uso IA — últimos {aiUsage.windowDays} días
+            </h2>
+            <p className="mt-1 text-sm text-ink/60">
+              Coste estimado de OpenRouter agregando recomendador público +
+              generador de propuestas admin + voice agent.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiCard
+                label="Consultas totales"
+                value={aiUsage.totalQueries.toLocaleString("es-ES")}
+                hint={`${aiUsage.byModel.length} modelos distintos`}
+              />
+              <KpiCard
+                label="Tokens input"
+                value={`${(aiUsage.totalPromptTokens / 1000).toFixed(0)}K`}
+                hint="prompt + system + catálogo"
+              />
+              <KpiCard
+                label="Tokens output"
+                value={`${(aiUsage.totalCompletionTokens / 1000).toFixed(0)}K`}
+                hint="respuesta generada"
+              />
+              <KpiCard
+                label="Coste estimado"
+                value={`${aiUsage.totalCostEur.toFixed(2)} €`}
+                hint={`~${(aiUsage.totalCostEur / aiUsage.windowDays).toFixed(2)} €/día`}
+              />
+            </div>
+            {aiUsage.byModel.length > 0 && (
+              <details className="mt-4">
+                <summary className="cursor-pointer text-xs font-medium text-ink/65 hover:text-ink">
+                  Desglose por modelo
+                </summary>
+                <div className="mt-3 overflow-x-auto rounded-2xl border border-line bg-bone">
+                  <table className="w-full min-w-[480px] text-xs">
+                    <thead className="border-b border-line bg-bone-soft text-left">
+                      <tr>
+                        <th className="px-3 py-2 font-medium text-ink/70">Modelo</th>
+                        <th className="px-3 py-2 text-right font-medium text-ink/70">
+                          Consultas
+                        </th>
+                        <th className="px-3 py-2 text-right font-medium text-ink/70">
+                          Tokens
+                        </th>
+                        <th className="px-3 py-2 text-right font-medium text-ink/70">
+                          € estimado
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {aiUsage.byModel.map((m) => (
+                        <tr key={m.modelUsed} className="border-b border-line/60 last:border-0">
+                          <td className="px-3 py-2 font-mono text-[11px] text-ink/85">
+                            {m.modelUsed}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            {m.count}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-ink/70">
+                            {((m.promptTokens + m.completionTokens) / 1000).toFixed(1)}K
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold">
+                            {m.costEur.toFixed(2)} €
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {aiUsage.byMode.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {aiUsage.byMode.map((md) => (
+                      <span
+                        key={md.mode}
+                        className="rounded-full border border-line bg-bone-soft px-3 py-1 text-[11px]"
+                      >
+                        <strong>{md.mode}</strong>: {md.count} · {md.costEur.toFixed(2)} €
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </details>
+            )}
+          </section>
+        )}
 
         {/* ─── Carmen ─── */}
         {carmen && (

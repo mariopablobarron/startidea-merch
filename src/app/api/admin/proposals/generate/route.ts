@@ -384,6 +384,30 @@ Devuelve la propuesta como JSON descrita arriba.`;
     include: { items: true },
   });
 
+  // Tracking de uso IA: misma tabla que /api/recommend para que las stats
+  // de /admin/insights cuenten ambas fuentes (recomendador público +
+  // generador admin de propuestas). Fire-and-forget, no rompe el response.
+  void prisma.recommenderQuery
+    .create({
+      data: {
+        brief,
+        budget: budget ?? null,
+        quantity: quantity ?? null,
+        ecoOnly: !!ecoOnly,
+        needsClarification: false,
+        fallback: false,
+        recommendedSlugs: recs.items.map((i) => i.slug).filter(Boolean),
+        summary: recs.summary ?? null,
+        modelUsed: MODEL,
+        promptTokens: aiJson.usage?.prompt_tokens ?? null,
+        completionTokens: aiJson.usage?.completion_tokens ?? null,
+        mode: "proposal", // distingue del recomendador público
+      },
+    })
+    .catch((e) => {
+      console.error("[proposals/generate] track usage failed:", e);
+    });
+
   return NextResponse.json({
     ok: true,
     cartId: cart.id,
