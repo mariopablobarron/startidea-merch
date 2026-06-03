@@ -139,14 +139,29 @@ Patrón nuevo recomendado para futuras rotaciones:
 - Permisos restrictivos: `chmod 600 /root/.backups/startidea-merch/.env.bak.*`
 - Retención automática: el script de cleanup limpia >30 días.
 
-### docker-compose.override.yml
+### Overrides de producción — patrón `docker-compose.prod.yml`
 
-⚠️ Este archivo, si existe en el WORKDIR, modifica el `docker-compose.yml`
-versionado **silenciosamente**. Como NO está en git, lo que corre en producción
-puede divergir del repo.
+Convención (a partir de 2026-06-03):
 
-Convención: NO usar `docker-compose.override.yml`. Si necesitas overrides para
-producción, incorpóralos al `docker-compose.yml` versionado tras revisión.
+- **`docker-compose.yml`** — base, igual en local y producción
+- **`docker-compose.prod.yml`** — overrides explícitos de producción,
+  versionado. Solo se aplica si lo pasas con flag: `-f docker-compose.prod.yml`
+- **`docker-compose.override.yml`** — PROHIBIDO. Está en `.gitignore`
+  y se aplica automáticamente sin avisar. Genera deuda invisible.
+
+El `scripts/deploy.sh` aplica ambos archivos siempre:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build app
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate app
+```
+
+### El volumen Postgres legacy (importante)
+
+En `docker-compose.prod.yml` está documentado el caso del volumen
+`cmogzf1ah0000p2a4juw84ecxmerch_pgdata_v2` (nombre que dejó Coolify cuando
+se desplegaba con él). Toda la BD vive ahí. **NO eliminar sin migración
+explícita** (dump + restore + cambio de nombre).
 
 ## 5. Base de datos (Postgres)
 

@@ -17,6 +17,9 @@ docker-compose.override.yml
 docker-compose.*.bak
 docker-compose.yml.bak*
 
+# docker-compose.prod.yml SÍ se versiona (overrides explícitos de producción
+# aplicados con flag -f). El .override.yml legacy del VPS hay que retirarlo.
+
 # User-generated content del VPS (carpeta de uploads de pedidos/proofs)
 uploads/
 

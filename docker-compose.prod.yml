@@ -1,0 +1,21 @@
+# Override de producción (VPS Hostinger) — aplicar SOLO con flag explícito:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Motivo histórico: la app empezó a desplegarse con Coolify, que creó el
+# volumen Postgres con nombre `cmogzf1ah0000p2a4juw84ecxmerch_pgdata_v2`
+# (prefijo cmogzf1ah... = hash interno de Coolify). Cuando migramos a
+# este flujo SSH-direct, los datos quedaron en ese volumen externo.
+#
+# Renombrar el volumen requeriría un dump + restore de varios GB con
+# downtime. Mientras tanto, este override mantiene Postgres apuntando
+# al volumen real donde están los datos.
+#
+# NO eliminar sin migrar antes los datos a `merch_pgdata_v2` (el nombre
+# que crearía docker-compose.yml sin este override).
+services:
+  db:
+    volumes:
+      - cmogzf1ah0000p2a4juw84ecxmerch_pgdata_v2:/var/lib/postgresql/data
+volumes:
+  cmogzf1ah0000p2a4juw84ecxmerch_pgdata_v2:
+    external: true

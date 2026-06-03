@@ -19,7 +19,7 @@ log "deploying $SHA"
 
 # Build con retry: si falla con exit 137 (OOM killer) reintentamos 1 vez tras 30s
 build_attempt() {
-  docker compose build app 2>&1 | tail -20
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml build app 2>&1 | tail -20
   return ${PIPESTATUS[0]}
 }
 
@@ -35,7 +35,7 @@ if ! build_attempt; then
 fi
 
 log "recreate container"
-docker compose up -d --force-recreate app || fail "docker compose up falló"
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate app || fail "docker compose up falló"
 
 # Healthcheck con retry: hasta 6 intentos × 10s = 60s en la home.
 # Next.js + Prisma a veces tarda 20-40s en estar listo en frío.
