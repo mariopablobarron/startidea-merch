@@ -230,3 +230,52 @@ export async function getRegions() {
 export async function getPrintColors() {
   return fetchB2B<unknown[]>("/orders/colors");
 }
+
+// ─── Discovery: file listings de los endpoints "feed" ────────────────────
+// /catalog/files, /stock/files, /price-list/files, /print-config/files
+// Estos endpoints devuelven URLs a archivos descargables — el formato
+// concreto lo descubrimos en runtime (Fase 2 discovery, sin parser).
+
+export async function getCatalogFiles() {
+  return fetchB2B<unknown>("/catalog/files");
+}
+
+export async function getStockFiles() {
+  return fetchB2B<unknown>("/stock/files");
+}
+
+export async function getPriceListFiles() {
+  return fetchB2B<unknown>("/price-list/files");
+}
+
+export async function getPrintConfigFiles() {
+  return fetchB2B<unknown>("/print-config/files");
+}
+
+/**
+ * Descarga directa de uno de los archivos referenciados por los endpoints
+ * /...files. Como las URLs pueden venir como path relativo a apis.makito.es
+ * o como URL absoluta a un CDN, el caller debe pasar la URL completa.
+ *
+ * Útil para Fase 3 cuando ya sepamos qué formato manejamos. Por ahora
+ * el descubrimiento se hace pidiendo solo los listings.
+ */
+export async function downloadFile(url: string): Promise<{
+  status: number;
+  contentType: string | null;
+  contentLength: number | null;
+  bodyPreview: string;
+}> {
+  await rateBucket.consume();
+  const token = await getToken();
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "*/*" },
+  });
+  const text = await res.text();
+  return {
+    status: res.status,
+    contentType: res.headers.get("content-type"),
+    contentLength: text.length,
+    bodyPreview: text.slice(0, 500),
+  };
+}

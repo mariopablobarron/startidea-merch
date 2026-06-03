@@ -178,6 +178,83 @@ export function MakitoB2BClient({
           </div>
         )}
       </section>
+
+      <DiscoverCatalogSection activeCredsLoaded={activeCredsLoaded} mode={mode} />
     </>
+  );
+}
+
+// ─── Discovery del catálogo (Fase 2) ─────────────────────────────────────
+function DiscoverCatalogSection({
+  activeCredsLoaded,
+  mode,
+}: {
+  activeCredsLoaded: boolean;
+  mode: "sandbox" | "production";
+}) {
+  const [discovering, setDiscovering] = useState(false);
+  const [includeDownload, setIncludeDownload] = useState(false);
+  const [data, setData] = useState<unknown>(null);
+
+  async function discover() {
+    setDiscovering(true);
+    setData(null);
+    try {
+      const qs = includeDownload ? "?download=true" : "";
+      const res = await fetch(
+        `/api/admin/suppliers/makito/discover-catalog${qs}`,
+        { method: "POST" },
+      );
+      setData(await res.json());
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
+  return (
+    <section className="mt-8">
+      <h2 className="font-display text-base font-semibold text-ink">
+        Discovery del catálogo (Fase 2)
+      </h2>
+      <p className="mt-1 text-xs text-ink/55">
+        Llama en paralelo a <code>/catalog/files</code>,{" "}
+        <code>/stock/files</code>, <code>/price-list/files</code>,{" "}
+        <code>/print-config/files</code> y reporta shape + keys del primer
+        elemento sin parsear ni tocar BD. Útil para diseñar el parser de
+        Fase 3 con la estructura real.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          onClick={discover}
+          disabled={discovering || !activeCredsLoaded}
+          className="rounded-full border border-ink/30 bg-bone-soft px-6 py-2.5 text-sm font-semibold text-ink hover:bg-bone disabled:opacity-50"
+        >
+          {discovering ? "Llamando 4 endpoints…" : "🔍 Descubrir formato"}
+        </button>
+        <label className="inline-flex items-center gap-2 text-xs text-ink/70">
+          <input
+            type="checkbox"
+            checked={includeDownload}
+            onChange={(e) => setIncludeDownload(e.target.checked)}
+            className="h-4 w-4 accent-ink"
+          />
+          También descargar primer archivo (500 bytes)
+        </label>
+      </div>
+      <p className="mt-1 text-[10px] text-ink/45">
+        Modo activo: <code>{mode}</code> — el discovery se hace contra el
+        mismo entorno que el botón de prueba.
+      </p>
+      {data !== null && (
+        <details open className="mt-4">
+          <summary className="cursor-pointer text-xs font-medium text-ink/70">
+            Resultado crudo (JSON)
+          </summary>
+          <pre className="mt-2 max-h-96 overflow-auto rounded-lg bg-ink p-3 font-mono text-[10px] text-bone/85">
+            {JSON.stringify(data, null, 2)}
+          </pre>
+        </details>
+      )}
+    </section>
   );
 }
