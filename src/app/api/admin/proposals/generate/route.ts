@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSecret } from "@/lib/auth";
 import { extractJsonFromAIResponse } from "@/lib/json-extract";
+import { generateEmbedding, cosineSimilarity } from "@/lib/embeddings";
 import { defaultTiersFromBase, estimateBaseCentsFromName, pickTier } from "@/lib/pricing";
 
 export const runtime = "nodejs";
@@ -77,36 +78,90 @@ export async function POST(req: Request) {
   }
   const { contact, brief, budget, quantity, ecoOnly, internalNotes } = parsed.data;
 
-  // 1. Catálogo: top 250 productos relevantes
-  const products = await prisma.product.findMany({
-    where: {
-      active: true,
-      ...(ecoOnly
-        ? {
-            OR: [
-              { material: { contains: "bambú", mode: "insensitive" } },
-              { material: { contains: "rpet", mode: "insensitive" } },
-              { material: { contains: "orgán", mode: "insensitive" } },
-              { material: { contains: "recic", mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: [{ syncedAt: "desc" }],
-    take: 250,
-    select: {
-      slug: true,
-      supplierRef: true,
-      name: true,
-      brand: true,
-      shortDescription: true,
-      enhancedShortDescription: true,
-      material: true,
-      primaryImageUrl: true,
-      category: { select: { name: true } },
-      variants: { take: 1, select: { stockQty: true } },
-    },
-  });
+  // 1. Catálogo relevante: búsqueda semántica del brief con embeddings.
+  // Resuelve casos como "toalla microfibra" cuando en BD está como
+  // "toalla deportiva" o "secado rápido" (mismo material, otro nombre).
+  // Fallback: si no hay embeddings calculados, usa los últimos 250 por sync.
+  const ecoWhere: Prisma.ProductWhereInput | undefined = ecoOnly
+    ? {
+        OR: [
+          { material: { contains: "bambú", mode: "insensitive" } },
+          { material: { contains: "rpet", mode: "insensitive" } },
+          { material: { contains: "orgán", mode: "insensitive" } },
+          { material: { contains: "recic", mode: "insensitive" } },
+        ],
+      }
+    : undefined;
+
+  const productSelect = {
+    slug: true,
+    supplierRef: true,
+    name: true,
+    brand: true,
+    shortDescription: true,
+    enhancedShortDescription: true,
+    material: true,
+    primaryImageUrl: true,
+    category: { select: { name: true } },
+    variants: { take: 1, select: { stockQty: true } },
+  } satisfies Prisma.ProductSelect;
+
+  type ProductCard = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
+
+  let products: ProductCard[] = [];
+  let catalogSource: "semantic" | "recent" = "recent";
+
+  try {
+    const briefVector = await generateEmbedding(`${brief}\n${internalNotes ?? ""}`);
+    if (briefVector) {
+      const allEmbeddings = await prisma.productEmbedding.findMany({
+        select: {
+          vector: true,
+          product: {
+            select: { id: true, slug: true, active: true, material: true },
+          },
+        },
+      });
+      const ranked = allEmbeddings
+        .filter((row) => row.product?.active)
+        .filter((row) => {
+          if (!ecoOnly) return true;
+          const m = (row.product?.material || "").toLowerCase();
+          return /bamb[uú]|rpet|org[áa]n|recic/.test(m);
+        })
+        .map((row) => ({
+          slug: row.product!.slug,
+          score: cosineSimilarity(briefVector, row.vector),
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 80);
+      if (ranked.length > 0) {
+        const topSlugs = ranked.map((r) => r.slug);
+        const fetched = await prisma.product.findMany({
+          where: { slug: { in: topSlugs }, active: true },
+          select: productSelect,
+        });
+        // Reordenar para mantener el ranking por score
+        const bySlug = new Map(fetched.map((p) => [p.slug, p]));
+        products = ranked
+          .map((r) => bySlug.get(r.slug))
+          .filter((p): p is ProductCard => !!p);
+        catalogSource = "semantic";
+      }
+    }
+  } catch (e) {
+    console.error("[proposals/generate] semantic search failed, fallback:", e);
+  }
+
+  // Fallback: últimos 250 por syncedAt
+  if (products.length === 0) {
+    products = await prisma.product.findMany({
+      where: { active: true, ...(ecoWhere ?? {}) },
+      orderBy: [{ syncedAt: "desc" }],
+      take: 250,
+      select: productSelect,
+    });
+  }
 
   // Catálogo en prompt: descripciones truncadas a 120 chars para mantener
   // el prompt pequeño y rápido. El modelo decide por nombre + categoría +
@@ -337,6 +392,8 @@ Devuelve la propuesta como JSON descrita arriba.`;
     summary: recs.summary,
     internalAdvice: recs.internalAdvice,
     model: MODEL,
+    catalogSource, // "semantic" si usó embeddings, "recent" si fallback
+    catalogSize: products.length,
     usage: aiJson.usage,
   });
 }
