@@ -771,9 +771,17 @@ export default async function InsightsPage({
         {/* ─── Uso IA (OpenRouter) ─── */}
         {aiUsage && aiUsage.totalQueries > 0 && (
           <section className="mt-12" id="ai-usage">
-            <h2 className="font-display text-xl font-semibold text-ink">
-              🤖 Uso IA — últimos {aiUsage.windowDays} días
-            </h2>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-display text-xl font-semibold text-ink">
+                🤖 Uso IA — últimos {aiUsage.windowDays} días
+              </h2>
+              <Link
+                href="/admin/insights/ai-usage"
+                className="text-xs text-accent hover:text-accent-deep"
+              >
+                Ver detalle completo →
+              </Link>
+            </div>
             <p className="mt-1 text-sm text-ink/60">
               Coste estimado de OpenRouter agregando recomendador público +
               generador de propuestas admin + voice agent.
