@@ -154,6 +154,9 @@ export default function AdminDashboardPage() {
               <Link href="/admin/suppliers/cifra" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
                 🔌 Cifra
               </Link>
+              <Link href="/admin/team" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
+                👥 Equipo
+              </Link>
               <Link href="/admin/proposals/new" className="rounded-full bg-accent px-3 py-1.5 text-bone hover:bg-accent-dark">
                 ⚡ Nueva propuesta IA
               </Link>
