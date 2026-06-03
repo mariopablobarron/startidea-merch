@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSecret } from "@/lib/auth";
+import { extractJsonFromAIResponse } from "@/lib/json-extract";
 import { defaultTiersFromBase, estimateBaseCentsFromName, pickTier } from "@/lib/pricing";
 
 export const runtime = "nodejs";
@@ -172,12 +173,29 @@ Devuelve la propuesta como JSON descrita arriba.`;
   const text = aiJson.choices?.[0]?.message?.content || "";
   let recs: { items: Array<{ slug: string; ref?: string; quantity: number; rationale: string }>; summary?: string; internalAdvice?: string };
   try {
-    recs = JSON.parse(text);
+    recs = JSON.parse(extractJsonFromAIResponse(text));
   } catch {
-    return NextResponse.json({ error: "Respuesta IA no parseable", raw: text.slice(0, 400) }, { status: 502 });
+    return NextResponse.json(
+      {
+        error: "Respuesta IA no parseable",
+        raw: text.slice(0, 800),
+        hint:
+          "El modelo no devolvió JSON limpio. Suele pasar por: (1) markdown " +
+          "wrapper que el extractor no pilla, (2) respuesta truncada por max_tokens, " +
+          "(3) modelo distinto al esperado.",
+      },
+      { status: 502 },
+    );
   }
   if (!recs.items?.length) {
-    return NextResponse.json({ error: "IA no devolvió items" }, { status: 502 });
+    return NextResponse.json(
+      {
+        error: "IA no devolvió items",
+        raw: text.slice(0, 800),
+        parsed: recs,
+      },
+      { status: 502 },
+    );
   }
 
   // 2. Resolver productos en DB

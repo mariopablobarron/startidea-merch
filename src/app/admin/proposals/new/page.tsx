@@ -20,6 +20,13 @@ type GenerateResult = {
   model?: string;
 };
 
+type ErrorPayload = {
+  message: string;
+  raw?: string;
+  hint?: string;
+  parsed?: unknown;
+};
+
 export default function AdminProposalsNewPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,7 +39,7 @@ export default function AdminProposalsNewPage() {
   const [internalNotes, setInternalNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorPayload | null>(null);
 
   async function generate(e: React.FormEvent) {
     e.preventDefault();
@@ -56,12 +63,17 @@ export default function AdminProposalsNewPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        setError(data.error || "Error generando propuesta");
+        setError({
+          message: data.error || "Error generando propuesta",
+          raw: data.raw,
+          hint: data.hint,
+          parsed: data.parsed,
+        });
       } else {
         setResult(data);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error de red");
+      setError({ message: err instanceof Error ? err.message : "Error de red" });
     } finally {
       setBusy(false);
     }
@@ -187,7 +199,43 @@ export default function AdminProposalsNewPage() {
           </div>
         </form>
 
-        {error && <p className="mt-6 rounded-lg bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}
+        {error && (
+          <div className="mt-6 rounded-3xl border border-rose-200 bg-rose-50/60 p-5">
+            <p className="text-sm font-semibold text-rose-900">⚠ {error.message}</p>
+            {error.hint && (
+              <p className="mt-2 text-xs text-rose-900/75">{error.hint}</p>
+            )}
+            {(error.raw || error.parsed !== undefined) && (
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs font-medium text-rose-900/70 hover:text-rose-900">
+                  Ver respuesta cruda del modelo (debug)
+                </summary>
+                {error.raw && (
+                  <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-ink p-3 font-mono text-[10px] text-bone/90 whitespace-pre-wrap">
+                    {error.raw}
+                  </pre>
+                )}
+                {error.parsed !== undefined && error.parsed !== null && (
+                  <>
+                    <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-rose-900/60">
+                      JSON parseado (pero sin items):
+                    </p>
+                    <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-ink p-3 font-mono text-[10px] text-bone/90">
+                      {JSON.stringify(error.parsed, null, 2)}
+                    </pre>
+                  </>
+                )}
+              </details>
+            )}
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="mt-3 text-[11px] text-rose-700 underline hover:text-rose-900"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
 
         {result && (
           <div className="mt-8 rounded-3xl border border-social bg-social/5 p-6">
