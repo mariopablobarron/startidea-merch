@@ -11,7 +11,15 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4.5";
+// Default proposal generator = Opus 4.7 (junio 2026, mejor reasoning
+// Anthropic actual). Más caro pero queremos máxima calidad para B2B.
+// Override con OPENROUTER_MODEL_PROPOSAL en el .env del VPS si quieres
+// bajar a sonnet. NO usamos OPENROUTER_MODEL aquí porque eso afectaría
+// también al recomendador público (/api/recommend).
+const MODEL =
+  process.env.OPENROUTER_MODEL_PROPOSAL ||
+  process.env.OPENROUTER_MODEL ||
+  "anthropic/claude-opus-4.7";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
 const Schema = z.object({
@@ -100,11 +108,23 @@ export async function POST(req: Request) {
     },
   });
 
+  // Catálogo en prompt: descripciones truncadas a 120 chars para mantener
+  // el prompt pequeño y rápido. El modelo decide por nombre + categoría +
+  // material; la descripción solo da contexto adicional. Antes íbamos sin
+  // límite y un brief con 250 productos × descs largas hinchaba el prompt
+  // a 100-200K chars → request lento o time-out.
+  function truncate(s: string | null | undefined, max: number): string {
+    if (!s) return "";
+    return s.length > max ? s.slice(0, max).trimEnd() + "…" : s;
+  }
   const catalogBlock = products
-    .map(
-      (p, i) =>
-        `[${i + 1}] ${p.name} · ref ${p.supplierRef} · ${p.category?.name || "—"} · ${p.material || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${p.enhancedShortDescription || p.shortDescription || ""}`,
-    )
+    .map((p, i) => {
+      const desc = truncate(
+        p.enhancedShortDescription || p.shortDescription,
+        120,
+      );
+      return `[${i + 1}] ${p.name} · ref ${p.supplierRef} · ${p.category?.name || "—"} · ${p.material || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${desc}`;
+    })
     .join("\n");
 
   const systemPrompt = `Eres un consultor B2B de merchandising. Lees un brief y eliges 3-5 productos del catálogo proporcionado para componer una propuesta comercial.
