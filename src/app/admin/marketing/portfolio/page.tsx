@@ -127,10 +127,10 @@ export default function PortfolioAdminPage() {
   async function seed30() {
     if (
       !confirm(
-        "¿Insertar 30 ejemplos históricos (2017-2026) extraídos del Gmail de Mario?\n\n" +
+        "¿Insertar ejemplos históricos (2016-2026) extraídos del Gmail de Mario?\n\n" +
           "• Es idempotente: si ya hay items con esos títulos no los duplica.\n" +
-          "• 12 quedan ACTIVOS (proyectos propios + ONGs + eventos institucionales).\n" +
-          "• 18 quedan ANONIMIZADOS y desactivados — actívalos manualmente tras pedir permiso al cliente.\n" +
+          "• ~21 quedan ACTIVOS (proyectos propios + ONGs + eventos institucionales + administración pública).\n" +
+          "• ~30 quedan ANONIMIZADOS y desactivados — actívalos manualmente tras pedir permiso al cliente.\n" +
           "• Las imágenes son placeholders. Reemplázalas con foto real desde el editor de cada item.",
       )
     )
@@ -213,10 +213,10 @@ export default function PortfolioAdminPage() {
                 type="button"
                 onClick={seed30}
                 disabled={seeding}
-                title="Inserta 30 ejemplos históricos (2017-2026) del Gmail. Idempotente."
+                title="Inserta ejemplos históricos (2016-2026) del Gmail. Idempotente: solo añade los que falten."
                 className="rounded-full border border-line bg-bone-soft px-4 py-2.5 text-xs font-semibold text-ink/75 hover:border-accent hover:text-ink disabled:opacity-50"
               >
-                {seeding ? "Insertando…" : "📥 Poblar 30 ejemplos iniciales"}
+                {seeding ? "Insertando…" : "📥 Poblar ejemplos históricos"}
               </button>
               <button
                 type="button"
