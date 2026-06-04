@@ -4,7 +4,7 @@
 > deploy, secrets, observabilidad y recuperación. Si entra en conflicto
 > con memoria local de Claude o notas viejas, **este doc gana**.
 
-Actualizado: 2026-06-02
+Actualizado: 2026-06-04
 
 ---
 
@@ -418,6 +418,29 @@ CI no corre tests aún (TODO: añadir step `pnpm test` a `ci.yml`).
 2. SSH y `crontab -l` + `cat /etc/cron.d/*` (si es cron host)
 3. Buscar log: `journalctl -u cron --since "1 hour ago"`
 
+### VPS rechaza SSH "broken pipe" tras un incidente
+
+Patrón observado **2026-06-04**: 3 sitios distintos del VPS (`merchandising.hubstartidea.es`,
+`startidea.es`, `tresmilmillonesdelatidos.es`) devolvieron **404** simultáneamente
+durante ~3 horas. SSH al puerto 22 conecta pero los comandos rechazan con
+`Connection reset by peer` / `client_loop: send disconnect: Broken pipe`.
+4 deploys consecutivos fallaron en ~2 min con exit code 255.
+
+**Diagnóstico**: VPS saturado (proxy Coolify degradado) — NO es un problema del código.
+
+**Qué hacer**:
+
+1. **NO** hacer `systemctl restart docker` (memoria incidente 2026-05-24: causó load 717).
+2. **NO** reintentar push (más deploys saturan más).
+3. Verificar alcance: ¿solo un sitio o todos? `curl -I https://hubstartidea.es` para
+   ver si OTRO sitio del mismo VPS responde — si sí, problema localizado a un container.
+4. Si los 4 sitios + SSH están KO → esperar 10-15 min, la recuperación suele ser natural.
+5. Si tras 30 min sigue KO → reboot suave desde panel Hostinger.
+6. Tras recuperación, `gh run rerun <id>` de los workflows fallidos para limpiar historial.
+
+**Síntoma típico del cron watchdog en este caso**:
+`curl: (28) Failed to connect to merchandising.hubstartidea.es port 443 after 135000 ms`.
+
 ## 16. Contactos
 
 - **Owner**: Mario Pablo Barrón ([mariopablobarron@gmail.com](mailto:mariopablobarron@gmail.com), tel +34 ...)
@@ -431,3 +454,38 @@ CI no corre tests aún (TODO: añadir step `pnpm test` a `ci.yml`).
 📝 *Cuando añadas algo nuevo (cron, env var, integración, página crítica),
 actualiza esta sección. Si el doc tiene >2 semanas sin tocar y el sistema ha
 cambiado, está desactualizado por defecto — léelo con escepticismo.*
+
+---
+
+## 17. Firewall vendor categorizations
+
+`merchandising.hubstartidea.es` fue marcado como "Malicious Websites" por varios
+firewalls corporativos en mayo 2026 al ser dominio nuevo. Trabajo de recategorización
+en marcha desde finales de mayo.
+
+### Estado actual (2026-06-04)
+
+| Vendor | Estado | Vía que funcionó | Categoría asignada |
+|--------|--------|------------------|---------------------|
+| **Symantec / BlueCoat WebPulse** (Broadcom) | ✅ recategorizado | Form web `sitereview.bluecoat.com` — submission **#25880941** (2026-06-01) | Business / Shopping |
+| **McAfee / Trellix** | ✅ recategorizado | Form web `sitelookup.mcafee.com` (2026-05-30) | Marketing / Merchandising / Business / Shopping |
+| **Webroot / BrightCloud** (OpenText) | ✅ recategorizado | Email a `brightcloud-support@opentext.com` — Case **#03251303** (2026-06-01) → resp. de `sleszczynski@opentext.com` | Shopping |
+| **Trend Micro Site Safety** | 🟡 pendiente | Form web `global.sitesafety.trendmicro.com` (email `ratingrequest@trendmicro.com` ❌ 554 Invalid-Recipient) | Sugerida: Shopping |
+| **Fortinet FortiGuard** | 🟡 pendiente | Form web `fortiguard.com/webfilter` (email `webfilter@fortinet.com` aún sin respuesta) | Sugerida: Shopping (49) / Business (29) |
+| **Sophos** | 🟡 pendiente | Form web `secure2.sophos.com/.../web-categorization-request.aspx` (emails `weblabs@sophos.com` ❌ 550 + `support@sophos.com` ❌ auto-rejected) | Sugerida: Shopping |
+| **Forcepoint CSI** | 🟡 pendiente | Form web `csi.forcepoint.com` (email `support@forcepoint.com` ❌ "Support service requests cannot be opened by email") | Sugerida: Shopping / Business and Economy |
+| **Cisco Talos / Umbrella** | 🟡 pendiente | Form web `talosintelligence.com/reputation_center` (email `talos@cisco.com` ❌ MAILER-DAEMON) | Sugerida: Shopping / Business Services |
+
+### Aprendizajes operativos
+
+- **El canal email NO funciona para 5 de 8 vendors**. Los buzones técnicos rebotan (550/554) o se auto-rechazan ("use support portal"). **Siempre usar form web** como vía primaria. Email solo como respaldo para `brightcloud-support@opentext.com`.
+- Mencionar en cada submission las 2 recategorizaciones ya confirmadas (Symantec #25880941, Webroot Case #03251303) acelera la revisión humana del nuevo vendor.
+- Drafts re-usables listos para copy-paste: `~/Desktop/firewall-recategorizacion-2026-06-04.md`
+- Plazos típicos de propagación: 24h-7d según vendor.
+
+### Cómo medir impacto
+
+Si un cliente reporta bloqueo: pregunta qué firewall usan, mira esta tabla, y le confirmas
+si el vendor ya está resuelto. Si el vendor está pendiente, ofrece como prueba temporal el
+form web del propio cliente: `csi.forcepoint.com` y `sitereview.bluecoat.com` permiten al
+admin del firewall del cliente forzar la recategorización en su tenant.
