@@ -579,6 +579,58 @@ export const PORTFOLIO_SEED: PortfolioSeedItem[] = [
     order: 580,
     imageUrl: placeholder("Clínica\nDental\n2019"),
   },
+
+  // ─── AMPLIACIÓN 52-56 — clientes nuevos 2016 (feria, educación, eventos) ──
+  {
+    title: "Stand personalizado para Feria Matelec — Misscolors",
+    description: "Diseño y producción de material gráfico para stand en Feria Matelec (feria internacional de soluciones eléctricas IFEMA Madrid). Acompañamiento integral del cliente para presencia en feria.",
+    clientName: "Misscolors — Stand Matelec IFEMA",
+    sector: "Evento",
+    featured: false,
+    active: true,
+    order: 590,
+    imageUrl: placeholder("Stand Matelec\nIFEMA Madrid\n2016"),
+  },
+  {
+    title: "Pins identificadores 35×16 mm Etitecnic",
+    description: "Pins identificadores para estudiantes de Etitecnic, formato 35×16 mm con marcaje a varias tintas. Pedido institucional centro de formación.",
+    clientName: "Etitecnic — formación técnica",
+    sector: "Educación",
+    featured: false,
+    active: true,
+    order: 600,
+    imageUrl: placeholder("Etitecnic\nPins estudiantes\n2016"),
+  },
+  {
+    title: "Muñeco personalizado UpToMe — modelo prototipo",
+    description: "Producción de muñeco/figura personalizada a medida para UpToMe (marca de regalo personalizado). Acompañamiento desde modelo hasta serie.",
+    clientName: "UpToMe",
+    sector: "Empresa",
+    featured: false,
+    active: false,
+    order: 610,
+    imageUrl: placeholder("UpToMe\nMuñeco personalizado\n2016"),
+  },
+  {
+    title: "Globos personalizados Hispánica de Globos",
+    description: "Globos publicitarios personalizados para campañas. Coordinación con distribuidor especialista Hispánica de Globos. NECESITA PERMISO DE USO.",
+    clientName: "Hispánica de Globos",
+    sector: "Empresa",
+    featured: false,
+    active: false,
+    order: 620,
+    imageUrl: placeholder("Hispánica\nGlobos\n2016"),
+  },
+  {
+    title: "Pedido internacional — distribuidor portugués Tejobrinde",
+    description: "Coordinación con distribuidor portugués Tejobrinde para pedido cross-border. Presupuesto Nº 6028 — ejemplo de proyecto internacional Iberia.",
+    clientName: "Tejobrinde Portugal",
+    sector: "Empresa",
+    featured: false,
+    active: false,
+    order: 630,
+    imageUrl: placeholder("Tejobrinde\nPortugal\n2016"),
+  },
 ];
 
 export const PORTFOLIO_SEED_COUNT = PORTFOLIO_SEED.length;
