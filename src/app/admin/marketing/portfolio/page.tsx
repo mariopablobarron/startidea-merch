@@ -129,9 +129,9 @@ export default function PortfolioAdminPage() {
       !confirm(
         "¿Insertar ejemplos históricos (2016-2026) extraídos del Gmail de Mario?\n\n" +
           "• Es idempotente: si ya hay items con esos títulos no los duplica.\n" +
-          "• ~21 quedan ACTIVOS (proyectos propios + ONGs + eventos institucionales + administración pública).\n" +
-          "• ~30 quedan ANONIMIZADOS y desactivados — actívalos manualmente tras pedir permiso al cliente.\n" +
-          "• Las imágenes son placeholders. Reemplázalas con foto real desde el editor de cada item.",
+          "• Todos los items se insertan ACTIVOS y con el nombre real del cliente.\n" +
+          "• Las imágenes son placeholders. Reemplázalas con foto real con el botón 'Subir foto' del editor.\n" +
+          "• Puedes destacar / desactivar / borrar / reordenar libremente desde aquí.",
       )
     )
       return;
@@ -170,6 +170,54 @@ export default function PortfolioAdminPage() {
       body: JSON.stringify({ [field]: !it[field] }),
     });
     await load();
+  }
+
+  // ─── Reordenar con flecha: ↑ resta 15 al order, ↓ suma 15. El backend ordena ASC. ──
+  async function move(id: string, delta: number) {
+    const it = items.find((i) => i.id === id);
+    if (!it) return;
+    const newOrder = Math.max(0, Math.min(9999, it.order + delta));
+    if (newOrder === it.order) return;
+    // Optimistic update — UI responde antes de la red
+    setItems((curr) =>
+      [...curr]
+        .map((i) => (i.id === id ? { ...i, order: newOrder } : i))
+        .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt)),
+    );
+    await fetch(`/api/admin/portfolio/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ order: newOrder }),
+    });
+    await load();
+  }
+
+  // ─── Subir foto desde el editor: multipart → URL CDN local /files/portfolio/X ──
+  async function uploadImage(file: File) {
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await fetch("/api/admin/portfolio/upload", {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFeedback({ ok: false, msg: data.error || "Error al subir" });
+      } else {
+        const fullUrl = data.url.startsWith("http")
+          ? data.url
+          : `${window.location.origin}${data.url}`;
+        setForm((f) => ({ ...f, imageUrl: fullUrl }));
+        setFeedback({ ok: true, msg: `Imagen subida (${Math.round(data.size / 1024)} KB).` });
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
   const editing = editingId || creating;
@@ -245,14 +293,36 @@ export default function PortfolioAdminPage() {
               {editingId ? "Editar trabajo" : "Nuevo trabajo"}
             </h2>
             <div className="grid gap-4 lg:grid-cols-2">
-              <Field label="URL imagen *" full help="Imagen real del pedido producido. URL absoluta de tu CDN.">
-                <input
-                  type="text"
-                  value={form.imageUrl}
-                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                  placeholder="https://cdn.tu-cdn.com/pedido-acme.jpg"
-                  className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-xs outline-none focus:border-accent"
-                />
+              <Field label="URL imagen *" full help="Sube una foto del taller, un boceto PDF de Cifra o pega una URL absoluta de tu CDN.">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={form.imageUrl}
+                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                    placeholder="https://cdn.tu-cdn.com/pedido-acme.jpg"
+                    className="flex-1 min-w-[200px] rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-xs outline-none focus:border-accent"
+                  />
+                  <label
+                    className={`cursor-pointer rounded-full border border-accent/40 bg-accent-wash px-3 py-2 text-xs font-semibold text-accent-deep hover:bg-accent/15 ${
+                      saving ? "opacity-50 pointer-events-none" : ""
+                    }`}
+                    title="Sube PNG, JPG, SVG, WebP o PDF (máx 8 MB)"
+                  >
+                    📤 Subir foto
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/svg+xml,image/webp,application/pdf"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          void uploadImage(file);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
                 {form.imageUrl && (
                   <div className="mt-2 relative aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-line bg-bone-soft">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -402,7 +472,28 @@ export default function PortfolioAdminPage() {
                 {it.clientName && (
                   <p className="text-[11px] text-ink/50">{it.clientName}</p>
                 )}
-                <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+                  <div className="flex items-center gap-0.5 rounded-full border border-line bg-bone-soft">
+                    <button
+                      type="button"
+                      onClick={() => move(it.id, -15)}
+                      title="Subir en el orden"
+                      aria-label="Subir"
+                      className="rounded-l-full px-2 py-0.5 text-ink/70 hover:bg-bone hover:text-ink"
+                    >
+                      ↑
+                    </button>
+                    <span className="px-1 text-[9px] font-mono text-ink/40">{it.order}</span>
+                    <button
+                      type="button"
+                      onClick={() => move(it.id, 15)}
+                      title="Bajar en el orden"
+                      aria-label="Bajar"
+                      className="rounded-r-full px-2 py-0.5 text-ink/70 hover:bg-bone hover:text-ink"
+                    >
+                      ↓
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => toggleField(it.id, "featured")}
@@ -437,6 +528,7 @@ export default function PortfolioAdminPage() {
                     type="button"
                     onClick={() => remove(it.id)}
                     className="rounded-full border border-accent/30 px-2 py-0.5 text-accent-deep hover:bg-accent-wash"
+                    title="Borrar"
                   >
                     ×
                   </button>
