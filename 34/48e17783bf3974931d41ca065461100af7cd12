@@ -1,0 +1,20 @@
+src/app/admin/marketing/portfolio/page.tsx
+  s_65877aa637ec34::t_c65c802bfde43d 130,132-133
+  s_65877aa637ec34::t_a6f5581d0efa4b 216,219
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3448e17783bf3974931d41ca065461100af7cd12",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
