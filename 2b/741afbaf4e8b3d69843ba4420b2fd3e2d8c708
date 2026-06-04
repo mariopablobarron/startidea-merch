@@ -1,0 +1,21 @@
+OPERATIONS.md
+  s_65877aa637ec34::t_05ff67716200bc 7
+  s_65877aa637ec34::t_42cdc71d1fdea8 421-443
+  s_65877aa637ec34::t_f1c7f3730a11ae 457-491
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "2b741afbaf4e8b3d69843ba4420b2fd3e2d8c708",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
