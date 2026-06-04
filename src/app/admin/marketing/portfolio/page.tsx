@@ -37,6 +37,7 @@ export default function PortfolioAdminPage() {
   const [form, setForm] = useState(EMPTY);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -123,6 +124,42 @@ export default function PortfolioAdminPage() {
     await load();
   }
 
+  async function seed30() {
+    if (
+      !confirm(
+        "¿Insertar 30 ejemplos históricos (2017-2026) extraídos del Gmail de Mario?\n\n" +
+          "• Es idempotente: si ya hay items con esos títulos no los duplica.\n" +
+          "• 12 quedan ACTIVOS (proyectos propios + ONGs + eventos institucionales).\n" +
+          "• 18 quedan ANONIMIZADOS y desactivados — actívalos manualmente tras pedir permiso al cliente.\n" +
+          "• Las imágenes son placeholders. Reemplázalas con foto real desde el editor de cada item.",
+      )
+    )
+      return;
+    setSeeding(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/admin/portfolio/seed-30", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFeedback({ ok: false, msg: data.error || "Error" });
+      } else {
+        setFeedback({
+          ok: true,
+          msg:
+            data.inserted > 0
+              ? `Insertados ${data.inserted} ejemplos (${data.skipped} ya existían). Total en BD: ${data.totalInDb}.`
+              : `Ya estaban los 30 (idempotente). Total en BD: ${data.totalInDb}.`,
+        });
+        await load();
+      }
+    } finally {
+      setSeeding(false);
+    }
+  }
+
   async function toggleField(id: string, field: "featured" | "active") {
     const it = items.find((i) => i.id === id);
     if (!it) return;
@@ -171,13 +208,24 @@ export default function PortfolioAdminPage() {
             </div>
           </div>
           {!editing && (
-            <button
-              type="button"
-              onClick={startCreate}
-              className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark"
-            >
-              + Añadir trabajo
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={seed30}
+                disabled={seeding}
+                title="Inserta 30 ejemplos históricos (2017-2026) del Gmail. Idempotente."
+                className="rounded-full border border-line bg-bone-soft px-4 py-2.5 text-xs font-semibold text-ink/75 hover:border-accent hover:text-ink disabled:opacity-50"
+              >
+                {seeding ? "Insertando…" : "📥 Poblar 30 ejemplos iniciales"}
+              </button>
+              <button
+                type="button"
+                onClick={startCreate}
+                className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark"
+              >
+                + Añadir trabajo
+              </button>
+            </div>
           )}
         </header>
 
