@@ -1,0 +1,25 @@
+src/app/admin/marketing/portfolio/page.tsx
+  s_65877aa637ec34::t_ca22d5db8ad4c4 40
+  s_65877aa637ec34::t_3db598457d94ac 211-228
+  s_65877aa637ec34::t_5a6219568eb8e4 127-162
+src/app/api/admin/portfolio/seed-30/route.ts
+  s_65877aa637ec34::t_8cbf77fafb2439 1-101
+src/data/portfolio-seed.ts
+  s_65877aa637ec34::t_7264f025457b9d 1-351
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "67a0cc5b06758e563f273bdf284ec24fc6dd76a3",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
