@@ -41,13 +41,22 @@ export type PortfolioSeedItem = {
 };
 
 // Helpers para mantener todas las cards activas y reducir ruido en el seed
+// SEGURO POR DEFECTO (2026-06-09): todos los ejemplos entran OCULTOS
+// (active:false, featured:false). Aunque se pulse "Poblar", NADA sale
+// público hasta que Mario active item por item desde /admin/marketing/portfolio,
+// y SOLO los clientes de los que tenga permiso/consentimiento para mostrar
+// su nombre. Evita exponer nombres reales de clientes (Lactalis, Koh Young,
+// Cámara Comercio, despachos, etc.) sin autorización.
+//
+// FEAT/ITEM se mantienen como marca semántica del "candidato a destacado"
+// vs "candidato normal", pero AMBOS entran inactivos. El admin decide.
 const FEAT = (order: number, title: string, clientName: string, sector: string, description: string, placeholderText: string): PortfolioSeedItem => ({
   title,
   description,
   clientName,
   sector,
-  featured: true,
-  active: true,
+  featured: false,
+  active: false,
   order,
   imageUrl: placeholder(placeholderText),
 });
@@ -58,7 +67,7 @@ const ITEM = (order: number, title: string, clientName: string, sector: string, 
   clientName,
   sector,
   featured: false,
-  active: true,
+  active: false,
   order,
   imageUrl: placeholder(placeholderText),
 });

@@ -129,9 +129,9 @@ export default function PortfolioAdminPage() {
       !confirm(
         "¿Insertar ejemplos históricos (2016-2026) extraídos del Gmail de Mario?\n\n" +
           "• Es idempotente: si ya hay items con esos títulos no los duplica.\n" +
-          "• Todos los items se insertan ACTIVOS y con el nombre real del cliente.\n" +
-          "• Las imágenes son placeholders. Reemplázalas con foto real con el botón 'Subir foto' del editor.\n" +
-          "• Puedes destacar / desactivar / borrar / reordenar libremente desde aquí.",
+          "• ⚠️ TODOS entran OCULTOS (inactivos). NO se publica ningún nombre de cliente.\n" +
+          "• Tú decides cuáles activar uno a uno — SOLO clientes de los que tengas permiso para mostrar su nombre.\n" +
+          "• Las imágenes son placeholders. Reemplázalas con foto real con el botón 'Subir foto'.",
       )
     )
       return;
