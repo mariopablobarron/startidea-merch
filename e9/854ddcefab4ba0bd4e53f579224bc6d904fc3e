@@ -1,0 +1,25 @@
+src/components/Nav.tsx
+  s_65877aa637ec34::t_bbeb9230ee3638 13,15-17,23-27
+  s_65877aa637ec34::t_334ca98f81c69e 73
+  s_65877aa637ec34::t_6e2df8196b632c 78
+  s_65877aa637ec34::t_5f7b71a8f7a508 94
+  s_65877aa637ec34::t_31c3933f784833 56
+  s_65877aa637ec34::t_53fc187c05b167 107-110
+  s_65877aa637ec34::t_2d9a1f5c6f9c8a 117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "e9854ddcefab4ba0bd4e53f579224bc6d904fc3e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
