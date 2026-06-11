@@ -36,16 +36,6 @@ const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4.5";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
 export async function POST(req: Request) {
-  if (!OPENROUTER_KEY) {
-    return NextResponse.json(
-      {
-        error: "Recomendador IA no configurado",
-        hint: "Falta OPENROUTER_API_KEY en envs de la app.",
-      },
-      { status: 503 },
-    );
-  }
-
   let body: unknown;
   try {
     body = await req.json();
@@ -60,6 +50,48 @@ export async function POST(req: Request) {
     );
   }
   const { brief, budget, quantity, preferredCategories, ecoOnly } = parsed.data;
+
+  // Degradación elegante: el cliente NUNCA ve un error técnico. Si la IA no
+  // está disponible (sin key, red caída, proveedor con 5xx/429 tras retries),
+  // le llevamos al catálogo filtrado por su brief y avisamos al admin.
+  const gracefulFallback = (reason: string, err?: unknown) => {
+    captureError(err instanceof Error ? err : new Error(reason), {
+      context: "api/recommend/ai-unavailable",
+      severity: "error",
+      notifyAdmin: true,
+    });
+    void prisma.recommenderQuery
+      .create({
+        data: {
+          brief,
+          budget: budget ?? null,
+          quantity: quantity ?? null,
+          ecoOnly: !!ecoOnly,
+          needsClarification: false,
+          fallback: true,
+          recommendedSlugs: [],
+          summary: `[fallback] ${reason}`.slice(0, 500),
+          mode: "recommend",
+        },
+      })
+      .catch(() => {});
+    const keywords = extractKeywords(brief);
+    return NextResponse.json(
+      {
+        ok: true,
+        fallback: true,
+        summary:
+          "Ahora mismo no puedo afinar recomendaciones personalizadas, así que te llevo al catálogo ya filtrado con lo que has descrito. Si lo prefieres, pídenos cotización y te respondemos en 24 h.",
+        redirectUrl: keywords ? `/catalogo?q=${encodeURIComponent(keywords)}` : "/catalogo",
+        recommendations: [],
+      },
+      { status: 200 },
+    );
+  };
+
+  if (!OPENROUTER_KEY) {
+    return gracefulFallback("OPENROUTER_API_KEY no configurada");
+  }
 
   // 1) Snapshot del catálogo: top 250 productos relevantes
   const products = await prisma.product.findMany({
@@ -162,48 +194,55 @@ INSTRUCCIONES DE PROCESADO:
 
 Devuelve SOLO el JSON descrito.`;
 
-  // 2) Llamada a OpenRouter (formato OpenAI-compatible)
-  let response: Response;
-  try {
-    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENROUTER_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": SITE_URL,
-        "X-Title": "TodoMerchandising",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 4000,
-        temperature: 0.3,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "system",
-            content: `CATÁLOGO DISPONIBLE (${products.length} productos):\n\n${catalogBlock}`,
-          },
-          { role: "user", content: userPrompt },
-        ],
-      }),
-    });
-  } catch (err) {
-    return NextResponse.json(
+  // 2) Llamada al gateway de IA (formato OpenAI-compatible) con reintento.
+  // Errores transitorios (red, 429, 5xx) se reintentan una vez; si aun así
+  // falla, degradamos al catálogo filtrado — nunca un error técnico al cliente.
+  const aiPayload = JSON.stringify({
+    model: MODEL,
+    max_tokens: 4000,
+    temperature: 0.3,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: systemPrompt },
       {
-        error: "Fallo al llamar a OpenRouter",
-        detail: err instanceof Error ? err.message : String(err),
+        role: "system",
+        content: `CATÁLOGO DISPONIBLE (${products.length} productos):\n\n${catalogBlock}`,
       },
-      { status: 502 },
-    );
+      { role: "user", content: userPrompt },
+    ],
+  });
+
+  let response: Response | null = null;
+  let lastFailure = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": SITE_URL,
+          "X-Title": "TodoMerchandising",
+        },
+        body: aiPayload,
+        signal: AbortSignal.timeout(attempt === 1 ? 12_000 : 14_000),
+      });
+      if (r.ok) {
+        response = r;
+        break;
+      }
+      const detail = await r.text().catch(() => "");
+      lastFailure = `gateway HTTP ${r.status}: ${detail.slice(0, 300)}`;
+      // 4xx no transitorios (key inválida, payload) no merecen reintento
+      if (r.status < 429 || (r.status > 429 && r.status < 500)) break;
+    } catch (err) {
+      lastFailure = err instanceof Error ? err.message : String(err);
+    }
+    if (attempt === 1) await new Promise((res) => setTimeout(res, 800));
   }
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    return NextResponse.json(
-      { error: "OpenRouter respondió con error", status: response.status, detail: detail.slice(0, 400) },
-      { status: 502 },
-    );
+  if (!response) {
+    return gracefulFallback(`IA no disponible tras 2 intentos — ${lastFailure}`);
   }
 
   const json = (await response.json()) as {

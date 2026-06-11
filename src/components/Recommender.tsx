@@ -174,9 +174,14 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
+        // 400 = validación (mensaje apto para el cliente); el resto son
+        // errores técnicos que no deben verse tal cual.
         setProposalState({
           status: "error",
-          message: data?.error || `HTTP ${res.status}`,
+          message:
+            res.status === 400 && data?.error
+              ? data.error
+              : "No hemos podido enviar la propuesta ahora mismo. Inténtalo de nuevo en unos segundos.",
         });
         return;
       }
@@ -187,10 +192,11 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
         emailFailed: !!data.emailFailed,
       });
       trackExperimentEvent(experiment ?? undefined, "proposal");
-    } catch (err) {
+    } catch {
       setProposalState({
         status: "error",
-        message: err instanceof Error ? err.message : "Error de red",
+        message:
+          "No hemos podido enviar la propuesta ahora mismo. Comprueba tu conexión e inténtalo de nuevo.",
       });
     }
   }
@@ -219,9 +225,21 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
         window.location.href = data.redirectUrl;
         return;
       }
+      // Si el servidor devolviera un error técnico, no se lo enseñamos al
+      // cliente: mensaje de marca con alternativas (catálogo / cotización).
+      if ("error" in data) {
+        setResult({
+          error: "No hemos podido generar la recomendación en este momento.",
+          hint: "Inténtalo de nuevo en unos segundos — o usa el catálogo o el formulario de cotización y te respondemos en 24 h.",
+        });
+        return;
+      }
       setResult(data);
-    } catch (err) {
-      setResult({ error: err instanceof Error ? err.message : "Error desconocido" });
+    } catch {
+      setResult({
+        error: "No hemos podido generar la recomendación en este momento.",
+        hint: "Comprueba tu conexión e inténtalo de nuevo — o usa el catálogo o el formulario de cotización y te respondemos en 24 h.",
+      });
     } finally {
       setLoading(false);
     }
