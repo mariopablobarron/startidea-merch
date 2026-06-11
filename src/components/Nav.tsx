@@ -10,18 +10,21 @@ import { TopBar } from "./TopBar";
 import { NavCartBadge } from "./NavCartBadge";
 import { TourLauncher } from "./TourLauncher";
 
-type NavLink = { href: string; label: string; badge?: string };
+type NavLink = { href: string; label: string; badge?: string; secondary?: boolean };
 
+// Los `secondary` solo caben a partir de 2xl (1536px); por debajo el conjunto
+// completo desborda la fila y provoca scroll horizontal en portátiles.
+// Siguen accesibles en el footer y en el menú móvil.
 const NAV_LINKS: NavLink[] = [
   { href: "/catalogo", label: "Catálogo" },
   { href: "/promociones", label: "Promos", badge: "★" },
   { href: "/recomendador", label: "Recomendador IA" },
   { href: "/trabajos", label: "Trabajos" },
-  { href: "/blog", label: "Blog" },
-  { href: "/recursos", label: "Recursos", badge: "Gratis" },
-  { href: "/#impacto", label: "Impacto" },
-  { href: "/sobre", label: "Sobre" },
-  { href: "/ayuda", label: "Ayuda" },
+  { href: "/blog", label: "Blog", secondary: true },
+  { href: "/recursos", label: "Recursos", badge: "Gratis", secondary: true },
+  { href: "/#impacto", label: "Impacto", secondary: true },
+  { href: "/sobre", label: "Sobre", secondary: true },
+  { href: "/ayuda", label: "Ayuda", secondary: true },
 ];
 
 export function Nav() {
@@ -50,7 +53,7 @@ export function Nav() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bone-soft/85 backdrop-blur">
       <TopBar />
-      <div className="mx-auto flex h-16 max-w-8xl items-center gap-4 px-4 sm:gap-6 sm:px-6 lg:gap-10 lg:px-10">
+      <div className="mx-auto flex h-16 max-w-8xl items-center gap-4 px-4 sm:gap-6 sm:px-6 lg:px-10">
         <Link
           href="/"
           className="flex shrink-0 items-center"
@@ -67,12 +70,12 @@ export function Nav() {
         </Link>
 
         {/* Buscador desktop */}
-        <div data-tour="search" className="hidden flex-1 lg:flex lg:max-w-xl">
+        <div data-tour="search" className="hidden min-w-0 flex-1 lg:flex lg:max-w-xl">
           <NavSearch />
         </div>
 
         {/* Nav desktop */}
-        <nav className="hidden items-center gap-7 md:flex">
+        <nav className="hidden items-center gap-5 md:flex">
           {NAV_LINKS.map((l) => (
             <Link
               key={l.href}
@@ -88,7 +91,7 @@ export function Nav() {
                         ? "nav-trabajos"
                         : undefined
               }
-              className={`inline-flex items-center gap-1 text-sm hover:text-accent ${l.badge ? "font-medium text-accent" : "font-medium"}`}
+              className={`${l.secondary ? "hidden 2xl:inline-flex" : "inline-flex"} items-center gap-1 text-sm hover:text-accent ${l.badge ? "font-medium text-accent" : "font-medium"}`}
             >
               <span>{l.label}</span>
               {l.badge && (
@@ -101,15 +104,17 @@ export function Nav() {
         </nav>
 
         {/* Acciones desktop: tour + cesta + login + CTA */}
-        <div className="ml-auto hidden items-center gap-2 sm:flex md:ml-0">
-          <TourLauncher variant="navbar" />
+        <div className="ml-auto hidden shrink-0 items-center gap-2 sm:flex md:ml-0">
+          <span className="hidden 2xl:block">
+            <TourLauncher variant="navbar" />
+          </span>
           <span data-tour="cart-badge">
             <NavCartBadge />
           </span>
           <Link
             href="/clientes"
             data-tour="nav-account"
-            className="hidden rounded-full border border-line bg-bone-soft px-3 py-1.5 text-xs font-medium text-ink/70 transition hover:border-accent hover:text-ink lg:inline-flex"
+            className="hidden rounded-full border border-line bg-bone-soft px-3 py-1.5 text-xs font-medium text-ink/70 transition hover:border-accent hover:text-ink xl:inline-flex"
             title="Acceder al portal de cliente"
           >
             Mi cuenta
