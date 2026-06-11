@@ -1,0 +1,28 @@
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_2c36aa3e6ed2c7 7
+  s_65877aa637ec34::t_4becf0c49d993b 358-360
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_42d154e1aa183c 9
+  s_65877aa637ec34::t_fe39b401b61df8 587-590
+src/components/Recommender.tsx
+  s_65877aa637ec34::t_dc2aa86fc0b262 6
+  s_65877aa637ec34::t_f6a2298b7b0f57 520-523
+src/components/DeliveryEstimate.tsx
+  s_65877aa637ec34::t_436c5b6b556b87 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "dfa5dbe515e591fe79a52f4cb923f63a3cffd155",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
