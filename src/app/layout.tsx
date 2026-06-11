@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Montserrat, Montserrat_Alternates } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { CompareBanner } from "@/components/CompareBanner";
 import { CartBanner } from "@/components/CartBanner";
@@ -19,15 +19,22 @@ import { VoiceAgentGate } from "@/components/VoiceAgentGate";
 
 // Tipografía oficial Manual de identidad Startidea v1.0
 // Montserrat para todo el sistema · Alternates solo display (h1, citas).
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// Fuentes auto-alojadas (subset latin descargado de Google Fonts el 11-jun-2026).
+// next/font/google descargaba en CADA build: dos builds cayeron por timeouts
+// de la red del VPS hacia fonts.googleapis.com. Con next/font/local el build
+// no toca la red. Montserrat es fuente variable (un archivo cubre 400-700).
+const montserrat = localFont({
+  src: "../fonts/montserrat-latin-var.woff2",
+  weight: "400 700",
   variable: "--font-sans",
   display: "swap",
 });
-const montserratAlt = Montserrat_Alternates({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+const montserratAlt = localFont({
+  src: [
+    { path: "../fonts/montserrat-alt-latin-500.woff2", weight: "500" },
+    { path: "../fonts/montserrat-alt-latin-600.woff2", weight: "600" },
+    { path: "../fonts/montserrat-alt-latin-700.woff2", weight: "700" },
+  ],
   variable: "--font-display",
   display: "swap",
 });
