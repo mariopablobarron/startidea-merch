@@ -6,6 +6,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { RelatedProducts } from "@/components/RelatedProducts";
+import { DeliveryEstimate } from "@/components/DeliveryEstimate";
 import { prisma } from "@/lib/prisma";
 import { ProductOrderForm } from "@/components/ProductOrderForm";
 import { CompareToggle } from "@/components/CompareToggle";
@@ -582,6 +583,10 @@ export default async function ProductDetailPage({
                 productSlug={product.slug}
                 positions={product.positions.map((p) => ({ id: p.id, positionId: p.positionId }))}
               />
+
+              <div className="mt-4">
+                <DeliveryEstimate />
+              </div>
 
               <div className="mt-5 grid gap-2 text-sm text-ink/70">
                 <Trust>Producción en Centros Especiales de Empleo o talleres locales</Trust>

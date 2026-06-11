@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { DeliveryEstimate } from "@/components/DeliveryEstimate";
 
 export type EmailCardVariant = {
   experimentId: string | null;
@@ -515,6 +516,10 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
                 </span>
               </div>
             )}
+
+            <div className="mt-4">
+              <DeliveryEstimate variant="inline" />
+            </div>
 
             <p className="mt-4 rounded-2xl bg-bone-soft p-4 text-xs italic text-ink/70">
               ⓘ <strong>Precios orientativos</strong>: incluyen producto + marcaje (técnica + setup) según

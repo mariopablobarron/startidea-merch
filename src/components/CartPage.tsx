@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { readCart, writeCart, removeItem, clearCart, cartTotalCents, type CartItem } from "@/lib/cart-storage";
+import { DeliveryEstimate } from "@/components/DeliveryEstimate";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -353,6 +354,9 @@ export function CartPage() {
             <p className="font-display text-2xl font-semibold tabular-nums text-ink">
               {EUR.format(total / 100)}
             </p>
+          </div>
+          <div className="mt-3 border-t border-line pt-3">
+            <DeliveryEstimate variant="inline" />
           </div>
         </div>
       </div>
