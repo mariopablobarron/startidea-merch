@@ -103,6 +103,7 @@ export function Footer() {
               +34 958 045 789
             </a>
             <p className="text-bone/60">L–V 9:00 – 18:00</p>
+            <a href="https://comunidad.hubstartidea.es" target="_blank" rel="noopener" className="hover:text-accent">Comunidad Startidea ↗</a>
           </FooterCol>
           <FooterCol title="Catálogo">
             <Link href="/catalogo" className="hover:text-accent">Todos los productos</Link>
