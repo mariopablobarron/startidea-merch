@@ -1,0 +1,24 @@
+src/components/Recommender.tsx
+  s_65877aa637ec34::t_75309150cc01f9 177-178,181-184
+  s_65877aa637ec34::t_7772ba5f3782c5 195,198-199
+  s_65877aa637ec34::t_b5e9aeb8adce60 228-236,238-242
+src/app/api/recommend/route.ts
+  s_65877aa637ec34::t_544fc2416828da 197-206,208-209,211-241,244-245
+  s_65877aa637ec34::t_56c1c91ebd3fb3 54-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "fb1a5088eee54a503245c41a01f7f4e9ffa68f59",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
