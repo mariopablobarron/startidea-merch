@@ -22,16 +22,55 @@ export async function PortfolioGrid({
     items = await prisma.portfolioItem.findMany({
       where: {
         active: true,
+        // Nunca mostrar tarjetas sin foto real: un hueco gris parece web rota.
+        imageUrl: { not: "" },
+        NOT: { imageUrl: { contains: "placeholder" } },
         ...(variant === "home" ? { featured: true } : {}),
       },
       orderBy: [{ order: "asc" }, { createdAt: "desc" }],
       take: limit ?? (variant === "home" ? 8 : 60),
     });
+    items = items.filter((it) => it.imageUrl && it.imageUrl.trim() !== "");
   } catch {
     return null;
   }
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    // En home la sección simplemente no aparece; en /trabajos dejamos un
+    // bloque comercial cuidado en lugar de una página descabezada.
+    if (variant === "home") return null;
+    return (
+      <section className="bg-bone-soft py-20 lg:py-28">
+        <div className="mx-auto max-w-3xl px-6 text-center lg:px-10">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+            — Galería en preparación
+          </p>
+          <h2 className="mt-3 font-display text-section font-semibold text-ink">
+            Estamos seleccionando los mejores trabajos para enseñártelos.
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-base text-ink/65">
+            Mientras tanto, cuéntanos qué tienes en mente y te enviamos ejemplos
+            reales de pedidos de tu sector: textil, cristal, escritura, drinkware,
+            tecnología o eventos.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/catalogo"
+              className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-bone transition hover:bg-ink/85"
+            >
+              Ver catálogo
+            </Link>
+            <a
+              href="mailto:pedidos@startidea.es?subject=Quiero%20ver%20ejemplos%20de%20trabajos"
+              className="rounded-full border border-ink/15 px-6 py-3 text-sm font-semibold text-ink transition hover:border-ink/40"
+            >
+              Pedir ejemplos de mi sector
+            </a>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
