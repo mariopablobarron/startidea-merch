@@ -73,6 +73,15 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Reintenta webhook deliveries fallidos",
   },
   {
+    name: "auto-proposal",
+    endpointPath: "/api/cron/auto-proposal",
+    method: "POST",
+    schedule: "cada 15 min",
+    scheduleCron: "*/15 * * * *",
+    frequencyHours: 0.25,
+    description: "Agente 24h: genera propuesta borrador + PDF por cada carrito nuevo y avisa al admin",
+  },
+  {
     name: "refresh-tracking",
     endpointPath: "/api/cron/refresh-tracking",
     method: "POST",
