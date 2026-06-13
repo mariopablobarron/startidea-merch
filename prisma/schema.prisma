@@ -94,6 +94,7 @@ enum SupplierCode {
   midocean
   makito
   cifra
+  adivin
 }
 
 model Category {
