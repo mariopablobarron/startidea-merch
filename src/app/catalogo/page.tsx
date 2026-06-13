@@ -200,9 +200,18 @@ export default async function CatalogoPage({
         },
       }),
       prisma.product.count({ where }),
-      // Top-level categories con count de productos activos por cada una
+      // Top-level categories con count de productos activos por cada una.
+      // Filtramos las que tienen al menos 1 producto activo (directo o en subcategorías
+      // hasta level 3) para evitar que el panel muestre categorías vacías.
       prisma.category.findMany({
-        where: { level: 1 },
+        where: {
+          level: 1,
+          OR: [
+            { products: { some: { active: true } } },
+            { children: { some: { products: { some: { active: true } } } } },
+            { children: { some: { children: { some: { products: { some: { active: true } } } } } } },
+          ],
+        },
         orderBy: { name: "asc" },
         include: { _count: { select: { products: { where: { active: true } } } } },
       }),
