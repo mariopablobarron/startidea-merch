@@ -482,9 +482,22 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
     const resp = await fetchMarkingTechniquesPrices();
     const techs = resp.techniques || [];
     for (const t of techs) {
-      await upsertMarkingTechnique(t);
-      techniquesUpserted++;
-      scalesUpserted += await upsertMarkingScales(t);
+      // Saltamos técnicas malformadas (code null/vacío) sin contarlas como error
+      // ni romper el bucle: la API de Makito devuelve algún registro corrupto.
+      const rawCode = (t.code ?? "").toString().trim();
+      if (!rawCode || rawCode.toLowerCase() === "null") continue;
+      // try/catch por iteración: un registro defectuoso no debe abortar el resto
+      // de técnicas (antes el throw tumbaba el bucle entero → ok=false + pérdida).
+      try {
+        await upsertMarkingTechnique(t);
+        techniquesUpserted++;
+        scalesUpserted += await upsertMarkingScales(t);
+      } catch (e) {
+        errors.push({
+          ref: `_marking:${rawCode}`,
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
     }
   } catch (e) {
     errors.push({ ref: "_marking", message: e instanceof Error ? e.message : String(e) });
@@ -538,6 +551,11 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
 // ─── Upsert helpers de marcaje (MarkingTechnique + MarkingPriceScale) ──────
 
 async function upsertMarkingTechnique(t: MakitoMarkingTechniquePrice): Promise<void> {
+  // Guard: la API de Makito a veces devuelve técnicas malformadas con code null
+  // (ej. ref 100121). Sin code no hay clave única posible ni nombre legible →
+  // las saltamos en silencio en vez de reventar el upsert (name NOT NULL).
+  const rawCode = (t.code ?? "").toString().trim();
+  if (!rawCode || rawCode.toLowerCase() === "null") return;
   // Mapeo code → nombre legible (mismo que ya tenemos en SupplierMarkingRule)
   // Si el code matchea con uno conocido, reutilizamos label. Si no, code crudo.
   const labelMap: Record<string, string> = {
@@ -560,12 +578,12 @@ async function upsertMarkingTechnique(t: MakitoMarkingTechniquePrice): Promise<v
     SUB1: "Sublimación",
     SUB2: "Sublimación",
   };
-  const name = labelMap[t.code] || t.code;
+  const name = labelMap[rawCode] || rawCode;
   // El código del MarkingTechnique debe ser único globalmente. Para evitar
   // colisiones con MidOcean (que usa códigos cortos como "B", "L3"...) y Cifra
   // (que comparte códigos como "A", "F" en SupplierMarkingRule), prefijamos
   // las MarkingTechnique de Makito con "MK_" para mantenerlas separadas.
-  const techniqueCode = `MK_${t.code}`;
+  const techniqueCode = `MK_${rawCode}`;
   await prisma.markingTechnique.upsert({
     where: { code: techniqueCode },
     create: {
