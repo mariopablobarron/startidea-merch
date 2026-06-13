@@ -1,0 +1,28 @@
+src/app/api/cron/auto-proposal/route.ts
+  s_65877aa637ec34::t_d6367deac7b097 80,85
+src/app/admin/propuestas/page.tsx
+  s_65877aa637ec34::t_5cd7ddacd87b9e 41
+  s_65877aa637ec34::t_a1056a8e010986 237-253
+  s_65877aa637ec34::t_fcf43b5982b6a3 17
+  s_65877aa637ec34::t_d3a764b78f3250 33
+src/components/SendProposalDraftButton.tsx
+  s_65877aa637ec34::t_c7ba2327c1d9ec 1-57
+src/app/api/admin/proposals/[id]/send-to-client/route.ts
+  s_65877aa637ec34::t_8225143c83f52a 1-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "f31c803a31b132e436ee39731a04476253a92203",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
