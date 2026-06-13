@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { readCart, writeCart, removeItem, clearCart, cartTotalCents, type CartItem } from "@/lib/cart-storage";
 import { DeliveryEstimate } from "@/components/DeliveryEstimate";
+import { trackLead, trackInitiateCheckout } from "@/lib/ads-events";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -96,8 +97,13 @@ export function CartPage() {
         setError(data.error || "Algo falló enviando la cotización.");
         return;
       }
+      // Evento de conversión Lead a los pixels (GA4 ahora; Meta/Google/LinkedIn
+      // en cuanto se configuren sus IDs). El valor es el total del carrito.
+      const valueEur = Math.round(cartTotalCents(items)) / 100;
+      trackLead({ method: directPay ? "cotizacion-pago-directo" : "cotizacion", value: valueEur });
       // Si pidió pago directo y el backend nos devuelve URL, redirige a Stripe.
       if (directPay && data.payUrl) {
+        trackInitiateCheckout({ value: valueEur, numItems: items.length });
         clearCart();
         window.location.href = data.payUrl;
         return;

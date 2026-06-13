@@ -15,6 +15,7 @@ import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { AdsPixels } from "@/components/AdsPixels";
 import { CookieBanner } from "@/components/CookieBanner";
 import { EmailCapturePopup } from "@/components/EmailCapturePopup";
+import { AttributionTracker } from "@/components/AttributionTracker";
 import { VoiceAgentGate } from "@/components/VoiceAgentGate";
 
 // Tipografía oficial Manual de identidad Startidea v1.0
@@ -131,6 +132,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PWARegister />
         <GlobalErrorTracker />
         <ReferrerTracker />
+        <AttributionTracker />
         <Analytics />
         <CookieBanner />
         <EmailCapturePopup />

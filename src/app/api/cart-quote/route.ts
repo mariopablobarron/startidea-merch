@@ -7,7 +7,9 @@ import { notifyAdmins } from "@/lib/notify-admin";
 import { validateCoupon, applyCoupon } from "@/lib/coupons";
 import { notifyTelegram } from "@/lib/telegram";
 import { readPartnerSlug, attachReferral } from "@/lib/referral";
+import { readAttribution } from "@/lib/attribution";
 import { rateLimit } from "@/lib/rate-limit";
+import type { Prisma } from "@prisma/client";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
 
@@ -101,6 +103,9 @@ export async function POST(req: Request) {
     ? `pay_${randomBytes(20).toString("base64url")}`
     : null;
 
+  // Atribución de primer toque (cookie merch_attrib) → de qué canal vino la venta.
+  const attribution = readAttribution(req);
+
   const cart = await prisma.cartQuote.create({
     data: {
       name: data.name,
@@ -115,6 +120,11 @@ export async function POST(req: Request) {
       // depósito 100% por defecto, token presente. acceptedTotalCents
       // requerido por /api/pay/[token]/checkout para crear Stripe Session.
       status: directPay ? "SENT" : "NEW",
+      utm: attribution
+        ? (Object.fromEntries(
+            Object.entries(attribution).filter(([, v]) => v != null),
+          ) as unknown as Prisma.InputJsonValue)
+        : undefined,
       paymentLinkToken,
       paymentLinkSentAt: directPay ? new Date() : null,
       depositPercent: directPay ? 100 : null,
