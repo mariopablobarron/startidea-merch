@@ -1,0 +1,21 @@
+src/lib/suppliers/makito-sync.ts
+  s_65877aa637ec34::t_b90ebc8ac6d06a 485-500
+  s_65877aa637ec34::t_0539d2ed8b08f0 554-558
+  s_65877aa637ec34::t_b6105b4079a6a1 581,586
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "c16303964aeec3ab525ec1028858c5267a864896",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
