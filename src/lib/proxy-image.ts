@@ -26,6 +26,9 @@ const PROVIDER_HOSTS = new Set([
   // Makito (imgresources.makito.es delata claramente Makito)
   "imgresources.makito.es",
   "www.imgresources.makito.es",
+  // Adivin (adivin.com delata al fabricante de banderas)
+  "adivin.com",
+  "www.adivin.com",
 ]);
 
 const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // 31 chars sin ambiguos
