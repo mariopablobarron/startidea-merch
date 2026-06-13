@@ -1,0 +1,26 @@
+prisma/schema.prisma
+  s_65877aa637ec34::t_a15846e6f760f0 97
+src/lib/proxy-image.ts
+  s_65877aa637ec34::t_1553e646628beb 29-31
+scripts/import-adivin.ts
+  s_65877aa637ec34::t_46d5c97d40d3ca 1-77,85-86,103,105-208
+  s_65877aa637ec34::t_a1ea2e2bbb1b61 78-84,87-102,104
+package.json
+  s_65877aa637ec34::t_91b51f17c16458 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "abedc1fc79bd7072b465c14f2878e6955a535fbe",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
