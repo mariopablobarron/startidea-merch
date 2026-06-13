@@ -1306,6 +1306,12 @@ model CartQuote {
   reminderCount  Int       @default(0) // total de recordatorios enviados
   recoveredAt    DateTime? // cuándo el cliente volvió tras recordatorio
 
+  // Agente 24h: borrador de propuesta auto-generado por el cron auto-proposal.
+  // autoProposalAt actúa como CLAVE DE DEDUP (se setea al reclamar el carrito,
+  // así el cron nunca genera dos borradores ni notifica dos veces).
+  autoProposalAt DateTime?
+  autoProposalId String? // id de la Proposal borrador generada
+
   @@index([status])
   @@index([email])
   @@index([createdAt])
