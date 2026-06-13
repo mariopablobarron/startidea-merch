@@ -14,6 +14,7 @@ import { AdminChrome } from "@/components/AdminChrome";
 import { signProposalToken } from "@/lib/proposal-token";
 import type { ProposalQuoteItem } from "@/lib/proposal-types";
 import { predictProposalsBatch } from "@/lib/insights/proposal-prediction";
+import { SendProposalDraftButton } from "@/components/SendProposalDraftButton";
 
 export const metadata: Metadata = {
   title: "Propuestas (recomendador)",
@@ -29,6 +30,7 @@ const EUR = new Intl.NumberFormat("es-ES", {
 });
 
 const STATUS_LABEL: Record<string, string> = {
+  draft: "Borrador (agente)",
   sent: "Enviada",
   opened: "Abierta",
   accepted: "Aceptada",
@@ -36,6 +38,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
+  draft: "bg-amber-100 text-amber-700",
   sent: "bg-accent/15 text-accent",
   opened: "bg-social/15 text-social",
   accepted: "bg-social text-bone",
@@ -231,14 +234,23 @@ export default async function PropuestasListPage({
                       {fmtDate(p.openedAt)}
                     </td>
                     <td className="px-4 py-3">
-                      <a
-                        href={pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-medium text-accent hover:underline"
-                      >
-                        Ver PDF →
-                      </a>
+                      <div className="flex items-center gap-3">
+                        <a
+                          href={pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium text-accent hover:underline"
+                        >
+                          Ver PDF →
+                        </a>
+                        {p.status === "draft" && (
+                          <SendProposalDraftButton
+                            proposalId={p.id}
+                            proposalNumber={p.proposalNumber}
+                            email={p.email}
+                          />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

@@ -77,12 +77,12 @@ export const POST = wrapCronHandler("auto-proposal", async (req: Request) => {
           `${who}\n` +
           `${draft.itemCount} producto${draft.itemCount === 1 ? "" : "s"} · <b>${EUR.format(draft.totalCents / 100)}</b> (IVA incl.)\n` +
           `📄 PDF: ${draft.downloadUrl}\n` +
-          `✍️ Revisar y enviar: ${SITE_URL}/admin/cart-quotes/${cart.id}`,
+          `✍️ Revisar y enviar (1 clic): ${SITE_URL}/admin/propuestas`,
       ).catch(() => {});
       void notifyAdmins({
         title: `🤖 Propuesta lista para ${cart.name}`,
         body: `${draft.itemCount} prod. · ${EUR.format(draft.totalCents / 100)} — revisar y enviar`,
-        url: `/admin/cart-quotes/${cart.id}`,
+        url: `/admin/propuestas`,
         tag: `auto-proposal-${cart.id}`,
       }).catch(() => {});
 
