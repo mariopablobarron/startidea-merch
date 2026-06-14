@@ -42,6 +42,7 @@ type Cart = {
   depositPercent?: number | null;
   paymentLinkToken?: string | null;
   paymentLinkSentAt?: string | null;
+  paymentLinkExpiresAt?: string | null;
   lostReason?: string | null;
   lostAt?: string | null;
   autoProposalId?: string | null;
@@ -447,8 +448,9 @@ function PaymentLinkPanel({
     cart.estimatedTotalCents != null ? Math.round(cart.estimatedTotalCents / 100) : 0,
   );
   const [depositPercent, setDepositPercent] = useState(50);
+  const [validityDays, setValidityDays] = useState(14);
   const [sendEmail, setSendEmail] = useState(true);
-  const [result, setResult] = useState<{ url?: string; depositCents?: number } | null>(null);
+  const [result, setResult] = useState<{ url?: string; depositCents?: number; expiresAt?: string } | null>(null);
 
   async function createLink() {
     if (acceptedTotal < 1) return;
@@ -460,6 +462,7 @@ function PaymentLinkPanel({
         body: JSON.stringify({
           acceptedTotalCents: Math.round(acceptedTotal * 100),
           depositPercent,
+          validityDays,
           sendEmail,
         }),
       });
@@ -489,7 +492,7 @@ function PaymentLinkPanel({
         )}
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-4">
         <label className="block">
           <span className="text-xs uppercase tracking-wider text-ink/50">Total aceptado (€)</span>
           <input
@@ -510,6 +513,18 @@ function PaymentLinkPanel({
           >
             {[25, 30, 50, 70, 100].map((p) => (
               <option key={p} value={p}>{p}%</option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-xs uppercase tracking-wider text-ink/50">Validez (días)</span>
+          <select
+            value={validityDays}
+            onChange={(e) => setValidityDays(parseInt(e.target.value))}
+            className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+          >
+            {[7, 14, 21, 30, 60].map((d) => (
+              <option key={d} value={d}>{d} días</option>
             ))}
           </select>
         </label>
@@ -553,6 +568,16 @@ function PaymentLinkPanel({
                   enviado {new Date(cart.paymentLinkSentAt).toLocaleDateString("es-ES")}
                 </span>
               )}
+              {cart.paymentLinkExpiresAt && (
+                <span
+                  className={`ml-2 ${new Date(cart.paymentLinkExpiresAt) < new Date() ? "font-semibold text-accent-deep" : "text-ink/50"}`}
+                >
+                  ·{" "}
+                  {new Date(cart.paymentLinkExpiresAt) < new Date()
+                    ? "⚠ caducado"
+                    : `válido hasta ${new Date(cart.paymentLinkExpiresAt).toLocaleDateString("es-ES")}`}
+                </span>
+              )}
             </>
           )}
         </div>
@@ -563,6 +588,12 @@ function PaymentLinkPanel({
           Link: <a href={result.url} target="_blank" rel="noreferrer" className="text-accent underline-offset-4 hover:underline">{result.url}</a>
           <br />
           Importe a cobrar: <strong>{EUR.format((result.depositCents || 0) / 100)}</strong>
+          {result.expiresAt && (
+            <>
+              <br />
+              Válido hasta: <strong>{new Date(result.expiresAt).toLocaleDateString("es-ES")}</strong>
+            </>
+          )}
         </p>
       )}
     </div>

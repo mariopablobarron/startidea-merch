@@ -14,6 +14,8 @@ const Schema = z.object({
   acceptedTotalCents: z.number().int().positive().max(100_000_000), // <= 1M EUR
   depositPercent: z.number().int().min(1).max(100),
   sendEmail: z.boolean().optional().default(true),
+  // Validez del enlace en días (urgencia + protege margen ante cambio de tarifas).
+  validityDays: z.number().int().min(1).max(90).optional().default(14),
 });
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -49,6 +51,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const token = cart.paymentLinkToken || `pay_${randomBytes(20).toString("base64url")}`;
   const depositCents = Math.round((parsed.data.acceptedTotalCents * parsed.data.depositPercent) / 100);
+  const expiresAt = new Date(Date.now() + parsed.data.validityDays * 24 * 60 * 60 * 1000);
+  const expiresLabel = expiresAt.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
 
   await prisma.cartQuote.update({
     where: { id },
@@ -57,6 +61,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       depositPercent: parsed.data.depositPercent,
       paymentLinkToken: token,
       paymentLinkSentAt: parsed.data.sendEmail ? new Date() : undefined,
+      paymentLinkExpiresAt: expiresAt,
       status: "SENT",
     },
   });
@@ -79,6 +84,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             <p style="text-align:center;margin:28px 0;">
               <a href="${url}" style="background:#ff6b35;color:white;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;">Pagar de forma segura →</a>
             </p>
+            <p style="text-align:center;font-size:13px;color:#888;">Este enlace y precio son válidos hasta el <strong>${expiresLabel}</strong>.</p>
             <p style="font-size:13px;color:#666;">Pago procesado por Stripe. Aceptamos Visa, Mastercard, Apple Pay, Google Pay y Bizum. SSL verificado.</p>
             <p style="color:#888;font-size:12px;margin-top:32px;">STARTIDEA MALAGA SL · CIF B19583632</p>
           </div>`,
@@ -93,5 +99,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     acceptedTotalCents: parsed.data.acceptedTotalCents,
     depositPercent: parsed.data.depositPercent,
     depositCents,
+    expiresAt: expiresAt.toISOString(),
   });
 }

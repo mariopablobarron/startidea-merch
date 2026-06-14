@@ -32,6 +32,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   if (cart.payments.length > 0) {
     return NextResponse.json({ error: "Cotización ya pagada" }, { status: 409 });
   }
+  if (cart.paymentLinkExpiresAt && cart.paymentLinkExpiresAt < new Date()) {
+    return NextResponse.json(
+      { error: "Este enlace de pago ha caducado. Contáctanos para renovar tu cotización." },
+      { status: 410 },
+    );
+  }
 
   const amountCents = Math.round((cart.acceptedTotalCents * cart.depositPercent) / 100);
   const isFull = cart.depositPercent >= 100;

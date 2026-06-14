@@ -46,6 +46,17 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
 
   const depositCents = Math.round((cart.acceptedTotalCents * cart.depositPercent) / 100);
   const successfulPayment = cart.payments.find((p) => p.status === "PAID");
+  const expired =
+    !successfulPayment &&
+    cart.paymentLinkExpiresAt != null &&
+    new Date(cart.paymentLinkExpiresAt) < new Date();
+  const expiresLabel = cart.paymentLinkExpiresAt
+    ? new Date(cart.paymentLinkExpiresAt).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <main className="min-h-screen bg-bone-soft py-16">
@@ -129,8 +140,29 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
                   </a>
                 )}
               </div>
+            ) : expired ? (
+              <div className="rounded-2xl bg-accent-wash p-6 text-center">
+                <p className="font-display text-xl font-semibold text-ink">Este enlace ha caducado</p>
+                <p className="mt-2 text-sm text-ink/70">
+                  El precio de esta cotización era válido hasta el {expiresLabel}. Escríbenos y te
+                  renovamos el presupuesto en un momento.
+                </p>
+                <a
+                  href="mailto:pedidos@startidea.es"
+                  className="mt-4 inline-block rounded-full bg-ink px-5 py-2 text-xs font-semibold text-bone hover:bg-accent"
+                >
+                  Solicitar nuevo presupuesto
+                </a>
+              </div>
             ) : (
-              <ExpressCheckoutPay token={token} amountCents={depositCents} />
+              <>
+                <ExpressCheckoutPay token={token} amountCents={depositCents} />
+                {expiresLabel && (
+                  <p className="mt-3 text-center text-[11px] text-ink/50">
+                    Este precio es válido hasta el {expiresLabel}.
+                  </p>
+                )}
+              </>
             )}
           </div>
 

@@ -1309,6 +1309,7 @@ model CartQuote {
   depositPercent     Int? // % de depósito a cobrar (50, 100…)
   paymentLinkToken   String?   @unique // token público del enlace de pago
   paymentLinkSentAt  DateTime?
+  paymentLinkExpiresAt DateTime? // caducidad del enlace (urgencia + protege margen)
 
   // Dashboard cliente: token público para ver SUS pedidos e impacto
   customerToken String? @unique

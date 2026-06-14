@@ -54,6 +54,8 @@ export async function POST(req: Request) {
       paymentLinkToken: { not: null },
       paymentLinkSentAt: { not: null },
       payments: { none: { status: "PAID" } },
+      // No perseguir enlaces ya caducados (sin caducidad = se sigue persiguiendo).
+      OR: [{ paymentLinkExpiresAt: null }, { paymentLinkExpiresAt: { gt: new Date() } }],
     },
     select: {
       id: true,
