@@ -1,0 +1,38 @@
+prisma/schema.prisma
+  s_65877aa637ec34::t_8a439508acd1c1 1312
+src/app/pay/[token]/page.tsx
+  s_65877aa637ec34::t_c932f97ac85830 143-156,158-165
+  s_65877aa637ec34::t_effe8c5ff0b429 49-59
+src/app/api/cron/quote-followup/route.ts
+  s_65877aa637ec34::t_3ff29763905b1e 57-58
+src/app/admin/cart-quotes/[id]/page.tsx
+  s_65877aa637ec34::t_81c0f96a0e5626 45
+  s_65877aa637ec34::t_41427fd87defc4 465
+  s_65877aa637ec34::t_8da09b4e58a9c9 571-580
+  s_65877aa637ec34::t_c5a7bc219433a6 591-596
+  s_65877aa637ec34::t_1396c713587deb 451,453
+  s_65877aa637ec34::t_32e7720df3da8f 495,519-527
+src/app/api/pay/[token]/checkout/route.ts
+  s_65877aa637ec34::t_77140bd3533b10 35-40
+src/app/api/admin/cart-quotes/[id]/payment-link/route.ts
+  s_65877aa637ec34::t_85899679c95a8a 102
+  s_65877aa637ec34::t_7cfca2b700bdd0 17-18
+  s_65877aa637ec34::t_5cc664b2e527d2 54-55,64
+  s_65877aa637ec34::t_6c5557dbd7bfc7 87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "ab18c6ca616389aacc562da1786c11699a3c4d95",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
