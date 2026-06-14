@@ -66,5 +66,17 @@ y lo cerramos en un momento. — TodoMerchandising
   responder libre (sin plantilla). Fuera de eso, plantilla aprobada.
 - **Número dedicado:** la API requiere un número que NO esté en la app normal de
   WhatsApp (no usar el número personal +34 627 305 162 si se sigue usando en el móvil).
-- **Cableado:** el envío se conecta al flujo existente (al crear payment-link /
-  propuesta) — pendiente de tener el sender activo. Ver lib/whatsapp.ts.
+- **Cableado:** YA hecho y durmiente. Al crear un enlace de pago, si el cliente
+  dio opt-in (`whatsappOptIn`) y tiene teléfono, se envía la plantilla
+  `enlace_pago` por WhatsApp además del email. Ver `lib/whatsapp-cloud.ts` +
+  `api/admin/cart-quotes/[id]/payment-link`.
+
+## Variables de entorno (activan el envío)
+En `/docker/startidea-merch/.env` (server-only, **NO** `NEXT_PUBLIC_`) y luego redeploy:
+```
+WHATSAPP_TOKEN=<token permanente del usuario de sistema de Meta>
+WHATSAPP_PHONE_NUMBER_ID=<Phone Number ID de Configuración de la API>
+WHATSAPP_API_VERSION=v21.0   # opcional
+```
+Sin estas variables, el envío hace no-op (no rompe nada). Al ponerlas + redeploy,
+el presupuesto/enlace de pago empieza a salir también por WhatsApp.

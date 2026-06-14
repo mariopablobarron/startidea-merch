@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
+import { sendWhatsAppTemplate } from "@/lib/whatsapp-cloud";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,7 +46,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const cart = await prisma.cartQuote.findUnique({
     where: { id },
-    select: { name: true, email: true, paymentLinkToken: true },
+    select: { name: true, email: true, phone: true, whatsappOptIn: true, paymentLinkToken: true },
   });
   if (!cart) return NextResponse.json({ error: "Carrito no encontrado" }, { status: 404 });
 
@@ -90,6 +91,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           </div>`,
       })
       .catch((err) => console.error("[payment-link email]", err));
+  }
+
+  // WhatsApp: si el cliente dio opt-in y hay teléfono, enviamos el enlace de
+  // pago también por WhatsApp (plantilla enlace_pago). No-op si la Cloud API
+  // aún no está configurada (sin WHATSAPP_TOKEN/PHONE_NUMBER_ID).
+  if (cart.whatsappOptIn && cart.phone) {
+    const firstName = cart.name.split(" ")[0] || cart.name;
+    void sendWhatsAppTemplate({
+      to: cart.phone,
+      template: "enlace_pago",
+      language: "es",
+      bodyParams: [firstName, EUR.format(depositCents / 100), url],
+    }).catch(() => {});
   }
 
   return NextResponse.json({
