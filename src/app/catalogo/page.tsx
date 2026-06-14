@@ -23,10 +23,21 @@ import {
   getBadgeText,
 } from "@/lib/promotions";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ cat?: string }>;
+}): Promise<Metadata> {
   const { getPageSeo, mergeMetadata } = await import("@/lib/page-seo");
   const seo = await getPageSeo("/catalogo");
-  return mergeMetadata(BASE_METADATA, seo);
+  const merged = mergeMetadata(BASE_METADATA, seo);
+  // Vista filtrada por categoría → canonical a la landing limpia /categorias/{cat}
+  // para consolidar autoridad y evitar contenido duplicado por query params.
+  const cat = ((await searchParams).cat || "").trim();
+  if (cat) {
+    merged.alternates = { ...(merged.alternates || {}), canonical: `${SITE_URL}/categorias/${cat}` };
+  }
+  return merged;
 }
 
 const BASE_METADATA: Metadata = {
@@ -374,6 +385,7 @@ export default async function CatalogoPage({
                     />
                   ))}
                   <div className="mt-2 border-t border-line pt-2">
+                    <Chip href="/categorias" active={false} label="Ver todas las categorías" />
                     <Chip
                       href="/promociones"
                       active={false}

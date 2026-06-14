@@ -24,6 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/catalogo`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE}/categorias`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/promociones`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/trabajos`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
@@ -66,10 +67,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     const categoryPages: MetadataRoute.Sitemap = categories.map((c) => ({
-      url: `${BASE}/catalogo?cat=${c.slug}`,
+      url: `${BASE}/categorias/${c.slug}`,
       lastModified: now,
       changeFrequency: "weekly" as const,
-      priority: 0.6,
+      priority: 0.7,
     }));
 
     const blogPages: MetadataRoute.Sitemap = posts.map((p) => ({
