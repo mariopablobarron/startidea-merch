@@ -6,7 +6,7 @@
  * La recepción/auto-respuesta inbound requiere WhatsApp Business API (Meta/
  * Twilio) con número verificado — se monta aparte cuando esté la cuenta.
  */
-export const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "34958045789";
+export const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "34627305162";
 
 /** Enlace wa.me con mensaje prerrellenado. */
 export function waLink(message: string): string {
