@@ -17,11 +17,15 @@ const PatchSchema = z
         "NEWSLETTER_ALL",
         "NEWSLETTER_NEW",
         "NEWSLETTER_TAG",
+        "NEWSLETTER_ENGAGED",
+        "NEWSLETTER_DORMANT",
+        "NEWSLETTER_SOURCE",
         "CUSTOMERS_ALL",
         "CART_QUOTES_RECENT",
       ])
       .optional(),
     audienceTags: z.array(z.string().min(1).max(60)).max(20).optional(),
+    audienceSource: z.string().max(80).nullable().optional(),
     scheduledAt: z.string().datetime().nullable().optional(),
     status: z.enum(["DRAFT", "SCHEDULED", "CANCELED"]).optional(),
   })

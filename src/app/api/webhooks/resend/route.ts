@@ -113,6 +113,29 @@ export async function POST(req: Request) {
     }
   }
 
-  // 200 a todo lo demás (delivered/clicked) — aceptados sin error.
+  // CLIC → estadística + lead scoring (señal más fuerte que abrir).
+  if (type === "email.clicked") {
+    const d = event.data as { email_id?: string };
+    const now = new Date();
+    if (d?.email_id) {
+      await prisma.broadcastDelivery
+        .updateMany({ where: { resendId: d.email_id, clickedAt: null }, data: { clickedAt: now } })
+        .catch(() => {});
+      await prisma.broadcastDelivery
+        .updateMany({ where: { resendId: d.email_id }, data: { clickCount: { increment: 1 } } })
+        .catch(() => {});
+    }
+    // Un clic vale +2 de engagement y refresca recencia (cuenta como "activo").
+    for (const email of extractEmails(event.data)) {
+      await prisma.newsletterSubscriber
+        .updateMany({
+          where: { email },
+          data: { engagementScore: { increment: 2 }, lastOpenedAt: now },
+        })
+        .catch(() => {});
+    }
+  }
+
+  // 200 a todo lo demás (delivered, etc.) — aceptados sin error.
   return NextResponse.json({ ok: true });
 }

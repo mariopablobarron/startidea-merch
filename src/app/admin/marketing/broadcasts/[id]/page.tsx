@@ -7,6 +7,9 @@ type Audience =
   | "NEWSLETTER_ALL"
   | "NEWSLETTER_NEW"
   | "NEWSLETTER_TAG"
+  | "NEWSLETTER_ENGAGED"
+  | "NEWSLETTER_DORMANT"
+  | "NEWSLETTER_SOURCE"
   | "CUSTOMERS_ALL"
   | "CART_QUOTES_RECENT";
 type Status = "DRAFT" | "SCHEDULED" | "SENDING" | "SENT" | "FAILED" | "CANCELED";
@@ -15,6 +18,9 @@ const AUDIENCE_LABELS: Record<Audience, string> = {
   NEWSLETTER_ALL: "Newsletter — todos los suscriptores",
   NEWSLETTER_NEW: "Newsletter — nuevos (últimos 30 días)",
   NEWSLETTER_TAG: "Newsletter — por tag(s) específicos",
+  NEWSLETTER_ENGAGED: "Newsletter — activos (han abierto algún email)",
+  NEWSLETTER_DORMANT: "Newsletter — dormidos (reactivación)",
+  NEWSLETTER_SOURCE: "Newsletter — por origen",
   CUSTOMERS_ALL: "Clientes con cuenta",
   CART_QUOTES_RECENT: "Leads — cotizaciones últimos 90 días",
 };
@@ -27,6 +33,7 @@ type Broadcast = {
   text: string | null;
   audience: Audience;
   audienceTags: string[];
+  audienceSource: string | null;
   status: Status;
   scheduledAt: string | null;
   sentAt: string | null;
@@ -36,6 +43,7 @@ type Broadcast = {
 };
 
 type AvailableTag = { tag: string; count: number };
+type AvailableSource = { source: string; count: number };
 
 // Plantillas-arranque: el envío aplica automáticamente el wrap Startidea
 // (crema + card blanca + footer oscuro). Aquí sólo el cuerpo editable.
@@ -108,6 +116,27 @@ const TEMPLATES = {
   Si prefieres hablar antes, responde a este email y te marcamos.
 </p>`,
   },
+  reactivar: {
+    subject: "¿Seguimos en contacto?",
+    html: `<p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Queremos respetar tu bandeja</p>
+<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+  Hola {{firstName}}.<br>
+  <span style="color:#E63E73;">¿Te seguimos escribiendo?</span>
+</h1>
+<p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
+  Hace tiempo que no sabemos de ti, y no queremos llenar tu bandeja si ya no te
+  interesa. Si quieres seguir recibiendo novedades de catálogo y promociones de
+  TodoMerchandising —con cada pedido generando empleo en Centros Especiales de
+  Empleo de Granada—, solo tienes que echar un vistazo:
+</p>
+<p style="margin:24px 0;text-align:center;">
+  <a href="https://merchandising.hubstartidea.es/catalogo?utm_source=newsletter&utm_medium=email&utm_campaign=reactivacion" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Sí, sigo interesado/a →</a>
+</p>
+<p style="margin:16px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;text-align:center;">
+  Si no haces nada, no pasa nada: dejaremos de escribirte pronto para no molestar.
+  Y si prefieres la baja directa, la tienes abajo.
+</p>`,
+  },
 };
 
 export default function BroadcastEditorPage({
@@ -130,7 +159,9 @@ export default function BroadcastEditorPage({
   const [html, setHtml] = useState("");
   const [audience, setAudience] = useState<Audience>("NEWSLETTER_ALL");
   const [audienceTags, setAudienceTags] = useState<string[]>([]);
+  const [audienceSource, setAudienceSource] = useState("");
   const [availableTags, setAvailableTags] = useState<AvailableTag[]>([]);
+  const [availableSources, setAvailableSources] = useState<AvailableSource[]>([]);
   const [scheduledAt, setScheduledAt] = useState("");
 
   async function load() {
@@ -151,24 +182,40 @@ export default function BroadcastEditorPage({
         setHtml(d1.broadcast.html);
         setAudience(d1.broadcast.audience);
         setAudienceTags(d1.broadcast.audienceTags || []);
+        setAudienceSource(d1.broadcast.audienceSource || "");
         setScheduledAt(d1.broadcast.scheduledAt ? d1.broadcast.scheduledAt.slice(0, 16) : "");
       }
       if (r2.ok) setAudienceSizes(d2.audienceSizes || {});
-      if (r3.ok) setAvailableTags(d3.tags || []);
+      if (r3.ok) {
+        setAvailableTags(d3.tags || []);
+        setAvailableSources(d3.sources || []);
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  // Tamaño dinámico cuando audience=NEWSLETTER_TAG (suma única de los tags seleccionados,
-  // aproximación: contamos por tag y sumamos. Mejor: el backend devolvería el total único.
-  // De momento mostramos un rango "≤ N" basado en suma de los tags seleccionados.)
+  // Tamaño dinámico cuando audience=NEWSLETTER_TAG (suma de los tags
+  // seleccionados; es un "≤ N" porque un subscriber puede estar en varios).
   const tagsAudienceSize =
     audience === "NEWSLETTER_TAG"
       ? availableTags
           .filter((t) => audienceTags.includes(t.tag))
           .reduce((acc, t) => acc + t.count, 0)
       : 0;
+  // Tamaño cuando audience=NEWSLETTER_SOURCE (conteo exacto del origen elegido).
+  const sourceAudienceSize =
+    audience === "NEWSLETTER_SOURCE"
+      ? availableSources.find((s) => s.source === audienceSource)?.count ?? 0
+      : 0;
+  // Tamaño efectivo para botones y avisos (TAG/SOURCE se resuelven en cliente,
+  // el resto vienen precalculados del backend).
+  const audienceSize =
+    audience === "NEWSLETTER_TAG"
+      ? tagsAudienceSize
+      : audience === "NEWSLETTER_SOURCE"
+        ? sourceAudienceSize
+        : audienceSizes[audience] ?? 0;
 
   useEffect(() => {
     load();
@@ -189,6 +236,7 @@ export default function BroadcastEditorPage({
           html,
           audience,
           audienceTags: audience === "NEWSLETTER_TAG" ? audienceTags : [],
+          audienceSource: audience === "NEWSLETTER_SOURCE" ? audienceSource || null : null,
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           status: scheduledAt ? "SCHEDULED" : "DRAFT",
         }),
@@ -228,7 +276,7 @@ export default function BroadcastEditorPage({
   }
 
   async function sendNow() {
-    const size = audienceSizes[audience] ?? 0;
+    const size = audienceSize;
     if (
       !confirm(
         `¿Enviar a TODOS los ${size.toLocaleString("es-ES")} destinatarios de "${AUDIENCE_LABELS[audience]}"?\n\nEsto NO se puede deshacer.`,
@@ -278,7 +326,6 @@ export default function BroadcastEditorPage({
   }
 
   const isLocked = broadcast.status === "SENT" || broadcast.status === "SENDING";
-  const audienceSize = audienceSizes[audience] ?? 0;
 
   return (
     <main className="min-h-screen bg-bone-soft p-6 lg:p-8">
@@ -335,7 +382,9 @@ export default function BroadcastEditorPage({
                         ? "🎁 Promoción"
                         : k === "novedad"
                           ? "👀 Novedad"
-                          : "💬 Recordatorio"}
+                          : k === "recordatorio"
+                            ? "💬 Recordatorio"
+                            : "♻️ Reactivar"}
                   </button>
                 ))}
               </div>
@@ -412,6 +461,34 @@ export default function BroadcastEditorPage({
                       </p>
                     )}
                   </div>
+                ) : audience === "NEWSLETTER_SOURCE" ? (
+                  <div className="mt-3 rounded-xl border border-line bg-bone-soft p-3">
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-ink/60">
+                      Origen de los subscribers
+                    </p>
+                    {availableSources.length === 0 ? (
+                      <p className="text-xs text-ink/55">No hay orígenes registrados todavía.</p>
+                    ) : (
+                      <select
+                        value={audienceSource}
+                        onChange={(e) => setAudienceSource(e.target.value)}
+                        disabled={isLocked}
+                        className="w-full rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
+                      >
+                        <option value="">— elige un origen —</option>
+                        {availableSources.map((s) => (
+                          <option key={s.source} value={s.source}>
+                            {s.source} ({s.count})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {audienceSource && (
+                      <p className="mt-2 text-[11px] text-accent">
+                        {sourceAudienceSize.toLocaleString("es-ES")} destinatarios
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <p className="mt-1 text-[11px] text-accent">
                     Se enviará a {audienceSize.toLocaleString("es-ES")} destinatarios
@@ -460,7 +537,7 @@ export default function BroadcastEditorPage({
 
               <Field
                 label="Programar envío (opcional)"
-                help="Si rellenas, queda en estado SCHEDULED. Cron diario lo procesará a esa hora."
+                help="Si rellenas, queda en SCHEDULED y un cron lo envía solo a esa hora (revisa cada ~5 min)."
               >
                 <input
                   type="datetime-local"

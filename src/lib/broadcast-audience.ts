@@ -1,4 +1,4 @@
-import type { BroadcastAudience } from "@prisma/client";
+import type { BroadcastAudience, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -16,57 +16,65 @@ export type Recipient = {
   unsubscribeToken: string;
 };
 
+const DAY = 24 * 60 * 60 * 1000;
+
+// Ventana para "dormidos": alta hace más de N días y sin apertura reciente.
+const DORMANT_DAYS = 60;
+
+const SUB_SELECT = { email: true, name: true, unsubscribeToken: true } as const;
+
+/**
+ * Construye el filtro Prisma de NewsletterSubscriber según la audiencia.
+ * Devuelve null para audiencias que no son de newsletter.
+ */
+function newsletterWhere(
+  audience: BroadcastAudience,
+  audienceTags: string[],
+  audienceSource: string | null,
+): Prisma.NewsletterSubscriberWhereInput | null {
+  const base: Prisma.NewsletterSubscriberWhereInput = { unsubscribedAt: null };
+  switch (audience) {
+    case "NEWSLETTER_ALL":
+      return base;
+    case "NEWSLETTER_NEW":
+      return { ...base, optedInAt: { gte: new Date(Date.now() - 30 * DAY) } };
+    case "NEWSLETTER_TAG":
+      return audienceTags.length ? { ...base, tags: { hasSome: audienceTags } } : null;
+    case "NEWSLETTER_ENGAGED":
+      return { ...base, engagementScore: { gte: 1 } };
+    case "NEWSLETTER_DORMANT": {
+      const cutoff = new Date(Date.now() - DORMANT_DAYS * DAY);
+      return {
+        ...base,
+        optedInAt: { lte: cutoff },
+        OR: [{ lastOpenedAt: null }, { lastOpenedAt: { lte: cutoff } }],
+      };
+    }
+    case "NEWSLETTER_SOURCE":
+      return audienceSource ? { ...base, source: audienceSource } : null;
+    default:
+      return null;
+  }
+}
+
 export async function resolveAudience(
   audience: BroadcastAudience,
   audienceTags: string[] = [],
+  audienceSource: string | null = null,
 ): Promise<Recipient[]> {
-  if (audience === "NEWSLETTER_ALL") {
-    const subs = await prisma.newsletterSubscriber.findMany({
-      where: { unsubscribedAt: null },
-      select: { email: true, name: true, unsubscribeToken: true },
-    });
-    return subs.map((s) => ({
-      email: s.email,
-      name: s.name,
-      unsubscribeToken: s.unsubscribeToken,
-    }));
-  }
-
-  if (audience === "NEWSLETTER_NEW") {
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const subs = await prisma.newsletterSubscriber.findMany({
-      where: { unsubscribedAt: null, optedInAt: { gte: since } },
-      select: { email: true, name: true, unsubscribeToken: true },
-    });
-    return subs.map((s) => ({
-      email: s.email,
-      name: s.name,
-      unsubscribeToken: s.unsubscribeToken,
-    }));
-  }
-
-  if (audience === "NEWSLETTER_TAG") {
-    if (audienceTags.length === 0) return [];
-    const subs = await prisma.newsletterSubscriber.findMany({
-      where: { unsubscribedAt: null, tags: { hasSome: audienceTags } },
-      select: { email: true, name: true, unsubscribeToken: true },
-    });
-    return subs.map((s) => ({
-      email: s.email,
-      name: s.name,
-      unsubscribeToken: s.unsubscribeToken,
-    }));
+  const where = newsletterWhere(audience, audienceTags, audienceSource);
+  if (where) {
+    const subs = await prisma.newsletterSubscriber.findMany({ where, select: SUB_SELECT });
+    return subs.map((s) => ({ email: s.email, name: s.name, unsubscribeToken: s.unsubscribeToken }));
   }
 
   if (audience === "CUSTOMERS_ALL") {
-    const customers = await prisma.customerUser.findMany({
-      select: { email: true, name: true },
-    });
+    const customers = await prisma.customerUser.findMany({ select: { email: true, name: true } });
     return dedup(customers.map((c) => ({ email: c.email, name: c.name, unsubscribeToken: "" })));
   }
 
   if (audience === "CART_QUOTES_RECENT") {
-    const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const since = new Date(Date.now() - 90 * DAY);
     const carts = await prisma.cartQuote.findMany({
       where: { email: { not: "" }, createdAt: { gte: since } },
       select: { email: true, name: true },
@@ -94,27 +102,14 @@ function dedup(list: Recipient[]): Recipient[] {
 export async function estimateAudienceSize(
   audience: BroadcastAudience,
   audienceTags: string[] = [],
+  audienceSource: string | null = null,
 ): Promise<number> {
-  if (audience === "NEWSLETTER_ALL") {
-    return prisma.newsletterSubscriber.count({ where: { unsubscribedAt: null } });
-  }
-  if (audience === "NEWSLETTER_NEW") {
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    return prisma.newsletterSubscriber.count({
-      where: { unsubscribedAt: null, optedInAt: { gte: since } },
-    });
-  }
-  if (audience === "NEWSLETTER_TAG") {
-    if (audienceTags.length === 0) return 0;
-    return prisma.newsletterSubscriber.count({
-      where: { unsubscribedAt: null, tags: { hasSome: audienceTags } },
-    });
-  }
-  if (audience === "CUSTOMERS_ALL") {
-    return prisma.customerUser.count();
-  }
+  const where = newsletterWhere(audience, audienceTags, audienceSource);
+  if (where) return prisma.newsletterSubscriber.count({ where });
+
+  if (audience === "CUSTOMERS_ALL") return prisma.customerUser.count();
   if (audience === "CART_QUOTES_RECENT") {
-    const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const since = new Date(Date.now() - 90 * DAY);
     const rows = await prisma.cartQuote.findMany({
       where: { email: { not: "" }, createdAt: { gte: since } },
       select: { email: true },
@@ -125,10 +120,29 @@ export async function estimateAudienceSize(
   return 0;
 }
 
+/**
+ * Lista los orígenes (source) de subscribers activos, con conteo, para el
+ * selector de la audiencia NEWSLETTER_SOURCE en el editor.
+ */
+export async function listSources(): Promise<{ source: string; count: number }[]> {
+  const groups = await prisma.newsletterSubscriber.groupBy({
+    by: ["source"],
+    where: { unsubscribedAt: null, source: { not: null } },
+    _count: { _all: true },
+  });
+  return groups
+    .map((g) => ({ source: g.source as string, count: g._count._all }))
+    .filter((g) => Boolean(g.source))
+    .sort((a, b) => b.count - a.count);
+}
+
 export const AUDIENCE_LABELS: Record<BroadcastAudience, string> = {
   NEWSLETTER_ALL: "Newsletter — todos los suscriptores",
   NEWSLETTER_NEW: "Newsletter — nuevos (últimos 30 días)",
   NEWSLETTER_TAG: "Newsletter — por tag(s) específicos",
+  NEWSLETTER_ENGAGED: "Newsletter — activos (han abierto algún email)",
+  NEWSLETTER_DORMANT: "Newsletter — dormidos (reactivación)",
+  NEWSLETTER_SOURCE: "Newsletter — por origen",
   CUSTOMERS_ALL: "Clientes — todos con cuenta",
   CART_QUOTES_RECENT: "Leads — cotizaciones últimos 90 días",
 };

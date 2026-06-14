@@ -2074,6 +2074,8 @@ model EmailBroadcast {
   // Tags a los que dirigirse cuando audience=NEWSLETTER_TAG.
   // Si se pasan varios, OR (cualquier subscriber con AL MENOS uno de los tags).
   audienceTags String[]            @default([])
+  // Origen objetivo cuando audience=NEWSLETTER_SOURCE (NewsletterSubscriber.source).
+  audienceSource String?
   status       BroadcastStatus     @default(DRAFT)
   scheduledAt  DateTime? // si está SCHEDULED, hora de envío
   sentAt       DateTime?
@@ -2100,6 +2102,9 @@ model BroadcastDelivery {
   resendId    String?
   openedAt    DateTime?
   openCount   Int             @default(0)
+  // Clics (Resend email.clicked) — requiere click-tracking activo en Resend.
+  clickedAt   DateTime?
+  clickCount  Int             @default(0)
 
   @@unique([broadcastId, email])
   @@index([broadcastId])
@@ -2110,6 +2115,9 @@ enum BroadcastAudience {
   NEWSLETTER_ALL // todos los subscribers active (no unsubscribed)
   NEWSLETTER_NEW // los últimos 30 días
   NEWSLETTER_TAG // subscribers con tags en EmailBroadcast.audienceTags (OR)
+  NEWSLETTER_ENGAGED // han abierto algún email (engagementScore >= 1) — fans
+  NEWSLETTER_DORMANT // alta hace >60d y sin apertura reciente — reactivación
+  NEWSLETTER_SOURCE // por origen (EmailBroadcast.audienceSource)
   CUSTOMERS_ALL // todos los CustomerUser con email
   CART_QUOTES_RECENT // emails de CartQuote últimos 90d (lead nurturing)
 }

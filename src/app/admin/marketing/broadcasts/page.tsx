@@ -4,10 +4,20 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+type Audience =
+  | "NEWSLETTER_ALL"
+  | "NEWSLETTER_NEW"
+  | "NEWSLETTER_TAG"
+  | "NEWSLETTER_ENGAGED"
+  | "NEWSLETTER_DORMANT"
+  | "NEWSLETTER_SOURCE"
+  | "CUSTOMERS_ALL"
+  | "CART_QUOTES_RECENT";
+
 type Broadcast = {
   id: string;
   subject: string;
-  audience: "NEWSLETTER_ALL" | "NEWSLETTER_NEW" | "CUSTOMERS_ALL" | "CART_QUOTES_RECENT";
+  audience: Audience;
   status: "DRAFT" | "SCHEDULED" | "SENDING" | "SENT" | "FAILED" | "CANCELED";
   scheduledAt: string | null;
   sentAt: string | null;
@@ -15,16 +25,32 @@ type Broadcast = {
   failedCount: number;
   openedCount?: number;
   openRate?: number;
+  clickedCount?: number;
+  clickRate?: number;
   createdAt: string;
   createdBy: string | null;
 };
 
-const AUDIENCE_LABELS: Record<Broadcast["audience"], string> = {
+const AUDIENCE_LABELS: Record<Audience, string> = {
   NEWSLETTER_ALL: "Newsletter — todos",
   NEWSLETTER_NEW: "Newsletter — últimos 30d",
+  NEWSLETTER_TAG: "Newsletter — por tag",
+  NEWSLETTER_ENGAGED: "Newsletter — activos",
+  NEWSLETTER_DORMANT: "Newsletter — dormidos",
+  NEWSLETTER_SOURCE: "Newsletter — por origen",
   CUSTOMERS_ALL: "Clientes con cuenta",
   CART_QUOTES_RECENT: "Leads cotizaciones 90d",
 };
+
+// Audiencias con tamaño precalculado (las que no dependen de tag/origen).
+const PANEL_AUDIENCES: Audience[] = [
+  "NEWSLETTER_ALL",
+  "NEWSLETTER_NEW",
+  "NEWSLETTER_ENGAGED",
+  "NEWSLETTER_DORMANT",
+  "CUSTOMERS_ALL",
+  "CART_QUOTES_RECENT",
+];
 
 const STATUS_COLORS: Record<Broadcast["status"], string> = {
   DRAFT: "bg-bone-soft text-ink/50",
@@ -116,8 +142,8 @@ export default function BroadcastsPage() {
         </header>
 
         {/* Audience sizes panel */}
-        <section className="mb-6 grid gap-3 rounded-2xl border border-line bg-bone p-4 sm:grid-cols-2 lg:grid-cols-4">
-          {(Object.keys(AUDIENCE_LABELS) as Broadcast["audience"][]).map((a) => (
+        <section className="mb-6 grid gap-3 rounded-2xl border border-line bg-bone p-4 sm:grid-cols-2 lg:grid-cols-3">
+          {PANEL_AUDIENCES.map((a) => (
             <div key={a}>
               <p className="text-[10px] uppercase tracking-wider text-ink/50">
                 {AUDIENCE_LABELS[a]}
@@ -177,6 +203,9 @@ export default function BroadcastsPage() {
                       {b.sentCount > 0 && (
                         <div className="text-[10px] text-ink/55">
                           {b.openedCount ?? 0} aperturas · {b.openRate ?? 0}%
+                          {(b.clickedCount ?? 0) > 0 && (
+                            <span className="text-accent-deep"> · {b.clickedCount} clics</span>
+                          )}
                         </div>
                       )}
                     </td>
