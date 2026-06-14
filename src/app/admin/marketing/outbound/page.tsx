@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { OutboundEmailButton } from "@/components/OutboundEmailButton";
+import { LinkedInMessageButton } from "@/components/LinkedInMessageButton";
 
 type Status =
   | "NEW" | "INVITED" | "CONNECTED" | "MESSAGED" | "REPLIED"
@@ -194,7 +195,10 @@ export default function OutboundCRMPage() {
                       {l.notes && !isEditing && (
                         <p className="mt-2 text-[12px] text-ink/65 whitespace-pre-wrap line-clamp-3">{l.notes}</p>
                       )}
-                      <OutboundEmailButton leadId={l.id} hasEmail={!!l.email} />
+                      <div className="flex flex-wrap items-start gap-2">
+                        <OutboundEmailButton leadId={l.id} hasEmail={!!l.email} />
+                        <LinkedInMessageButton leadId={l.id} />
+                      </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <button onClick={() => setEditingId(isEditing ? null : l.id)} className="rounded-full bg-bone-soft px-3 py-1.5 text-xs hover:bg-line/30">
