@@ -1,0 +1,23 @@
+src/lib/cron-catalog.ts
+  s_65877aa637ec34::t_c86c91bac785f3 183-191
+prisma/schema.prisma
+  s_65877aa637ec34::t_1f4935d37ddde7 1625-1627
+src/app/api/cron/proposal-followup/route.ts
+  s_65877aa637ec34::t_367a039ceee160 1-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "231fd40c40e0cf4be5b27e0106c17f31f31c7efa",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
