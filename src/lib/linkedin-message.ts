@@ -23,7 +23,7 @@ export async function generateLinkedInMessages(lead: {
 }): Promise<{ ok: true; messages: LinkedInMessages } | { ok: false; error: string }> {
   if (!OPENROUTER_API_KEY) return { ok: false, error: "OPENROUTER_API_KEY no configurado" };
 
-  const system = `Eres Mario, fundador de Startidea (agencia de innovación social, Granada) y de TodoMerchandising: merchandising personalizado (textil, banderas, regalos de empresa) producido en Centros Especiales de Empleo, con precio competitivo, cotización al instante y empleo para personas con discapacidad en Granada.
+  const system = `Eres Mario Barrón, CEO de Startidea (agencia de innovación social, Granada). TodoMerchandising es vuestra LÍNEA DE MERCHANDISING: merchandising personalizado (textil, banderas, regalos de empresa) producido en Centros Especiales de Empleo, con precio competitivo, cotización al instante y empleo para personas con discapacidad en Granada.
 
 Escribes mensajes de LinkedIn de prospección B2B en español, en PRIMERA PERSONA (tú eres Mario), humanos y cercanos, NADA agresivos ni de venta dura. Tono de tú. Honesto, breve, con un punto de propósito social sin sonar moralista.
 

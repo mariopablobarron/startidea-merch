@@ -15,6 +15,14 @@ const SENDER = {
   replyTo: "pedidos@startidea.es",
 };
 
+// Host visible para firma (sin protocolo).
+const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
+
+// Firma fija del remitente — se añade en CÓDIGO (no la genera la IA) para que el
+// nombre, cargo y web sean siempre correctos. Mario es CEO de Startidea;
+// TodoMerchandising es su línea de merchandising. Teléfono: pendiente de añadir.
+const SIGNATURE = `Mario Barrón — CEO de Startidea\nTodoMerchandising · ${SITE_HOST}`;
+
 export type ColdEmailDraft = { subject: string; body: string };
 
 /**
@@ -58,9 +66,9 @@ export async function generateColdEmail(lead: {
 }): Promise<{ ok: true; draft: ColdEmailDraft } | { ok: false; error: string }> {
   if (!OPENROUTER_API_KEY) return { ok: false, error: "OPENROUTER_API_KEY no configurado" };
 
-  const system = `Eres un SDR B2B de ${SENDER.brand} (marca de Startidea, agencia de innovación social de Granada). Vendéis merchandising personalizado (textil, banderas, regalos de empresa) producido en Centros Especiales de Empleo y talleres certificados, con impacto social real. Diferenciales: precio competitivo, cotización al instante online, y cada pedido genera empleo para personas con discapacidad en Granada.
+  const system = `Eres el equipo comercial de ${SENDER.brand}, la LÍNEA DE MERCHANDISING de Startidea (Startidea Málaga SL, agencia de innovación social de Granada). El email lo firma Mario Barrón, CEO de Startidea, escribiendo personalmente. Vendéis merchandising personalizado (textil, banderas, regalos de empresa) producido en Centros Especiales de Empleo y talleres certificados, con impacto social real. Diferenciales: precio competitivo, cotización al instante online, y cada pedido genera empleo para personas con discapacidad en Granada.
 
-Escribe emails de PRIMER CONTACTO B2B en español: humanos, directos, BREVES (máx 90 palabras de cuerpo), sin jerga comercial, sin exagerar, sin emojis. Tono respetuoso de tú. Una sola llamada a la acción suave (responder a este email o ver el catálogo). NO inventes datos del destinatario que no te den. NO prometas precios concretos. Devuelve JSON {"subject": "...", "body": "..."} con subject de máx 60 caracteres (sin "RE:" ni clickbait) y body en texto plano con saltos de línea \\n entre párrafos.`;
+Escribe emails de PRIMER CONTACTO B2B en español, en PRIMERA PERSONA (eres Mario, el CEO, escribiendo en persona): humanos, directos, BREVES (máx 90 palabras de cuerpo), sin jerga comercial, sin exagerar, sin emojis. Tono respetuoso de tú. Una sola llamada a la acción suave (responder a este email o ver el catálogo). NO inventes datos del destinatario que no te den. NO prometas precios concretos. NO añadas despedida ni firma: se añaden automáticamente después. Devuelve JSON {"subject": "...", "body": "..."} con subject de máx 60 caracteres (sin "RE:" ni clickbait) y body en texto plano con saltos de línea \\n entre párrafos.`;
 
   const user = `Lead:
 - Nombre: ${lead.name}
@@ -104,8 +112,10 @@ Escribe el email de primer contacto. Personalízalo con lo que sepas (empresa, s
       parsed = m ? JSON.parse(m[1]) : {};
     }
     const subject = String(parsed.subject || "").trim().slice(0, 80);
-    const body = String(parsed.body || "").trim();
+    let body = String(parsed.body || "").trim();
     if (!subject || !body) return { ok: false, error: "IA no devolvió subject/body válidos" };
+    // Firma fija añadida en código (no la genera la IA) → nombre/cargo/web siempre correctos.
+    body = `${body}\n\n${SIGNATURE}`;
     return { ok: true, draft: { subject, body } };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
