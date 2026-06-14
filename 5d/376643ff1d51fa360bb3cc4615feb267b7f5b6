@@ -1,0 +1,27 @@
+src/app/admin/marketing/outbound/page.tsx
+  s_65877aa637ec34::t_2dfc529867ff56 221-229
+  s_65877aa637ec34::t_9c8f3090cff6d9 131-160
+src/app/admin/marketing/newsletter/page.tsx
+  s_65877aa637ec34::t_45f8d400d1ae24 165-194
+  s_65877aa637ec34::t_9ef05e24a1c31f 336-345
+src/app/api/admin/newsletter/bulk-delete/route.ts
+  s_65877aa637ec34::t_ee3e2c64878d92 1-62
+src/app/api/admin/outbound/bulk-delete/route.ts
+  s_65877aa637ec34::t_2b5e9d52bdcdb1 1-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "5d376643ff1d51fa360bb3cc4615feb267b7f5b6",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
