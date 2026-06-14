@@ -6,7 +6,7 @@ import Image from "next/image";
 import { readCart, writeCart, removeItem, clearCart, cartTotalCents, type CartItem } from "@/lib/cart-storage";
 import { DeliveryEstimate } from "@/components/DeliveryEstimate";
 import { trackLead, trackInitiateCheckout } from "@/lib/ads-events";
-import { waLink, waCartQuoteMessage } from "@/lib/whatsapp";
+import { waLink, waCartQuoteMessage, trackWaClick } from "@/lib/whatsapp";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -600,7 +600,10 @@ export function CartPage() {
             )}
             target="_blank"
             rel="noopener"
-            onClick={() => trackLead({ method: "whatsapp-carrito", value: total / 100 })}
+            onClick={() => {
+              trackLead({ method: "whatsapp-carrito", value: total / 100 });
+              trackWaClick("carrito");
+            }}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#25D366] bg-[#25D366]/5 px-6 py-3 text-sm font-semibold text-[#0e6b3a] transition hover:bg-[#25D366]/10"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

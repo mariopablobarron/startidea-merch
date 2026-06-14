@@ -1,6 +1,6 @@
 "use client";
 
-import { waLink, waWebMessage } from "@/lib/whatsapp";
+import { waLink, waWebMessage, trackWaClick } from "@/lib/whatsapp";
 
 /**
  * CTA contextual de WhatsApp para fichas de producto.
@@ -34,6 +34,7 @@ export function WhatsAppCta({
         href={href}
         target="_blank"
         rel="noopener"
+        onClick={() => trackWaClick("ficha")}
         className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-bone-soft px-5 py-3 text-sm font-medium text-ink transition hover:border-[#25D366] hover:text-[#0e6b3a]"
       >
         <WhatsAppIcon />
@@ -47,6 +48,7 @@ export function WhatsAppCta({
       href={href}
       target="_blank"
       rel="noopener"
+      onClick={() => trackWaClick("ficha")}
       className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-[#1da551]"
     >
       <WhatsAppIcon />

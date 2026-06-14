@@ -14,6 +14,28 @@ export function waLink(message: string): string {
 }
 
 /**
+ * Registra un clic de WhatsApp con su origen (para medir el canal en
+ * /admin/captacion). Solo cliente: fire-and-forget a /api/analytics/event.
+ */
+export function trackWaClick(source: string): void {
+  try {
+    const body = JSON.stringify({ type: "wa_click", path: source });
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      navigator.sendBeacon("/api/analytics/event", new Blob([body], { type: "application/json" }));
+    } else {
+      void fetch("/api/analytics/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    }
+  } catch {
+    /* noop */
+  }
+}
+
+/**
  * Antepone un marcador de origen al mensaje. Así, si el WhatsApp se comparte
  * con un compañero, al abrir el chat se ve al instante que es un lead de la
  * web y de qué parte viene (ficha, carrito, etc.) → fácil de etiquetar/repartir.

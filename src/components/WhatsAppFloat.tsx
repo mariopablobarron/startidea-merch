@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { waLink, waWebMessage } from "@/lib/whatsapp";
+import { waLink, waWebMessage, trackWaClick } from "@/lib/whatsapp";
 
 export function WhatsAppFloat() {
   const [visible, setVisible] = useState(false);
@@ -22,6 +22,7 @@ export function WhatsAppFloat() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => trackWaClick("flotante")}
       aria-label="Abrir WhatsApp para cotización"
       className={`fixed bottom-6 right-6 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-2xl shadow-black/20 transition-all duration-300 hover:scale-110 hover:bg-[#1DA851] sm:h-16 sm:w-16 ${
         visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0 pointer-events-none"
