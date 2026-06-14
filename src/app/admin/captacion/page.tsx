@@ -104,11 +104,14 @@ export default async function CaptacionPage() {
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat label="Aprobadas (en la home)" value={String(reviewsApproved)} accent={reviewsApproved > 0} />
           <Stat label="Pendientes de aprobar" value={String(reviewsPending)} sub={reviewsPending > 0 ? "→ apruébalas para mostrarlas" : "nada en cola"} accent={reviewsPending > 0} />
-          <div className="flex items-center rounded-2xl border border-dashed border-line bg-bone-soft p-4 text-[11px] leading-relaxed text-ink/55">
+          <a
+            href="/admin/reviews"
+            className="flex items-center justify-center rounded-2xl border border-line bg-bone-soft p-4 text-sm font-semibold text-accent transition hover:border-accent hover:underline"
+          >
             {reviewsPending > 0
-              ? "Hay reseñas sin aprobar pero aún no hay panel para hacerlo — dímelo y monto la aprobación en 1 clic."
-              : "Las reseñas aprobadas aparecen solas en la home."}
-          </div>
+              ? `Aprobar ${reviewsPending} pendiente${reviewsPending === 1 ? "" : "s"} →`
+              : "Gestionar reseñas →"}
+          </a>
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
