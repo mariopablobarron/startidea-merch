@@ -1,0 +1,33 @@
+src/lib/resend.ts
+  s_65877aa637ec34::t_2979db6375cafa 29-30
+  s_65877aa637ec34::t_7326c64b591b5c 68
+src/app/admin/marketing/outbound/page.tsx
+  s_65877aa637ec34::t_40ef71351418fe 4
+  s_65877aa637ec34::t_50a9960189666b 197
+src/app/api/admin/outbound/[id]/send-email/route.ts
+  s_65877aa637ec34::t_6343874c3c5e0a 1-41
+src/lib/outbound-email.ts
+  s_65877aa637ec34::t_a6bd22bdae4f9a 1-199
+src/components/OutboundEmailButton.tsx
+  s_65877aa637ec34::t_90b7b135e90f22 1-128
+prisma/schema.prisma
+  s_65877aa637ec34::t_476bcf129dc1b9 587-592,597-605
+src/app/api/outbound/unsubscribe/route.ts
+  s_65877aa637ec34::t_aadb38e7f9d123 1-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "42b53c20ee1d502127dec59a02a21f583955f943",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
