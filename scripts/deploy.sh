@@ -35,52 +35,85 @@ if ! build_attempt; then
 fi
 
 log "recreate container"
-# Limpieza de residuos de recreates interrumpidos: docker compose renombra el
-# contenedor saliente a <id>_merch-app durante el recreate; si el proceso muere
-# a medias, ese contenedor PARADO queda huérfano y el siguiente recreate falla
-# con "Conflict. The container name ... is already in use".
-# Borra CON -f cualquier contenedor *merch-app que NO esté "Up" (zombis
-# <hash>_merch-app + un merch-app Dead/Exited/Created), nunca el que sirve.
-cleanup_merch_zombies() {
-  docker ps -a --format '{{.ID}} {{.Names}} {{.Status}}' \
-    | awk '$2 ~ /merch-app$/ && $3 != "Up" {print $1}' \
+# --- Idempotencia del recreate (fix carrera <hash>_merch-app) ---
+# Mecánica real de `compose up --force-recreate` con container_name FIJO
+# (verificado con `docker events` 2026-06-14 en compose v5):
+#   1. CREATE  contenedor nuevo con nombre temporal "<id-del-saliente>_merch-app"
+#   2. KILL/STOP/DESTROY del contenedor viejo "merch-app"
+#   3. RENAME  "<id>_merch-app" -> "merch-app"   4. START
+# Si el paso 3 se interrumpe (timeout/OOM, o un conflicto previo), el contenedor
+# nuevo queda Up y healthy PERO llamándose "<hash>_merch-app". Ese residuo:
+#   - el siguiente recreate vuelve a chocar: "Conflict. The container name
+#     <hash>_merch-app is already in use";
+#   - el viejo cleanup (filtraba != "Up") NO lo borraba porque está "Up".
+# Invariante que explotamos: el contenedor BUENO siempre se llama EXACTAMENTE
+# "merch-app"; cualquier nombre que acabe en "_merch-app" es residuo del baile.
+
+# Borra TODO residuo "<hash>_merch-app" (en CUALQUIER estado, Up incluido) +
+# un "merch-app" pelado que no esté Up. Nunca toca el "merch-app" sano.
+purge_merch_residue() {
+  docker ps -a --format '{{.Names}}' \
+    | grep -E '_merch-app$' \
+    | xargs -r docker rm -f >/dev/null 2>&1 || true
+  docker ps -a --format '{{.Names}} {{.Status}}' \
+    | awk '$1 == "merch-app" && $2 != "Up" {print $1}' \
     | xargs -r docker rm -f >/dev/null 2>&1 || true
 }
-cleanup_merch_zombies
-if ! docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate app; then
-  log "recreate falló (posible zombi en carrera) — limpio y reintento"
-  cleanup_merch_zombies
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate app \
-    || fail "docker compose up falló (2 intentos)"
-fi
 
-# Healthcheck con retry: hasta 6 intentos × 10s = 60s en la home.
-# Next.js + Prisma a veces tarda 20-40s en estar listo en frío.
-HOME_URL="https://merchandising.hubstartidea.es/"
+# Red de seguridad: si compose dejó el contenedor nuevo sin renombrar (queda
+# "<hash>_merch-app" corriendo y no hay "merch-app" pelado), lo promovemos para
+# restablecer el invariante "el que sirve se llama merch-app".
+ensure_canonical_name() {
+  docker ps --format '{{.Names}}' | grep -qx 'merch-app' && return 0
+  local survivor
+  survivor=$(docker ps --format '{{.Names}}' | grep -E '_merch-app$' | head -1)
+  if [ -n "$survivor" ]; then
+    log "compose dejó '$survivor' sin renombrar — lo promuevo a merch-app"
+    docker rename "$survivor" merch-app 2>/dev/null || true
+  fi
+}
 
-log "healthcheck home (hasta 60s)"
+purge_merch_residue
+# El exit code de compose NO es árbitro de éxito: emite "Conflict ..." y sale
+# !=0 aunque el contenedor nuevo haya quedado Up y healthy sirviendo la imagen
+# nueva. El ÚNICO juez es el healthcheck HTTP de abajo; aquí solo registramos.
+docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  up -d --force-recreate --remove-orphans app 2>&1 | tail -20
+CRC=${PIPESTATUS[0]}
+log "compose up RC=$CRC (informativo; árbitro real = healthcheck HTTP)"
+ensure_canonical_name
+purge_merch_residue   # limpia el saliente renombrado; "merch-app" queda intacto
+
+# Healthcheck: ÚNICO criterio de éxito/fallo del deploy (NO el RC de compose).
+# Hasta 6 intentos × 10s = 60s; Next.js + Prisma tardan 20-40s en estar listos
+# en frío. El deploy solo se da por bueno si el contenedor nuevo sirve 200 en
+# la home Y en /catalogo (la ruta crítica del negocio).
+BASE="https://merchandising.hubstartidea.es"
+
+log "healthcheck home + /catalogo (hasta 60s)"
 SUCCESS=0
 for i in 1 2 3 4 5 6; do
   sleep 10
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$HOME_URL" || echo "000")
-  log "intento $i/6 → HTTP $STATUS"
-  if [ "$STATUS" = "200" ]; then
+  HOME_S=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$BASE/" || echo "000")
+  CAT_S=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$BASE/catalogo" || echo "000")
+  log "intento $i/6 → home $HOME_S · /catalogo $CAT_S"
+  if [ "$HOME_S" = "200" ] && [ "$CAT_S" = "200" ]; then
     SUCCESS=1
     break
   fi
 done
 
 if [ "$SUCCESS" != "1" ]; then
-  log "healthcheck home falló tras 60s — volcando logs del container:"
+  log "healthcheck falló tras 60s (home/catalogo no responden 200) — logs:"
   docker logs --tail 50 merch-app 2>&1 | sed "s/^/[logs] /"
-  fail "container no responde 200 en /"
+  fail "container nuevo no responde 200 en / y /catalogo"
 fi
+log "deploy verificado: home 200 + /catalogo 200 (compose RC fue $CRC, irrelevante)"
 
 # Verifica rutas críticas adicionales (sin retry — ya sabemos que el / responde).
 # Aceptamos 200 (público), 302 (redirect login), 401 (necesita auth) como OK.
 log "healthcheck rutas adicionales"
 EXTRA_URLS=(
-  "https://merchandising.hubstartidea.es/catalogo"
   "https://merchandising.hubstartidea.es/admin/login"
   "https://merchandising.hubstartidea.es/recomendador"
 )
