@@ -1,0 +1,19 @@
+src/app/api/webhooks/resend/route.ts
+  s_65877aa637ec34::t_6ccfc58359e7bc 1-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "36fe9cc6aa5ea8807892d9dddbbfa1af7128c58a",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
