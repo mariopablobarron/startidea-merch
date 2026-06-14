@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "34958045789";
-const PRESET_MESSAGE = encodeURIComponent(
-  "Hola, vengo de la web de todomerchandising y me gustaría pedir una cotización.",
-);
+import { waLink } from "@/lib/whatsapp";
 
 export function WhatsAppFloat() {
   const [visible, setVisible] = useState(false);
@@ -17,7 +13,7 @@ export function WhatsAppFloat() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${PRESET_MESSAGE}`;
+  const href = waLink("Hola, vengo de la web de todomerchandising y me gustaría pedir una cotización.");
 
   return (
     <a

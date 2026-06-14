@@ -1,6 +1,6 @@
 "use client";
 
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "34958045789";
+import { waLink } from "@/lib/whatsapp";
 
 /**
  * CTA contextual de WhatsApp para fichas de producto.
@@ -26,7 +26,7 @@ export function WhatsAppCta({
   const refTxt = internalRef ? ` (ref ${internalRef})` : "";
   const urlTxt = productUrl ? `\n${productUrl}` : "";
   const message = `Hola, me interesa el producto "${productName}"${refTxt}.${urlTxt}\n\n¿Podéis enviarme cotización?`;
-  const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  const href = waLink(message);
 
   if (variant === "secondary") {
     return (
