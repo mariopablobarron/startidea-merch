@@ -198,7 +198,10 @@ export default async function CatalogoPage({
           fromPriceCents: true,
           categoryId: true,
           category: { select: { name: true } },
-          variants: { take: 1, select: { stockQty: true } },
+          // Presencia de stock: ¿hay ALGUNA variante con unidades? (antes miraba
+          // solo la primera variante arbitraria → marcaba "bajo pedido" productos
+          // que sí tenían stock en otro color/talla).
+          variants: { where: { stockQty: { gt: 0 } }, take: 1, select: { id: true } },
           override: {
             select: {
               customName: true,
@@ -587,7 +590,7 @@ export default async function CatalogoPage({
                   <>
                     <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                       {products.map((p) => {
-                        const stock = p.variants[0]?.stockQty ?? 0;
+                        const inStock = p.variants.length > 0;
                         // Aplicar overrides admin si existen
                         const ov = p.override;
                         const displayName = ov?.customName || p.name;
@@ -704,7 +707,7 @@ export default async function CatalogoPage({
                               <p className="mt-3 text-xs text-ink/50">Precio bajo cotización</p>
                             )}
                             <div className="mt-3 flex items-center justify-between text-xs">
-                              {stock > 0 ? (
+                              {inStock ? (
                                 <span className="inline-flex items-center gap-1.5 text-social">
                                   <span className="h-1.5 w-1.5 rounded-full bg-social" />
                                   En stock
