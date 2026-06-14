@@ -39,7 +39,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     },
   });
   if (!cart) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(cart);
+
+  // Propuesta vinculada por el agente auto-proposal (no hay FK, solo autoProposalId).
+  const autoProposal = cart.autoProposalId
+    ? await prisma.proposal.findUnique({
+        where: { id: cart.autoProposalId },
+        select: {
+          id: true,
+          proposalNumber: true,
+          status: true,
+          sentAt: true,
+          openedAt: true,
+          acceptedAt: true,
+        },
+      })
+    : null;
+
+  return NextResponse.json({ ...cart, autoProposal });
 }
 
 const PatchSchema = z.object({

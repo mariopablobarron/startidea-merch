@@ -44,6 +44,15 @@ type Cart = {
   paymentLinkSentAt?: string | null;
   lostReason?: string | null;
   lostAt?: string | null;
+  autoProposalId?: string | null;
+  autoProposal?: {
+    id: string;
+    proposalNumber: string;
+    status: string;
+    sentAt: string | null;
+    openedAt: string | null;
+    acceptedAt: string | null;
+  } | null;
   confirmedAt?: string | null;
   orderedAt?: string | null;
   items: CartItem[];
@@ -272,6 +281,9 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
         {/* PDF de propuesta */}
         <ProposalPdfButton cartId={id} />
 
+        {/* Enviar propuesta del agente al cliente (1 clic) */}
+        <ProposalSendPanel cart={cart} onUpdate={(c) => setCart((prev) => (prev ? { ...prev, ...c } : null))} />
+
         {/* Pago Stripe */}
         <PaymentLinkPanel cartId={id} cart={cart} onUpdate={(c) => setCart((prev) => (prev ? { ...prev, ...c } : null))} />
 
@@ -327,6 +339,96 @@ function ProposalPdfButton({ cartId }: { cartId: string }) {
           Descargar PDF
         </button>
       </div>
+    </div>
+  );
+}
+
+function proposalStatusLabel(s: string): string {
+  return s === "sent"
+    ? "enviada"
+    : s === "opened"
+      ? "abierta por el cliente"
+      : s === "accepted"
+        ? "✓ aceptada"
+        : s === "rejected"
+          ? "rechazada"
+          : s;
+}
+
+function ProposalSendPanel({
+  cart,
+  onUpdate,
+}: {
+  cart: Cart;
+  onUpdate: (next: Partial<Cart>) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const p = cart.autoProposal;
+
+  async function send() {
+    if (!p) return;
+    if (!confirm(`¿Enviar la propuesta ${p.proposalNumber} por email a ${cart.email}?`)) return;
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const res = await fetch(`/api/admin/proposals/${p.id}/send-to-client`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setFeedback({ ok: true, msg: `Enviada a ${data.sentTo}` });
+        onUpdate({
+          status: cart.status === "NEW" ? "SENT" : cart.status,
+          autoProposal: { ...p, status: "sent", sentAt: new Date().toISOString() },
+        });
+      } else {
+        setFeedback({ ok: false, msg: data.error || "Error" });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border border-line bg-bone p-5">
+      <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Propuesta al cliente</p>
+      {!p ? (
+        <p className="mt-1 text-sm text-ink/60">
+          El agente genera un borrador de propuesta automáticamente para cotizaciones nuevas con precio.
+          Aún no hay una vinculada a esta cotización.
+        </p>
+      ) : p.status === "draft" ? (
+        <>
+          <p className="mt-1 font-display text-lg font-semibold text-ink">
+            {p.proposalNumber} · borrador listo
+          </p>
+          <p className="mt-1 text-xs text-ink/60">
+            Envía el PDF al cliente por email en 1 clic. El carrito pasará a SENT.
+          </p>
+          <button
+            type="button"
+            onClick={send}
+            disabled={busy}
+            className="mt-3 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-40"
+          >
+            {busy ? "Enviando…" : "📤 Enviar propuesta al cliente"}
+          </button>
+        </>
+      ) : (
+        <p className="mt-1 text-sm text-ink/80">
+          {p.proposalNumber} · <strong>{proposalStatusLabel(p.status)}</strong>
+          {p.sentAt && p.status !== "accepted" && (
+            <span className="text-ink/50"> · {new Date(p.sentAt).toLocaleDateString("es-ES")}</span>
+          )}
+        </p>
+      )}
+      {feedback && (
+        <p className={`mt-2 text-xs ${feedback.ok ? "text-social" : "text-accent-deep"}`}>
+          {feedback.ok ? "✓" : "⚠"} {feedback.msg}
+        </p>
+      )}
     </div>
   );
 }
