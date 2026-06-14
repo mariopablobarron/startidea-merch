@@ -80,3 +80,14 @@ WHATSAPP_API_VERSION=v21.0   # opcional
 ```
 Sin estas variables, el envío hace no-op (no rompe nada). Al ponerlas + redeploy,
 el presupuesto/enlace de pago empieza a salir también por WhatsApp.
+
+## Recepción (webhook) — opcional
+Para *recibir* mensajes, en Meta (Configuración de la API → Webhooks) registra:
+- **URL de devolución de llamada:** `https://merchandising.hubstartidea.es/api/webhooks/whatsapp`
+- **Token de verificación:** una cadena que inventes; pon la MISMA en el `.env`:
+```
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=<la misma cadena que pongas en Meta>
+WHATSAPP_APP_SECRET=<App Secret de la app de Meta>   # firma los webhooks
+```
+Suscríbete al campo **messages**. Los mensajes entrantes llegan como aviso por
+Telegram al equipo (`api/webhooks/whatsapp`). Durmiente hasta poner el verify token.
