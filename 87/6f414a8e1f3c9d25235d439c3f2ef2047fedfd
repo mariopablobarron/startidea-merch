@@ -1,0 +1,23 @@
+src/lib/outbound-email.ts
+  s_65877aa637ec34::t_3cf8d469ce6c45 18-25
+  s_65877aa637ec34::t_eedb4f2ceebf67 115,117-118
+  s_65877aa637ec34::t_be1e15523fb69b 69,71
+src/lib/linkedin-message.ts
+  s_65877aa637ec34::t_a520eac4c83346 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "876f414a8e1f3c9d25235d439c3f2ef2047fedfd",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
