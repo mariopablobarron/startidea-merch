@@ -1,0 +1,26 @@
+src/components/WhatsAppFloat.tsx
+  s_65877aa637ec34::t_bb72c35c80da5a 16-18
+  s_65877aa637ec34::t_0a0e55839c5bc4 4
+src/lib/whatsapp.ts
+  s_65877aa637ec34::t_4622614cbe3ba6 45,48-49
+  s_65877aa637ec34::t_e4daa9d02c182f 16-24
+src/components/WhatsAppCta.tsx
+  s_65877aa637ec34::t_9e72f1c8f716d6 3
+  s_65877aa637ec34::t_79996ad625b521 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "9b463a868f5ac3d1dc7baa89eb989bc578b57f66",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
