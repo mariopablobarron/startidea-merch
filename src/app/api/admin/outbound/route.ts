@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
+
+const PAGE_SIZE = 50;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,17 +32,37 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const statusFilter = url.searchParams.get("status");
-  const where = statusFilter && ALL_STATUSES.includes(statusFilter as never)
-    ? { status: statusFilter as (typeof ALL_STATUSES)[number] }
-    : {};
+  const source = (url.searchParams.get("source") || "").trim();
+  const q = (url.searchParams.get("q") || "").trim();
+  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
 
-  const [leads, counts] = await Promise.all([
+  const where: Prisma.OutboundLeadWhereInput = {
+    ...(statusFilter && ALL_STATUSES.includes(statusFilter as never)
+      ? { status: statusFilter as (typeof ALL_STATUSES)[number] }
+      : {}),
+    ...(source ? { source } : {}),
+    ...(q
+      ? {
+          OR: [
+            { name: { contains: q, mode: "insensitive" } },
+            { company: { contains: q, mode: "insensitive" } },
+            { email: { contains: q, mode: "insensitive" } },
+            { segment: { contains: q, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
+
+  const [leads, total, counts, sourceGroups] = await Promise.all([
     prisma.outboundLead.findMany({
       where,
       orderBy: [{ nextActionAt: "asc" }, { createdAt: "desc" }],
-      take: 200,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
     }),
+    prisma.outboundLead.count({ where }),
     prisma.outboundLead.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.outboundLead.groupBy({ by: ["source"], _count: { _all: true } }),
   ]);
 
   const summary = counts.reduce<Record<string, number>>((acc, r) => {
@@ -47,7 +70,20 @@ export async function GET(req: Request) {
     return acc;
   }, {});
 
-  return NextResponse.json({ leads, summary });
+  const sources = sourceGroups
+    .map((s) => ({ source: s.source, count: s._count._all }))
+    .filter((s): s is { source: string; count: number } => Boolean(s.source))
+    .sort((a, b) => b.count - a.count);
+
+  return NextResponse.json({
+    leads,
+    summary,
+    sources,
+    total,
+    page,
+    pageSize: PAGE_SIZE,
+    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+  });
 }
 
 export async function POST(req: Request) {

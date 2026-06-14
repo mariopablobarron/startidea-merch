@@ -61,20 +61,34 @@ const SEGMENTS = ["tech", "events", "rsc", "rrhh", "consultora", "freelance", "a
 export default function OutboundCRMPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [summary, setSummary] = useState<Record<string, number>>({});
+  const [sources, setSources] = useState<{ source: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Status | "">("");
+  const [source, setSource] = useState("");
+  const [q, setQ] = useState("");
+  const [qInput, setQInput] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
     try {
-      const url = filter ? `/api/admin/outbound?status=${filter}` : "/api/admin/outbound";
-      const r = await fetch(url, { credentials: "include" });
+      const params = new URLSearchParams();
+      if (filter) params.set("status", filter);
+      if (source) params.set("source", source);
+      if (q) params.set("q", q);
+      params.set("page", String(page));
+      const r = await fetch(`/api/admin/outbound?${params.toString()}`, { credentials: "include" });
       const d = await r.json();
       if (r.ok) {
         setLeads(d.leads || []);
         setSummary(d.summary || {});
+        setTotal(d.total ?? (d.leads?.length || 0));
+        setTotalPages(d.totalPages ?? 1);
+        if (d.sources) setSources(d.sources);
       }
     } finally {
       setLoading(false);
@@ -84,7 +98,19 @@ export default function OutboundCRMPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [filter, source, q, page]);
+
+  // Reset a página 1 cuando cambia filtro/búsqueda/origen
+  useEffect(() => {
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, source, q]);
+
+  // Debounce de la búsqueda
+  useEffect(() => {
+    const t = setTimeout(() => setQ(qInput.trim()), 350);
+    return () => clearTimeout(t);
+  }, [qInput]);
 
   async function updateLead(id: string, patch: Partial<Lead> & { nextActionInDays?: number }) {
     const r = await fetch(`/api/admin/outbound/${id}`, {
@@ -114,8 +140,9 @@ export default function OutboundCRMPage() {
         <div>
           <h1 className="font-display text-3xl font-semibold text-ink">CRM outbound</h1>
           <p className="mt-1 text-sm text-ink/65">
-            Pipeline manual de leads (LinkedIn, email, eventos). {leads.length} leads totales ·{" "}
-            {overdueCount > 0 && <span className="text-accent font-medium">{overdueCount} con acción pendiente</span>}
+            {total.toLocaleString("es-ES")} leads{filter || source || q ? " (filtrados)" : ""} ·{" "}
+            mostrando {leads.length}
+            {overdueCount > 0 && <> · <span className="text-accent font-medium">{overdueCount} con acción vencida</span></>}
           </p>
         </div>
         <button
@@ -138,6 +165,29 @@ export default function OutboundCRMPage() {
             {STATUS_LABEL[s]} ({summary[s] || 0})
           </FilterChip>
         ))}
+      </div>
+
+      {/* Buscador + filtro de origen */}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          value={qInput}
+          onChange={(e) => setQInput(e.target.value)}
+          placeholder="Buscar por nombre, empresa, email o sector…"
+          className="min-w-[280px] flex-1 rounded-full border border-line bg-white px-4 py-2 text-sm focus:border-accent focus:outline-none"
+        />
+        <select
+          value={source}
+          onChange={(e) => setSource(e.target.value)}
+          className="rounded-full border border-line bg-white px-4 py-2 text-sm focus:border-accent focus:outline-none"
+        >
+          <option value="">Todos los orígenes</option>
+          {sources.map((s) => (
+            <option key={s.source} value={s.source}>
+              {s.source} ({s.count})
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Lista */}
@@ -217,6 +267,29 @@ export default function OutboundCRMPage() {
           </ul>
         )}
       </div>
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1 || loading}
+            className="rounded-full border border-line bg-white px-4 py-2 disabled:opacity-40"
+          >
+            ← Anterior
+          </button>
+          <span className="text-ink/60">
+            Página {page} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages || loading}
+            className="rounded-full border border-line bg-white px-4 py-2 disabled:opacity-40"
+          >
+            Siguiente →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
