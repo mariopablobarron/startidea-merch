@@ -26,6 +26,8 @@ export type SendEmailParams = {
    * webhook · internal", "broadcast · weekly newsletter".
    */
   context?: string;
+  /** Cabeceras extra (ej. List-Unsubscribe para outbound/newsletter). */
+  headers?: Record<string, string>;
 };
 
 export type SendEmailResult =
@@ -63,6 +65,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       ...(params.attachments && params.attachments.length > 0
         ? { attachments: params.attachments }
         : {}),
+      ...(params.headers ? { headers: params.headers } : {}),
     });
     // El SDK devuelve { data: { id }, error: null } o { data: null, error: {...} }
     if ("error" in result && result.error) {

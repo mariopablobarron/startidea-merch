@@ -584,7 +584,25 @@ model OutboundLead {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
+  // Email frío B2B (interés legítimo) — compliance + dedup
+  legalBasis    String?  @default("interes-legitimo-b2b")
+  unsubToken    String?  @unique // token público para el opt-out en cada email
+  lastEmailedAt DateTime?
+  emailsSent    Int      @default(0)
+
   @@index([status, nextActionAt])
+  @@index([createdAt(sort: Desc)])
+}
+
+/// Lista de supresión de outbound (RGPD/LSSI): emails que han pedido NO recibir
+/// más comunicaciones comerciales, o que han rebotado. Se consulta SIEMPRE
+/// antes de enviar un email frío. Separada de la newsletter (esa es opt-in).
+model OutboundSuppression {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  reason    String? // "opt-out", "bounce", "manual", "complaint"
+  createdAt DateTime @default(now())
+
   @@index([createdAt(sort: Desc)])
 }
 
