@@ -180,6 +180,15 @@ export const CRON_CATALOG: CronEntry[] = [
     frequencyHours: 24,
     description: "Seguimiento de cotizaciones con enlace de pago enviado sin pagar (D2/D5/D10)",
   },
+  {
+    name: "proposal-followup",
+    endpointPath: "/api/cron/proposal-followup",
+    method: "POST",
+    schedule: "diario 11:00 UTC",
+    scheduleCron: "0 11 * * *",
+    frequencyHours: 24,
+    description: "Seguimiento de propuestas (PDF) enviadas sin responder (D3/D7)",
+  },
 ];
 
 export function findCron(name: string): CronEntry | null {

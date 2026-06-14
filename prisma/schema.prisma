@@ -1622,6 +1622,9 @@ model Proposal {
   ip                 String?
   ua                 String?  @db.Text
   resendId           String? // ID del email Resend (para tracking)
+  // Seguimiento automático de propuestas enviadas sin responder (cron proposal-followup).
+  lastFollowupAt     DateTime?
+  followupCount      Int      @default(0)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
