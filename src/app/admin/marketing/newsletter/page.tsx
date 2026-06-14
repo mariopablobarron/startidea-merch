@@ -162,6 +162,36 @@ export default function NewsletterPage() {
     }
   }
 
+  async function bulkDelete() {
+    if (!tag && !q) {
+      alert("Aplica un filtro (tag o búsqueda) antes de borrar en masa.");
+      return;
+    }
+    const payload = { status, tag, q };
+    const r1 = await fetch("/api/admin/newsletter/bulk-delete", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const d1 = await r1.json();
+    if (!r1.ok) return alert(d1.error || "Error");
+    if (!d1.count) return alert("No hay suscriptores que coincidan con el filtro.");
+    if (!confirm(`Vas a BORRAR ${d1.count} suscriptores que coinciden con el filtro actual.\n\nNo es recuperable. ¿Continuar?`)) return;
+    const r2 = await fetch("/api/admin/newsletter/bulk-delete", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, confirm: true }),
+    });
+    const d2 = await r2.json();
+    if (r2.ok) {
+      alert(`✓ ${d2.count} suscriptores borrados.`);
+      setPage(1);
+      load();
+    } else alert(d2.error || "Error");
+  }
+
   useEffect(() => {
     load();
   }, [load]);
@@ -303,6 +333,16 @@ export default function NewsletterPage() {
               </button>
             ))}
           </div>
+          {(tag || q) && (
+            <button
+              type="button"
+              onClick={bulkDelete}
+              className="rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-sm font-medium text-accent-deep hover:bg-accent/20"
+              title="Borrar todos los suscriptores que coinciden con el filtro actual"
+            >
+              🗑 Borrar los {total.toLocaleString("es-ES")} filtrados
+            </button>
+          )}
         </div>
 
         {/* Tabla */}
