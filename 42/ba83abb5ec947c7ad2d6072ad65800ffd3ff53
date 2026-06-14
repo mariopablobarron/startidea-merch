@@ -1,0 +1,25 @@
+src/lib/whatsapp-cloud.ts
+  s_65877aa637ec34::t_fb520359cc8db7 1-97
+src/app/api/admin/cart-quotes/[id]/payment-link/route.ts
+  s_65877aa637ec34::t_f17405a494102a 7
+  s_65877aa637ec34::t_5a07f0f6de7854 96-108
+  s_65877aa637ec34::t_bef43cf4cff94f 49
+docs/whatsapp-templates.md
+  s_65877aa637ec34::t_7fc26008189575 69-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "42ba83abb5ec947c7ad2d6072ad65800ffd3ff53",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
