@@ -280,6 +280,20 @@ export default async function CatalogoPage({
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
+  // Sidebar de categorías: hay cientos de categorías top-level (feed de
+  // proveedores). Mostrar las ~14 con más productos (las relevantes) + un
+  // "Ver todas" al hub /categorias. La activa siempre se muestra aunque esté
+  // en la cola larga, para que el usuario vea/quite su selección.
+  const TOP_CATS = 14;
+  const sortedTopCats = [...topCategories].sort(
+    (a, b) => (b._count?.products ?? 0) - (a._count?.products ?? 0),
+  );
+  let displayCats = sortedTopCats.slice(0, TOP_CATS);
+  if (catSlug && !displayCats.some((c) => c.slug === catSlug)) {
+    const act = sortedTopCats.find((c) => c.slug === catSlug);
+    if (act) displayCats = [act, ...displayCats.slice(0, TOP_CATS - 1)];
+  }
+
   // CollectionPage JSON-LD: Google entiende la página como índice de
   // items y puede mostrar sitelinks más ricos. Solo primeros 24 items
   // (los visibles) — más sería verboso para el crawler.
@@ -376,16 +390,21 @@ export default async function CatalogoPage({
                     active={!catSlug}
                     label={`Todas (${total.toLocaleString("es-ES")})`}
                   />
-                  {topCategories.map((c) => (
+                  {displayCats.map((c) => (
                     <Chip
                       key={c.id}
                       href={`/catalogo?cat=${c.slug}`}
                       active={catSlug === c.slug}
-                      label={`${c.name}${c._count?.products ? ` (${c._count.products})` : ""}`}
+                      title={c.name}
+                      label={`${shortLabel(c.name)}${c._count?.products ? ` (${c._count.products})` : ""}`}
                     />
                   ))}
                   <div className="mt-2 border-t border-line pt-2">
-                    <Chip href="/categorias" active={false} label="Ver todas las categorías" />
+                    <Chip
+                      href="/categorias"
+                      active={false}
+                      label={`Ver todas las categorías (${topCategories.length})`}
+                    />
                     <Chip
                       href="/promociones"
                       active={false}
@@ -780,11 +799,22 @@ function FilterBlock({ title, children }: { title: string; children: React.React
   );
 }
 
-function Chip({ href, active, label }: { href: string; active: boolean; label: string }) {
+function Chip({
+  href,
+  active,
+  label,
+  title,
+}: {
+  href: string;
+  active: boolean;
+  label: string;
+  title?: string;
+}) {
   return (
     <Link
       href={href}
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs transition ${
+      title={title}
+      className={`inline-flex max-w-full items-center truncate rounded-full px-3 py-1 text-xs transition ${
         active
           ? "bg-ink text-bone"
           : "border border-line bg-bone-soft text-ink/70 hover:border-accent"
@@ -793,6 +823,12 @@ function Chip({ href, active, label }: { href: string; active: boolean; label: s
       {label}
     </Link>
   );
+}
+
+/** Acorta nombres de categoría largos para que el chip no rompa el layout. */
+function shortLabel(name: string, max = 22): string {
+  const clean = name.trim();
+  return clean.length > max ? `${clean.slice(0, max - 1).trimEnd()}…` : clean;
 }
 
 function EmptyState({ q }: { q: string }) {
