@@ -171,6 +171,15 @@ export const CRON_CATALOG: CronEntry[] = [
     frequencyHours: 1,
     description: "Envía los broadcasts programados (status SCHEDULED) cuya hora ha llegado",
   },
+  {
+    name: "quote-followup",
+    endpointPath: "/api/cron/quote-followup",
+    method: "POST",
+    schedule: "diario 10:00 UTC",
+    scheduleCron: "0 10 * * *",
+    frequencyHours: 24,
+    description: "Seguimiento de cotizaciones con enlace de pago enviado sin pagar (D2/D5/D10)",
+  },
 ];
 
 export function findCron(name: string): CronEntry | null {

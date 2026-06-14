@@ -1333,10 +1333,15 @@ model CartQuote {
   autoProposalAt DateTime?
   autoProposalId String? // id de la Proposal borrador generada
 
+  // Cierre: marcada como PERDIDA manualmente por el admin (con motivo).
+  lostAt     DateTime?
+  lostReason String?
+
   @@index([status])
   @@index([email])
   @@index([createdAt])
   @@index([reminderSentAt])
+  @@index([paymentLinkSentAt])
 }
 
 enum CartQuoteStatus {
@@ -1346,6 +1351,7 @@ enum CartQuoteStatus {
   CONFIRMED
   ORDERED
   ARCHIVED
+  LOST // descartada manualmente (perdida) — con lostReason
 }
 
 model CartQuoteItem {

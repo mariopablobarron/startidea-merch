@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSecret } from "@/lib/auth";
@@ -42,8 +43,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 const PatchSchema = z.object({
-  status: z.enum(["NEW", "IN_PROGRESS", "SENT", "CONFIRMED", "ORDERED", "ARCHIVED"]).optional(),
+  status: z.enum(["NEW", "IN_PROGRESS", "SENT", "CONFIRMED", "ORDERED", "ARCHIVED", "LOST"]).optional(),
   internalNotes: z.string().max(4000).optional(),
+  lostReason: z.string().max(500).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -58,9 +60,28 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     where: { id },
     select: { status: true },
   });
+
+  const { status, internalNotes, lostReason } = parsed.data;
+  const data: Prisma.CartQuoteUpdateInput = {};
+  if (internalNotes !== undefined) data.internalNotes = internalNotes;
+  if (status !== undefined) {
+    data.status = status;
+    if (status === "LOST") {
+      // Marcar perdida: sella la fecha y el motivo.
+      data.lostAt = new Date();
+      data.lostReason = lostReason ?? null;
+    } else {
+      // Salir de LOST limpia el sello de pérdida.
+      data.lostAt = null;
+      data.lostReason = null;
+    }
+  } else if (lostReason !== undefined) {
+    data.lostReason = lostReason;
+  }
+
   const updated = await prisma.cartQuote.update({
     where: { id },
-    data: parsed.data,
+    data,
   });
 
   // Webhook si cambió el estado

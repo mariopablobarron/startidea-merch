@@ -41,6 +41,9 @@ type Cart = {
   acceptedTotalCents?: number | null;
   depositPercent?: number | null;
   paymentLinkToken?: string | null;
+  paymentLinkSentAt?: string | null;
+  lostReason?: string | null;
+  lostAt?: string | null;
   confirmedAt?: string | null;
   orderedAt?: string | null;
   items: CartItem[];
@@ -72,7 +75,7 @@ const EUR = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 2,
 });
 
-const STATUSES = ["NEW", "IN_PROGRESS", "SENT", "CONFIRMED", "ORDERED", "ARCHIVED"];
+const STATUSES = ["NEW", "IN_PROGRESS", "SENT", "CONFIRMED", "ORDERED", "ARCHIVED", "LOST"];
 
 export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -97,7 +100,7 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
       });
   }, [id]);
 
-  async function patch(payload: { status?: string; internalNotes?: string }) {
+  async function patch(payload: { status?: string; internalNotes?: string; lostReason?: string }) {
     const res = await fetch(`/api/admin/cart-quotes/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -149,11 +152,22 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
             </p>
             <select
               value={cart.status}
-              onChange={(e) => patch({ status: e.target.value })}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "LOST") {
+                  const reason = window.prompt("Motivo de la pérdida (opcional):") ?? "";
+                  patch({ status: "LOST", lostReason: reason || undefined });
+                } else {
+                  patch({ status: v });
+                }
+              }}
               className="mt-3 rounded-full border border-line bg-bone px-4 py-1.5 text-xs"
             >
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+            {cart.status === "LOST" && cart.lostReason && (
+              <p className="mt-1 text-[11px] text-accent-deep">Perdida: {cart.lostReason}</p>
+            )}
           </div>
         </header>
 
@@ -416,6 +430,31 @@ function PaymentLinkPanel({
       >
         {busy ? "Creando…" : cart.paymentLinkToken ? "Regenerar enlace" : "Crear enlace y enviar"}
       </button>
+
+      {/* Enlace persistente (visible al recargar) + estado de pago */}
+      {cart.paymentLinkToken && !result?.url && (
+        <div className="mt-3 rounded-lg bg-bone-soft p-3 text-xs">
+          {(cart.payments?.length ?? 0) > 0 ? (
+            <span className="font-semibold text-social">✅ Pagado</span>
+          ) : (
+            <>
+              <a
+                href={`/pay/${cart.paymentLinkToken}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent underline-offset-4 hover:underline"
+              >
+                Abrir enlace de pago activo ↗
+              </a>
+              {cart.paymentLinkSentAt && (
+                <span className="ml-2 text-ink/50">
+                  enviado {new Date(cart.paymentLinkSentAt).toLocaleDateString("es-ES")}
+                </span>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {result?.url && (
         <p className="mt-3 rounded-lg bg-bone-soft p-3 text-xs">
