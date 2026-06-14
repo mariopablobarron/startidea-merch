@@ -10,7 +10,8 @@ type Suggestion = {
   categories: Array<{ slug: string; name: string; path: string }>;
 };
 
-export function NavSearch() {
+export function NavSearch({ size = "nav" }: { size?: "nav" | "hero" } = {}) {
+  const hero = size === "hero";
   const router = useRouter();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -64,10 +65,12 @@ export function NavSearch() {
           e.preventDefault();
           go();
         }}
-        className="flex w-full items-center gap-2 rounded-full border border-line bg-bone px-4 py-2.5 text-sm transition focus-within:border-accent"
+        className={`flex w-full items-center gap-2 rounded-full border border-line bg-bone transition focus-within:border-accent ${
+          hero ? "px-5 py-4 text-base shadow-sm" : "px-4 py-2.5 text-sm"
+        }`}
       >
         <svg
-          className="h-4 w-4 shrink-0 text-ink/40"
+          className={`${hero ? "h-5 w-5" : "h-4 w-4"} shrink-0 text-ink/40`}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -85,7 +88,7 @@ export function NavSearch() {
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
-          placeholder="Buscar productos…"
+          placeholder={hero ? "Busca productos: camisetas, tazas, mochilas…" : "Buscar productos…"}
           className="flex-1 bg-transparent outline-none placeholder:text-ink/40"
           aria-label="Buscar productos"
         />
@@ -99,6 +102,14 @@ export function NavSearch() {
             className="text-xs text-ink/40 hover:text-accent"
           >
             ✕
+          </button>
+        )}
+        {hero && (
+          <button
+            type="submit"
+            className="shrink-0 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone transition hover:bg-accent-dark"
+          >
+            Buscar
           </button>
         )}
       </form>

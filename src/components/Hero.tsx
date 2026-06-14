@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion, fadeUp, stagger, viewportOnce } from "./motion";
 import { Counter } from "./Counter";
+import { NavSearch } from "./NavSearch";
 import type { CtaLink } from "@/lib/site-settings";
 
 const EUR_DECIMAL = new Intl.NumberFormat("es-ES", {
@@ -87,7 +88,12 @@ export function Hero({
           {sub}
         </motion.p>
 
-        <motion.div variants={fadeUp} className="mt-12 flex flex-wrap items-center gap-3">
+        {/* Buscador protagonista — con catálogo grande, la búsqueda manda. */}
+        <motion.div variants={fadeUp} className="mt-8 max-w-2xl">
+          <NavSearch size="hero" />
+        </motion.div>
+
+        <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center gap-3">
           <Link
             href={ctaPrimary.href}
             className="rounded-full bg-accent px-8 py-4 text-base font-semibold text-bone transition hover:bg-accent-dark"

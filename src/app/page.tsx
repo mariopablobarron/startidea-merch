@@ -1,5 +1,7 @@
 import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
+import { TrustStrip } from "@/components/TrustStrip";
+import { BestSellers } from "@/components/BestSellers";
 import { ActivePromotionBar } from "@/components/ActivePromotionBar";
 import { BannerSlot } from "@/components/BannerSlot";
 import { ClientLogos } from "@/components/ClientLogos";
@@ -77,16 +79,18 @@ export default async function HomePage() {
           ctaPrimary={settings["hero.ctaPrimary"]}
           ctaSecondary={settings["hero.ctaSecondary"]}
         />
+        <TrustStrip />
         <BannerSlot slot="HOME_TOP" />
         <ClientLogos />
         <Marquee />
+        <BestSellers />
         <Impact />
+        <PublicReviews />
         <Process />
         <BannerSlot slot="HOME_MID" />
         <PortfolioGrid variant="home" />
         <Cases />
         <LatestPosts />
-        <PublicReviews />
         <Partners />
         <Categories />
         <SeoContent />
