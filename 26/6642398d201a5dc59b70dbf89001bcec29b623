@@ -1,0 +1,26 @@
+src/app/api/admin/broadcasts/[id]/send/route.ts
+  s_65877aa637ec34::t_41f0bbc80abaee 93
+  s_65877aa637ec34::t_8b97be8d627616 5
+  s_65877aa637ec34::t_9ff0597353bdbb 54
+src/lib/outbound-email.ts
+  s_65877aa637ec34::t_9c4cbae8cc9a70 3
+  s_65877aa637ec34::t_58c1020e0db896 176
+src/lib/resend.ts
+  s_65877aa637ec34::t_ae372901021b86 9-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "266642398d201a5dc59b70dbf89001bcec29b623",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
