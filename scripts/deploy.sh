@@ -49,20 +49,26 @@ log "recreate container"
 # Invariante que explotamos: el contenedor BUENO siempre se llama EXACTAMENTE
 # "merch-app"; cualquier nombre que acabe en "_merch-app" es residuo del baile.
 
-# Borra TODO residuo "<hash>_merch-app" (en CUALQUIER estado, Up incluido) +
-# un "merch-app" pelado que no esté Up. Nunca toca el "merch-app" sano.
-purge_merch_residue() {
-  docker ps -a --format '{{.Names}}' \
-    | grep -E '_merch-app$' \
-    | xargs -r docker rm -f >/dev/null 2>&1 || true
+# (1) Borra un "merch-app" PELADO que no esté Up (Exited/Dead/Created): es un
+# viejo cuyo `destroy` falló y ocupa el nombre canónico. Liberarlo es requisito
+# para poder promover el contenedor nuevo. Nunca toca un merch-app sano (Up).
+drop_dead_canonical() {
   docker ps -a --format '{{.Names}} {{.Status}}' \
     | awk '$1 == "merch-app" && $2 != "Up" {print $1}' \
     | xargs -r docker rm -f >/dev/null 2>&1 || true
 }
 
-# Red de seguridad: si compose dejó el contenedor nuevo sin renombrar (queda
-# "<hash>_merch-app" corriendo y no hay "merch-app" pelado), lo promovemos para
-# restablecer el invariante "el que sirve se llama merch-app".
+# (2) Borra TODO residuo con nombre "<hash>_merch-app" (en cualquier estado). El
+# contenedor bueno se llama EXACTAMENTE "merch-app" y nunca matchea esta regex.
+purge_prefixed_residue() {
+  docker ps -a --format '{{.Names}}' \
+    | grep -E '_merch-app$' \
+    | xargs -r docker rm -f >/dev/null 2>&1 || true
+}
+
+# (3) Si compose dejó el contenedor nuevo sin renombrar ("<hash>_merch-app" Up y
+# no hay "merch-app" pelado), lo promovemos. Requiere el nombre canónico libre
+# (de ahí que drop_dead_canonical corra antes).
 ensure_canonical_name() {
   docker ps --format '{{.Names}}' | grep -qx 'merch-app' && return 0
   local survivor
@@ -73,16 +79,24 @@ ensure_canonical_name() {
   fi
 }
 
-purge_merch_residue
-# El exit code de compose NO es árbitro de éxito: emite "Conflict ..." y sale
-# !=0 aunque el contenedor nuevo haya quedado Up y healthy sirviendo la imagen
-# nueva. El ÚNICO juez es el healthcheck HTTP de abajo; aquí solo registramos.
+# Pre: limpia residuos de deploys anteriores para que el recreate parta limpio.
+drop_dead_canonical
+purge_prefixed_residue
+
+# El exit code de compose NO es árbitro de éxito: en la carrera emite
+# "Conflict ..." y sale !=0 aunque el contenedor nuevo haya quedado Up y healthy
+# sirviendo la imagen nueva. El ÚNICO juez es el healthcheck HTTP de abajo.
 docker compose -f docker-compose.yml -f docker-compose.prod.yml \
   up -d --force-recreate --remove-orphans app 2>&1 | tail -20
 CRC=${PIPESTATUS[0]}
 log "compose up RC=$CRC (informativo; árbitro real = healthcheck HTTP)"
+
+# Post: el ORDEN importa. 1) suelta un viejo Exited que ocupe el nombre canónico,
+# 2) promueve el contenedor nuevo a "merch-app", 3) purga residuos prefijados.
+# Así queda SIEMPRE exactamente un contenedor llamado "merch-app".
+drop_dead_canonical
 ensure_canonical_name
-purge_merch_residue   # limpia el saliente renombrado; "merch-app" queda intacto
+purge_prefixed_residue
 
 # Healthcheck: ÚNICO criterio de éxito/fallo del deploy (NO el RC de compose).
 # Hasta 6 intentos × 10s = 60s; Next.js + Prisma tardan 20-40s en estar listos
