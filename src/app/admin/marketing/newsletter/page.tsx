@@ -149,6 +149,19 @@ export default function NewsletterPage() {
     }
   }
 
+  async function deleteSubscriber(email: string) {
+    if (!confirm(`¿Borrar definitivamente a ${email} del newsletter?\n\nNo es recuperable.`)) return;
+    const r = await fetch(`/api/admin/newsletter/${encodeURIComponent(email)}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (r.ok) load();
+    else {
+      const d = await r.json().catch(() => ({}));
+      alert(`Error: ${d.error || r.status}`);
+    }
+  }
+
   useEffect(() => {
     load();
   }, [load]);
@@ -368,6 +381,13 @@ export default function NewsletterPage() {
                           Activo
                         </span>
                       )}
+                      <button
+                        onClick={() => deleteSubscriber(s.email)}
+                        title="Borrar suscriptor"
+                        className="ml-2 rounded-full bg-line/20 px-2 py-0.5 text-[11px] text-ink/45 hover:bg-accent/15 hover:text-accent-deep"
+                      >
+                        ✕
+                      </button>
                     </td>
                   </tr>
                 ))}
