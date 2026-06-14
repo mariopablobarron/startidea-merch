@@ -26,6 +26,8 @@ type Subscriber = {
   unsubscribedAt: string | null;
   lastSentAt: string | null;
   totalSent: number;
+  engagementScore: number;
+  lastOpenedAt: string | null;
   importBatchId: string | null;
 };
 
@@ -95,6 +97,7 @@ export default function NewsletterPage() {
   const [perPage] = useState(50);
   const [q, setQ] = useState("");
   const [tag, setTag] = useState("");
+  const [sort, setSort] = useState<"" | "engagement">("");
   const [status, setStatus] = useState<"subscribed" | "unsubscribed" | "all">("subscribed");
   const [loading, setLoading] = useState(true);
   const [importerOpen, setImporterOpen] = useState(false);
@@ -111,6 +114,7 @@ export default function NewsletterPage() {
         perPage: String(perPage),
       });
       if (tag) params.set("tag", tag);
+      if (sort) params.set("sort", sort);
       const [r, rb] = await Promise.all([
         fetch(`/api/admin/newsletter?${params}`, { credentials: "include" }),
         fetch("/api/admin/newsletter/imports", { credentials: "include" }),
@@ -126,7 +130,7 @@ export default function NewsletterPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, status, page, perPage, tag]);
+  }, [q, status, page, perPage, tag, sort]);
 
   async function undoBatch(batch: ImportBatch) {
     if (
@@ -343,6 +347,21 @@ export default function NewsletterPage() {
               🗑 Borrar los {total.toLocaleString("es-ES")} filtrados
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => {
+              setSort((v) => (v === "engagement" ? "" : "engagement"));
+              setPage(1);
+            }}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              sort === "engagement"
+                ? "bg-accent text-bone"
+                : "border border-line bg-bone hover:border-accent"
+            }`}
+            title="Ordenar por engagement (quién abre más)"
+          >
+            🔥 Más activos
+          </button>
         </div>
 
         {/* Tabla */}
@@ -376,6 +395,7 @@ export default function NewsletterPage() {
                   <th className="p-3">Tags</th>
                   <th className="p-3">Origen</th>
                   <th className="p-3 text-right">Envíos</th>
+                  <th className="p-3 text-right">🔥 Score</th>
                   <th className="p-3 text-center">Estado</th>
                 </tr>
               </thead>
@@ -410,6 +430,18 @@ export default function NewsletterPage() {
                     <td className="p-3 text-[11px] text-ink/55">{s.source || "—"}</td>
                     <td className="p-3 text-right text-xs tabular-nums text-ink/70">
                       {s.totalSent}
+                    </td>
+                    <td className="p-3 text-right text-xs tabular-nums">
+                      {s.engagementScore > 0 ? (
+                        <span
+                          className="font-semibold text-accent-deep"
+                          title={s.lastOpenedAt ? `Última apertura: ${new Date(s.lastOpenedAt).toLocaleDateString("es-ES")}` : undefined}
+                        >
+                          🔥 {s.engagementScore}
+                        </span>
+                      ) : (
+                        <span className="text-ink/30">—</span>
+                      )}
                     </td>
                     <td className="p-3 text-center">
                       {s.unsubscribedAt ? (

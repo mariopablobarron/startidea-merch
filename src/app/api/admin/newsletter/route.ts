@@ -39,10 +39,16 @@ export async function GET(req: Request) {
     ];
   }
 
+  const sort = url.searchParams.get("sort") || "";
+  const orderBy =
+    sort === "engagement"
+      ? [{ engagementScore: "desc" as const }, { lastOpenedAt: "desc" as const }]
+      : { optedInAt: "desc" as const };
+
   const [items, total, statsSubscribed, statsUnsubscribed, tagsRaw] = await Promise.all([
     prisma.newsletterSubscriber.findMany({
       where,
-      orderBy: { optedInAt: "desc" },
+      orderBy,
       skip: (page - 1) * perPage,
       take: perPage,
       select: {
@@ -57,6 +63,8 @@ export async function GET(req: Request) {
         unsubscribedAt: true,
         lastSentAt: true,
         totalSent: true,
+        engagementScore: true,
+        lastOpenedAt: true,
         importBatchId: true,
       },
     }),
