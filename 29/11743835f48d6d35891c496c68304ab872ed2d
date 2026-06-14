@@ -1,0 +1,24 @@
+src/components/ProspectDiscover.tsx
+  s_65877aa637ec34::t_661fa9caff291c 1-179
+src/app/api/admin/outbound/discover/route.ts
+  s_65877aa637ec34::t_d5aec44723eacd 1-78
+src/app/admin/marketing/prospect/page.tsx
+  s_65877aa637ec34::t_a08c4899b904b7 79-83
+  s_65877aa637ec34::t_520286c2885eb3 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "2911743835f48d6d35891c496c68304ab872ed2d",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
