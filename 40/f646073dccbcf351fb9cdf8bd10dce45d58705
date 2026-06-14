@@ -1,0 +1,23 @@
+src/app/admin/cart-quotes/[id]/page.tsx
+  s_65877aa637ec34::t_46e4dec2560d18 284-286
+  s_65877aa637ec34::t_213d16bde6c3ab 346-435
+  s_65877aa637ec34::t_5e4e7ddd44ad70 47-55
+src/app/api/admin/cart-quotes/[id]/route.ts
+  s_65877aa637ec34::t_1126e5f799e448 42-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "40f646073dccbcf351fb9cdf8bd10dce45d58705",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
