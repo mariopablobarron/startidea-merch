@@ -1,0 +1,19 @@
+scripts/deploy.sh
+  s_930218410cc67e::t_2161e0a338320b 52-55,61-71,82-88,93-97,99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "9836f4d728f13156f3cda7174f286d4636de691f",
+  "prompts": {},
+  "sessions": {
+    "s_930218410cc67e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6f29046-6b37-4f0c-ba6a-cec7a4fc0fe3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
