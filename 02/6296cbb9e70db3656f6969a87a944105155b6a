@@ -1,0 +1,29 @@
+docs/whatsapp-templates.md
+  s_65877aa637ec34::t_0a705d1f29c788 1-70
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_0188b519e64692 65-66
+  s_65877aa637ec34::t_9d9066a86d1f0b 117
+  s_65877aa637ec34::t_98ac6ca9959540 437
+prisma/schema.prisma
+  s_65877aa637ec34::t_8c070453ee1075 1278-1280
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_3119e21adbb872 31
+  s_65877aa637ec34::t_8413937bd06705 87
+  s_65877aa637ec34::t_c8c5b0957679ee 487-498
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "026296cbb9e70db3656f6969a87a944105155b6a",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
