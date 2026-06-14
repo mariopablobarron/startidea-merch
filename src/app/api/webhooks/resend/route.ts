@@ -85,7 +85,34 @@ export async function POST(req: Request) {
     }
   }
 
-  // 200 a todo lo demás (delivered/opened/clicked) — se procesarán cuando
-  // montemos estadísticas; por ahora los aceptamos sin error.
+  // APERTURA → estadística + lead scoring.
+  if (type === "email.opened") {
+    const d = event.data as { email_id?: string };
+    const now = new Date();
+    if (d?.email_id) {
+      // Primera apertura: fija openedAt solo si estaba vacío.
+      await prisma.broadcastDelivery
+        .updateMany({
+          where: { resendId: d.email_id, openedAt: null },
+          data: { openedAt: now },
+        })
+        .catch(() => {});
+      // Cada apertura: incrementa el contador.
+      await prisma.broadcastDelivery
+        .updateMany({ where: { resendId: d.email_id }, data: { openCount: { increment: 1 } } })
+        .catch(() => {});
+    }
+    // Lead scoring: +1 al engagement del suscriptor que abre.
+    for (const email of extractEmails(event.data)) {
+      await prisma.newsletterSubscriber
+        .updateMany({
+          where: { email },
+          data: { engagementScore: { increment: 1 }, lastOpenedAt: now },
+        })
+        .catch(() => {});
+    }
+  }
+
+  // 200 a todo lo demás (delivered/clicked) — aceptados sin error.
   return NextResponse.json({ ok: true });
 }

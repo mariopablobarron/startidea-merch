@@ -65,7 +65,20 @@ export async function GET(req: Request) {
   );
   const audienceSizes = Object.fromEntries(sizes);
 
-  return NextResponse.json({ ok: true, broadcasts, audienceSizes });
+  // Estadísticas de apertura por broadcast (deliveries con openedAt).
+  const opens = await prisma.broadcastDelivery.groupBy({
+    by: ["broadcastId"],
+    where: { broadcastId: { in: broadcasts.map((b) => b.id) }, openedAt: { not: null } },
+    _count: { _all: true },
+  });
+  const openMap = new Map(opens.map((o) => [o.broadcastId, o._count._all]));
+  const withStats = broadcasts.map((b) => ({
+    ...b,
+    openedCount: openMap.get(b.id) ?? 0,
+    openRate: b.sentCount > 0 ? Math.round(((openMap.get(b.id) ?? 0) / b.sentCount) * 100) : 0,
+  }));
+
+  return NextResponse.json({ ok: true, broadcasts: withStats, audienceSizes });
 }
 
 export async function POST(req: Request) {

@@ -89,7 +89,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const unsubscribeUrl = r.unsubscribeToken
         ? `${SITE_URL}/api/newsletter/unsubscribe?token=${r.unsubscribeToken}`
         : `${SITE_URL}/api/newsletter/unsubscribe?email=${encodeURIComponent(r.email)}`;
-      await resend.emails.send({
+      const sendRes = await resend.emails.send({
         from: MARKETING_FROM,
         to: r.email,
         subject: broadcast.subject,
@@ -97,9 +97,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         text: broadcast.text || stripHtml(broadcast.html),
         headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` },
       });
+      const resendId =
+        sendRes && "data" in sendRes && sendRes.data ? sendRes.data.id : null;
       await prisma.broadcastDelivery
         .create({
-          data: { broadcastId: id, email: r.email, status: "SENT" },
+          data: { broadcastId: id, email: r.email, status: "SENT", resendId },
         })
         .catch(() => {});
       sentCount++;

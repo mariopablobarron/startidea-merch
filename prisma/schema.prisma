@@ -1037,6 +1037,9 @@ model NewsletterSubscriber {
   unsubscribeToken String            @unique @default(cuid())
   lastSentAt       DateTime?
   totalSent        Int               @default(0)
+  // Lead scoring por engagement: +1 por apertura. Sube los calientes.
+  engagementScore  Int               @default(0)
+  lastOpenedAt     DateTime?
 
   @@index([unsubscribedAt])
   @@index([importBatchId])
@@ -2093,9 +2096,14 @@ model BroadcastDelivery {
   status      DeliveryAttempt @default(SENT)
   error       String?         @db.Text
   sentAt      DateTime        @default(now())
+  // Estadísticas: id de Resend para mapear eventos del webhook + apertura.
+  resendId    String?
+  openedAt    DateTime?
+  openCount   Int             @default(0)
 
   @@unique([broadcastId, email])
   @@index([broadcastId])
+  @@index([resendId])
 }
 
 enum BroadcastAudience {

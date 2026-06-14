@@ -13,6 +13,8 @@ type Broadcast = {
   sentAt: string | null;
   sentCount: number;
   failedCount: number;
+  openedCount?: number;
+  openRate?: number;
   createdAt: string;
   createdBy: string | null;
 };
@@ -171,6 +173,11 @@ export default function BroadcastsPage() {
                       <span className="text-social">{b.sentCount}</span>
                       {b.failedCount > 0 && (
                         <span className="text-accent-deep"> / {b.failedCount}</span>
+                      )}
+                      {b.sentCount > 0 && (
+                        <div className="text-[10px] text-ink/55">
+                          {b.openedCount ?? 0} aperturas · {b.openRate ?? 0}%
+                        </div>
                       )}
                     </td>
                     <td className="p-3 text-xs text-ink/60">
