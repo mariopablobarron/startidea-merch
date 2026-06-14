@@ -28,6 +28,7 @@ export function CartPage() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   // cupón
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState<{ code: string; label: string; discountCents: number } | null>(null);
@@ -83,6 +84,7 @@ export function CartPage() {
           phone,
           message,
           deadline,
+          whatsappOptIn,
           couponCode: couponDiscount ? couponDiscount.code : undefined,
           items,
           directPay,
@@ -482,6 +484,18 @@ export function CartPage() {
             rows={4}
             className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
+          <label className="flex items-start gap-2 text-xs text-ink/65">
+            <input
+              type="checkbox"
+              checked={whatsappOptIn}
+              onChange={(e) => setWhatsappOptIn(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#25D366]"
+            />
+            <span>
+              Quiero recibir el presupuesto por <strong>WhatsApp</strong> (más rápido). Acepto que me
+              escribáis al teléfono que he indicado.
+            </span>
+          </label>
         </div>
 
         {error && (

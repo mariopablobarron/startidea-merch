@@ -1275,6 +1275,9 @@ model CartQuote {
   company String?
   email   String
   phone   String?
+  // Consentimiento explícito para recibir el presupuesto por WhatsApp (opt-in
+  // RGPD; se usará cuando esté la WhatsApp Business API).
+  whatsappOptIn Boolean @default(false)
 
   // dirección de envío (opcional, se completa en admin)
   shippingAddress    String?

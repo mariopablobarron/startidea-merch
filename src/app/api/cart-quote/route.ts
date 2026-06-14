@@ -62,6 +62,8 @@ const Schema = z.object({
   // Si true y todos los items tienen precio, generamos paymentLinkToken
   // y devolvemos payUrl para redirigir al checkout Stripe (Apple/Google Pay).
   directPay: z.boolean().optional(),
+  // Consentimiento para recibir el presupuesto por WhatsApp (opt-in RGPD).
+  whatsappOptIn: z.boolean().optional(),
 });
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -112,6 +114,7 @@ export async function POST(req: Request) {
       company: data.company || null,
       email: data.email,
       phone: data.phone || null,
+      whatsappOptIn: data.whatsappOptIn ?? false,
       message: data.message || null,
       deadline: data.deadline || null,
       source: data.source || (directPay ? "carrito-pago-directo" : "carrito"),
@@ -431,7 +434,7 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
             o escríbenos directo:
           </p>
           <p style="margin:0;font-size:14px;line-height:2;">
-            <a href="https://wa.me/34958045789" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">WhatsApp +34 958 045 789</a><br>
+            <a href="https://wa.me/34627305162" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">WhatsApp +34 627 305 162</a><br>
             <a href="mailto:pedidos@startidea.es" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">pedidos@startidea.es</a>
           </p>
         </div>
