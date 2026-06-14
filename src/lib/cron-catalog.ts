@@ -162,6 +162,15 @@ export const CRON_CATALOG: CronEntry[] = [
     frequencyHours: 24,
     description: "Drip post-pedido D0/D14/D45 (gracias + informe + cupón)",
   },
+  {
+    name: "send-scheduled-broadcasts",
+    endpointPath: "/api/cron/send-scheduled-broadcasts",
+    method: "POST",
+    schedule: "cada 5 min",
+    scheduleCron: "*/5 * * * *",
+    frequencyHours: 1,
+    description: "Envía los broadcasts programados (status SCHEDULED) cuya hora ha llegado",
+  },
 ];
 
 export function findCron(name: string): CronEntry | null {
