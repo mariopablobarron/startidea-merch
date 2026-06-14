@@ -9,7 +9,10 @@ import { breadcrumbJsonLd } from "@/lib/jsonld";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
-export const revalidate = 3600;
+// force-dynamic: render en request time (la BD no está disponible en build,
+// igual que en sitemap.ts). Sin esto, Next intenta prerenderizar el índice
+// estático en build y falla al consultar Prisma sin BD.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Categorías de merchandising personalizable",
