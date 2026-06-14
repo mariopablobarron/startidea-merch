@@ -79,24 +79,36 @@ ensure_canonical_name() {
   fi
 }
 
-# Pre: limpia residuos de deploys anteriores para que el recreate parta limpio.
-drop_dead_canonical
-purge_prefixed_residue
+# Un ciclo completo de recreate idempotente: limpia residuos -> recrea ->
+# restablece el invariante "el que sirve se llama merch-app". Devuelve el RC de
+# compose (informativo). NO juzga éxito; de eso se encarga el healthcheck HTTP.
+# El exit code de compose no es fiable: en la carrera emite "Conflict ..." y sale
+# !=0 aunque el contenedor nuevo quede Up y healthy sirviendo la imagen nueva.
+recreate_once() {
+  drop_dead_canonical          # suelta un merch-app Exited que ocupe el nombre
+  purge_prefixed_residue       # borra residuos <hash>_merch-app preexistentes
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+    up -d --force-recreate --remove-orphans app 2>&1 | tail -20
+  local rc=${PIPESTATUS[0]}
+  drop_dead_canonical          # por si el destroy del viejo falló
+  ensure_canonical_name        # promueve un <hash>_merch-app nuevo a merch-app
+  purge_prefixed_residue       # limpia el saliente renombrado y demás residuos
+  return $rc
+}
 
-# El exit code de compose NO es árbitro de éxito: en la carrera emite
-# "Conflict ..." y sale !=0 aunque el contenedor nuevo haya quedado Up y healthy
-# sirviendo la imagen nueva. El ÚNICO juez es el healthcheck HTTP de abajo.
-docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-  up -d --force-recreate --remove-orphans app 2>&1 | tail -20
-CRC=${PIPESTATUS[0]}
+recreate_once
+CRC=$?
+# Caso peor de la carrera (observado en pruebas): el conflicto destruye el
+# contenedor viejo y NO llega a crear el nuevo -> no queda ningún merch-app.
+# Como ya purgamos los residuos, un reintento parte de cero: sin contenedor que
+# reemplazar, compose crea "merch-app" DIRECTO, sin el baile de nombre temporal,
+# así que es inmune al conflicto. Sin este reintento, la web quedaría caída.
+if ! docker ps --format '{{.Names}}' | grep -qx 'merch-app'; then
+  log "tras recreate no hay merch-app corriendo (compose RC=$CRC) — reintento limpio"
+  recreate_once
+  CRC=$?
+fi
 log "compose up RC=$CRC (informativo; árbitro real = healthcheck HTTP)"
-
-# Post: el ORDEN importa. 1) suelta un viejo Exited que ocupe el nombre canónico,
-# 2) promueve el contenedor nuevo a "merch-app", 3) purga residuos prefijados.
-# Así queda SIEMPRE exactamente un contenedor llamado "merch-app".
-drop_dead_canonical
-ensure_canonical_name
-purge_prefixed_residue
 
 # Healthcheck: ÚNICO criterio de éxito/fallo del deploy (NO el RC de compose).
 # Hasta 6 intentos × 10s = 60s; Next.js + Prisma tardan 20-40s en estar listos
