@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/resend";
+import { sendEmail, MARKETING_FROM } from "@/lib/resend";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -173,6 +173,7 @@ export async function sendColdEmail(
 
   const sent = await sendEmail({
     to: lead.email,
+    from: MARKETING_FROM,
     replyTo: SENDER.replyTo,
     subject: draft.subject,
     html,

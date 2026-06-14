@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
-import { resend, RESEND_FROM, sendEmail } from "@/lib/resend";
+import { resend, MARKETING_FROM, sendEmail } from "@/lib/resend";
 import { notifyTelegram } from "@/lib/telegram";
 import { resolveAudience } from "@/lib/broadcast-audience";
 
@@ -51,6 +51,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // sendEmail dispara alerta Telegram automática si Resend falla.
     const result = await sendEmail({
       to: parsed.data.testEmail,
+      from: MARKETING_FROM,
       subject: `[TEST] ${broadcast.subject}`,
       html: applyFooter(
         broadcast.html,
@@ -89,7 +90,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         ? `${SITE_URL}/api/newsletter/unsubscribe?token=${r.unsubscribeToken}`
         : `${SITE_URL}/api/newsletter/unsubscribe?email=${encodeURIComponent(r.email)}`;
       await resend.emails.send({
-        from: RESEND_FROM,
+        from: MARKETING_FROM,
         to: r.email,
         subject: broadcast.subject,
         html: applyFooter(personalize(broadcast.html, r.name || ""), unsubscribeUrl, broadcast.preheader),
