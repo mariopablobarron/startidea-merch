@@ -1,0 +1,21 @@
+src/app/api/webhooks/whatsapp/route.ts
+  s_65877aa637ec34::t_c15b5e5a0e9dc8 1-82
+docs/whatsapp-templates.md
+  s_65877aa637ec34::t_5d9407c3ac6abd 83-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "501c2d28f3982e2f3a7d15506b8bc190994cc991",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
