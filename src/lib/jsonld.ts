@@ -223,11 +223,15 @@ export function productJsonLd(args: {
   };
 
   if (args.priceCents != null && args.priceCents > 0) {
+    // priceValidUntil: Google lo exige para activar el rich result de precio.
+    // Validez rolling de 30 días (se refresca con el render dinámico/ISR).
+    const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     productSchema.offers = {
       "@type": "Offer",
       url: baseUrl,
       priceCurrency: "EUR",
       price: (args.priceCents / 100).toFixed(2),
+      priceValidUntil: validUntil,
       availability: "https://schema.org/InStock",
       itemCondition: "https://schema.org/NewCondition",
       seller: {

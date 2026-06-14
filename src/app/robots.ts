@@ -8,7 +8,22 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/aviso-legal", "/privacidad", "/cookies"],
+        // Rutas privadas / con token / transaccionales: fuera del crawl para no
+        // gastar crawl budget (ya van noindex a nivel HTML, pero mejor no crawlear).
+        disallow: [
+          "/api/",
+          "/admin",
+          "/carrito",
+          "/clientes",
+          "/pay",
+          "/proof",
+          "/review",
+          "/afiliado",
+          "/share",
+          "/aviso-legal",
+          "/privacidad",
+          "/cookies",
+        ],
       },
       // Permitimos AI crawlers — usamos /llms.txt como índice curado.
       // Si más adelante quieres bloquear alguno concreto (GPTBot, etc.),
