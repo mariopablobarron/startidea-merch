@@ -1,0 +1,55 @@
+src/app/api/admin/broadcasts/[id]/route.ts
+  s_65877aa637ec34::t_02f0ed3b585687 20-22,28
+src/app/api/admin/broadcasts/route.ts
+  s_65877aa637ec34::t_0d0c1c1b50bde2 74-75,77,83-96,98-109
+  s_65877aa637ec34::t_2107e03b371438 139,146-147
+  s_65877aa637ec34::t_e0143a7a4c1263 14-16,21-24,33,44-48
+src/app/api/webhooks/resend/route.ts
+  s_65877aa637ec34::t_39a2fbcd5ea95c 116-139
+src/lib/broadcast-send.ts
+  s_65877aa637ec34::t_47797010f5af0d 1-181
+src/app/admin/marketing/broadcasts/page.tsx
+  s_65877aa637ec34::t_7ff1bed0b8fbcf 7-16,20,28-29,34,37-40,45-53
+  s_65877aa637ec34::t_6dc1e6d19bf871 145-146
+  s_65877aa637ec34::t_d3588e78ca90d4 206-208
+src/lib/broadcast-audience.ts
+  s_65877aa637ec34::t_3a114a8e106719 1,19-59,63,65-68,72,77,105,107-110,112,123-138,143-145
+src/app/admin/marketing/broadcasts/[id]/page.tsx
+  s_65877aa637ec34::t_1bbd99768ec615 279
+  s_65877aa637ec34::t_cd098e307d4a73 162,164
+  s_65877aa637ec34::t_ae6dd7143ad694 10-12,21-23
+  s_65877aa637ec34::t_5d38acb18cfa71 464-491
+  s_65877aa637ec34::t_74e38613b1a5c9 198-199,206-218
+  s_65877aa637ec34::t_57c6ddc6a96407 185,189-192
+  s_65877aa637ec34::t_9cd74bdcd6f091 119-137
+  s_65877aa637ec34::t_908d46d02df3ed 540
+  s_65877aa637ec34::t_1a729d1bcb3744 239
+  s_65877aa637ec34::t_73a4047ea5d939 36,46
+  s_65877aa637ec34::t_ec63bcab3b0c28 385-387
+src/app/api/admin/broadcasts/[id]/send/route.ts
+  s_65877aa637ec34::t_700ad213a5d1fd 6,25-26,44-46,69-71,75-77
+src/app/api/cron/send-scheduled-broadcasts/route.ts
+  s_65877aa637ec34::t_1a54afd45584bb 1-61
+prisma/schema.prisma
+  s_65877aa637ec34::t_cb9e7ed7f1d6c5 2077-2078
+  s_65877aa637ec34::t_ad39d4e6dfa938 2105-2107
+  s_65877aa637ec34::t_882cae1ea3de6f 2118-2120
+src/app/api/admin/broadcasts/tags/route.ts
+  s_65877aa637ec34::t_504bff4814ac50 4,12-14,22-31,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "bede0ba6b8eb4f1fbfa71c840b27214e2a65732c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
