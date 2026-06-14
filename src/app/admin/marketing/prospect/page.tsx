@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { OutboundEmailButton } from "@/components/OutboundEmailButton";
 import { LinkedInMessageButton } from "@/components/LinkedInMessageButton";
+import { ProspectDiscover } from "@/components/ProspectDiscover";
 
 type Lead = {
   id: string;
@@ -73,6 +74,11 @@ export default function ProspectCockpitPage() {
         <button onClick={load} className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark">
           ↻ Cargar lote
         </button>
+      </div>
+
+      {/* Encontrar nuevos prospectos con IA */}
+      <div className="mt-4">
+        <ProspectDiscover />
       </div>
 
       {/* Progreso hacia el objetivo del día */}
