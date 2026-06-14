@@ -38,11 +38,21 @@ log "recreate container"
 # Limpieza de residuos de recreates interrumpidos: docker compose renombra el
 # contenedor saliente a <id>_merch-app durante el recreate; si el proceso muere
 # a medias, ese contenedor PARADO queda huérfano y el siguiente recreate falla
-# con "Conflict. The container name ... is already in use" (pasó 2× el 11-jun).
-docker ps -a --format '{{.ID}} {{.Names}} {{.Status}}' \
-  | awk '/_merch-app/ && !/Up /{print $1}' \
-  | xargs -r docker rm >/dev/null 2>&1 || true
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate app || fail "docker compose up falló"
+# con "Conflict. The container name ... is already in use".
+# Borra CON -f cualquier contenedor *merch-app que NO esté "Up" (zombis
+# <hash>_merch-app + un merch-app Dead/Exited/Created), nunca el que sirve.
+cleanup_merch_zombies() {
+  docker ps -a --format '{{.ID}} {{.Names}} {{.Status}}' \
+    | awk '$2 ~ /merch-app$/ && $3 != "Up" {print $1}' \
+    | xargs -r docker rm -f >/dev/null 2>&1 || true
+}
+cleanup_merch_zombies
+if ! docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate app; then
+  log "recreate falló (posible zombi en carrera) — limpio y reintento"
+  cleanup_merch_zombies
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate app \
+    || fail "docker compose up falló (2 intentos)"
+fi
 
 # Healthcheck con retry: hasta 6 intentos × 10s = 60s en la home.
 # Next.js + Prisma a veces tarda 20-40s en estar listo en frío.
