@@ -1,0 +1,36 @@
+prisma/schema.prisma
+  s_65877aa637ec34::t_b81f136882b075 1336-1339,1344,1354
+src/app/api/admin/cart-quotes/route.ts
+  s_65877aa637ec34::t_b9ed8123fd73a7 2,9-18,23-50,62,64
+src/lib/cron-catalog.ts
+  s_65877aa637ec34::t_4c7c21c590e939 174-182
+src/app/api/cron/quote-followup/route.ts
+  s_65877aa637ec34::t_5bb673b448cb1a 1-168
+src/app/api/admin/cart-quotes/[id]/route.ts
+  s_65877aa637ec34::t_22ca680d77d000 2
+  s_65877aa637ec34::t_59a1e20a752fbb 46,48,63-81,84
+src/app/admin/cart-quotes/[id]/page.tsx
+  s_65877aa637ec34::t_3b11b2f50a8149 103
+  s_65877aa637ec34::t_08e3e78d652222 155-163,168-170
+  s_65877aa637ec34::t_91d59a6dc2129a 434-458
+  s_65877aa637ec34::t_6b7cea2de9b905 44-46
+  s_65877aa637ec34::t_37bc174d9ba8ed 78
+src/app/admin/cart-quotes/page.tsx
+  s_65877aa637ec34::t_54184c03f4c158 16,19-20,27-54,58-59,78-79,87,101-104,109,112-113,126-157,177,181-231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "8f42609815d08e69fa68801029f76886e6f22aec",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
