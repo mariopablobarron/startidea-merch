@@ -1,0 +1,26 @@
+src/components/LinkedInMessageButton.tsx
+  s_65877aa637ec34::t_deb410caeb4c91 1-124
+src/app/admin/marketing/outbound/page.tsx
+  s_65877aa637ec34::t_580c0960d58d75 5
+  s_65877aa637ec34::t_6d716144343ee0 198-201
+src/app/api/admin/outbound/[id]/linkedin-message/route.ts
+  s_65877aa637ec34::t_3036bbd649ec2c 1-31
+src/lib/linkedin-message.ts
+  s_65877aa637ec34::t_5cb2c32c998ddf 1-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "d137e13f13fe8d49b4295a48314bb7e08e7ec92f",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
