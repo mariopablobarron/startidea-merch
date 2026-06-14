@@ -2,6 +2,7 @@ import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
 import { TrustStrip } from "@/components/TrustStrip";
 import { BestSellers } from "@/components/BestSellers";
+import { MockupLeadCta } from "@/components/MockupLeadCta";
 import { ActivePromotionBar } from "@/components/ActivePromotionBar";
 import { BannerSlot } from "@/components/BannerSlot";
 import { ClientLogos } from "@/components/ClientLogos";
@@ -45,7 +46,9 @@ async function getHeroData() {
   try {
     const [minPrice, productCount] = await Promise.all([
       prisma.product.aggregate({
-        where: { active: true, fromPriceCents: { gt: 0 } },
+        // Suelo de 0,10 € — evita que un precio artefacto (1 céntimo del feed)
+        // ensucie el "desde X €" del hero.
+        where: { active: true, fromPriceCents: { gte: 10 } },
         _min: { fromPriceCents: true },
       }),
       prisma.product.count({ where: { active: true } }),
@@ -87,6 +90,7 @@ export default async function HomePage() {
         <Impact />
         <PublicReviews />
         <Process />
+        <MockupLeadCta />
         <BannerSlot slot="HOME_MID" />
         <PortfolioGrid variant="home" />
         <Cases />

@@ -118,9 +118,16 @@ export function Footer() {
           </FooterCol>
         </div>
 
-        <div className="mt-16 flex flex-col items-start justify-between gap-4 border-t border-bone/10 pt-8 text-xs text-bone/50 sm:flex-row sm:items-center">
-          <p>© {year} Startidea · todomerchandising. Todos los derechos reservados.</p>
-          <p>Producido en España con materiales responsables.</p>
+        <div className="mt-16 border-t border-bone/10 pt-8">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-bone/50">
+            <span className="font-medium uppercase tracking-wider text-bone/40">Pago 100% seguro</span>
+            <span className="text-bone/25">·</span>
+            <span>Stripe · Visa · Mastercard · Amex · Apple&nbsp;Pay · Google&nbsp;Pay · Bizum</span>
+          </div>
+          <div className="mt-6 flex flex-col items-start justify-between gap-4 text-xs text-bone/50 sm:flex-row sm:items-center">
+            <p>© {year} Startidea · todomerchandising. Todos los derechos reservados.</p>
+            <p>Producido en España con materiales responsables.</p>
+          </div>
         </div>
       </div>
     </footer>
