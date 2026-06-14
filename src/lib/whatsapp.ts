@@ -13,6 +13,15 @@ export function waLink(message: string): string {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
+/**
+ * Antepone un marcador de origen al mensaje. Así, si el WhatsApp se comparte
+ * con un compañero, al abrir el chat se ve al instante que es un lead de la
+ * web y de qué parte viene (ficha, carrito, etc.) → fácil de etiquetar/repartir.
+ */
+export function waWebMessage(source: string, body: string): string {
+  return `🌐 Lead web · ${source}\n\n${body}`;
+}
+
 export type WaCartItem = {
   productName: string;
   productRef?: string | null;
@@ -33,9 +42,9 @@ export function waCartQuoteMessage(items: WaCartItem[], totalEur?: string): stri
       : "";
     return `• ${it.quantity}× ${it.productName}${ref}${mark}`;
   });
-  return (
+  const body =
     `Hola, me gustaría una cotización para:\n\n${lines.join("\n")}` +
     (totalEur ? `\n\nTotal estimado: ${totalEur}` : "") +
-    `\n\n¿Me lo podéis cerrar?`
-  );
+    `\n\n¿Me lo podéis cerrar?`;
+  return waWebMessage("Carrito", body);
 }

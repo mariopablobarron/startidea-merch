@@ -1,6 +1,6 @@
 "use client";
 
-import { waLink } from "@/lib/whatsapp";
+import { waLink, waWebMessage } from "@/lib/whatsapp";
 
 /**
  * CTA contextual de WhatsApp para fichas de producto.
@@ -26,7 +26,7 @@ export function WhatsAppCta({
   const refTxt = internalRef ? ` (ref ${internalRef})` : "";
   const urlTxt = productUrl ? `\n${productUrl}` : "";
   const message = `Hola, me interesa el producto "${productName}"${refTxt}.${urlTxt}\n\n¿Podéis enviarme cotización?`;
-  const href = waLink(message);
+  const href = waLink(waWebMessage("Ficha de producto", message));
 
   if (variant === "secondary") {
     return (
