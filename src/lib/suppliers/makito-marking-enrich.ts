@@ -114,6 +114,32 @@ type MkTranslation = {
   txt: string;
 };
 
+/**
+ * Resuelve el id de MarkingTechnique para un `technique_ref` de Makito.
+ *
+ * Prioriza el mapa ref→MK_code construido desde la API de tarifa
+ * (markingTechniquesPrices trae technique_ref + code para TODAS las variantes,
+ * ej. F → 100116/100216/100316…), de modo que el producto se enlaza SIEMPRE a
+ * la técnica limpia que tiene tarifa. Cae al mapa legacy ref→id (por
+ * description "...ref NNNNNN") si no hay code resoluble.
+ *
+ * Motivo: incidente 2026-06-15 — el mapeo sólo por description capturaba 1 ref
+ * por código, dejando miles de productos enlazados a técnicas sin tarifa.
+ */
+export function resolveTechniqueId(
+  techRef: string,
+  refToCode: Map<string, string>,
+  idByCode: Map<string, string>,
+  fallbackByRef: Map<string, string>,
+): string | undefined {
+  const code = refToCode.get(techRef);
+  if (code) {
+    const id = idByCode.get(code);
+    if (id) return id;
+  }
+  return fallbackByRef.get(techRef);
+}
+
 // ─── Enrich main ──────────────────────────────────────────────────────────
 
 export async function runMakitoMarkingEnrich(opts: {
@@ -157,17 +183,36 @@ export async function runMakitoMarkingEnrich(opts: {
   let positionsCreated = 0;
   let techniquesLinked = 0;
 
-  // Cache global de MarkingTechnique by technique_ref (consultamos antes
-  // del loop para evitar N queries)
+  // Mapas de resolución técnica (consultados antes del loop para evitar N queries).
+  //  - idByCode:       MK_<code> → techniqueId (técnica limpia con tarifa)
+  //  - refToCode:      technique_ref → MK_<code> (desde la API de tarifa; cubre
+  //                    TODAS las variantes de ref por código)
+  //  - techniqueByRef: technique_ref → techniqueId (fallback legacy por description)
   const techniques = await prisma.markingTechnique.findMany({
     where: { code: { startsWith: "MK_" } },
     select: { id: true, code: true, description: true },
   });
+  const idByCode = new Map<string, string>();
   const techniqueByRef = new Map<string, string>();
   for (const t of techniques) {
+    idByCode.set(t.code, t.id);
     // El description tiene "Makito X · ref 100111" — extraemos el ref
     const m = t.description?.match(/ref (\d+)/);
     if (m) techniqueByRef.set(m[1], t.id);
+  }
+  const refToCode = new Map<string, string>();
+  try {
+    const priceResp = await apiGet<{
+      techniques: Array<{ technique_ref: string; code: string }>;
+    }>("/markingTechniquesPrices");
+    for (const t of priceResp?.techniques || []) {
+      const raw = (t.code ?? "").toString().trim();
+      if (t.technique_ref && raw && raw.toLowerCase() !== "null") {
+        refToCode.set(String(t.technique_ref), `MK_${raw}`);
+      }
+    }
+  } catch {
+    // Si falla la API de tarifa, seguimos con el fallback por description
   }
 
   // 3. Procesar productos en chunks paralelos
@@ -226,8 +271,8 @@ export async function runMakitoMarkingEnrich(opts: {
             // Vincular técnicas de esta área (cada (areaId, technique_ref) único)
             const techniqueRefs = Array.from(new Set(areaMarkings.map((m) => m.technique_ref)));
             for (const techRef of techniqueRefs) {
-              const techId = techniqueByRef.get(techRef);
-              if (!techId) continue; // técnica no cargada en BD (debug)
+              const techId = resolveTechniqueId(techRef, refToCode, idByCode, techniqueByRef);
+              if (!techId) continue; // técnica no resoluble (ni por code ni por ref)
               const maxColors = Math.max(
                 ...areaMarkings
                   .filter((m) => m.technique_ref === techRef)
