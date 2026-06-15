@@ -1,0 +1,23 @@
+src/lib/suppliers/makito-marking-enrich.ts
+  s_65877aa637ec34::t_47f0191f733cb1 274-275
+  s_65877aa637ec34::t_64b51a61bb32fe 186-190,195,198,203-215
+  s_65877aa637ec34::t_e1e6cfb4d1769b 117-142
+src/lib/suppliers/makito-marking-enrich.test.ts
+  s_65877aa637ec34::t_7216e91e92f632 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "e40873501da5e4e72bbae7556745f2a0428bfb36",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
