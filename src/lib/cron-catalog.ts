@@ -73,6 +73,15 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Reintenta webhook deliveries fallidos",
   },
   {
+    name: "tariff-coverage-watchdog",
+    endpointPath: "/api/cron/tariff-coverage-watchdog",
+    method: "POST",
+    schedule: "diario 07:30 UTC",
+    scheduleCron: "30 7 * * *",
+    frequencyHours: 24,
+    description: "Vigila productos activos con técnica pero sin tarifa (cotización manual) y alerta si supera umbral",
+  },
+  {
     name: "auto-proposal",
     endpointPath: "/api/cron/auto-proposal",
     method: "POST",
