@@ -235,7 +235,7 @@ function VoiceAgentInner() {
             start();
           }}
           aria-label="Hablar con Carmen, asistente de voz"
-          className="fixed bottom-6 left-6 z-40 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-semibold text-bone shadow-lg hover:bg-accent"
+          className="fixed bottom-24 right-6 z-40 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-semibold text-bone shadow-lg hover:bg-accent"
         >
           <MicIcon className="h-4 w-4" />
           Hablar con {agentName}
@@ -244,7 +244,7 @@ function VoiceAgentInner() {
 
       {/* Panel conversación activa */}
       {(open || isActive || isConnecting) && (
-        <div className="fixed bottom-6 left-6 right-6 z-50 max-w-md rounded-2xl border border-line bg-white shadow-2xl md:right-auto">
+        <div className="fixed bottom-6 left-6 right-6 z-50 max-w-md rounded-2xl border border-line bg-white shadow-2xl sm:left-auto">
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
             <div className="flex items-center gap-2">
               <span
