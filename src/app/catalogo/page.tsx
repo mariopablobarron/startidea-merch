@@ -319,7 +319,7 @@ export default async function CatalogoPage({
       <Nav />
       <BannerSlot slot="CATALOGO_TOP" />
       <main className="bg-bone">
-        <section className="border-b border-line bg-bone py-12 lg:py-16">
+        <section className="border-b border-line bg-bone py-8 lg:py-10">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
             <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
               Catálogo
@@ -382,9 +382,9 @@ export default async function CatalogoPage({
           </section>
         )}
 
-        <section className="bg-bone py-10 lg:py-12">
+        <section className="bg-bone py-6 lg:py-8">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
-            <div className="grid gap-10 lg:grid-cols-[260px,1fr]">
+            <div className="grid gap-8 lg:grid-cols-[240px,1fr]">
               {/* Sidebar filtros */}
               <aside className="lg:sticky lg:top-24 lg:self-start">
                 <FilterBlock title="Categoría">
@@ -588,7 +588,7 @@ export default async function CatalogoPage({
                   <EmptyState q={q} />
                 ) : (
                   <>
-                    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 lg:gap-5">
                       {products.map((p) => {
                         const inStock = p.variants.length > 0;
                         // Aplicar overrides admin si existen
@@ -622,7 +622,7 @@ export default async function CatalogoPage({
                           <Link
                             key={p.id}
                             href={`/catalogo/${p.slug}`}
-                            className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-5 transition hover:border-accent/40"
+                            className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-3 transition hover:border-accent/40 lg:p-4"
                           >
                             {/* Badges de marketing arriba a la izquierda */}
                             {(isFeatured || tags.length > 0 || hasPromo) && (
@@ -660,7 +660,7 @@ export default async function CatalogoPage({
                                   alt={displayName}
                                   fill
                                   sizes="(max-width:768px) 50vw, 25vw"
-                                  className="object-contain p-4 transition group-hover:scale-105"
+                                  className="object-contain p-2 transition group-hover:scale-105"
                                   unoptimized
                                 />
                               ) : (
@@ -668,7 +668,7 @@ export default async function CatalogoPage({
                               )}
                               <CompareBadge slug={p.slug} />
                             </div>
-                            <h3 className="mt-5 line-clamp-2 font-display text-base font-semibold text-ink lg:text-lg">
+                            <h3 className="mt-3 line-clamp-2 font-display text-base font-semibold text-ink lg:text-lg">
                               {displayName}
                             </h3>
                             <p className="mt-1 flex flex-wrap items-baseline gap-2 text-[11px] uppercase tracking-wider text-ink/50">
