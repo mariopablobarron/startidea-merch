@@ -65,12 +65,14 @@ export function NavSearch({ size = "nav" }: { size?: "nav" | "hero" } = {}) {
           e.preventDefault();
           go();
         }}
-        className={`flex w-full min-w-0 items-center gap-2 rounded-full border border-line bg-bone transition focus-within:border-accent ${
-          hero ? "px-5 py-4 text-base shadow-sm" : "px-4 py-2.5 text-sm"
+        className={`flex w-full min-w-0 items-center gap-2 rounded-full bg-bone transition focus-within:border-accent ${
+          hero
+            ? "border-2 border-ink/15 px-6 py-5 text-lg shadow-lg focus-within:shadow-xl"
+            : "border border-line px-4 py-2.5 text-sm"
         }`}
       >
         <svg
-          className={`${hero ? "h-5 w-5" : "h-4 w-4"} shrink-0 text-ink/40`}
+          className={`${hero ? "h-6 w-6" : "h-4 w-4"} shrink-0 text-ink/40`}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -107,7 +109,7 @@ export function NavSearch({ size = "nav" }: { size?: "nav" | "hero" } = {}) {
         {hero && (
           <button
             type="submit"
-            className="shrink-0 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bone transition hover:bg-accent-dark"
+            className="shrink-0 rounded-full bg-accent px-7 py-3 text-base font-semibold text-bone transition hover:bg-accent-dark"
           >
             Buscar
           </button>

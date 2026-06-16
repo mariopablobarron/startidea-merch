@@ -80,6 +80,12 @@ export function Hero({
           {h1Prefix} <span className="text-accent">{accent}</span>.
         </motion.h1>
 
+        {/* Buscador protagonista — con catálogo grande, la búsqueda manda.
+            Va justo bajo el titular: es lo primero útil nada más entrar. */}
+        <motion.div variants={fadeUp} className="mt-10 max-w-3xl">
+          <NavSearch size="hero" />
+        </motion.div>
+
         {/* Subhead corto. Una columna 50-65 caracteres por línea (manual §08). */}
         <motion.p
           variants={fadeUp}
@@ -87,11 +93,6 @@ export function Hero({
         >
           {sub}
         </motion.p>
-
-        {/* Buscador protagonista — con catálogo grande, la búsqueda manda. */}
-        <motion.div variants={fadeUp} className="mt-10 max-w-3xl">
-          <NavSearch size="hero" />
-        </motion.div>
 
         <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center gap-3">
           <Link
