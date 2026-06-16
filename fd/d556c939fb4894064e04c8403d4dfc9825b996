@@ -1,0 +1,22 @@
+src/components/NavSearch.tsx
+  s_2b591ede3bc25c::t_55310ae4d82ac5 68-71,75
+  s_2b591ede3bc25c::t_d25d0390a38b93 112
+src/components/Hero.tsx
+  s_2b591ede3bc25c::t_b7cb5d641f21c5 83-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "fdd556c939fb4894064e04c8403d4dfc9825b996",
+  "prompts": {},
+  "sessions": {
+    "s_2b591ede3bc25c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a49da186-966e-4054-982e-1d23b70b8449",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
