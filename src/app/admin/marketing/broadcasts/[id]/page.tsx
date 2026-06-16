@@ -40,6 +40,14 @@ type Broadcast = {
   sentCount: number;
   failedCount: number;
   createdBy: string | null;
+  stats?: {
+    opened: number;
+    clicked: number;
+    openRate: number;
+    clickRate: number;
+    totalOpens: number;
+    totalClicks: number;
+  };
 };
 
 type AvailableTag = { tag: string; count: number };
@@ -362,6 +370,35 @@ export default function BroadcastEditorPage({
           </Link>
         </header>
 
+        {/* Estadísticas — solo cuando ya se envió */}
+        {broadcast.status === "SENT" && broadcast.stats && (
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatCard label="Enviados" value={broadcast.sentCount.toLocaleString("es-ES")} sub={broadcast.failedCount > 0 ? `${broadcast.failedCount} fallidos` : "sin fallos"} />
+            <StatCard
+              label="Aperturas"
+              value={`${broadcast.stats.openRate}%`}
+              sub={`${broadcast.stats.opened.toLocaleString("es-ES")} personas`}
+              accent={broadcast.stats.opened > 0}
+            />
+            <StatCard
+              label="Clics"
+              value={`${broadcast.stats.clickRate}%`}
+              sub={`${broadcast.stats.clicked.toLocaleString("es-ES")} personas`}
+              accent={broadcast.stats.clicked > 0}
+            />
+            <StatCard
+              label="Interacciones"
+              value={(broadcast.stats.totalOpens + broadcast.stats.totalClicks).toLocaleString("es-ES")}
+              sub={`${broadcast.stats.totalOpens} aperturas · ${broadcast.stats.totalClicks} clics`}
+            />
+          </div>
+        )}
+        {broadcast.status === "SENT" && broadcast.stats && broadcast.stats.opened === 0 && (
+          <p className="mb-6 -mt-3 text-[11px] text-ink/45">
+            Las aperturas y clics tardan unos minutos en llegar (vía webhook de Resend). Si tras un rato siguen a 0, revisa que el webhook de Resend apunte a <code>/api/webhooks/resend</code> con los eventos opened/clicked activos.
+          </p>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-[1fr,1.2fr]">
           {/* IZQUIERDA — formulario */}
           <section className="space-y-4">
@@ -671,6 +708,26 @@ ${bodyHtml}
     </div>
   </div>
 </div>`;
+}
+
+function StatCard({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className={`rounded-2xl border p-4 ${accent ? "border-accent/30 bg-accent/5" : "border-line bg-bone"}`}>
+      <p className="text-[11px] uppercase tracking-wider text-ink/55">{label}</p>
+      <p className="mt-1 font-display text-2xl font-semibold text-ink">{value}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-ink/50">{sub}</p>}
+    </div>
+  );
 }
 
 function Field({

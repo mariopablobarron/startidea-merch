@@ -37,7 +37,27 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const b = await prisma.emailBroadcast.findUnique({ where: { id } });
   if (!b) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-  return NextResponse.json({ ok: true, broadcast: b });
+
+  // Estadísticas de engagement (aperturas/clics) desde los deliveries.
+  // openedAt/clickedAt → destinatarios ÚNICOS que abrieron/clicaron;
+  // openCount/clickCount → aperturas/clics TOTALES (un mismo email puede abrir varias veces).
+  const [opened, clicked, agg] = await Promise.all([
+    prisma.broadcastDelivery.count({ where: { broadcastId: id, openedAt: { not: null } } }),
+    prisma.broadcastDelivery.count({ where: { broadcastId: id, clickedAt: { not: null } } }),
+    prisma.broadcastDelivery.aggregate({
+      where: { broadcastId: id },
+      _sum: { openCount: true, clickCount: true },
+    }),
+  ]);
+  const stats = {
+    opened,
+    clicked,
+    openRate: b.sentCount > 0 ? Math.round((opened / b.sentCount) * 100) : 0,
+    clickRate: b.sentCount > 0 ? Math.round((clicked / b.sentCount) * 100) : 0,
+    totalOpens: agg._sum.openCount ?? 0,
+    totalClicks: agg._sum.clickCount ?? 0,
+  };
+  return NextResponse.json({ ok: true, broadcast: { ...b, stats } });
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
