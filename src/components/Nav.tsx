@@ -69,8 +69,8 @@ export function Nav() {
           />
         </Link>
 
-        {/* Buscador desktop */}
-        <div data-tour="search" className="hidden min-w-0 flex-1 lg:flex lg:max-w-xl">
+        {/* Buscador desktop — compacto; el protagonista vive en el hero de la home. */}
+        <div data-tour="search" className="hidden min-w-0 flex-1 lg:flex lg:max-w-sm">
           <NavSearch />
         </div>
 

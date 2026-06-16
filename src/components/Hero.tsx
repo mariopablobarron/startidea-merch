@@ -89,7 +89,7 @@ export function Hero({
         </motion.p>
 
         {/* Buscador protagonista — con catálogo grande, la búsqueda manda. */}
-        <motion.div variants={fadeUp} className="mt-8 max-w-2xl">
+        <motion.div variants={fadeUp} className="mt-10 max-w-3xl">
           <NavSearch size="hero" />
         </motion.div>
 
