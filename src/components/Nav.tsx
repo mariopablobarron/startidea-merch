@@ -27,6 +27,19 @@ const NAV_LINKS: NavLink[] = [
   { href: "/ayuda", label: "Ayuda", secondary: true },
 ];
 
+// Acceso directo a las familias top del catálogo (ref: garrampa.es). Llevan a
+// /categorias/<slug>. Los slugs son los reales de la BD (top por nº de productos).
+const CATEGORY_LINKS: { href: string; label: string }[] = [
+  { href: "/categorias/textil", label: "Textil" },
+  { href: "/categorias/tazas-jarras-y-termos", label: "Tazas y termos" },
+  { href: "/categorias/mochilas", label: "Mochilas" },
+  { href: "/categorias/bolsas", label: "Bolsas" },
+  { href: "/categorias/escritura", label: "Escritura" },
+  { href: "/categorias/tecnologia-y-accesorios", label: "Tecnología" },
+  { href: "/categorias/oficina-y-negocios", label: "Oficina" },
+  { href: "/categorias/regalos-y-premiums", label: "Regalos" },
+];
+
 export function Nav() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -147,6 +160,35 @@ export function Nav() {
             <line x1="4" y1="17" x2="20" y2="17" />
           </svg>
         </button>
+      </div>
+
+      {/* Barra de categorías — acceso directo a las familias del catálogo
+          (ref: garrampa.es). Solo desktop; en móvil se usa el buscador/drawer. */}
+      <div className="hidden border-t border-line/60 lg:block">
+        <div className="mx-auto flex h-11 max-w-8xl items-center gap-2 px-4 sm:px-6 lg:px-10">
+          <Link
+            href="/categorias"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-xs font-semibold text-bone transition hover:bg-accent"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="4" y1="7" x2="20" y2="7" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="17" x2="20" y2="17" />
+            </svg>
+            Todas las categorías
+          </Link>
+          <nav className="flex min-w-0 items-center gap-1 overflow-x-auto">
+            {CATEGORY_LINKS.map((c) => (
+              <Link
+                key={c.href}
+                href={c.href}
+                className="whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium text-ink/70 transition hover:bg-bone hover:text-accent"
+              >
+                {c.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
       </div>
 
       {/* Drawer móvil — Portal a body para escapar del backdrop-filter del
