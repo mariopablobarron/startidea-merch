@@ -97,9 +97,10 @@ export default async function CatalogoPage({
     categoryIds = [category.id, ...descendants];
   }
 
-  // Búsqueda multi-campo: nombre + descripción corta + material + tags array.
-  // Para "camisetas" típicamente el match aparece en shortDescription/longDescription
-  // o en categoría (lo gestionamos por separado abajo con fallback).
+  // Búsqueda por campos de ALTA SEÑAL: nombre, descripción corta, tags y
+  // categoría. Antes incluía longDescription/material, que metían falsos
+  // positivos (p.ej. "camiseta" devolvía una bolsa de agua cuya descripción
+  // larga la mencionaba). El material se filtra aparte. Mario 2026-06-16.
   const searchTerms = q ? q.split(/\s+/).filter((w) => w.length > 2) : [];
   const searchClause: Prisma.ProductWhereInput | undefined =
     searchTerms.length > 0
@@ -108,8 +109,6 @@ export default async function CatalogoPage({
             OR: [
               { name: { contains: term, mode: "insensitive" as const } },
               { shortDescription: { contains: term, mode: "insensitive" as const } },
-              { longDescription: { contains: term, mode: "insensitive" as const } },
-              { material: { contains: term, mode: "insensitive" as const } },
               { tags: { has: term.toLowerCase() } },
               { category: { name: { contains: term, mode: "insensitive" as const } } },
             ],
