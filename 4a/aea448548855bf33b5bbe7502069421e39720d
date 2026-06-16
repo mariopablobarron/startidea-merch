@@ -1,0 +1,19 @@
+src/app/catalogo/page.tsx
+  s_2b591ede3bc25c::t_b23c351d4ff7d0 322,385,387,591,625,663,671
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "4aaea448548855bf33b5bbe7502069421e39720d",
+  "prompts": {},
+  "sessions": {
+    "s_2b591ede3bc25c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a49da186-966e-4054-982e-1d23b70b8449",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
