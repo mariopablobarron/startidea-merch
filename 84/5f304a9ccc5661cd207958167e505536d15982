@@ -1,0 +1,23 @@
+src/components/Nav.tsx
+  s_65877aa637ec34::t_35639989baeec9 15-18
+  s_65877aa637ec34::t_8029e0a8104899 109
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_29a643fc43ec6b 359-362
+  s_65877aa637ec34::t_6934087712b746 509-514
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "845f304a9ccc5661cd207958167e505536d15982",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
