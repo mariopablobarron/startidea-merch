@@ -356,7 +356,10 @@ export default async function ProductDetailPage({
                     />
                   ) : null}
                   <Spec label="Variantes" value={`${product.variants.length}`} />
-                  <Spec label="Stock total" value={totalStock.toLocaleString("es-ES")} />
+                  <Spec
+                    label="Disponibilidad"
+                    value={totalStock > 0 ? `${totalStock.toLocaleString("es-ES")} uds en stock` : "Fabricación bajo pedido"}
+                  />
                   {product.countryOfOrigin && (
                     <Spec label="Origen" value={product.countryOfOrigin} />
                   )}
@@ -503,8 +506,12 @@ export default async function ProductDetailPage({
                 </div>
               )}
               <p className="mt-2 text-sm text-ink/50">
-                Ref. <span className="font-mono">{displayRef}</span> · Stock total:{" "}
-                <span className="tabular-nums">{totalStock.toLocaleString("es-ES")}</span>
+                Ref. <span className="font-mono">{displayRef}</span> ·{" "}
+                {totalStock > 0 ? (
+                  <span className="tabular-nums">{totalStock.toLocaleString("es-ES")} uds en stock</span>
+                ) : (
+                  <span>Fabricación bajo pedido</span>
+                )}
               </p>
 
               {/* Precio "desde" — con tachado del original si hay promo activa */}

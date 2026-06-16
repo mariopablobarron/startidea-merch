@@ -12,9 +12,10 @@ import { TourLauncher } from "./TourLauncher";
 
 type NavLink = { href: string; label: string; badge?: string; secondary?: boolean };
 
-// Los `secondary` solo caben a partir de 2xl (1536px); por debajo el conjunto
-// completo desborda la fila y provoca scroll horizontal en portátiles.
-// Siguen accesibles en el footer y en el menú móvil.
+// Los `secondary` NO se muestran en el nav de escritorio: incluso a 2xl (1536px)
+// el conjunto completo (logo + buscador + 9 links + acciones) ahogaba el buscador
+// flex-1 hasta colapsarlo contra "Catálogo". Quedan accesibles en el footer y en
+// el menú móvil (drawer), que sí los listan todos.
 const NAV_LINKS: NavLink[] = [
   { href: "/catalogo", label: "Catálogo" },
   { href: "/promociones", label: "Promos", badge: "★" },
@@ -82,8 +83,9 @@ export function Nav() {
           />
         </Link>
 
-        {/* Buscador desktop — compacto; el protagonista vive en el hero de la home. */}
-        <div data-tour="search" className="hidden min-w-0 flex-1 lg:flex lg:max-w-sm">
+        {/* Buscador desktop — compacto (el protagonista vive en el hero de la home)
+            con ancho mínimo para que nunca colapse contra los links del nav. */}
+        <div data-tour="search" className="hidden min-w-0 flex-1 lg:flex lg:min-w-[200px] lg:max-w-sm">
           <NavSearch />
         </div>
 
@@ -104,7 +106,7 @@ export function Nav() {
                         ? "nav-trabajos"
                         : undefined
               }
-              className={`${l.secondary ? "hidden 2xl:inline-flex" : "inline-flex"} items-center gap-1 text-sm hover:text-accent ${l.badge ? "font-medium text-accent" : "font-medium"}`}
+              className={`${l.secondary ? "hidden" : "inline-flex"} items-center gap-1 text-sm hover:text-accent ${l.badge ? "font-medium text-accent" : "font-medium"}`}
             >
               <span>{l.label}</span>
               {l.badge && (
