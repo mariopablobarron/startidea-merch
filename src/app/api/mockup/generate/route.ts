@@ -58,6 +58,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Producto sin imagen base disponible" }, { status: 422 });
   }
 
+  // La imagen base suele ser una ruta RELATIVA del proxy de proveedor
+  // (/api/m/<hash>). El fetch de Node exige URL absoluta o lanza
+  // "Failed to parse URL". Resolvemos contra el origen real de la petición.
+  const baseFetchUrl = baseUrl.startsWith("/")
+    ? new URL(baseUrl, new URL(req.url).origin).toString()
+    : baseUrl;
+
   // Si la base elegida es una marking-position técnica del proveedor,
   // intentar cache local primero (anti-rotura si el CDN externo cambia).
   // Si no es de marking-position o el cache no la tiene, fallback a fetch
@@ -65,11 +72,11 @@ export async function POST(req: Request) {
   let baseBuffer: Buffer | null = null;
   const isMarkingPositionBase = position?.imageUrl === baseUrl;
   if (isMarkingPositionBase) {
-    baseBuffer = await getMarkingBase(baseUrl);
+    baseBuffer = await getMarkingBase(baseFetchUrl);
   }
   if (!baseBuffer) {
     try {
-      const baseRes = await fetch(baseUrl, {
+      const baseRes = await fetch(baseFetchUrl, {
         headers: {
           "User-Agent": "Mozilla/5.0 (compatible; TodoMerchandising/1.0)",
           Accept: "image/jpeg,image/png,image/*,*/*;q=0.8",
