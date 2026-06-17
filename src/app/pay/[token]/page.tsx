@@ -5,6 +5,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { ExpressCheckoutPay } from "@/components/ExpressCheckoutPay";
+import { withIva, ivaPart } from "@/lib/iva";
 
 export const metadata: Metadata = {
   title: "Pago seguro · TodoMerchandising",
@@ -70,23 +71,31 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
             Hemos cerrado el presupuesto y estos son los importes.
           </p>
 
-          {/* Totales */}
+          {/* Totales — precios base + IVA 21% (decisión Mario 2026-06-17) */}
           <div className="mt-8 rounded-2xl border border-line bg-bone-soft p-6">
             <div className="flex items-baseline justify-between">
-              <p className="text-sm text-ink/70">Total cotización</p>
+              <p className="text-sm text-ink/70">Subtotal (sin IVA)</p>
+              <p className="tabular-nums text-ink/80">{EUR.format(cart.acceptedTotalCents / 100)}</p>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <p className="text-sm text-ink/70">IVA 21%</p>
+              <p className="tabular-nums text-ink/80">{EUR.format(ivaPart(cart.acceptedTotalCents) / 100)}</p>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between border-t border-line pt-2">
+              <p className="text-sm font-medium text-ink">Total con IVA</p>
               <p className="font-display text-xl font-semibold tabular-nums text-ink">
-                {EUR.format(cart.acceptedTotalCents / 100)}
+                {EUR.format(withIva(cart.acceptedTotalCents) / 100)}
               </p>
             </div>
-            <div className="mt-3 flex items-baseline justify-between">
-              <p className="text-sm text-ink/70">Depósito a pagar ahora ({cart.depositPercent}%)</p>
+            <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4">
+              <p className="text-sm text-ink/70">Depósito a pagar ahora ({cart.depositPercent}%, IVA incl.)</p>
               <p className="font-display text-3xl font-semibold tabular-nums text-accent">
-                {EUR.format(depositCents / 100)}
+                {EUR.format(withIva(depositCents) / 100)}
               </p>
             </div>
             {cart.depositPercent < 100 && (
               <p className="mt-3 text-xs text-ink/50">
-                El {100 - cart.depositPercent}% restante ({EUR.format((cart.acceptedTotalCents - depositCents) / 100)}) se cobrará antes del envío.
+                El {100 - cart.depositPercent}% restante ({EUR.format(withIva(cart.acceptedTotalCents - depositCents) / 100)}, IVA incl.) se cobrará antes del envío.
               </p>
             )}
           </div>
@@ -156,7 +165,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
               </div>
             ) : (
               <>
-                <ExpressCheckoutPay token={token} amountCents={depositCents} />
+                <ExpressCheckoutPay token={token} amountCents={withIva(depositCents)} />
                 {expiresLabel && (
                   <p className="mt-3 text-center text-[11px] text-ink/50">
                     Este precio es válido hasta el {expiresLabel}.

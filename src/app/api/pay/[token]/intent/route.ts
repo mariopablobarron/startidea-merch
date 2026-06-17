@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { stripe, STRIPE_MODE } from "@/lib/stripe";
+import { withIva } from "@/lib/iva";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,8 +40,18 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   if (cart.payments.length > 0) {
     return NextResponse.json({ error: "Cotización ya pagada" }, { status: 409 });
   }
+  // Validar caducidad igual que el flujo hosted (antes este endpoint wallet no
+  // la comprobaba → se podía cobrar sobre un enlace caducado). (bug-bounty)
+  if (cart.paymentLinkExpiresAt && cart.paymentLinkExpiresAt < new Date()) {
+    return NextResponse.json(
+      { error: "Este enlace de pago ha caducado. Contáctanos para renovar tu cotización." },
+      { status: 410 },
+    );
+  }
 
-  const amountCents = Math.round((cart.acceptedTotalCents * cart.depositPercent) / 100);
+  // Precios SIN IVA → el cobro añade el 21%. Este flujo no usa Stripe Tax, así
+  // que siempre se añade aquí. (decisión Mario 2026-06-17 + caza de bugs)
+  const amountCents = withIva(Math.round((cart.acceptedTotalCents * cart.depositPercent) / 100));
   const isFull = cart.depositPercent >= 100;
 
   const intent = await stripe.paymentIntents.create({

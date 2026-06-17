@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
 import { sendWhatsAppTemplate } from "@/lib/whatsapp-cloud";
+import { withIva, ivaPart } from "@/lib/iva";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,9 +80,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;color:#0a0a0b;">
             <h2 style="font-family:Georgia,serif;color:#0a0a0b;">Tu cotización está lista</h2>
             <p>Hola ${cart.name.split(" ")[0]},</p>
-            <p>Hemos cerrado los detalles de tu cotización. Total negociado:</p>
-            <p style="font-size:28px;font-weight:600;text-align:center;margin:20px 0;">${EUR.format(parsed.data.acceptedTotalCents / 100)}</p>
-            <p style="text-align:center;color:#666;margin-bottom:24px;">Depósito a pagar ahora (${parsed.data.depositPercent}%): <strong>${EUR.format(depositCents / 100)}</strong></p>
+            <p>Hemos cerrado los detalles de tu cotización. Total a pagar:</p>
+            <p style="font-size:28px;font-weight:600;text-align:center;margin:20px 0;">${EUR.format(withIva(parsed.data.acceptedTotalCents) / 100)} <span style="font-size:13px;font-weight:400;color:#666;">IVA incl.</span></p>
+            <p style="text-align:center;color:#666;margin-bottom:24px;">Base ${EUR.format(parsed.data.acceptedTotalCents / 100)} + IVA 21% ${EUR.format(ivaPart(parsed.data.acceptedTotalCents) / 100)}.<br>Depósito a pagar ahora (${parsed.data.depositPercent}%): <strong>${EUR.format(withIva(depositCents) / 100)}</strong> (IVA incl.)</p>
             <p style="text-align:center;margin:28px 0;">
               <a href="${url}" style="background:#ff6b35;color:white;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;">Pagar de forma segura →</a>
             </p>
@@ -102,7 +103,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       to: cart.phone,
       template: "enlace_pago",
       language: "es",
-      bodyParams: [firstName, EUR.format(depositCents / 100), url],
+      bodyParams: [firstName, EUR.format(withIva(depositCents) / 100), url],
     }).catch(() => {});
   }
 

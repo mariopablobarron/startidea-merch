@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { stripe, STRIPE_MODE } from "@/lib/stripe";
+import { withIva } from "@/lib/iva";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,11 +40,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     );
   }
 
-  const amountCents = Math.round((cart.acceptedTotalCents * cart.depositPercent) / 100);
+  const baseDepositCents = Math.round((cart.acceptedTotalCents * cart.depositPercent) / 100);
   const isFull = cart.depositPercent >= 100;
 
   // Stripe Checkout Session — con Stripe Tax si está habilitado
   const taxEnabled = process.env.STRIPE_TAX_ENABLED === "true";
+  // Los precios son SIN IVA: añadimos el 21% al importe cobrado, SALVO que
+  // Stripe Tax esté activo (entonces Stripe lo calcula y añadirlo aquí sería
+  // IVA doble). (decisión Mario 2026-06-17 + caza de bugs)
+  const amountCents = taxEnabled ? baseDepositCents : withIva(baseDepositCents);
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
