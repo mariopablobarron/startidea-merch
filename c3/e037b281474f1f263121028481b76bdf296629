@@ -1,0 +1,25 @@
+src/app/api/cron/quote-followup/route.ts
+  s_87a136c18d39ad::t_a78d6dda45cb2a 85-87,90-95
+src/lib/cron-lock.ts
+  s_87a136c18d39ad::t_8a4f22f61fe935 21-24,30-35
+src/app/api/cron/review-invite/route.ts
+  s_87a136c18d39ad::t_e933fa0a644aa3 35-39,42-47
+src/app/api/cron/abandoned-cart-drip/route.ts
+  s_87a136c18d39ad::t_a1c1b78042120e 83-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "c3e037b281474f1f263121028481b76bdf296629",
+  "prompts": {},
+  "sessions": {
+    "s_87a136c18d39ad": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37435703-dc06-47ee-9e05-e67fbf3d5177",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
