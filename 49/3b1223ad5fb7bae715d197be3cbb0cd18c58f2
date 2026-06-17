@@ -1,0 +1,25 @@
+src/lib/broadcast-send.ts
+  s_65877aa637ec34::t_159bb401581cc0 41,47-57
+src/app/api/media/route.ts
+  s_65877aa637ec34::t_53326cf81396e8 95-103,105-107
+  s_65877aa637ec34::t_fcfca4d32f276e 78-80
+src/lib/suppliers/makito-marking-enrich.ts
+  s_65877aa637ec34::t_5595b2d88a112b 345-348
+  s_65877aa637ec34::t_dc6c2cd0dd616b 155-193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "493b1223ad5fb7bae715d197be3cbb0cd18c58f2",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
