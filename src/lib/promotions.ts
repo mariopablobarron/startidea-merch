@@ -191,7 +191,12 @@ function noPromo(originalCents: number): AppliedPromotion {
 export function defaultBadgeText(kind: PromotionKind, value: number): string {
   if (kind === "PERCENT") return `−${value}%`;
   const eur = value / 100;
-  return `−${eur.toLocaleString("es-ES", { maximumFractionDigits: 0 })}€`;
+  // Mostrar céntimos cuando los hay: 550 → "−5,50€", 500 → "−5€".
+  // Antes redondeaba al euro (550 → "−6€"), anunciando un descuento falso.
+  const txt = Number.isInteger(eur)
+    ? eur.toLocaleString("es-ES")
+    : eur.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `−${txt}€`;
 }
 
 /**
