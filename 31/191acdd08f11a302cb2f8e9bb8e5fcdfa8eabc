@@ -1,0 +1,21 @@
+src/app/api/mockup/generate/route.ts
+  s_65877aa637ec34::t_b21e01e30ec1e9 61-67
+  s_65877aa637ec34::t_f2f8e827230d4d 75
+  s_65877aa637ec34::t_b0ff33f1027967 79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "31191acdd08f11a302cb2f8e9bb8e5fcdfa8eabc",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
