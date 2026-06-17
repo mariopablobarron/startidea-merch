@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
+import { withCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ const STEPS: DripStep[] = [1, 3, 7, 30];
 export async function POST(req: Request) {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
-
+  return withCronLock("abandoned-cart-drip", async () => {
   const sent = { d1: 0, d3: 0, d7: 0, archived: 0 };
   const errors: string[] = [];
   const now = Date.now();
@@ -123,6 +124,7 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, sent, errors });
+  });
 }
 
 async function sendStep(

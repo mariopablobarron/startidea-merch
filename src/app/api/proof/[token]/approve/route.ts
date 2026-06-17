@@ -29,7 +29,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   if (proof.midoceanProofId) {
     const r = await midoceanProofs.approve(proof.midoceanProofId);
     if (!r.ok) {
+      // NO marcar APPROVED local si el proveedor falla: evita desincronizar
+      // (el equipo creería que está en producción cuando MidOcean no lo registró).
+      // (bug-bounty 2026-06-17)
       console.error("[proof approve] midocean error", r);
+      void notifyTelegram(
+        `⚠️ <b>Fallo al aprobar proof en MidOcean</b>\n${proof.cart.name} · cart <code>${proof.cartId.slice(0, 8)}</code>\nNO se ha marcado APPROVED local. Revisar/reintentar manualmente.`,
+      ).catch(() => {});
+      return NextResponse.json(
+        { error: "No se pudo confirmar la aprobación con el proveedor. Inténtalo de nuevo en unos minutos." },
+        { status: 502 },
+      );
     }
   }
 

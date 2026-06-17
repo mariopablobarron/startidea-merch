@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { sendEmail } from "@/lib/resend";
+import { withCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubs
 export async function POST(req: Request) {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
-
+  return withCronLock("review-invite", async () => {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const carts = await prisma.cartQuote.findMany({
     where: {
@@ -90,4 +91,5 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, invited, candidates: carts.length });
+  });
 }

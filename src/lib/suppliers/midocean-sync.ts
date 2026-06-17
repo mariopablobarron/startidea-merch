@@ -83,9 +83,21 @@ export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
       categoryCache.set(cacheKey, existing.id);
       return existing.id;
     }
-    const created = await prisma.category.create({ data: { slug, name, parentId, level } });
-    categoryCache.set(cacheKey, created.id);
-    return created.id;
+    // try/catch de carrera: dos syncs solapados pueden crear la misma categoría
+    // a la vez → P2002. Re-buscamos en vez de reventar (igual que cifra/makito-sync).
+    // (bug-bounty 2026-06-17)
+    try {
+      const created = await prisma.category.create({ data: { slug, name, parentId, level } });
+      categoryCache.set(cacheKey, created.id);
+      return created.id;
+    } catch {
+      const retry = await prisma.category.findFirst({ where: { slug, parentId } });
+      if (retry) {
+        categoryCache.set(cacheKey, retry.id);
+        return retry.id;
+      }
+      throw new Error(`No se pudo crear ni encontrar la categoría ${slug}`);
+    }
   }
 
   // 5. productos

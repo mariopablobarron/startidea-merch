@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
+import { withCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ const STEPS: Step[] = [
 export async function POST(req: Request) {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
-
+  return withCronLock("quote-followup", async () => {
   const now = Date.now();
   const sent = { d2: 0, d5: 0, d10: 0 };
   const errors: string[] = [];
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, sent, errors });
+  });
 }
 
 async function sendFollowup(
