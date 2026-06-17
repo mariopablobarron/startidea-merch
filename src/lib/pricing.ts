@@ -91,3 +91,42 @@ export function totalForQty(tiers: PriceTier[], qty: number): Money | null {
   if (!t) return null;
   return formatMoney(t.unitPriceCents * qty);
 }
+
+// ─── Margen comercial ─────────────────────────────────────────────────────────
+
+/**
+ * Multiplicador del margen comercial coste→cliente. Configurable vía env
+ * MARGIN_MULTIPLIER (default 1,6 = +60%).
+ *
+ * FUENTE ÚNICA del margen para todo el sitio: tiers públicos, precio "desde",
+ * total del carrito y la ruta /api/quote/calculate (producto y marcaje). Si
+ * cada superficie aplicara su propio margen, el mismo producto mostraría
+ * precios distintos (era el caso: la web pública mostraba el coste NETO sin
+ * margen y solo el path "con marcaje" aplicaba 1,6×).
+ */
+export function marginMultiplier(override?: number): number {
+  const m = override ?? Number(process.env.MARGIN_MULTIPLIER ?? "1.6");
+  return Number.isFinite(m) && m > 0 ? m : 1.6;
+}
+
+/** Aplica el margen comercial a un coste neto → precio cliente (céntimos). */
+export function applyMargin(costCents: number, override?: number): number {
+  return Math.round(costCents * marginMultiplier(override));
+}
+
+/**
+ * Total de una LÍNEA de pedido tras aplicar un descuento FIXED a nivel de
+ * PEDIDO (una sola vez, no por unidad). Los descuentos PERCENT van ya horneados
+ * en el precio unitario de cada tier (son invariantes a la cantidad); los FIXED
+ * se aplican aquí, sobre el subtotal, para no multiplicarse por las unidades.
+ *
+ *   subtotal = unitPriceCents(post-PERCENT) × qty
+ *   total    = max(0, subtotal − fixedValue)
+ */
+export function orderTotalCents(
+  lineSubtotalCents: number,
+  orderFixedPromo: { value: number } | null | undefined,
+): number {
+  if (!orderFixedPromo) return lineSubtotalCents;
+  return Math.max(0, lineSubtotalCents - Math.max(0, orderFixedPromo.value));
+}

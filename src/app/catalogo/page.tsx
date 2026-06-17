@@ -17,11 +17,9 @@ import { CompareBadge } from "@/components/CatalogCardActions";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
-import {
-  loadActivePromotions,
-  applyBestPromotion,
-  getBadgeText,
-} from "@/lib/promotions";
+import { marginMultiplier } from "@/lib/pricing";
+import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
+import { displayFromPrice } from "@/lib/product-pricing";
 
 export async function generateMetadata({
   searchParams,
@@ -116,13 +114,18 @@ export default async function CatalogoPage({
         }
       : undefined;
 
-  // Price filter aplica sobre fromPriceCents (centavos), o sobre override
-  // customFromPriceCents si admin definió uno explícito.
+  // Price filter: el usuario filtra en precio CLIENTE (€ con margen). Para
+  // override.customFromPriceCents (ya es precio cliente) comparamos directo;
+  // para fromPriceCents (NETO) escalamos los límites a espacio neto dividiendo
+  // por el margen, ya que la web muestra ese neto × margen.
+  const m = marginMultiplier();
+  const netMin = priceMin !== null ? Math.floor((priceMin * 100) / m) : null;
+  const netMax = priceMax !== null ? Math.ceil((priceMax * 100) / m) : null;
   const priceFilter: Prisma.ProductWhereInput | undefined =
     priceMin !== null || priceMax !== null
       ? {
           OR: [
-            // Producto con override de precio
+            // Producto con override de precio (customFromPriceCents ya es cliente)
             {
               override: {
                 is: {
@@ -133,14 +136,14 @@ export default async function CatalogoPage({
                 },
               },
             },
-            // Producto sin override, usar fromPriceCents
+            // Producto sin override, usar fromPriceCents (neto → escalado por margen)
             {
               AND: [
                 { override: null },
                 {
                   fromPriceCents: {
-                    ...(priceMin !== null ? { gte: priceMin * 100 } : {}),
-                    ...(priceMax !== null ? { lte: priceMax * 100 } : {}),
+                    ...(netMin !== null ? { gte: netMin } : {}),
+                    ...(netMax !== null ? { lte: netMax } : {}),
                   },
                 },
               ],
@@ -593,27 +596,30 @@ export default async function CatalogoPage({
                         // Aplicar overrides admin si existen
                         const ov = p.override;
                         const displayName = ov?.customName || p.name;
-                        const basePriceCents =
-                          ov?.customFromPriceCents != null
-                            ? ov.customFromPriceCents
-                            : ov?.marginPct != null && p.fromPriceCents
-                              ? Math.round((p.fromPriceCents * (100 + ov.marginPct)) / 100)
-                              : p.fromPriceCents;
-                        // Aplicar mejor promoción activa (sobre el precio post-override)
-                        const promoResult = applyBestPromotion(
+                        // Precio "desde" cliente (neto → margen/override → PERCENT).
+                        // FIXED no toca el "desde" (es descuento de pedido) pero sí
+                        // aparece como badge. Misma fuente que ficha y carrito.
+                        const priceInfo = displayFromPrice(
                           {
                             id: p.id,
-                            categoryId: p.categoryId,
+                            name: p.name,
                             brand: p.brand,
-                            override: ov ? { marketingTags: ov.marketingTags } : null,
+                            categoryId: p.categoryId,
+                            fromPriceCents: p.fromPriceCents,
                           },
-                          basePriceCents ?? 0,
+                          ov
+                            ? {
+                                customFromPriceCents: ov.customFromPriceCents,
+                                marginPct: ov.marginPct,
+                                marketingTags: ov.marketingTags,
+                              }
+                            : null,
                           activePromos,
                         );
-                        const displayPriceCents = promoResult.promo
-                          ? promoResult.finalCents
-                          : basePriceCents;
-                        const hasPromo = !!promoResult.promo;
+                        const basePriceCents = priceInfo.originalCents;
+                        const displayPriceCents = priceInfo.finalCents;
+                        const hasPromo = priceInfo.hasPromo;
+                        const badgePromo = priceInfo.badgePromo;
                         const isFeatured = ov?.featured ?? false;
                         const tags = ov?.marketingTags ?? [];
 
@@ -626,15 +632,14 @@ export default async function CatalogoPage({
                             {/* Badges de marketing arriba a la izquierda */}
                             {(isFeatured || tags.length > 0 || hasPromo) && (
                               <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1">
-                                {hasPromo && promoResult.promo && (
+                                {hasPromo && badgePromo && (
                                   <span
                                     className="rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-bone shadow"
                                     style={{
-                                      background:
-                                        promoResult.promo.badgeColor || "#E63E73",
+                                      background: badgePromo.badgeColor || "#E63E73",
                                     }}
                                   >
-                                    {getBadgeText(promoResult.promo)}
+                                    {getBadgeText(badgePromo)}
                                   </span>
                                 )}
                                 {isFeatured && (

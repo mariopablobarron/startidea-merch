@@ -174,10 +174,8 @@ function pickScaleByQty<T extends { minQty: number }>(scales: T[], qty: number):
 }
 
 /**
- * Aplica el margen comercial al coste neto.
- * Margen por defecto: 1.6× (60% sobre coste). Configurable vía env MARGIN_MULTIPLIER.
+ * Margen comercial coste→cliente. La implementación vive en `@/lib/pricing`
+ * (fuente única para todo el sitio); se re-exporta aquí por compatibilidad con
+ * los importadores existentes (`import { applyMargin } from "@/lib/marking-cost"`).
  */
-export function applyMargin(costCents: number, marginMultiplier?: number): number {
-  const m = marginMultiplier ?? Number(process.env.MARGIN_MULTIPLIER ?? "1.6");
-  return Math.round(costCents * (Number.isFinite(m) ? m : 1.6));
-}
+export { applyMargin, marginMultiplier } from "@/lib/pricing";

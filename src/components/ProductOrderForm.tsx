@@ -5,6 +5,7 @@ import { displayPositionId } from "@/lib/marking-position-display";
 import {
   defaultTiersFromBase,
   formatMoney,
+  orderTotalCents,
   pickTier,
   type PriceTier,
 } from "@/lib/pricing";
@@ -76,6 +77,7 @@ export function ProductOrderForm({
   primaryImageUrl,
   tiers,
   baseCentsForEstimate,
+  orderFixedPromo,
   positions,
 }: {
   productSlug: string;
@@ -84,6 +86,14 @@ export function ProductOrderForm({
   primaryImageUrl?: string | null;
   tiers?: PriceTier[];
   baseCentsForEstimate?: number;
+  // Descuento FIXED a nivel de PEDIDO (se resta UNA vez del subtotal, no por
+  // unidad). PERCENT no llega aquí: ya va horneado en el precio de cada tier.
+  orderFixedPromo?: {
+    value: number;
+    name: string;
+    badgeText: string | null;
+    badgeColor: string | null;
+  } | null;
   positions: Position[];
 }) {
   // Fuente única de tramos locales (para el modo SIN marcaje)
@@ -239,6 +249,10 @@ export function ProductOrderForm({
   const localTier = pickTier(localTiers, finalQty);
   const apiOk = calc && "ok" in calc && calc.ok;
 
+  // Subtotal sin marcaje = precio unitario (con PERCENT ya horneado) × cantidad.
+  // El FIXED de pedido se aplica UNA sola vez sobre ese subtotal (orderTotalCents),
+  // nunca por unidad → un "−5€" descuenta 5€ del pedido, no 5€ × cantidad.
+  const lineSubtotalCents = localTier ? localTier.unitPriceCents * finalQty : null;
   const unitCents = withMarking
     ? apiOk
       ? calc.pricing.unitClient.cents
@@ -248,8 +262,8 @@ export function ProductOrderForm({
     ? apiOk
       ? calc.pricing.totalClient.cents
       : null
-    : localTier
-      ? localTier.unitPriceCents * finalQty
+    : lineSubtotalCents != null
+      ? orderTotalCents(lineSubtotalCents, orderFixedPromo)
       : null;
 
   // Feedback "añadido al carrito"
@@ -671,6 +685,15 @@ export function ProductOrderForm({
               <AnimatedPrice cents={totalCents} format={(c) => formatMoney(c).formatted} />
             )}
           </p>
+          {!withMarking &&
+            orderFixedPromo &&
+            lineSubtotalCents != null &&
+            totalCents != null &&
+            lineSubtotalCents > totalCents && (
+              <p className="mt-1 text-xs font-medium text-social">
+                −{formatMoney(lineSubtotalCents - totalCents).formatted} · {orderFixedPromo.name}
+              </p>
+            )}
         </div>
         {unitCents != null && (
           <p className="text-xs text-ink/50">

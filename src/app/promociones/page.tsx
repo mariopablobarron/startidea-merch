@@ -10,11 +10,8 @@ import { proxyImageUrl } from "@/lib/proxy-image";
 import { mergeMetadata, getPageSeo } from "@/lib/page-seo";
 import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
-import {
-  loadActivePromotions,
-  applyBestPromotion,
-  getBadgeText,
-} from "@/lib/promotions";
+import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
+import { displayFromPrice } from "@/lib/product-pricing";
 
 const BASE_METADATA: Metadata = {
   title: "Promociones · TodoMerchandising",
@@ -220,26 +217,29 @@ export default async function PromocionesPage() {
                 {products.map((p) => {
                   const ov = p.override;
                   const displayName = ov?.customName || p.name;
-                  const basePriceCents =
-                    ov?.customFromPriceCents != null
-                      ? ov.customFromPriceCents
-                      : ov?.marginPct != null && p.fromPriceCents
-                        ? Math.round((p.fromPriceCents * (100 + ov.marginPct)) / 100)
-                        : p.fromPriceCents;
-                  const promoResult = applyBestPromotion(
+                  // Precio "desde" cliente (neto → margen/override → PERCENT).
+                  // Misma fuente que ficha, catálogo y carrito.
+                  const priceInfo = displayFromPrice(
                     {
                       id: p.id,
-                      categoryId: p.categoryId,
+                      name: p.name,
                       brand: p.brand,
-                      override: ov ? { marketingTags: ov.marketingTags } : null,
+                      categoryId: p.categoryId,
+                      fromPriceCents: p.fromPriceCents,
                     },
-                    basePriceCents ?? 0,
+                    ov
+                      ? {
+                          customFromPriceCents: ov.customFromPriceCents,
+                          marginPct: ov.marginPct,
+                          marketingTags: ov.marketingTags,
+                        }
+                      : null,
                     allActive,
                   );
-                  const displayPriceCents = promoResult.promo
-                    ? promoResult.finalCents
-                    : basePriceCents;
-                  const hasPromo = !!promoResult.promo;
+                  const basePriceCents = priceInfo.originalCents;
+                  const displayPriceCents = priceInfo.finalCents;
+                  const hasPromo = priceInfo.hasPromo;
+                  const badgePromo = priceInfo.badgePromo;
                   const tags = ov?.marketingTags ?? [];
 
                   return (
@@ -250,12 +250,12 @@ export default async function PromocionesPage() {
                     >
                       {(ov?.featured || tags.length > 0 || hasPromo) && (
                         <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1">
-                          {hasPromo && promoResult.promo && (
+                          {hasPromo && badgePromo && (
                             <span
                               className="rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-bone shadow"
-                              style={{ background: promoResult.promo.badgeColor || "#E63E73" }}
+                              style={{ background: badgePromo.badgeColor || "#E63E73" }}
                             >
-                              {getBadgeText(promoResult.promo)}
+                              {getBadgeText(badgePromo)}
                             </span>
                           )}
                           {ov?.featured && (

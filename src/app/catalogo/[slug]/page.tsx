@@ -14,13 +14,9 @@ import { CompareToggle } from "@/components/CompareToggle";
 // en un único flujo: cantidad → toggle marcaje → opciones → total + CTAs.
 import { MockupGenerator } from "@/components/MockupGenerator";
 import { WhatsAppCta } from "@/components/WhatsAppCta";
-import { estimateBaseCentsFromName, type PriceTier } from "@/lib/pricing";
-import {
-  loadActivePromotions,
-  applyBestPromotion,
-  applyBestPromotionToTiers,
-  getBadgeText,
-} from "@/lib/promotions";
+import { type PriceTier } from "@/lib/pricing";
+import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
+import { computeClientPricing } from "@/lib/product-pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
 import { displayPositionId } from "@/lib/marking-position-display";
@@ -119,12 +115,6 @@ export default async function ProductDetailPage({
   const displayDescription = ov?.customDescription || product.longDescription;
   const displayShortDescription =
     ov?.customDescription || product.enhancedShortDescription || product.shortDescription;
-  const displayFromPriceCents =
-    ov?.customFromPriceCents != null
-      ? ov.customFromPriceCents
-      : ov?.marginPct != null && product.fromPriceCents
-        ? Math.round((product.fromPriceCents * (100 + ov.marginPct)) / 100)
-        : product.fromPriceCents;
   const extraImages = ov?.extraImages ?? [];
   const marketingTags = ov?.marketingTags ?? [];
   // Referencia pública Startidea — nunca exponer supplierRef al cliente
@@ -138,54 +128,45 @@ export default async function ProductDetailPage({
     new Set(product.variants.map((v) => v.size).filter((s): s is string => !!s)),
   ).sort(naturalSizeOrder);
 
-  // Tarifas: si alguna variant tiene priceTiers (del proveedor), las usamos.
-  // Si no, generamos estimate desde el nombre.
-  // Si admin override define un precio explícito, descartamos tiers del proveedor
-  // y reconstruimos con ese precio como base. Admin gana sobre proveedor.
-  const adminOverridesPrice =
-    ov?.customFromPriceCents != null || ov?.marginPct != null;
-  const variantWithTiers = adminOverridesPrice
-    ? null
-    : product.variants.find((v) => v.priceTiers.length > 0);
-  const rawTiers: PriceTier[] | undefined = variantWithTiers
-    ? variantWithTiers.priceTiers.map((t) => ({
-        minQty: t.minQty,
-        unitPriceCents: t.unitPriceCents,
-        source: "PROVIDER" as const,
-      }))
-    : undefined;
+  // Precio cliente — FUENTE ÚNICA (coste neto → margen/override → promo).
+  // El mismo helper lo usa /api/quote/calculate, así el precio base del producto
+  // es idéntico con o sin marcaje, y en card / ficha / carrito.
+  // Tiers de proveedor (NETOS) de la primera variante que los tenga; el helper
+  // los descarta si el admin fijó precio (customFromPriceCents / marginPct).
+  const variantWithTiers = product.variants.find((v) => v.priceTiers.length > 0);
+  const providerNetTiers = variantWithTiers?.priceTiers.map((t) => ({
+    minQty: t.minQty,
+    unitPriceCents: t.unitPriceCents,
+  }));
 
-  // Aplicar promoción activa si la hay (sobre override + sobre cada tier)
   const activePromos = await loadActivePromotions();
-  const promoMatchInput = {
-    id: product.id,
-    categoryId: product.categoryId,
-    brand: product.brand,
-    override: ov ? { marketingTags: ov.marketingTags } : null,
-  };
-  const promoForDisplayPrice =
-    displayFromPriceCents != null
-      ? applyBestPromotion(promoMatchInput, displayFromPriceCents, activePromos)
-      : null;
-  const activePromo = promoForDisplayPrice?.promo ?? null;
+  const pricing = computeClientPricing({
+    product: {
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      categoryId: product.categoryId,
+      fromPriceCents: product.fromPriceCents,
+      category: product.category ? { name: product.category.name } : null,
+    },
+    override: ov
+      ? {
+          customFromPriceCents: ov.customFromPriceCents,
+          marginPct: ov.marginPct,
+          marketingTags: ov.marketingTags,
+        }
+      : null,
+    providerNetTiers,
+    activePromos,
+  });
+
+  const activePromo = pricing.bannerPromo;
   const promoBadgeText = activePromo ? getBadgeText(activePromo) : null;
   const promoBadgeColor = activePromo?.badgeColor || "#E63E73";
-  // displayFromPriceCents original (sin promo) lo guardamos para mostrar "antes"
-  const originalFromPriceCents = displayFromPriceCents;
-  const finalFromPriceCents = promoForDisplayPrice?.finalCents ?? displayFromPriceCents;
-
-  // Aplicar promo a cada tier para que el calculador muestre precios correctos
-  const tiers: PriceTier[] | undefined = rawTiers
-    ? applyBestPromotionToTiers(promoMatchInput, rawTiers, activePromos).map((t) => ({
-        minQty: t.minQty,
-        unitPriceCents: t.unitPriceCents,
-        source: "PROVIDER" as const,
-      }))
-    : undefined;
-
-  const baseCents = tiers
-    ? undefined
-    : finalFromPriceCents ?? estimateBaseCentsFromName(product.name, product.category?.name);
+  const originalFromPriceCents = pricing.originalFromPriceCents;
+  const finalFromPriceCents = pricing.fromPriceCents;
+  const tiers: PriceTier[] | undefined = pricing.clientTiers;
+  const baseCents = pricing.baseCentsForEstimate;
 
   const breadcrumbs: Array<{ name: string; href?: string }> = [{ name: "Catálogo", href: "/catalogo" }];
   if (product.category?.parent?.parent) {
@@ -559,6 +540,7 @@ export default async function ProductDetailPage({
                 primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
                 tiers={tiers}
                 baseCentsForEstimate={baseCents}
+                orderFixedPromo={pricing.orderFixedPromo}
                 positions={product.positions.map((pos) => ({
                   id: pos.id,
                   positionId: pos.positionId,

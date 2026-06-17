@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { calculateMarkingCost, applyMargin } from "@/lib/marking-cost";
 import { prisma } from "@/lib/prisma";
-import { defaultTiersFromBase, estimateBaseCentsFromName, formatMoney, pickTier } from "@/lib/pricing";
+import { defaultTiersFromBase, formatMoney, orderTotalCents, pickTier } from "@/lib/pricing";
+import { loadActivePromotions } from "@/lib/promotions";
+import { computeClientPricing } from "@/lib/product-pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,32 +61,59 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
 
-  // Producto + variant principal
+  // Producto + override + primera variante CON tiers (mismo criterio que la ficha).
   const product = await prisma.product.findUnique({
     where: { slug: data.productSlug },
     include: {
-      variants: { take: 1, include: { priceTiers: { orderBy: { minQty: "asc" } } } },
+      variants: {
+        where: { priceTiers: { some: {} } },
+        orderBy: { sku: "asc" },
+        take: 1,
+        include: { priceTiers: { orderBy: { minQty: "asc" } } },
+      },
       category: { select: { name: true } },
+      override: true,
     },
   });
   if (!product) return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
 
-  // Coste neto unidad
-  const variant = product.variants[0];
-  let netUnitCostCents = 0;
-  let priceSource: "provider" | "estimate" = "estimate";
-  if (variant?.priceTiers?.length) {
-    const tier = pickPriceTier(variant.priceTiers, data.quantity);
-    if (tier) {
-      netUnitCostCents = tier.unitPriceCents;
-      priceSource = "provider";
-    }
-  }
-  if (netUnitCostCents === 0) {
-    const baseCents = estimateBaseCentsFromName(product.name, product.category?.name);
-    const tier = pickTier(defaultTiersFromBase(baseCents), data.quantity);
-    netUnitCostCents = tier?.unitPriceCents ?? baseCents;
-  }
+  // Precio cliente del PRODUCTO — MISMA fuente que la ficha (coste neto → margen
+  // → override → promo). Antes este path ignoraba override y promociones y solo
+  // el producto cambiaba de precio según el toggle de marcaje. El margen del
+  // producto va aquí dentro; el del MARCAJE se aplica aparte (applyMargin) abajo.
+  const variantWithTiers = product.variants[0];
+  const activePromos = await loadActivePromotions();
+  const clientPricing = computeClientPricing({
+    product: {
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      categoryId: product.categoryId,
+      fromPriceCents: product.fromPriceCents,
+      category: product.category ? { name: product.category.name } : null,
+    },
+    override: product.override
+      ? {
+          customFromPriceCents: product.override.customFromPriceCents,
+          marginPct: product.override.marginPct,
+          marketingTags: product.override.marketingTags,
+        }
+      : null,
+    providerNetTiers: variantWithTiers?.priceTiers.map((t) => ({
+      minQty: t.minQty,
+      unitPriceCents: t.unitPriceCents,
+    })),
+    activePromos,
+  });
+  const clientTiers =
+    clientPricing.clientTiers ??
+    (clientPricing.baseCentsForEstimate
+      ? defaultTiersFromBase(clientPricing.baseCentsForEstimate)
+      : []);
+  const productTier = pickTier(clientTiers, data.quantity);
+  const productUnitClientCents =
+    productTier?.unitPriceCents ?? clientPricing.baseCentsForEstimate ?? 0;
+  const priceSource: "provider" | "estimate" = clientPricing.clientTiers ? "provider" : "estimate";
 
   // Normalizar a array de marcas (legacy → array de 1, multi → array tal cual)
   const markings = data.markings && data.markings.length > 0
@@ -137,13 +166,17 @@ export async function POST(req: Request) {
     }
   }
 
-  const productNetCostCents = netUnitCostCents * data.quantity;
-  const totalNetCostCents = productNetCostCents + markingNetTotalCents;
-  const totalClientCents = applyMargin(totalNetCostCents);
-  const clientUnitCents = Math.round(totalClientCents / data.quantity);
-
-  // Coste solo del producto cliente (para mostrar desglose)
-  const productClientCents = applyMargin(productNetCostCents);
+  // Producto cliente: subtotal (con margen/override/PERCENT ya aplicados) menos
+  // el FIXED de pedido UNA sola vez. Marcaje cliente: margen sobre el coste neto.
+  const productSubtotalClientCents = productUnitClientCents * data.quantity;
+  const productClientCents = orderTotalCents(
+    productSubtotalClientCents,
+    clientPricing.orderFixedPromo,
+  );
+  const markingClientCents = applyMargin(markingNetTotalCents);
+  const totalClientCents = productClientCents + markingClientCents;
+  const clientUnitCents =
+    data.quantity > 0 ? Math.round(totalClientCents / data.quantity) : 0;
 
   return NextResponse.json({
     ok: true,
@@ -174,26 +207,18 @@ export async function POST(req: Request) {
     pricing: {
       currency: "EUR",
       productClient: formatMoney(productClientCents),
-      markingClient: formatMoney(applyMargin(markingNetTotalCents)),
+      markingClient: formatMoney(markingClientCents),
       unitClient: formatMoney(clientUnitCents),
       totalClient: formatMoney(totalClientCents),
     },
     // Campo legacy (un poco diferente de markingClient pero compatible):
     clientMarkingPerUnit:
-      markingNetTotalCents > 0
-        ? formatMoney(Math.round(applyMargin(markingNetTotalCents) / data.quantity))
+      markingNetTotalCents > 0 && data.quantity > 0
+        ? formatMoney(Math.round(markingClientCents / data.quantity))
         : null,
     clientUnitPrice: formatMoney(clientUnitCents),
     clientTotal: formatMoney(totalClientCents),
     disclaimer:
       "Precio orientativo con margen comercial estándar. El presupuesto cerrado se calcula tras revisar artwork, plazo y transporte.",
   });
-}
-
-function pickPriceTier<T extends { minQty: number }>(tiers: T[], qty: number): T | undefined {
-  if (!tiers.length) return undefined;
-  const sorted = [...tiers].sort((a, b) => a.minQty - b.minQty);
-  let chosen = sorted[0];
-  for (const t of sorted) if (qty >= t.minQty) chosen = t;
-  return chosen;
 }
