@@ -1,0 +1,70 @@
+src/app/catalogo/[slug]/page.tsx
+  s_8f100d2740f10d::t_798a0253c83360 131-140,143-163,166-169
+  s_8f100d2740f10d::t_7c0f8afd796ff5 17-19
+  s_8f100d2740f10d::t_eed0bce724c778 543
+src/lib/marking-cost.ts
+  s_8f100d2740f10d::t_083f60d9c88f75 177-179,181
+src/components/ProductOrderForm.tsx
+  s_8f100d2740f10d::t_8287ff2e506875 80,89-96
+  s_8f100d2740f10d::t_e1f691d75e2615 252-255,265-266
+  s_8f100d2740f10d::t_c47010e6720395 688-696
+  s_8f100d2740f10d::t_99d30eb40e06a9 8
+src/lib/product-pricing.test.ts
+  s_8f100d2740f10d::t_666ca32ed17b90 1-183
+src/lib/promotions.ts
+  s_8f100d2740f10d::t_c13a476b14778f 4-8,10,12-14,17,37-61
+src/app/promociones/page.tsx
+  s_8f100d2740f10d::t_f4a71be7960ff5 220-222,225,227-228,230-236,239-242
+  s_8f100d2740f10d::t_8f41684362f939 253,256,258
+  s_8f100d2740f10d::t_dac31d4b978d30 13-14
+src/lib/promotions-core.ts
+  s_8f100d2740f10d::t_905b9deea2b880 1-259,266-289
+  s_8f100d2740f10d::t_fc4faa304e67b7 260-265
+src/app/api/quote/calculate/route.ts
+  s_8f100d2740f10d::t_0ba6ada35017d2 64,68-73,75,80-116
+  s_8f100d2740f10d::t_b552f5b08406db 210,216-217
+  s_8f100d2740f10d::t_1212ba97b58aaa 5-7
+  s_8f100d2740f10d::t_9b52f1ec4ead47 169-179
+src/lib/product-pricing.ts
+  s_8f100d2740f10d::t_2fdf19a9e8c321 1-214
+src/lib/promotions-core.test.ts
+  s_8f100d2740f10d::t_59009ea3f08a2c 1-8,10-134
+  s_8f100d2740f10d::t_6044bd18832376 135-146
+  s_8f100d2740f10d::t_9f5600ec45d51b 9
+src/app/catalogo/page.tsx
+  s_8f100d2740f10d::t_a3beb832215010 20
+  s_8f100d2740f10d::t_09559dc59fb7b2 635,639,642
+  s_8f100d2740f10d::t_1801e0343916dc 21-22
+  s_8f100d2740f10d::t_e497e8b8f23bc1 599-602,605,607-608,610-616,619-622
+  s_8f100d2740f10d::t_c527bbe5ba3252 117-123,128,139,145-146
+src/lib/pricing.ts
+  s_8f100d2740f10d::t_dacba1ea02908d 94-132
+src/app/pay/[token]/page.tsx
+  s_65877aa637ec34::t_2fa0c499ff392a 168
+  s_65877aa637ec34::t_02012ac9089e1c 8
+  s_65877aa637ec34::t_30857164e02c1d 74,77-85,87,90-91,93,98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "72a4e6b3c0c98d42b54e9b408821892952365093",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_8f100d2740f10d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "099d4ed4-4e4c-4c7e-b761-dfb000ba4bdd",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
