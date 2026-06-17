@@ -75,6 +75,9 @@ export async function GET(req: Request) {
         "User-Agent": "Mozilla/5.0 (compatible; TodoMerchandising/1.0)",
         Accept: "image/jpeg,image/png,image/webp,image/*,*/*;q=0.8",
       },
+      // Endpoint público cacheado: un upstream lento podría retener sockets/
+      // workers del contenedor. Timeout corto para liberar. (bug-bounty 2026-06-17)
+      signal: AbortSignal.timeout(10_000),
     });
   } catch {
     return new Response("Error red upstream", { status: 502 });
@@ -89,7 +92,19 @@ export async function GET(req: Request) {
     return new Response("Upstream no es imagen", { status: 502 });
   }
 
+  // Límite de tamaño: una imagen legítima no supera ~12 MB. Sin esto, un
+  // upstream que sirva un fichero enorme carga todo en RAM y puede tumbar el
+  // contenedor (OOM). Pre-check por Content-Length + backstop tras leer.
+  const MAX_BYTES = 12 * 1024 * 1024;
+  const declaredLen = Number(upstream.headers.get("content-length") || 0);
+  if (declaredLen > MAX_BYTES) {
+    return new Response("Imagen demasiado grande", { status: 502 });
+  }
+
   const buf = await upstream.arrayBuffer();
+  if (buf.byteLength > MAX_BYTES) {
+    return new Response("Imagen demasiado grande", { status: 502 });
+  }
   return new Response(buf, {
     status: 200,
     headers: {

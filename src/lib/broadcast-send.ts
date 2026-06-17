@@ -38,11 +38,23 @@ export async function sendBroadcast(id: string): Promise<SendBroadcastResult> {
     return { ok: false, error: "El broadcast ya está siendo enviado", status: 409 };
   }
 
-  const recipients = await resolveAudience(
+  const audience = await resolveAudience(
     broadcast.audience,
     broadcast.audienceTags,
     broadcast.audienceSource,
   );
+
+  // Filtrar la lista de supresión global (rebotes/quejas/opt-out). El webhook
+  // de Resend alimenta OutboundSuppression con cada email.bounced/complained;
+  // los broadcasts deben respetarla igual que el cold-email (prospect-queue),
+  // o reenviaríamos a direcciones que ya rebotaron o se quejaron — daña la
+  // reputación del dominio e incumple la baja. (bug-bounty 2026-06-17)
+  const suppressed = new Set(
+    (await prisma.outboundSuppression.findMany({ select: { email: true } })).map((s) =>
+      s.email.toLowerCase(),
+    ),
+  );
+  const recipients = audience.filter((r) => !suppressed.has(r.email.toLowerCase()));
 
   let sentCount = 0;
   let failedCount = 0;

@@ -152,6 +152,45 @@ export async function runMakitoMarkingEnrich(opts: {
   // 4 paralelo con retry exponencial en 429 funciona en pruebas sin atascos.
   const concurrency = opts.concurrency || 4;
 
+  // Lock anti-solapamiento: dos ejecuciones simultáneas duplicarían
+  // MarkingPositions (la tabla no tiene @@unique; el create no es idempotente
+  // entre runs concurrentes). Adquirimos un lock atómico vía AdminSetting —
+  // create con clave única: solo un proceso gana. TTL 20 min para auto-curar
+  // si un run muere sin liberar. (bug-bounty 2026-06-17)
+  const LOCK_KEY = "makito_enrich_lock";
+  const LOCK_TTL_MS = 20 * 60 * 1000;
+  const lockNow = startedAt.getTime();
+  let lockAcquired = false;
+  try {
+    await prisma.adminSetting.create({ data: { key: LOCK_KEY, value: lockNow } });
+    lockAcquired = true;
+  } catch {
+    const existing = await prisma.adminSetting.findUnique({
+      where: { key: LOCK_KEY },
+      select: { value: true },
+    });
+    const at = typeof existing?.value === "number" ? existing.value : 0;
+    if (lockNow - at > LOCK_TTL_MS) {
+      await prisma.adminSetting
+        .update({ where: { key: LOCK_KEY }, data: { value: lockNow } })
+        .catch(() => {});
+      lockAcquired = true;
+    }
+  }
+  if (!lockAcquired) {
+    return {
+      startedAt: startedAt.toISOString(),
+      finishedAt: new Date().toISOString(),
+      ok: false,
+      productsScanned: 0,
+      productsEnriched: 0,
+      positionsCreated: 0,
+      techniquesLinked: 0,
+      durationMs: 0,
+      errors: [{ ref: "_lock", message: "Enrich ya en curso (lock activo); abortado para evitar posiciones duplicadas." }],
+    };
+  }
+
   // 1. Cargar traducciones globales (1 call, 5 620 entries)
   const translationsResp = await apiGet<{ markings: MkTranslation[] }>(
     "/markingsTranslations/1",
@@ -302,6 +341,10 @@ export async function runMakitoMarkingEnrich(opts: {
       }),
     );
   }
+
+  // Liberar el lock. Si el run muriera antes de aquí, el TTL (20 min) deja que
+  // la siguiente ejecución lo robe.
+  await prisma.adminSetting.delete({ where: { key: LOCK_KEY } }).catch(() => {});
 
   const finishedAt = new Date();
   return {
