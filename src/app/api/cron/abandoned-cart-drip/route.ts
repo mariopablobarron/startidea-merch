@@ -80,11 +80,23 @@ export async function POST(req: Request) {
     });
 
     for (const cart of candidates) {
-      // Idempotencia: skip si ya existe drip para (cart, step)
-      const already = await prisma.emailDripSent.findUnique({
-        where: { cartId_step: { cartId: cart.id, step } },
-      });
-      if (already) continue;
+      // step 30 solo archiva (sin email); el resto necesita resend para enviar.
+      if (step !== 30 && !resend) {
+        errors.push(`cart ${cart.id} step ${step}: Resend no configurado`);
+        continue;
+      }
+
+      // Claim atómico ANTES de cualquier efecto externo: el create de EmailDripSent
+      // reclama (cart, step); si otra ejecución ya lo hizo, lanza P2002 → saltamos.
+      // Evita duplicar emails aunque dos ejecuciones se solapen o un run muera a
+      // mitad. Si el envío falla luego, el claim queda puesto (no se reintenta):
+      // preferimos perder un recordatorio antes que spamear. (claim-then-send,
+      // bug-bounty 2026-06-17)
+      try {
+        await prisma.emailDripSent.create({ data: { cartId: cart.id, step } });
+      } catch {
+        continue; // ya reclamado por otra ejecución / día anterior
+      }
 
       try {
         if (step === 30) {
@@ -93,19 +105,9 @@ export async function POST(req: Request) {
             where: { id: cart.id },
             data: { status: "ARCHIVED" },
           });
-          await prisma.emailDripSent.create({
-            data: { cartId: cart.id, step },
-          });
           sent.archived++;
         } else {
-          if (!resend) {
-            errors.push(`cart ${cart.id} step ${step}: Resend no configurado`);
-            continue;
-          }
           await sendStep(cart, step);
-          await prisma.emailDripSent.create({
-            data: { cartId: cart.id, step },
-          });
           await prisma.cartQuote.update({
             where: { id: cart.id },
             data: {

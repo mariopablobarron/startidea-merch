@@ -18,18 +18,21 @@ export async function acquireCronLock(key: string, ttlMs = 10 * 60 * 1000): Prom
     await prisma.adminSetting.create({ data: { key: lockKey, value: now } });
     return true;
   } catch {
+    // Ya existe. Solo lo tomamos si el TTL expiró Y ganamos la carrera con un
+    // update CONDICIONAL al valor viejo: es una sola sentencia UPDATE … WHERE,
+    // atómica, así que si dos ejecuciones ven el lock caducado a la vez solo una
+    // obtiene count===1. (endurecido bug-bounty 2026-06-17)
     const existing = await prisma.adminSetting.findUnique({
       where: { key: lockKey },
       select: { value: true },
     });
     const at = typeof existing?.value === "number" ? existing.value : 0;
-    if (now - at > ttlMs) {
-      await prisma.adminSetting
-        .update({ where: { key: lockKey }, data: { value: now } })
-        .catch(() => {});
-      return true;
-    }
-    return false;
+    if (now - at <= ttlMs) return false; // lock aún vigente
+    const claimed = await prisma.adminSetting.updateMany({
+      where: { key: lockKey, value: { equals: at } },
+      data: { value: now },
+    });
+    return claimed.count === 1;
   }
 }
 

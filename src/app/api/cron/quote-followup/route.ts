@@ -77,19 +77,22 @@ export async function POST(req: Request) {
     const due = [...STEPS].reverse().find((s) => ageDays >= s.days);
     if (!due) continue;
 
-    // Idempotencia: ya enviado este escalón a esta cotización.
-    const already = await prisma.emailDripSent.findUnique({
-      where: { cartId_step: { cartId: cart.id, step: due.code } },
-    });
-    if (already) continue;
     if (!resend) {
       errors.push(`cart ${cart.id}: Resend no configurado`);
       break;
     }
 
+    // Claim atómico ANTES de enviar: el create reclama (cart, step); si ya estaba
+    // reclamado lanza P2002 → saltamos. Evita duplicar el email bajo solape o si
+    // un run muere a mitad. (claim-then-send, bug-bounty 2026-06-17)
+    try {
+      await prisma.emailDripSent.create({ data: { cartId: cart.id, step: due.code } });
+    } catch {
+      continue; // ya reclamado
+    }
+
     try {
       await sendFollowup(cart, due);
-      await prisma.emailDripSent.create({ data: { cartId: cart.id, step: due.code } });
       if (due.code === 102) sent.d2++;
       else if (due.code === 105) sent.d5++;
       else sent.d10++;

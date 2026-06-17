@@ -32,8 +32,19 @@ export async function POST(req: Request) {
     select: { id: true, name: true, email: true, company: true },
   });
 
+  // Cerrojo atómico namespaced en EmailDripSent (drips usan 1/3/7/30, followup
+  // 102/105/110; 200 = "review invitada"). Review.cartId NO es @unique, así que
+  // sin este claim dos ejecuciones solapadas crearían Review + email duplicados.
+  // (claim-then-send, bug-bounty 2026-06-17)
+  const REVIEW_INVITE_STEP = 200;
   let invited = 0;
   for (const cart of carts) {
+    try {
+      await prisma.emailDripSent.create({ data: { cartId: cart.id, step: REVIEW_INVITE_STEP } });
+    } catch {
+      continue; // ya invitado por otra ejecución
+    }
+
     const review = await prisma.review.create({
       data: {
         cartId: cart.id,
