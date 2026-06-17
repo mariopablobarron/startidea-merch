@@ -1,0 +1,25 @@
+src/app/api/search/semantic/route.ts
+  s_2b591ede3bc25c::t_134dba030b81ea 4
+  s_2b591ede3bc25c::t_a418e50a30e828 17-22
+src/lib/promotions.ts
+  s_2b591ede3bc25c::t_5ddb3b20482157 194-199
+src/app/api/uploads/customer-logo/route.ts
+  s_2b591ede3bc25c::t_c134618577053e 26-30
+  s_2b591ede3bc25c::t_49d65857038558 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "83faf37e2e7e83bb40881d46ec49b7699c17d610",
+  "prompts": {},
+  "sessions": {
+    "s_2b591ede3bc25c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a49da186-966e-4054-982e-1d23b70b8449",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
