@@ -1,0 +1,42 @@
+src/app/api/cron/quote-followup/route.ts
+  s_65877aa637ec34::t_972a35312450e1 5
+  s_65877aa637ec34::t_01b926eabaa685 102
+  s_65877aa637ec34::t_86627bce0da60f 47
+src/lib/suppliers/midocean-sync.ts
+  s_65877aa637ec34::t_5e2091334205dc 86-100
+src/app/api/cron/review-invite/route.ts
+  s_65877aa637ec34::t_ccfa4a3d7cace3 94
+  s_65877aa637ec34::t_c03fc98537a4f6 5
+  s_65877aa637ec34::t_e7627aa21ee1e8 23
+src/lib/cron-lock.ts
+  s_65877aa637ec34::t_112388529dac06 1-58
+src/app/api/proof/[token]/approve/route.ts
+  s_65877aa637ec34::t_ff26a947fecd94 32-34,36-42
+src/app/api/cron/abandoned-cart-drip/route.ts
+  s_65877aa637ec34::t_5ed3d3c0154f01 127
+  s_65877aa637ec34::t_ed51690650724f 5
+  s_65877aa637ec34::t_ec03a9ed23f486 47
+src/app/api/cron/webhook-retry/route.ts
+  s_65877aa637ec34::t_fc173ce6a5ff39 16,19
+  s_65877aa637ec34::t_68524ba5fe482c 4
+src/app/api/m/[hash]/route.ts
+  s_65877aa637ec34::t_6fabc460cf6bce 39-48,56
+  s_65877aa637ec34::t_8503c494263ec5 6-21
+  s_65877aa637ec34::t_ed9210ad26121f 71-74,76-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "e7b55e15ff55181766785a9a835f781622643c69",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
