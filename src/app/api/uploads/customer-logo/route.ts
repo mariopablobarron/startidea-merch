@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +23,11 @@ const ALLOWED = ["image/png", "image/jpeg", "image/jpg", "image/svg+xml", "image
  * Anti-abuso básico: validación content-type + límite 5MB.
  */
 export async function POST(req: Request) {
+  // Endpoint público: limita escrituras a disco para evitar relleno del volumen
+  // y abuso como hosting de ficheros. (Bug bounty 2026-06-17)
+  const rl = rateLimit(req, { key: "customer-logo", max: 12, windowMs: 10 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: "multipart/form-data esperado" }, { status: 400 });
 

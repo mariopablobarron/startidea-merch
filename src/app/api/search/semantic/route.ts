@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateEmbedding, cosineSimilarity } from "@/lib/embeddings";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,12 @@ export const dynamic = "force-dynamic";
  * los embeddings cacheados en BD (~2400 productos = ~50ms). Devuelve top 12.
  */
 export async function GET(req: Request) {
+  // Cada hit llama a una API de embeddings de pago + carga todos los vectores.
+  // Limita para evitar abuso de coste / DoS desde el endpoint público.
+  // (Bug bounty 2026-06-17)
+  const rl = rateLimit(req, { key: "search-semantic", max: 20, windowMs: 60_000 });
+  if (!rl.ok) return rl.response;
+
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") || "").trim();
   const limit = Math.min(20, parseInt(url.searchParams.get("limit") || "12", 10) || 12);
