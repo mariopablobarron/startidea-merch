@@ -59,11 +59,25 @@ export async function POST(req: Request) {
   }
 
   // La imagen base suele ser una ruta RELATIVA del proxy de proveedor
-  // (/api/m/<hash>). El fetch de Node exige URL absoluta o lanza
-  // "Failed to parse URL". Resolvemos contra el origen real de la petición.
-  const baseFetchUrl = baseUrl.startsWith("/")
-    ? new URL(baseUrl, new URL(req.url).origin).toString()
-    : baseUrl;
+  // (/api/m/<hash>). Dos problemas si se fetcha tal cual:
+  //   1. El fetch de Node exige URL absoluta ("Failed to parse URL").
+  //   2. Resolverla al dominio público y auto-llamarse falla dentro del
+  //      contenedor ("fetch failed" — loopback Docker al FQDN externo).
+  // Solución: resolver el hash → MediaAsset.originalUrl (URL real del CDN del
+  // proveedor) y fetchar ESA directamente, que el contenedor sí alcanza.
+  // Es server-side: el buffer se compone con el logo y se devuelve como PNG
+  // propio, nunca se expone la URL del proveedor al cliente.
+  let baseFetchUrl = baseUrl;
+  const proxyMatch = baseUrl.match(/^\/api\/m\/([^/?#]+)/);
+  if (proxyMatch) {
+    const asset = await prisma.mediaAsset.findUnique({
+      where: { hash: proxyMatch[1] },
+      select: { originalUrl: true },
+    });
+    baseFetchUrl = asset?.originalUrl || new URL(baseUrl, new URL(req.url).origin).toString();
+  } else if (baseUrl.startsWith("/")) {
+    baseFetchUrl = new URL(baseUrl, new URL(req.url).origin).toString();
+  }
 
   // Si la base elegida es una marking-position técnica del proveedor,
   // intentar cache local primero (anti-rotura si el CDN externo cambia).
