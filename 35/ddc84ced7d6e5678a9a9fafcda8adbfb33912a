@@ -1,0 +1,29 @@
+src/app/api/admin/cart-quotes/[id]/payment-link/route.ts
+  s_65877aa637ec34::t_073a123dcb1a00 83-85
+  s_65877aa637ec34::t_2abaf8520984e5 106
+  s_65877aa637ec34::t_46cd90b70eebb0 8
+src/app/api/pay/[token]/intent/route.ts
+  s_65877aa637ec34::t_44ab5fa0366828 5
+  s_65877aa637ec34::t_9ace2e5ecc95f4 43-50,52-54
+src/app/api/pay/[token]/checkout/route.ts
+  s_65877aa637ec34::t_7b137703ca850f 5
+  s_65877aa637ec34::t_cb2de14e7e066d 43,48-51
+src/lib/iva.ts
+  s_65877aa637ec34::t_14c1da0b289e9f 1-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "35ddc84ced7d6e5678a9a9fafcda8adbfb33912a",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
