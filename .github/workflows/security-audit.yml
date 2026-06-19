@@ -35,7 +35,7 @@ jobs:
     name: gitleaks · secrets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # historial completo para escanear todos los commits
       - uses: gitleaks/gitleaks-action@v2
@@ -47,7 +47,7 @@ jobs:
     name: trivy · CVE + secrets filesystem
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run trivy filesystem
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -74,7 +74,7 @@ jobs:
     container:
       image: returntocorp/semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run semgrep
         # Solo bloquea PRs si encuentra ERROR/WARNING. INFO suele ser heurístico.
         run: semgrep scan --config=auto --exclude=node_modules --exclude=.next --severity=ERROR --severity=WARNING --error
@@ -86,7 +86,7 @@ jobs:
     name: knip · código muerto
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
         # No 'version' aquí — la coge del campo packageManager de package.json
       - uses: actions/setup-node@v4
@@ -102,7 +102,7 @@ jobs:
     name: hadolint · Dockerfile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
