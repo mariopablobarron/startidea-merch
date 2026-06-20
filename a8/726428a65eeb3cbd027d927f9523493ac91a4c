@@ -1,0 +1,42 @@
+src/lib/facturascripts.ts
+  s_46c7a68f566222::t_242df88d6cb61f 1-228
+docs/facturascripts-integration.md
+  s_46c7a68f566222::t_27b0c6194a7063 362-451
+src/lib/facturascripts-sync.ts
+  s_46c7a68f566222::t_bbb080e1c30466 1-236
+scripts/sync-products-to-fs.ts
+  s_46c7a68f566222::t_8a5d02d11eb968 1-94
+prisma/schema.prisma
+  s_46c7a68f566222::t_8c7418af83b205 1500,1504-1512,1515
+prisma/migrations/20260619_payment_facturascripts/migration.sql
+  s_46c7a68f566222::t_e17143e5eac5cd 1-16
+src/app/api/webhooks/stripe/route.ts
+  s_46c7a68f566222::t_1cab663a191b33 15
+  s_0b74e5eb040aa8::t_3382d2ba00627d 273,288,291,306
+  s_46c7a68f566222::t_f4efcde26f565f 390-408
+  s_0b74e5eb040aa8::t_c7bbb7e971f09c 16,289
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "a8726428a65eeb3cbd027d927f9523493ac91a4c",
+  "prompts": {},
+  "sessions": {
+    "s_0b74e5eb040aa8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019edc96-64a5-72c2-8525-fc4df59ec01d",
+        "model": "gpt-5.5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_46c7a68f566222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "32d2337b-7dbe-4dc8-9efd-8a34395c44d5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
