@@ -1497,12 +1497,22 @@ model Payment {
   refundedAt    DateTime?
   failureReason String?
 
-  // Factura
+  // Factura interna del merch (numeración propia 2026-0001)
   invoiceNumber   String?   @unique // formato 2026-0001 (YYYY-NNNN)
   invoiceIssuedAt DateTime?
 
+  // Factura sincronizada con FacturaScripts (facturas.startidea.tech).
+  // fsInvoiceCode es el `codigo` (string visible, p.ej. "1511");
+  // fsInvoiceId es el `idfactura` (PK numérica, requerida para los
+  // endpoints pagar/exportar). Vacío si todavía no se sincronizó.
+  fsInvoiceCode   String?   // p.ej. "1511" — código visible en FacturaScripts
+  fsInvoiceId     Int?      // idfactura — usado en /pagarFacturaCliente/:id
+  fsSyncedAt      DateTime?
+  fsError         String?
+
   @@index([cartId])
   @@index([status])
+  @@index([fsInvoiceCode])
 }
 
 enum PaymentStatus {

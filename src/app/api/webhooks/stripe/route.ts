@@ -12,6 +12,8 @@ import { autoPlaceCifraOrder } from "@/lib/cifra-auto-order";
 import { autoPlaceMakitoOrder } from "@/lib/makito-auto-order";
 import { createPurchaseOrdersFromCart } from "@/lib/purchase-orders";
 import { createPostPaymentMagicLink } from "@/lib/customer-portal-magic";
+import { syncPaymentToFacturaScripts } from "@/lib/facturascripts-sync";
+import { IVA_RATE } from "@/lib/iva";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
@@ -268,6 +270,7 @@ async function postPaymentAutoflow(args: {
   const cartWithItems = await prisma.cartQuote.findUnique({
     where: { id: cartId },
     select: {
+      acceptedTotalCents: true,
       items: {
         select: {
           productName: true,
@@ -282,8 +285,10 @@ async function postPaymentAutoflow(args: {
       },
     },
   });
+  const affiliateBaseCents =
+    cartWithItems?.acceptedTotalCents ?? Math.round(amountCents / (1 + IVA_RATE));
 
-  void markReferralEarned(cartId, amountCents).catch(() => {});
+  void markReferralEarned(cartId, affiliateBaseCents).catch(() => {});
 
   // F2 (25-may): si el cart se pagó con un cupón vinculado a afiliado,
   // crea entries COMMISSION + CREDIT en el ledger del partner.
@@ -298,7 +303,7 @@ async function postPaymentAutoflow(args: {
       return recordCouponRedemption({
         cartId,
         couponId: redemption.couponId,
-        cartTotalCents: amountCents,
+        cartTotalCents: affiliateBaseCents,
       });
     })
     .then((res) => {
@@ -382,6 +387,25 @@ async function postPaymentAutoflow(args: {
       context: `stripe paid client · ${cartId}`,
     }),
   ]);
+
+  // Sincronizar con FacturaScripts (emite factura legal en facturas.startidea.tech,
+  // idempresa=2 STARTIDEA MALAGA SL). Idempotente: si el Payment ya tiene
+  // fsInvoiceCode, no hace nada. Errores se guardan en Payment.fsError para
+  // reintento manual desde admin; NO rompen el flujo del webhook (Stripe debe
+  // recibir 200 OK siempre).
+  void syncPaymentToFacturaScripts(paymentId)
+    .then((res) => {
+      if (res.ok) {
+        console.log(
+          "[stripe webhook] fs-sync",
+          paymentId,
+          res.alreadySynced ? "(ya sincronizado)" : `→ factura ${res.fsInvoiceCode}`,
+        );
+      } else {
+        console.error("[stripe webhook fs-sync]", paymentId, res.error);
+      }
+    })
+    .catch((err) => console.error("[stripe webhook fs-sync exception]", paymentId, err));
 }
 
 function internalPaymentEmailHtml(args: {
