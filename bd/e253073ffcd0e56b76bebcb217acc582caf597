@@ -1,0 +1,28 @@
+src/app/api/ruleta/spin/route.ts
+  s_65877aa637ec34::t_2d6df7c8942442 1-2,4-148,154-197
+  s_65877aa637ec34::t_86a4f0202fc463 149-153
+  s_65877aa637ec34::t_4a9622becdd205 3
+src/lib/ruleta.ts
+  s_65877aa637ec34::t_c6d016fe0eb4d4 1-125
+src/app/layout.tsx
+  s_65877aa637ec34::t_ccf8e799642e54 138
+  s_65877aa637ec34::t_5d95aee2505e4d 17
+src/components/SpinWheelPopup.tsx
+  s_65877aa637ec34::t_79846fcb47ee73 1-309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "bde253073ffcd0e56b76bebcb217acc582caf597",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
