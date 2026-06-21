@@ -5,6 +5,7 @@ import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { createPurchaseOrdersFromCart } from "@/lib/purchase-orders";
 import { sendEmail } from "@/lib/resend";
 import { notifyTelegram } from "@/lib/telegram";
+import { syncPaymentToFacturaScripts } from "@/lib/facturascripts-sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
  *  1. Crea Payment con status=PAID (kind=DEPOSIT, stripeMode="simulated")
  *  2. Marca CartQuote como ORDERED
  *  3. Dispara split en PurchaseOrders (1 por supplier)
+ *  3b. Sincroniza con FacturaScripts (crea factura legal en MALAGA idempresa=2)
  *  4. NO llama autoPlaceMidoceanOrder (evita pedido real al proveedor)
  *  5. Manda email cliente con prefijo [TEST] + alerta Telegram al admin
  *
@@ -23,6 +25,7 @@ export const dynamic = "force-dynamic";
  *  - Validar todo el flow post-pago en producción sin cobrar
  *  - Probar plantillas de email reales con datos reales
  *  - Verificar que el split + drips + dashboard funcionan
+ *  - Validar la integración FacturaScripts end-to-end sin Stripe LIVE
  *
  * Idempotente: si el cart ya tiene Payment PAID, no crea otro.
  */
@@ -77,6 +80,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // 3) Split en PurchaseOrders
   const purchaseOrders = await createPurchaseOrdersFromCart(cart.id);
 
+  // 3b) Sincronizar con FacturaScripts (factura legal en facturas.startidea.tech,
+  // idempresa=2 STARTIDEA MALAGA SL). Permite validar el flow de facturación
+  // sin pasar por Stripe LIVE. Devolvemos el resultado en la respuesta JSON
+  // para que admin vea si se creó la factura, qué código, o qué error hubo.
+  // Si falla, NO rompe la simulación (igual que en el webhook real de Stripe).
+  const fsResult = await syncPaymentToFacturaScripts(payment.id).catch((err) => ({
+    ok: false as const,
+    error: err instanceof Error ? err.message : String(err),
+  }));
+
   // 4) Email cliente [TEST] (no manda pedido real a proveedor)
   const firstName = cart.name.split(" ")[0];
   const emailResult = await sendEmail({
@@ -129,7 +142,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       status: p.status,
       totalClientCents: p.totalClientCents,
     })),
+    facturascripts: fsResult,
     emailSent: emailResult.ok,
-    note: "NO se ha enviado pedido a MidOcean. NO se ha cobrado nada. Cart en ORDERED con Payment PAID fake.",
+    note: "NO se ha enviado pedido a MidOcean. NO se ha cobrado nada. Cart en ORDERED con Payment PAID fake. Factura sí se ha creado en FacturaScripts (revisar campo `facturascripts`).",
   });
 }
