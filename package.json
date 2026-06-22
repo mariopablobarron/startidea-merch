@@ -35,8 +35,8 @@
     "framer-motion": "^11.18.0",
     "jose": "^6.2.3",
     "lucide-react": "^0.469.0",
-    "marked": "^18.0.3",
-    "next": "15.5.18",
+    "marked": "^18.0.5",
+    "next": "15.5.19",
     "prisma": "^6.2.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -48,20 +48,20 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/typography": "^0.5.20",
     "@types/bcryptjs": "^3.0.0",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.6",
     "@types/react-dom": "^19.0.3",
     "@types/web-push": "^3.6.4",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.9",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.18.0",
     "eslint-config-next": "15.5.18",
-    "postcss": "^8.5.1",
+    "postcss": "^8.5.15",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.9"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
