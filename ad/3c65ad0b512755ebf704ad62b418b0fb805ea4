@@ -1,0 +1,40 @@
+src/components/EmailCapturePopup.tsx
+  s_65877aa637ec34::t_7c0cfb97c6c886 73
+  s_65877aa637ec34::t_e7ac0f63d9d3af 29-32
+  s_65877aa637ec34::t_1348ea3103ba31 144
+src/app/api/ruleta/ab/route.ts
+  s_65877aa637ec34::t_f72e83d0f3ebf5 1-23
+src/app/api/admin/ruleta/config/route.ts
+  s_65877aa637ec34::t_fd35d7d88e489d 1-81
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_9e7e0429fd5e02 78
+src/app/api/admin/ruleta/stats/route.ts
+  s_65877aa637ec34::t_92fe1055e8a890 1-56
+src/app/admin/marketing/ruleta/page.tsx
+  s_65877aa637ec34::t_5971d19202cc51 1-291
+src/components/EntryPopupAB.tsx
+  s_65877aa637ec34::t_37966b265f2747 1-82
+src/components/SpinWheelPopup.tsx
+  s_65877aa637ec34::t_e149cc964742c7 38-41
+  s_65877aa637ec34::t_db3405f82e0274 89
+  s_65877aa637ec34::t_2b0e23071ad97a 163
+src/app/layout.tsx
+  s_65877aa637ec34::t_dc0eaa0124c745 17
+  s_65877aa637ec34::t_9c4a2c7cfa7226 138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "ad3c65ad0b512755ebf704ad62b418b0fb805ea4",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
