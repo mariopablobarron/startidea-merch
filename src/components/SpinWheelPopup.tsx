@@ -294,15 +294,39 @@ export function SpinWheelPopup({
                     </code>
                   </div>
                 )}
-                <Link
-                  href="/catalogo"
-                  onClick={() => setOpen(false)}
-                  className="mt-4 inline-block w-full rounded-full bg-accent px-6 py-3 text-center text-sm font-semibold text-bone transition hover:bg-accent-dark"
-                >
-                  Usar mi premio →
-                </Link>
+                {result.code ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const code = result.code as string;
+                      try {
+                        localStorage.setItem("merch:pending-coupon", code);
+                      } catch {}
+                      let hasItems = false;
+                      try {
+                        hasItems = JSON.parse(localStorage.getItem("merch:cart") || "[]").length > 0;
+                      } catch {}
+                      window.location.href = hasItems
+                        ? `/carrito?cupon=${encodeURIComponent(code)}`
+                        : "/catalogo";
+                    }}
+                    className="mt-4 inline-block w-full rounded-full bg-accent px-6 py-3 text-center text-sm font-semibold text-bone transition hover:bg-accent-dark"
+                  >
+                    Usar mi premio →
+                  </button>
+                ) : (
+                  <Link
+                    href="/catalogo"
+                    onClick={() => setOpen(false)}
+                    className="mt-4 inline-block w-full rounded-full bg-accent px-6 py-3 text-center text-sm font-semibold text-bone transition hover:bg-accent-dark"
+                  >
+                    Ver catálogo →
+                  </Link>
+                )}
                 <p className="mt-2 text-center text-[10px] text-ink/40">
-                  Te lo enviamos también por email · caduca en 30 días
+                  {result.code
+                    ? "Se aplica solo en tu carrito · también te lo enviamos por email · caduca en 30 días"
+                    : "Te lo enviamos por email · revisa tu bandeja"}
                 </p>
               </div>
             )}

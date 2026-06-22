@@ -44,6 +44,41 @@ export function CartPage() {
     return () => window.removeEventListener("merch:cart-change", refresh);
   }, []);
 
+  // Cupón pendiente ganado en la ruleta: se autoaplica en cuanto el carrito
+  // tiene importe. Acepta ?cupon= en la URL o localStorage "merch:pending-coupon".
+  useEffect(() => {
+    if (couponDiscount) return;
+    const sub = cartTotalCents(items);
+    if (sub <= 0) return;
+    let code: string | null = null;
+    try {
+      code = new URLSearchParams(window.location.search).get("cupon");
+      if (!code) code = localStorage.getItem("merch:pending-coupon");
+    } catch {}
+    if (!code) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/coupons/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, totalCents: sub }),
+        });
+        const data = await res.json();
+        if (!cancelled && data.ok) {
+          setCouponCode(data.code);
+          setCouponDiscount({ code: data.code, label: data.label, discountCents: data.discountCents });
+          try {
+            localStorage.removeItem("merch:pending-coupon");
+          } catch {}
+        }
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [items, couponDiscount]);
+
   function updateQty(slug: string, techCode: string | null | undefined, qty: number) {
     const next = readCart().map((it) =>
       it.productSlug === slug && it.markingTechniqueCode === techCode
