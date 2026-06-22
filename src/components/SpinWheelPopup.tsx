@@ -35,7 +35,10 @@ const SEGMENTS: { id: string; deg: number }[] = [
 
 type Result = { label: string; code: string | null };
 
-export function SpinWheelPopup() {
+export function SpinWheelPopup({
+  onShow,
+  onConvert,
+}: { onShow?: () => void; onConvert?: () => void } = {}) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
@@ -83,6 +86,7 @@ export function SpinWheelPopup() {
       try {
         localStorage.setItem(STORAGE_KEY, "shown");
       } catch {}
+      onShow?.();
     }
 
     function hasScrolledEnough(): boolean {
@@ -156,6 +160,7 @@ export function SpinWheelPopup() {
         localStorage.setItem(STORAGE_KEY, "converted");
       } catch {}
       trackLead({ method: "ruleta" });
+      onConvert?.();
 
       window.setTimeout(() => {
         setResult({ label: data.prize?.label ?? "tu premio", code: data.code ?? null });

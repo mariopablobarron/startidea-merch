@@ -14,7 +14,7 @@ import { Analytics } from "@/components/Analytics";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { AdsPixels } from "@/components/AdsPixels";
 import { CookieBanner } from "@/components/CookieBanner";
-import { SpinWheelPopup } from "@/components/SpinWheelPopup";
+import { EntryPopupAB } from "@/components/EntryPopupAB";
 import { AttributionTracker } from "@/components/AttributionTracker";
 import { VoiceAgentGate } from "@/components/VoiceAgentGate";
 
@@ -135,7 +135,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AttributionTracker />
         <Analytics />
         <CookieBanner />
-        <SpinWheelPopup />
+        <EntryPopupAB />
         <VoiceAgentGate />
       </body>
     </html>

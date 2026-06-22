@@ -26,7 +26,10 @@ const MOBILE_AUTO_SHOW_MS = 60000;
 const MOBILE_MIN_SCROLL_PERCENT = 50;
 const COOKIE_CONSENT_KEY = "merch:cookie-consent:v1"; // no mostrar antes de que decidan cookies
 
-export function EmailCapturePopup() {
+export function EmailCapturePopup({
+  onShow,
+  onConvert,
+}: { onShow?: () => void; onConvert?: () => void } = {}) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -67,6 +70,7 @@ export function EmailCapturePopup() {
       try {
         localStorage.setItem(STORAGE_KEY, "shown");
       } catch {}
+      onShow?.();
     }
 
     function hasScrolledEnough(): boolean {
@@ -137,6 +141,7 @@ export function EmailCapturePopup() {
       } catch {}
       // Lead event a Meta/Google/LinkedIn
       trackLead({ method: "email-popup-welcome10" });
+      onConvert?.();
       setDone({ ok: true, coupon: data.couponCode || "WELCOME10" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de red");

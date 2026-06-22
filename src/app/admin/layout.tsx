@@ -75,6 +75,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                       title: "Audiencia",
                       items: [
                         { href: "/admin/marketing/newsletter", label: "Newsletter 📧", title: "Subscribers + import Excel/CSV + tags" },
+                        { href: "/admin/marketing/ruleta", label: "Ruleta de premios 🎡", title: "Editar premios + KPIs + A/B del popup de captación" },
                         { href: "/admin/marketing/broadcasts", label: "Broadcasts (email)", title: "Enviar boletines a tus listas" },
                         { href: "/admin/clientes", label: "CRM clientes", title: "Clientes con cuenta — LTV, segmentos, notas" },
                         { href: "/admin/marketing/outbound", label: "CRM outbound", title: "Pipeline manual de leads (LinkedIn, eventos)" },
