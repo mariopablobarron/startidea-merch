@@ -1,0 +1,21 @@
+src/components/SpinWheelPopup.tsx
+  s_65877aa637ec34::t_c9742f36529bc3 297-325,327-329
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_609cc4c12e8c30 47-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "dfff6c3de4b1db7d3a55208e572486cd6adaee7b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
