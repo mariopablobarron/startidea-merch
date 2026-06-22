@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Slug del experimento que decide qué popup de entrada se muestra. */
-export const ENTRY_POPUP_SLUG = "home.entry_popup";
+const ENTRY_POPUP_SLUG = "home.entry_popup";
 
 /**
  * GET — devuelve el id del experimento del popup de entrada si está activo,
