@@ -1,0 +1,20 @@
+src/app/api/ruleta/spin/route.ts
+  s_65877aa637ec34::t_c3b06c9d370bfc 75-79
+  s_65877aa637ec34::t_2e0f8d544a7c32 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "8a65d2e05bfd94eff3103b086c5930e1d655e9c7",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
