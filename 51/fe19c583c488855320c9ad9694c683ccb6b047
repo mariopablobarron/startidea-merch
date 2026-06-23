@@ -1,0 +1,22 @@
+src/app/api/admin/cotizar/route.ts
+  s_65877aa637ec34::t_971a36f378a201 138-139
+  s_65877aa637ec34::t_011b1effc5cb23 119
+  s_65877aa637ec34::t_52a3f601960216 6,18,20-26,33-35,38-44,61,66,87,115-118,120-137,141-145,167-209,226-230
+  s_65877aa637ec34::t_9bdd7aa237b530 88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "51fe19c583c488855320c9ad9694c683ccb6b047",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
