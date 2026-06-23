@@ -1,0 +1,25 @@
+src/app/api/admin/ruleta/draw/route.ts
+  s_65877aa637ec34::t_e2a407182a4082 1-145
+src/app/admin/marketing/ruleta/page.tsx
+  s_65877aa637ec34::t_be1b86c7a2afc6 66-69
+  s_65877aa637ec34::t_b6590bafb45c98 201-271
+  s_65877aa637ec34::t_185726e015be53 25-38
+  s_65877aa637ec34::t_0cd8da90b96cb4 52-55
+  s_65877aa637ec34::t_d3098f98d531f7 102-130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "b9affbf321aa07f856b58a63765d260b44e035d6",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
