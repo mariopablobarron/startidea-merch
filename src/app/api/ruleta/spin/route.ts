@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM } from "@/lib/resend";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   getRuletaPrizes,
   pickPrize,
@@ -71,6 +72,11 @@ function welcomeHtml(opts: {
 }
 
 export async function POST(req: Request) {
+  // Anti-abuso: cada giro puede crear un cupón real + mandar email. Limita por
+  // IP para que nadie scripte miles de emails distintos (coste + reputación).
+  const rl = rateLimit(req, { key: "ruleta-spin", max: 10, windowMs: 10 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   let body: unknown;
   try {
     body = await req.json();
