@@ -1,0 +1,26 @@
+src/lib/ruleta.ts
+  s_65877aa637ec34::t_69538fd999790b 112
+  s_65877aa637ec34::t_7f6999bab52b60 100-101
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_041993115e2b0a 74-82
+src/app/api/ruleta/spin/route.ts
+  s_65877aa637ec34::t_1455883623f805 175-205
+  s_65877aa637ec34::t_66e4c34726c52a 93-103
+  s_65877aa637ec34::t_02ceecf9090a5b 217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "4b7d0b9ba32c484cb921cfa9c07654795a7541db",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
