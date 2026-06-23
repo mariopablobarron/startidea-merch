@@ -90,6 +90,17 @@ export async function POST(req: Request) {
   const email = parsed.data.email.trim().toLowerCase();
   const name = parsed.data.name?.trim() || undefined;
 
+  // Anti-carrera: corta peticiones casi-simultáneas del MISMO email. El limiter
+  // es síncrono en memoria → la 2ª request concurrente se rechaza, evitando
+  // crear dos cupones a la vez. Ventana corta para no estorbar al dedup.
+  const rlEmail = rateLimit(req, {
+    key: "ruleta-spin-email",
+    max: 1,
+    windowMs: 30_000,
+    identifier: email,
+  });
+  if (!rlEmail.ok) return rlEmail.response;
+
   // ── Dedup: si este email ya tiró, devolvemos SU premio (no re-giramos) ──
   const existing = await prisma.newsletterSubscriber.findUnique({ where: { email } });
   const existingMeta = (existing?.meta as { ruleta?: RuletaMeta } | null) ?? null;
@@ -161,26 +172,37 @@ export async function POST(req: Request) {
     new Set([...(existing?.tags ?? []), "ruleta", `ruleta:${prize.id}`]),
   );
 
-  const sub = await prisma.newsletterSubscriber.upsert({
-    where: { email },
-    create: {
-      email,
-      name,
-      source: "ruleta",
-      tags: newTags,
-      meta: mergedMeta,
-      // si está suprimido al crear, lo dejamos como dado de baja
-      unsubscribedAt: isSuppressed ? now : null,
-    },
-    update: {
-      name: name ?? undefined,
-      source: existing?.source ?? "ruleta",
-      tags: newTags,
-      meta: mergedMeta,
-      // solo reactivamos a quien NO está suprimido
-      ...(isSuppressed ? {} : { unsubscribedAt: null }),
-    },
-  });
+  let sub: Awaited<ReturnType<typeof prisma.newsletterSubscriber.upsert>>;
+  try {
+    sub = await prisma.newsletterSubscriber.upsert({
+      where: { email },
+      create: {
+        email,
+        name,
+        source: "ruleta",
+        tags: newTags,
+        meta: mergedMeta,
+        // si está suprimido al crear, lo dejamos como dado de baja
+        unsubscribedAt: isSuppressed ? now : null,
+      },
+      update: {
+        name: name ?? undefined,
+        source: existing?.source ?? "ruleta",
+        tags: newTags,
+        meta: mergedMeta,
+        // solo reactivamos a quien NO está suprimido
+        ...(isSuppressed ? {} : { unsubscribedAt: null }),
+      },
+    });
+  } catch (e) {
+    // Compensación: si ya habíamos creado el cupón, bórralo para no dejar un
+    // cupón huérfano usable que el dedup no vería en un reintento.
+    if (code) {
+      await prisma.coupon.delete({ where: { code } }).catch(() => {});
+    }
+    console.error("[ruleta] upsert subscriber falló", e);
+    return NextResponse.json({ error: "No se pudo registrar, reinténtalo" }, { status: 500 });
+  }
 
   // ── Email transaccional de bienvenida (mejor entrega que el marketing) ──
   if (resend && !isSuppressed) {
@@ -192,7 +214,7 @@ export async function POST(req: Request) {
         subject: `Tu premio de la ruleta: ${prize.label}`,
         html: welcomeHtml({ name, prize, code, unsubUrl }),
       })
-      .catch(() => {});
+      .catch((err) => console.error("[ruleta] envío de email falló", err));
   }
 
   return NextResponse.json({

@@ -97,7 +97,8 @@ export async function getRuletaPrizes(): Promise<RuletaPrize[]> {
     const row = await prisma.adminSetting.findUnique({ where: { key: "ruleta_config" } });
     const val = row?.value as { prizes?: RuletaPrize[] } | null;
     if (val && Array.isArray(val.prizes) && val.prizes.length > 0) {
-      return val.prizes.filter((p) => p && p.id && (p.weight ?? 0) > 0);
+      const filtered = val.prizes.filter((p) => p && p.id && (p.weight ?? 0) > 0);
+      if (filtered.length > 0) return filtered;
     }
   } catch {
     // sin config → defaults
@@ -108,7 +109,7 @@ export async function getRuletaPrizes(): Promise<RuletaPrize[]> {
 /** Elige un premio por peso. Usa Math.random salvo que se pase un seed. */
 export function pickPrize(prizes: RuletaPrize[], seed?: number): RuletaPrize {
   const pool = prizes.filter((p) => (p.weight ?? 0) > 0);
-  if (pool.length === 0) return prizes[0];
+  if (pool.length === 0) return prizes[0] ?? DEFAULT_RULETA_PRIZES[0];
   const total = pool.reduce((s, p) => s + p.weight, 0);
   let r = seed != null ? seed % total : Math.floor(Math.random() * total);
   for (const p of pool) {

@@ -71,6 +71,15 @@ export function CartPage() {
           try {
             localStorage.removeItem("merch:pending-coupon");
           } catch {}
+        } else if (!cancelled && data && data.ok === false) {
+          // Inválido permanente (no existe/caducado/sin usos): deja de reintentar.
+          // Si es por pedido mínimo, lo conservamos para cuando el carrito suba.
+          const transient = typeof data.reason === "string" && data.reason.startsWith("Mínimo");
+          if (!transient) {
+            try {
+              localStorage.removeItem("merch:pending-coupon");
+            } catch {}
+          }
         }
       } catch {}
     })();
