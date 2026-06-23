@@ -4,9 +4,11 @@
  * /admin/cotizar — Cotización rápida (todos los proveedores).
  *
  * La admin teclea una referencia (la nuestra STM-XXX/slug o la del proveedor
- * MO-XXX/Makito/Cifra) + cantidad → ve NUESTRO COSTE y el PVP con margen + IVA,
- * elige técnica de marcaje y genera un presupuesto imprimible para el cliente
- * (que NUNCA muestra proveedor ni coste).
+ * MO-XXX/Makito/Cifra) + cantidad → ve NUESTRO COSTE (producto + marcaje +
+ * PORTES del proveedor) y el PVP con margen + IVA, elige técnica de marcaje y
+ * genera un presupuesto imprimible para el cliente (que NUNCA muestra proveedor
+ * ni coste). Si el cliente trae un CÓDIGO DE DESCUENTO de envío gratis, el envío
+ * sale a 0 en su presupuesto.
  */
 
 import { useState } from "react";
@@ -30,17 +32,32 @@ type Result = {
     hasRealPricing: boolean;
   };
   qty: number;
+  portesCents: number;
   techniques?: Technique[];
-  marking?: { techniqueCode: string; techniqueLabel: string; setupCents: number; totalMarkingCents: number };
-  coste: { productoTotal: number; marcajeTotal: number; total: number };
+  marking?: { techniqueCode: string; techniqueLabel: string; setupCents: number; totalMarkingCents: number; warning?: string };
+  coste: { productoTotal: number; marcajeTotal: number; portesTotal: number; total: number };
   margenEfectivoPct: number;
-  pvp: { productoTotal: number; marcajeTotal: number; baseTotal: number; unit: number; ivaCents: number; totalConIva: number };
+  cupon: { code: string; label: string; tipo: string; discountCents?: number } | null;
+  cuponError: string | null;
+  envioGratis: boolean;
+  pvp: {
+    productoTotal: number;
+    marcajeTotal: number;
+    envioTotal: number;
+    descuentoCents: number;
+    baseTotal: number;
+    unit: number;
+    ivaCents: number;
+    totalConIva: number;
+  };
 };
 
 export default function CotizarPage() {
   const [ref, setRef] = useState("");
   const [qty, setQty] = useState("250");
   const [marginPct, setMarginPct] = useState("60");
+  const [portes, setPortes] = useState("8"); // portes del proveedor (coste), en €
+  const [couponCode, setCouponCode] = useState("");
   const [res, setRes] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +73,7 @@ export default function CotizarPage() {
     setError(null);
     if (!techniqueCode) setRes(null);
     try {
+      const portesCents = Math.max(0, Math.round((parseFloat(portes.replace(",", ".")) || 0) * 100));
       const r = await fetch("/api/admin/cotizar", {
         method: "POST",
         credentials: "include",
@@ -65,6 +83,8 @@ export default function CotizarPage() {
           qty: parseInt(qty, 10) || 1,
           marginPct: marginPct ? Number(marginPct) : undefined,
           techniqueCode,
+          portesCents,
+          couponCode: couponCode.trim() || undefined,
         }),
       });
       const d = await r.json();
@@ -82,6 +102,9 @@ export default function CotizarPage() {
     }
   }
 
+  const pvpGoods = res ? res.pvp.productoTotal + res.pvp.marcajeTotal : 0;
+  const showEnvioLine = res ? res.envioGratis || res.pvp.envioTotal > 0 || res.coste.portesTotal > 0 : false;
+
   return (
     <main className="min-h-screen bg-bone-soft p-6 lg:p-8">
       <style>{`@media print { body * { visibility: hidden !important; } #presupuesto, #presupuesto * { visibility: visible !important; } #presupuesto { position: absolute; left: 0; top: 0; width: 100%; } }`}</style>
@@ -92,12 +115,13 @@ export default function CotizarPage() {
           <p className="mt-2 max-w-2xl text-sm text-ink/65">
             Teclea la referencia (la nuestra <code className="font-mono">STM-…</code> o la del proveedor),
             cantidad y técnica → coste, PVP con margen e IVA, y genera el presupuesto para el cliente.
+            Los <strong>portes del proveedor</strong> entran en el coste para que el margen sea real.
           </p>
         </header>
 
         {/* Buscador */}
         <section className="rounded-3xl border border-line bg-bone p-5">
-          <div className="grid gap-3 sm:grid-cols-[2fr,1fr,1fr,auto]">
+          <div className="grid gap-3 sm:grid-cols-[2fr,1fr,auto]">
             <div>
               <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">Referencia</label>
               <input
@@ -119,6 +143,18 @@ export default function CotizarPage() {
                 onKeyDown={(e) => e.key === "Enter" && cotizar()}
               />
             </div>
+            <div className="flex items-end">
+              <button
+                onClick={() => cotizar()}
+                disabled={loading || !ref.trim()}
+                className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-40"
+              >
+                {loading ? "…" : "Buscar"}
+              </button>
+            </div>
+          </div>
+          {/* fila 2: margen, portes (coste), código de descuento */}
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div>
               <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">Margen %</label>
               <input
@@ -130,16 +166,33 @@ export default function CotizarPage() {
                 onKeyDown={(e) => e.key === "Enter" && cotizar()}
               />
             </div>
-            <div className="flex items-end">
-              <button
-                onClick={() => cotizar()}
-                disabled={loading || !ref.trim()}
-                className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-40"
-              >
-                {loading ? "…" : "Buscar"}
-              </button>
+            <div>
+              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">Portes proveedor (coste €)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={portes}
+                onChange={(e) => setPortes(e.target.value)}
+                placeholder="8"
+                className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-right font-mono text-sm outline-none focus:border-accent"
+                onKeyDown={(e) => e.key === "Enter" && cotizar()}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">Código descuento (opcional)</label>
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                placeholder="ENVÍO GRATIS / % dto."
+                className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm uppercase outline-none focus:border-accent"
+                onKeyDown={(e) => e.key === "Enter" && cotizar()}
+              />
             </div>
           </div>
+          <p className="mt-2 text-[11px] text-ink/45">
+            Los portes son el <strong>coste</strong> que te cobra el proveedor (p. ej. MidOcean ~8&nbsp;€ península). Se suman al coste y el margen se calcula sobre el total. Un código de <strong>envío gratis</strong> deja el envío a 0 para el cliente.
+          </p>
           {error && <p className="mt-3 rounded-xl bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}
         </section>
 
@@ -196,21 +249,42 @@ export default function CotizarPage() {
                   <tbody className="divide-y divide-line">
                     <tr><td className="py-1.5 text-ink/70">Producto</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(res.coste.productoTotal / 100)}</td></tr>
                     <tr><td className="py-1.5 text-ink/70">Marcaje{res.marking?.setupCents ? " (incl. setup)" : ""}</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(res.coste.marcajeTotal / 100)}</td></tr>
+                    <tr><td className="py-1.5 text-ink/70">Portes proveedor</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(res.coste.portesTotal / 100)}</td></tr>
                     <tr className="border-t-2 border-ink/20"><td className="pt-2 font-semibold text-ink">Coste total</td><td className="pt-2 text-right font-mono font-semibold tabular-nums">{EUR.format(res.coste.total / 100)}</td></tr>
                   </tbody>
                 </table>
-                <p className="mt-2 text-[11px] text-ink/55">Margen efectivo: <strong className="text-social">{res.margenEfectivoPct}%</strong></p>
+                <p className="mt-2 text-[11px] text-ink/55">Margen efectivo: <strong className="text-social">{res.margenEfectivoPct}%</strong>{res.envioGratis && " · envío regalado al cliente"}</p>
               </div>
               <div className="rounded-3xl border-2 border-accent bg-bone p-5">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-accent">PVP cliente</p>
                 <table className="mt-3 w-full text-sm">
                   <tbody className="divide-y divide-line">
+                    <tr><td className="py-1.5 text-ink/70">Producto + marcaje</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(pvpGoods / 100)}</td></tr>
+                    {showEnvioLine && (
+                      <tr>
+                        <td className="py-1.5 text-ink/70">Envío</td>
+                        <td className="py-1.5 text-right font-mono tabular-nums">
+                          {res.envioGratis ? <span className="font-semibold text-social">GRATIS</span> : EUR.format(res.pvp.envioTotal / 100)}
+                        </td>
+                      </tr>
+                    )}
+                    {res.cupon?.tipo === "descuento" && res.pvp.descuentoCents > 0 && (
+                      <tr><td className="py-1.5 text-social">Descuento ({res.cupon.code})</td><td className="py-1.5 text-right font-mono tabular-nums text-social">−{EUR.format(res.pvp.descuentoCents / 100)}</td></tr>
+                    )}
                     <tr><td className="py-1.5 text-ink/70">Base (sin IVA)</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(res.pvp.baseTotal / 100)}</td></tr>
                     <tr><td className="py-1.5 text-ink/70">IVA 21%</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(res.pvp.ivaCents / 100)}</td></tr>
                     <tr className="border-t-2 border-accent/40"><td className="pt-2 font-semibold text-ink">Total con IVA</td><td className="pt-2 text-right font-display text-lg font-semibold tabular-nums text-accent">{EUR.format(res.pvp.totalConIva / 100)}</td></tr>
                     <tr><td className="py-1 text-[11px] text-ink/55">Unitario (sin IVA)</td><td className="py-1 text-right font-mono text-[11px] text-ink/60">{EUR.format(res.pvp.unit / 100)}/u</td></tr>
                   </tbody>
                 </table>
+                {res.cupon && (
+                  <p className="mt-2 rounded-lg bg-social/10 px-3 py-1.5 text-[11px] text-social">
+                    ✓ Cupón <strong>{res.cupon.code}</strong> — {res.cupon.tipo === "envio_gratis" ? "envío gratis" : res.cupon.label}
+                  </p>
+                )}
+                {res.cuponError && (
+                  <p className="mt-2 rounded-lg bg-accent-wash px-3 py-1.5 text-[11px] text-accent-deep">⚠ Cupón: {res.cuponError}</p>
+                )}
                 <button
                   onClick={() => setShowDoc(true)}
                   className="mt-4 w-full rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-bone transition hover:bg-accent"
@@ -262,8 +336,24 @@ export default function CotizarPage() {
                           {res.marking && <div className="text-xs text-ink/60">Personalización: {res.marking.techniqueLabel}</div>}
                         </td>
                         <td className="py-2 text-right tabular-nums">{res.qty} uds</td>
-                        <td className="py-2 text-right font-mono tabular-nums">{EUR.format(res.pvp.baseTotal / 100)}</td>
+                        <td className="py-2 text-right font-mono tabular-nums">{EUR.format(pvpGoods / 100)}</td>
                       </tr>
+                      {showEnvioLine && (
+                        <tr className="border-b border-line">
+                          <td className="py-2">Envío</td>
+                          <td className="py-2 text-right tabular-nums"></td>
+                          <td className="py-2 text-right font-mono tabular-nums">
+                            {res.envioGratis ? "GRATIS" : EUR.format(res.pvp.envioTotal / 100)}
+                          </td>
+                        </tr>
+                      )}
+                      {res.cupon?.tipo === "descuento" && res.pvp.descuentoCents > 0 && (
+                        <tr className="border-b border-line">
+                          <td className="py-2">Descuento ({res.cupon.code})</td>
+                          <td className="py-2 text-right tabular-nums"></td>
+                          <td className="py-2 text-right font-mono tabular-nums">−{EUR.format(res.pvp.descuentoCents / 100)}</td>
+                        </tr>
+                      )}
                     </tbody>
                     <tfoot>
                       <tr><td colSpan={2} className="py-1 text-right text-ink/70">Base imponible</td><td className="py-1 text-right font-mono tabular-nums">{EUR.format(res.pvp.baseTotal / 100)}</td></tr>

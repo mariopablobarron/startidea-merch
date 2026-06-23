@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { getAvailableMarkingRules, quoteMarkingForRule } from "@/lib/supplier-marking-rules";
 import { calculateMarkingCost } from "@/lib/marking-cost";
+import { validateCoupon } from "@/lib/coupons";
 import { applyMargin } from "@/lib/pricing";
 import { withIva, ivaPart } from "@/lib/iva";
 
@@ -13,17 +14,20 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/admin/cotizar
  *
- * Cotizador rápido para administración: busca un producto por CUALQUIER
- * referencia (la nuestra internalRef/slug O la del proveedor supplierRef) y
- * devuelve NUESTRO COSTE y el PVP con margen + IVA.
+ * Cotizador rápido admin: busca un producto por CUALQUIER referencia (la nuestra
+ * internalRef/slug O la del proveedor supplierRef) y devuelve NUESTRO COSTE y el
+ * PVP con margen + IVA.
  *
- * Marcaje según proveedor:
- *   - MidOcean → técnicas vía MarkingPosition del producto + coste vía
- *     calculateMarkingCost (MarkingPriceScale).
- *   - Resto (Cifra/Makito/Adivin) → SupplierMarkingRule
- *     (getAvailableMarkingRules / quoteMarkingForRule).
+ *   coste = producto (PriceTier) + marcaje + PORTES (coste proveedor, editable)
+ *   PVP   = coste × margen (×1,6 o marginPct) → el margen incluye los portes
+ *   cupón = si se pasa couponCode, se valida; si es de ENVÍO GRATIS, el envío
+ *           sale a 0 al cliente; si es % / fijo, se descuenta del total.
  *
- * Body: { ref, qty, techniqueCode?, marginPct?, numberOfColours?, printAreaCm2?, manipulationCode? }
+ * Marcaje: MidOcean vía MarkingPosition + calculateMarkingCost; resto vía
+ * SupplierMarkingRule.
+ *
+ * Body: { ref, qty, techniqueCode?, marginPct?, numberOfColours?, printAreaCm2?,
+ *         manipulationCode?, portesCents?, couponCode? }
  */
 const Schema = z.object({
   ref: z.string().min(1).max(120),
@@ -33,6 +37,8 @@ const Schema = z.object({
   numberOfColours: z.number().int().min(1).max(12).optional(),
   printAreaCm2: z.number().min(0).max(100_000).optional(),
   manipulationCode: z.string().min(1).max(2).optional(),
+  portesCents: z.number().int().min(0).max(1_000_000).optional(),
+  couponCode: z.string().min(1).max(40).optional(),
 });
 
 type TechniqueOpt = {
@@ -59,9 +65,10 @@ export async function POST(req: Request) {
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const { qty, techniqueCode, marginPct, numberOfColours, printAreaCm2, manipulationCode } = parsed.data;
+  const portesCents = parsed.data.portesCents ?? 0;
+  const couponCode = parsed.data.couponCode?.trim();
   const ref = parsed.data.ref.trim();
 
-  // Buscar por cualquier referencia (nuestra o del proveedor)
   const product = await prisma.product.findFirst({
     where: { active: true, OR: [{ internalRef: ref }, { supplierRef: ref }, { slug: ref }] },
     select: {
@@ -84,36 +91,39 @@ export async function POST(req: Request) {
       { status: 404 },
     );
   }
-  const isMidocean = product.supplier === "midocean";
-  const prod = product; // narrowing no-nulo estable para usar dentro del closure listTechniques
+  const prod = product; // narrowing no-nulo estable
+  const isMidocean = prod.supplier === "midocean";
 
-  // Coste NETO del producto al tramo de cantidad (mayor minQty <= qty)
+  // Coste NETO del producto al tramo de cantidad
   const tiers = await prisma.priceTier.findMany({
-    where: { variant: { productId: product.id } },
+    where: { variant: { productId: prod.id } },
     orderBy: { minQty: "desc" },
     distinct: ["minQty"],
     select: { minQty: true, unitPriceCents: true },
   });
   const tier = tiers.find((t) => qty >= t.minQty) || tiers[tiers.length - 1] || null;
-  const netUnitCents = tier?.unitPriceCents || product.fromPriceCents || 0;
-  const hasRealPricing = tiers.length > 0;
+  const netUnitCents = tier?.unitPriceCents || prod.fromPriceCents || 0;
 
   const productOut = {
-    name: product.name,
-    brand: product.brand,
-    publicRef: product.internalRef || product.slug,
-    internalRef: product.internalRef,
-    slug: product.slug,
-    supplier: product.supplier,
-    supplierRef: product.supplierRef,
-    imageUrl: product.primaryImageUrl,
-    markingTechniqueHint: product.markingTechniqueHint,
-    markingSizeHint: product.markingSizeHint,
-    hasRealPricing,
+    name: prod.name,
+    brand: prod.brand,
+    publicRef: prod.internalRef || prod.slug,
+    internalRef: prod.internalRef,
+    slug: prod.slug,
+    supplier: prod.supplier,
+    supplierRef: prod.supplierRef,
+    imageUrl: prod.primaryImageUrl,
+    markingTechniqueHint: prod.markingTechniqueHint,
+    markingSizeHint: prod.markingSizeHint,
+    hasRealPricing: tiers.length > 0,
   };
 
-  /** Técnicas de marcaje disponibles para este producto. */
-  async function listTechniques(): Promise<TechniqueOpt[]> {
+  // ── Marcaje ──
+  let techniques: TechniqueOpt[] | null = null;
+  let marking: { techniqueCode: string; techniqueLabel: string; setupCents: number; totalMarkingCents: number; warning?: string } | null = null;
+  let costeMarcajeTotal = 0;
+
+  if (!techniqueCode) {
     if (isMidocean) {
       const positions = await prisma.markingPosition.findMany({
         where: { productId: prod.id },
@@ -132,45 +142,14 @@ export async function POST(req: Request) {
           }
         }
       }
-      return Array.from(byCode.values());
+      techniques = Array.from(byCode.values());
+    } else {
+      techniques = await getAvailableMarkingRules({
+        supplier: prod.supplier,
+        markingTechniqueHint: prod.markingTechniqueHint,
+      });
     }
-    return getAvailableMarkingRules({
-      supplier: prod.supplier,
-      markingTechniqueHint: prod.markingTechniqueHint,
-    });
-  }
-
-  // ── Sin técnica → técnicas disponibles + precio sin marcaje ──
-  if (!techniqueCode) {
-    const techniques = await listTechniques();
-    const costeTotal = netUnitCents * qty;
-    const pvpUnit = pvp(netUnitCents, marginPct);
-    const pvpTotal = pvpUnit * qty;
-    return NextResponse.json({
-      ok: true,
-      product: productOut,
-      qty,
-      techniques,
-      coste: { productoTotal: costeTotal, marcajeTotal: 0, total: costeTotal },
-      margenEfectivoPct: costeTotal > 0 ? Math.round(((pvpTotal - costeTotal) / costeTotal) * 100) : 0,
-      pvp: {
-        productoTotal: pvpTotal,
-        marcajeTotal: 0,
-        baseTotal: pvpTotal,
-        unit: pvpUnit,
-        ivaCents: ivaPart(pvpTotal),
-        totalConIva: withIva(pvpTotal),
-      },
-    });
-  }
-
-  // ── Con técnica → cotización completa (producto + marcaje) ──
-  let costeMarcajeTotal = 0;
-  let markingLabel = techniqueCode.toUpperCase();
-  let markingSetup = 0;
-  let markingWarning: string | undefined;
-
-  if (isMidocean) {
+  } else if (isMidocean) {
     let mc;
     try {
       mc = await calculateMarkingCost({
@@ -181,63 +160,85 @@ export async function POST(req: Request) {
         manipulationCode,
       });
     } catch {
-      return NextResponse.json(
-        { error: `Técnica "${techniqueCode}" no válida para este producto.` },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: `Técnica "${techniqueCode}" no válida para este producto.` }, { status: 404 });
     }
     costeMarcajeTotal = mc.totalCostCents;
-    markingLabel = mc.techniqueName;
-    markingSetup = mc.setupCents;
-    markingWarning = mc.warning;
+    marking = { techniqueCode: techniqueCode.toUpperCase(), techniqueLabel: mc.techniqueName, setupCents: mc.setupCents, totalMarkingCents: mc.totalCostCents, warning: mc.warning };
   } else {
-    const marking = await quoteMarkingForRule({
-      supplier: product.supplier,
+    const m = await quoteMarkingForRule({
+      supplier: prod.supplier,
       techniqueCode: techniqueCode.toUpperCase(),
-      productId: product.id,
+      productId: prod.id,
       productUnitPriceCents: netUnitCents,
       qty,
     });
-    if (!marking) {
-      return NextResponse.json(
-        { error: `Sin regla de marcaje para "${techniqueCode}". Configúrala o pide coste al proveedor.` },
-        { status: 404 },
-      );
+    if (!m) {
+      return NextResponse.json({ error: `Sin regla de marcaje para "${techniqueCode}". Configúrala o pide coste al proveedor.` }, { status: 404 });
     }
-    costeMarcajeTotal = marking.totalMarkingCents;
-    markingLabel = marking.techniqueLabel;
-    markingSetup = marking.setupCents;
+    costeMarcajeTotal = m.totalMarkingCents;
+    marking = { techniqueCode: techniqueCode.toUpperCase(), techniqueLabel: m.techniqueLabel, setupCents: m.setupCents, totalMarkingCents: m.totalMarkingCents };
   }
 
-  // COSTE (lo nuestro)
+  // ── Coste total (incl. PORTES) + PVP con margen sobre todo ──
   const costeProductoTotal = netUnitCents * qty;
-  const costeTotal = costeProductoTotal + costeMarcajeTotal;
+  const costeTotal = costeProductoTotal + costeMarcajeTotal + portesCents;
 
-  // PVP (cliente): margen sobre producto y sobre marcaje
   const pvpProductoTotal = pvp(netUnitCents, marginPct) * qty;
   const pvpMarcajeTotal = pvp(costeMarcajeTotal, marginPct);
-  const pvpTotal = pvpProductoTotal + pvpMarcajeTotal;
+  const pvpEnvio = pvp(portesCents, marginPct);
+  const pvpAntes = pvpProductoTotal + pvpMarcajeTotal + pvpEnvio;
+
+  // ── Cupón / envío gratis ──
+  let descuentoCents = 0;
+  let envioGratis = false;
+  let cupon: { code: string; label: string; tipo: string; discountCents?: number } | null = null;
+  let cuponError: string | null = null;
+  if (couponCode) {
+    const v = await validateCoupon(couponCode, pvpAntes);
+    if (!v.ok) {
+      cuponError = v.reason;
+    } else {
+      const c = v.coupon;
+      const code = c.code.toUpperCase();
+      const freeShip = code.startsWith("RUL-ENVIO") || code === "ENVIOGRATIS" || /env[íi]o\s*gratis/i.test(c.label);
+      if (freeShip) {
+        envioGratis = true;
+        descuentoCents = pvpEnvio; // el cliente no paga el envío
+        cupon = { code: c.code, label: c.label, tipo: "envio_gratis" };
+      } else {
+        descuentoCents = v.discountCents;
+        cupon = { code: c.code, label: c.label, tipo: "descuento", discountCents: v.discountCents };
+      }
+    }
+  }
+  const pvpBase = Math.max(0, pvpAntes - descuentoCents);
 
   return NextResponse.json({
     ok: true,
     product: productOut,
     qty,
-    marking: {
-      techniqueCode: techniqueCode.toUpperCase(),
-      techniqueLabel: markingLabel,
-      setupCents: markingSetup,
-      totalMarkingCents: costeMarcajeTotal,
-      warning: markingWarning,
+    portesCents,
+    ...(techniques ? { techniques } : {}),
+    ...(marking ? { marking } : {}),
+    coste: {
+      productoTotal: costeProductoTotal,
+      marcajeTotal: costeMarcajeTotal,
+      portesTotal: portesCents,
+      total: costeTotal,
     },
-    coste: { productoTotal: costeProductoTotal, marcajeTotal: costeMarcajeTotal, total: costeTotal },
-    margenEfectivoPct: costeTotal > 0 ? Math.round(((pvpTotal - costeTotal) / costeTotal) * 100) : 0,
+    margenEfectivoPct: costeTotal > 0 ? Math.round(((pvpBase - costeTotal) / costeTotal) * 100) : 0,
+    cupon,
+    cuponError,
+    envioGratis,
     pvp: {
       productoTotal: pvpProductoTotal,
       marcajeTotal: pvpMarcajeTotal,
-      baseTotal: pvpTotal,
-      unit: Math.round(pvpTotal / qty),
-      ivaCents: ivaPart(pvpTotal),
-      totalConIva: withIva(pvpTotal),
+      envioTotal: envioGratis ? 0 : pvpEnvio,
+      descuentoCents,
+      baseTotal: pvpBase,
+      unit: Math.round(pvpBase / qty),
+      ivaCents: ivaPart(pvpBase),
+      totalConIva: withIva(pvpBase),
     },
   });
 }
