@@ -269,6 +269,14 @@ export function ProductOrderForm({
   // Feedback "añadido al carrito"
   const [addedAt, setAddedAt] = useState<number | null>(null);
 
+  // Solicitud de presupuesto formal por email (crea un BORRADOR de propuesta
+  // que el admin revisa y envía con 1 clic). Vía pública desde la ficha.
+  const [showQuoteReq, setShowQuoteReq] = useState(false);
+  const [qrEmail, setQrEmail] = useState("");
+  const [qrName, setQrName] = useState("");
+  const [qrState, setQrState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [qrError, setQrError] = useState<string | null>(null);
+
   // Mobile sticky CTA: visible cuando los botones primarios salen de viewport.
   // La ficha de producto en mobile tiene ~7.500 px de scroll y obliga a Marina
   // a hacer scroll-up para encontrar "Añadir al pedido". El sticky resuelve
@@ -382,6 +390,42 @@ export function ProductOrderForm({
       sessionStorage.setItem("merch:prefill-qty", String(finalQty));
     } catch {}
     window.location.href = "/#cotizar";
+  }
+
+  async function submitQuoteRequest() {
+    if (!qrEmail.trim()) return;
+    setQrState("sending");
+    setQrError(null);
+    try {
+      const res = await fetch("/api/quote-request-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: productSlug,
+          qty: finalQty,
+          email: qrEmail.trim(),
+          name: qrName.trim() || undefined,
+          ...(withMarking && technique
+            ? {
+                techniqueCode: technique.techniqueCode,
+                numberOfColours: Math.min(colours, maxColors),
+                printAreaCm2,
+                manipulationCode: manipulation,
+              }
+            : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        setQrError(data.error || "No se pudo enviar. Inténtalo de nuevo.");
+        setQrState("error");
+        return;
+      }
+      setQrState("sent");
+    } catch {
+      setQrError("Error de red");
+      setQrState("error");
+    }
   }
 
   return (
@@ -724,6 +768,68 @@ export function ProductOrderForm({
         >
           {recentlyAdded ? "✓ Añadido al pedido" : "+ Añadir al pedido"}
         </button>
+
+        {/* Solicitar presupuesto formal por email (lo revisamos y enviamos) */}
+        {qrState === "sent" ? (
+          <div className="rounded-2xl border border-social/40 bg-social/10 p-4 text-sm">
+            <p className="font-semibold text-social">✓ Solicitud enviada</p>
+            <p className="mt-0.5 text-[13px] text-ink/70">
+              Te preparamos el presupuesto cerrado y te lo enviamos por email en menos de 24&nbsp;h laborables.
+            </p>
+          </div>
+        ) : !showQuoteReq ? (
+          <button
+            type="button"
+            onClick={() => setShowQuoteReq(true)}
+            className="w-full rounded-full border border-line bg-bone-soft px-6 py-3 text-sm font-medium text-ink transition hover:border-accent"
+          >
+            ✉️ Solicitar presupuesto por email
+          </button>
+        ) : (
+          <div className="rounded-2xl border border-accent/30 bg-accent-wash/40 p-4">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-accent-deep">
+              Te enviamos el presupuesto
+            </p>
+            <p className="mt-0.5 text-[12px] text-ink/60">
+              Para {finalQty.toLocaleString("es-ES")} uds
+              {withMarking && technique ? ` · ${technique.techniqueName}` : ""}. Lo revisamos y te lo
+              enviamos cerrado.
+            </p>
+            <div className="mt-3 grid gap-2">
+              <input
+                type="email"
+                value={qrEmail}
+                onChange={(e) => setQrEmail(e.target.value)}
+                placeholder="Tu email *"
+                className="w-full rounded-lg border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+              <input
+                value={qrName}
+                onChange={(e) => setQrName(e.target.value)}
+                placeholder="Nombre / empresa (opcional)"
+                className="w-full rounded-lg border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+              {qrError && <p className="text-[12px] text-accent-deep">⚠ {qrError}</p>}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={submitQuoteRequest}
+                  disabled={qrState === "sending" || !qrEmail.trim()}
+                  className="flex-1 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow transition hover:bg-accent-dark disabled:opacity-40"
+                >
+                  {qrState === "sending" ? "Enviando…" : "Enviar solicitud"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowQuoteReq(false)}
+                  className="rounded-full border border-line px-4 py-2.5 text-sm text-ink/60 hover:border-ink/30"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sticky CTA mobile — solo visible cuando los botones principales
