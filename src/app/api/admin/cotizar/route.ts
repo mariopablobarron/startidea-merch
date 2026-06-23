@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { getAvailableMarkingRules, quoteMarkingForRule } from "@/lib/supplier-marking-rules";
+import { calculateMarkingCost } from "@/lib/marking-cost";
 import { applyMargin } from "@/lib/pricing";
 import { withIva, ivaPart } from "@/lib/iva";
 
@@ -14,20 +15,32 @@ export const dynamic = "force-dynamic";
  *
  * Cotizador rápido para administración: busca un producto por CUALQUIER
  * referencia (la nuestra internalRef/slug O la del proveedor supplierRef) y
- * devuelve NUESTRO COSTE y el PVP con margen + IVA. Marcaje vía la librería
- * unificada (agnóstica de proveedor).
+ * devuelve NUESTRO COSTE y el PVP con margen + IVA.
  *
- * Body: { ref, qty, techniqueCode?, marginPct? }
- *   - sin techniqueCode → lista técnicas disponibles + precio sin marcaje.
- *   - con techniqueCode → cotización completa (producto + marcaje).
- *   - marginPct opcional → override del margen (60 = ×1,6). Por defecto ×1,6 global.
+ * Marcaje según proveedor:
+ *   - MidOcean → técnicas vía MarkingPosition del producto + coste vía
+ *     calculateMarkingCost (MarkingPriceScale).
+ *   - Resto (Cifra/Makito/Adivin) → SupplierMarkingRule
+ *     (getAvailableMarkingRules / quoteMarkingForRule).
+ *
+ * Body: { ref, qty, techniqueCode?, marginPct?, numberOfColours?, printAreaCm2?, manipulationCode? }
  */
 const Schema = z.object({
   ref: z.string().min(1).max(120),
   qty: z.number().int().min(1).max(100_000),
   techniqueCode: z.string().min(1).max(20).optional(),
   marginPct: z.number().min(0).max(900).optional(),
+  numberOfColours: z.number().int().min(1).max(12).optional(),
+  printAreaCm2: z.number().min(0).max(100_000).optional(),
+  manipulationCode: z.string().min(1).max(2).optional(),
 });
+
+type TechniqueOpt = {
+  techniqueCode: string;
+  techniqueLabel: string;
+  markupPct: number;
+  setupCents: number | null;
+};
 
 /** PVP a partir del coste neto: override marginPct o margen global (×1,6). */
 function pvp(netCents: number, marginPct?: number): number {
@@ -45,15 +58,12 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
-  const { qty, techniqueCode, marginPct } = parsed.data;
+  const { qty, techniqueCode, marginPct, numberOfColours, printAreaCm2, manipulationCode } = parsed.data;
   const ref = parsed.data.ref.trim();
 
   // Buscar por cualquier referencia (nuestra o del proveedor)
   const product = await prisma.product.findFirst({
-    where: {
-      active: true,
-      OR: [{ internalRef: ref }, { supplierRef: ref }, { slug: ref }],
-    },
+    where: { active: true, OR: [{ internalRef: ref }, { supplierRef: ref }, { slug: ref }] },
     select: {
       id: true,
       supplier: true,
@@ -74,6 +84,8 @@ export async function POST(req: Request) {
       { status: 404 },
     );
   }
+  const isMidocean = product.supplier === "midocean";
+  const prod = product; // narrowing no-nulo estable para usar dentro del closure listTechniques
 
   // Coste NETO del producto al tramo de cantidad (mayor minQty <= qty)
   const tiers = await prisma.priceTier.findMany({
@@ -86,8 +98,6 @@ export async function POST(req: Request) {
   const netUnitCents = tier?.unitPriceCents || product.fromPriceCents || 0;
   const hasRealPricing = tiers.length > 0;
 
-  // Producto para la respuesta. supplier/supplierRef SOLO uso interno (la UI no
-  // los mete en el documento del cliente). publicRef = lo que ve el cliente.
   const productOut = {
     name: product.name,
     brand: product.brand,
@@ -102,12 +112,37 @@ export async function POST(req: Request) {
     hasRealPricing,
   };
 
-  // Sin técnica → técnicas disponibles + precio sin marcaje
-  if (!techniqueCode) {
-    const techniques = await getAvailableMarkingRules({
-      supplier: product.supplier,
-      markingTechniqueHint: product.markingTechniqueHint,
+  /** Técnicas de marcaje disponibles para este producto. */
+  async function listTechniques(): Promise<TechniqueOpt[]> {
+    if (isMidocean) {
+      const positions = await prisma.markingPosition.findMany({
+        where: { productId: prod.id },
+        include: { techniques: { include: { technique: true } } },
+      });
+      const byCode = new Map<string, TechniqueOpt>();
+      for (const pos of positions) {
+        for (const t of pos.techniques) {
+          if (!byCode.has(t.technique.code)) {
+            byCode.set(t.technique.code, {
+              techniqueCode: t.technique.code,
+              techniqueLabel: t.technique.name,
+              markupPct: 0,
+              setupCents: t.technique.setupCents ?? null,
+            });
+          }
+        }
+      }
+      return Array.from(byCode.values());
+    }
+    return getAvailableMarkingRules({
+      supplier: prod.supplier,
+      markingTechniqueHint: prod.markingTechniqueHint,
     });
+  }
+
+  // ── Sin técnica → técnicas disponibles + precio sin marcaje ──
+  if (!techniqueCode) {
+    const techniques = await listTechniques();
     const costeTotal = netUnitCents * qty;
     const pvpUnit = pvp(netUnitCents, marginPct);
     const pvpTotal = pvpUnit * qty;
@@ -129,24 +164,53 @@ export async function POST(req: Request) {
     });
   }
 
-  // Con técnica → cotización completa (producto + marcaje)
-  const marking = await quoteMarkingForRule({
-    supplier: product.supplier,
-    techniqueCode: techniqueCode.toUpperCase(),
-    productId: product.id,
-    productUnitPriceCents: netUnitCents,
-    qty,
-  });
-  if (!marking) {
-    return NextResponse.json(
-      { error: `Sin regla de marcaje para "${techniqueCode}". Configúrala o pide coste al proveedor.` },
-      { status: 404 },
-    );
+  // ── Con técnica → cotización completa (producto + marcaje) ──
+  let costeMarcajeTotal = 0;
+  let markingLabel = techniqueCode.toUpperCase();
+  let markingSetup = 0;
+  let markingWarning: string | undefined;
+
+  if (isMidocean) {
+    let mc;
+    try {
+      mc = await calculateMarkingCost({
+        techniqueCode: techniqueCode.toUpperCase(),
+        quantity: qty,
+        numberOfColours,
+        printAreaCm2,
+        manipulationCode,
+      });
+    } catch {
+      return NextResponse.json(
+        { error: `Técnica "${techniqueCode}" no válida para este producto.` },
+        { status: 404 },
+      );
+    }
+    costeMarcajeTotal = mc.totalCostCents;
+    markingLabel = mc.techniqueName;
+    markingSetup = mc.setupCents;
+    markingWarning = mc.warning;
+  } else {
+    const marking = await quoteMarkingForRule({
+      supplier: product.supplier,
+      techniqueCode: techniqueCode.toUpperCase(),
+      productId: product.id,
+      productUnitPriceCents: netUnitCents,
+      qty,
+    });
+    if (!marking) {
+      return NextResponse.json(
+        { error: `Sin regla de marcaje para "${techniqueCode}". Configúrala o pide coste al proveedor.` },
+        { status: 404 },
+      );
+    }
+    costeMarcajeTotal = marking.totalMarkingCents;
+    markingLabel = marking.techniqueLabel;
+    markingSetup = marking.setupCents;
   }
 
   // COSTE (lo nuestro)
   const costeProductoTotal = netUnitCents * qty;
-  const costeMarcajeTotal = marking.totalMarkingCents;
   const costeTotal = costeProductoTotal + costeMarcajeTotal;
 
   // PVP (cliente): margen sobre producto y sobre marcaje
@@ -159,10 +223,11 @@ export async function POST(req: Request) {
     product: productOut,
     qty,
     marking: {
-      techniqueCode: marking.techniqueCode,
-      techniqueLabel: marking.techniqueLabel,
-      setupCents: marking.setupCents,
-      totalMarkingCents: marking.totalMarkingCents,
+      techniqueCode: techniqueCode.toUpperCase(),
+      techniqueLabel: markingLabel,
+      setupCents: markingSetup,
+      totalMarkingCents: costeMarcajeTotal,
+      warning: markingWarning,
     },
     coste: { productoTotal: costeProductoTotal, marcajeTotal: costeMarcajeTotal, total: costeTotal },
     margenEfectivoPct: costeTotal > 0 ? Math.round(((pvpTotal - costeTotal) / costeTotal) * 100) : 0,
