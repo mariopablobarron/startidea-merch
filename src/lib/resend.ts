@@ -6,11 +6,14 @@ const apiKey = process.env.RESEND_API_KEY;
 export const resend = apiKey ? new Resend(apiKey) : null;
 
 export const RESEND_FROM = process.env.RESEND_FROM ?? "TodoMerchandising <pedidos@startidea.es>";
-// Remitente de MARKETING (broadcasts + email frío) — dominio separado del
-// transaccional para proteger la reputación de los emails de cobro/pedidos.
-// hubstartidea.es está verificado en Resend (DKIM+SPF+DMARC).
+// Remitente de MARKETING (broadcasts + email frío) — SUBDOMINIO dedicado,
+// separado del transaccional para proteger la reputación de los emails de
+// cobro/pedidos. news.hubstartidea.es está verificado en Resend (DKIM+SPF+MX).
 export const MARKETING_FROM =
-  process.env.MARKETING_FROM ?? "TodoMerchandising <correo@hubstartidea.es>";
+  process.env.MARKETING_FROM ?? "TodoMerchandising <newsletter@news.hubstartidea.es>";
+// Reply-to de marketing → buzón real monitorizado (el subdominio de envío solo
+// tiene MX de rebotes, sin inbox). Coincide con SENDER.replyTo de outbound.
+export const MARKETING_REPLY_TO = process.env.MARKETING_REPLY_TO ?? "pedidos@startidea.es";
 export const RESEND_TO_INTERNAL = process.env.RESEND_TO_INTERNAL ?? "mariopablobarron@gmail.com";
 
 export type SendEmailAttachment = {

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { resend, MARKETING_FROM } from "@/lib/resend";
+import { resend, MARKETING_FROM, MARKETING_REPLY_TO } from "@/lib/resend";
 import { notifyTelegram } from "@/lib/telegram";
 import { resolveAudience } from "@/lib/broadcast-audience";
 
@@ -66,6 +66,7 @@ export async function sendBroadcast(id: string): Promise<SendBroadcastResult> {
         : `${SITE_URL}/api/newsletter/unsubscribe?email=${encodeURIComponent(r.email)}`;
       const sendRes = await resend.emails.send({
         from: MARKETING_FROM,
+        replyTo: MARKETING_REPLY_TO,
         to: r.email,
         subject: broadcast.subject,
         html: applyFooter(personalize(broadcast.html, r.name || ""), unsubscribeUrl, broadcast.preheader),

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
-import { resend, MARKETING_FROM, sendEmail } from "@/lib/resend";
+import { resend, MARKETING_FROM, MARKETING_REPLY_TO, sendEmail } from "@/lib/resend";
 import { sendBroadcast, applyFooter } from "@/lib/broadcast-send";
 
 export const runtime = "nodejs";
@@ -51,6 +51,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const result = await sendEmail({
       to: parsed.data.testEmail,
       from: MARKETING_FROM,
+      replyTo: MARKETING_REPLY_TO,
       subject: `[TEST] ${broadcast.subject}`,
       html: applyFooter(
         broadcast.html,
