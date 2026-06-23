@@ -1,0 +1,288 @@
+"use client";
+
+/**
+ * /admin/cotizar — Cotización rápida (todos los proveedores).
+ *
+ * La admin teclea una referencia (la nuestra STM-XXX/slug o la del proveedor
+ * MO-XXX/Makito/Cifra) + cantidad → ve NUESTRO COSTE y el PVP con margen + IVA,
+ * elige técnica de marcaje y genera un presupuesto imprimible para el cliente
+ * (que NUNCA muestra proveedor ni coste).
+ */
+
+import { useState } from "react";
+
+const EUR = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 2 });
+
+type Technique = { techniqueCode: string; techniqueLabel: string; markupPct: number; setupCents: number | null };
+type Result = {
+  ok: true;
+  product: {
+    name: string;
+    brand: string | null;
+    publicRef: string;
+    internalRef: string | null;
+    slug: string;
+    supplier: string;
+    supplierRef: string;
+    imageUrl: string | null;
+    markingTechniqueHint: string | null;
+    markingSizeHint: string | null;
+    hasRealPricing: boolean;
+  };
+  qty: number;
+  techniques?: Technique[];
+  marking?: { techniqueCode: string; techniqueLabel: string; setupCents: number; totalMarkingCents: number };
+  coste: { productoTotal: number; marcajeTotal: number; total: number };
+  margenEfectivoPct: number;
+  pvp: { productoTotal: number; marcajeTotal: number; baseTotal: number; unit: number; ivaCents: number; totalConIva: number };
+};
+
+export default function CotizarPage() {
+  const [ref, setRef] = useState("");
+  const [qty, setQty] = useState("250");
+  const [marginPct, setMarginPct] = useState("60");
+  const [res, setRes] = useState<Result | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // datos del documento al cliente
+  const [clienteNombre, setClienteNombre] = useState("");
+  const [plazo, setPlazo] = useState("10-15 días laborables desde la aprobación del arte final");
+  const [validez, setValidez] = useState("15 días");
+  const [notas, setNotas] = useState("");
+  const [showDoc, setShowDoc] = useState(false);
+
+  async function cotizar(techniqueCode?: string) {
+    setLoading(true);
+    setError(null);
+    if (!techniqueCode) setRes(null);
+    try {
+      const r = await fetch("/api/admin/cotizar", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ref: ref.trim(),
+          qty: parseInt(qty, 10) || 1,
+          marginPct: marginPct ? Number(marginPct) : undefined,
+          techniqueCode,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setError(d.error || `Error ${r.status}`);
+        if (!techniqueCode) setRes(null);
+        return;
+      }
+      setRes(d);
+      setShowDoc(false);
+    } catch {
+      setError("Error de red");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-bone-soft p-6 lg:p-8">
+      <style>{`@media print { body * { visibility: hidden !important; } #presupuesto, #presupuesto * { visibility: visible !important; } #presupuesto { position: absolute; left: 0; top: 0; width: 100%; } }`}</style>
+      <div className="mx-auto max-w-3xl">
+        <header className="mb-6" data-noprint>
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Administración</p>
+          <h1 className="mt-1 font-display text-3xl font-semibold text-ink">Cotización rápida 💸</h1>
+          <p className="mt-2 max-w-2xl text-sm text-ink/65">
+            Teclea la referencia (la nuestra <code className="font-mono">STM-…</code> o la del proveedor),
+            cantidad y técnica → coste, PVP con margen e IVA, y genera el presupuesto para el cliente.
+          </p>
+        </header>
+
+        {/* Buscador */}
+        <section className="rounded-3xl border border-line bg-bone p-5">
+          <div className="grid gap-3 sm:grid-cols-[2fr,1fr,1fr,auto]">
+            <div>
+              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">Referencia</label>
+              <input
+                value={ref}
+                onChange={(e) => setRef(e.target.value)}
+                placeholder="STM-000123 / MO9999 / neceser-kate"
+                className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+                onKeyDown={(e) => e.key === "Enter" && cotizar()}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">Cantidad</label>
+              <input
+                type="number"
+                min={1}
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-right font-mono text-sm outline-none focus:border-accent"
+                onKeyDown={(e) => e.key === "Enter" && cotizar()}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">Margen %</label>
+              <input
+                type="number"
+                min={0}
+                value={marginPct}
+                onChange={(e) => setMarginPct(e.target.value)}
+                className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-right font-mono text-sm outline-none focus:border-accent"
+                onKeyDown={(e) => e.key === "Enter" && cotizar()}
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={() => cotizar()}
+                disabled={loading || !ref.trim()}
+                className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-40"
+              >
+                {loading ? "…" : "Buscar"}
+              </button>
+            </div>
+          </div>
+          {error && <p className="mt-3 rounded-xl bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}
+        </section>
+
+        {res && (
+          <>
+            {/* Producto + técnicas */}
+            <section className="mt-6 rounded-3xl border border-line bg-bone p-5" data-noprint>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-ink/55">
+                    {res.product.publicRef} {res.product.brand ? `· ${res.product.brand}` : ""}
+                  </p>
+                  <h2 className="mt-1 font-display text-xl text-ink">{res.product.name}</h2>
+                  <p className="mt-1 text-[11px] text-ink/45">
+                    interno: {res.product.supplier} · {res.product.supplierRef}
+                    {!res.product.hasRealPricing && " · ⚠ sin tarifa real (aprox)"}
+                  </p>
+                </div>
+                {res.product.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={res.product.imageUrl} alt="" className="h-16 w-16 rounded-xl object-cover" />
+                )}
+              </div>
+
+              {res.techniques && res.techniques.length > 0 && (
+                <div className="mt-4">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ink/55">
+                    Técnica de marcaje {res.marking && <span className="text-accent">· {res.marking.techniqueLabel}</span>}
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {res.techniques.map((t) => (
+                      <button
+                        key={t.techniqueCode}
+                        onClick={() => cotizar(t.techniqueCode)}
+                        className={`rounded-xl border px-3 py-2 text-left text-sm transition ${
+                          res.marking?.techniqueCode === t.techniqueCode
+                            ? "border-accent bg-accent-wash"
+                            : "border-line bg-bone-soft hover:border-ink/30"
+                        }`}
+                      >
+                        <code className="font-mono text-xs text-accent-deep">{t.techniqueCode}</code> · {t.techniqueLabel}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* Coste (interno) vs PVP (cliente) */}
+            <section className="mt-6 grid gap-4 sm:grid-cols-2" data-noprint>
+              <div className="rounded-3xl border border-line bg-bone p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/55">Nuestro coste (interno)</p>
+                <table className="mt-3 w-full text-sm">
+                  <tbody className="divide-y divide-line">
+                    <tr><td className="py-1.5 text-ink/70">Producto</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(res.coste.productoTotal / 100)}</td></tr>
+                    <tr><td className="py-1.5 text-ink/70">Marcaje{res.marking?.setupCents ? " (incl. setup)" : ""}</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(res.coste.marcajeTotal / 100)}</td></tr>
+                    <tr className="border-t-2 border-ink/20"><td className="pt-2 font-semibold text-ink">Coste total</td><td className="pt-2 text-right font-mono font-semibold tabular-nums">{EUR.format(res.coste.total / 100)}</td></tr>
+                  </tbody>
+                </table>
+                <p className="mt-2 text-[11px] text-ink/55">Margen efectivo: <strong className="text-social">{res.margenEfectivoPct}%</strong></p>
+              </div>
+              <div className="rounded-3xl border-2 border-accent bg-bone p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-accent">PVP cliente</p>
+                <table className="mt-3 w-full text-sm">
+                  <tbody className="divide-y divide-line">
+                    <tr><td className="py-1.5 text-ink/70">Base (sin IVA)</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(res.pvp.baseTotal / 100)}</td></tr>
+                    <tr><td className="py-1.5 text-ink/70">IVA 21%</td><td className="py-1.5 text-right font-mono tabular-nums">{EUR.format(res.pvp.ivaCents / 100)}</td></tr>
+                    <tr className="border-t-2 border-accent/40"><td className="pt-2 font-semibold text-ink">Total con IVA</td><td className="pt-2 text-right font-display text-lg font-semibold tabular-nums text-accent">{EUR.format(res.pvp.totalConIva / 100)}</td></tr>
+                    <tr><td className="py-1 text-[11px] text-ink/55">Unitario (sin IVA)</td><td className="py-1 text-right font-mono text-[11px] text-ink/60">{EUR.format(res.pvp.unit / 100)}/u</td></tr>
+                  </tbody>
+                </table>
+                <button
+                  onClick={() => setShowDoc(true)}
+                  className="mt-4 w-full rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-bone transition hover:bg-accent"
+                >
+                  Generar presupuesto →
+                </button>
+              </div>
+            </section>
+
+            {/* Documento del cliente */}
+            {showDoc && (
+              <>
+                <section className="mt-4 grid gap-3 rounded-3xl border border-line bg-bone p-5 sm:grid-cols-2" data-noprint>
+                  <div className="sm:col-span-2"><label className="text-[10px] uppercase tracking-wider text-ink/55">Cliente</label><input value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} placeholder="Nombre / empresa del cliente" className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent" /></div>
+                  <div><label className="text-[10px] uppercase tracking-wider text-ink/55">Plazo de entrega</label><input value={plazo} onChange={(e) => setPlazo(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent" /></div>
+                  <div><label className="text-[10px] uppercase tracking-wider text-ink/55">Validez</label><input value={validez} onChange={(e) => setValidez(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent" /></div>
+                  <div className="sm:col-span-2"><label className="text-[10px] uppercase tracking-wider text-ink/55">Notas</label><textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent" /></div>
+                  <div className="sm:col-span-2 flex justify-end">
+                    <button onClick={() => window.print()} className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark">Imprimir / Guardar PDF</button>
+                  </div>
+                </section>
+
+                {/* Bloque imprimible (lo que ve el cliente — SIN proveedor ni coste) */}
+                <section id="presupuesto" className="mt-4 rounded-3xl border border-line bg-white p-8 text-ink">
+                  <div className="flex items-start justify-between border-b border-line pb-4">
+                    <div>
+                      <p className="font-display text-2xl font-semibold">TodoMerchandising</p>
+                      <p className="text-xs text-ink/60">STARTIDEA MALAGA SL · CIF B19583632 · pedidos@startidea.es</p>
+                    </div>
+                    <div className="text-right text-xs text-ink/60">
+                      <p className="font-semibold text-ink">PRESUPUESTO</p>
+                      {clienteNombre && <p>Cliente: {clienteNombre}</p>}
+                      <p>Validez: {validez}</p>
+                    </div>
+                  </div>
+
+                  <table className="mt-5 w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-line text-[11px] uppercase tracking-wider text-ink/55">
+                        <td className="py-2">Concepto</td>
+                        <td className="py-2 text-right">Cantidad</td>
+                        <td className="py-2 text-right">Importe (sin IVA)</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-line">
+                        <td className="py-2">
+                          {res.product.name} <span className="text-ink/50">({res.product.publicRef})</span>
+                          {res.marking && <div className="text-xs text-ink/60">Personalización: {res.marking.techniqueLabel}</div>}
+                        </td>
+                        <td className="py-2 text-right tabular-nums">{res.qty} uds</td>
+                        <td className="py-2 text-right font-mono tabular-nums">{EUR.format(res.pvp.baseTotal / 100)}</td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr><td colSpan={2} className="py-1 text-right text-ink/70">Base imponible</td><td className="py-1 text-right font-mono tabular-nums">{EUR.format(res.pvp.baseTotal / 100)}</td></tr>
+                      <tr><td colSpan={2} className="py-1 text-right text-ink/70">IVA 21%</td><td className="py-1 text-right font-mono tabular-nums">{EUR.format(res.pvp.ivaCents / 100)}</td></tr>
+                      <tr><td colSpan={2} className="pt-2 text-right font-semibold">TOTAL</td><td className="pt-2 text-right font-display text-lg font-semibold tabular-nums">{EUR.format(res.pvp.totalConIva / 100)}</td></tr>
+                    </tfoot>
+                  </table>
+
+                  <div className="mt-5 space-y-1 text-xs text-ink/65">
+                    <p><strong className="text-ink">Plazo de entrega:</strong> {plazo}</p>
+                    {notas && <p><strong className="text-ink">Notas:</strong> {notas}</p>}
+                    <p className="text-ink/45">Precio unitario: {EUR.format(res.pvp.unit / 100)}/ud (sin IVA). Presupuesto sujeto a confirmación de stock y arte final.</p>
+                  </div>
+                </section>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </main>
+  );
+}
