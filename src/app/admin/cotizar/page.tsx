@@ -67,6 +67,14 @@ export default function CotizarPage() {
   const [validez, setValidez] = useState("15 días");
   const [notas, setNotas] = useState("");
   const [showDoc, setShowDoc] = useState(false);
+  // propuesta formal (numerada + email)
+  const [clienteEmail, setClienteEmail] = useState("");
+  const [clienteEmpresa, setClienteEmpresa] = useState("");
+  const [propLoading, setPropLoading] = useState(false);
+  const [propError, setPropError] = useState<string | null>(null);
+  const [propResult, setPropResult] = useState<
+    { proposalNumber: string; downloadUrl: string; emailed: boolean; emailError?: string } | null
+  >(null);
 
   async function cotizar(techniqueCode?: string) {
     setLoading(true);
@@ -99,6 +107,46 @@ export default function CotizarPage() {
       setError("Error de red");
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Convierte la cotización actual en una propuesta formal numerada (+ email).
+  // Reusa EXACTAMENTE los mismos parámetros que la cotización mostrada para que
+  // el servidor recalcule el mismo dinero.
+  async function enviarPropuesta(send: boolean) {
+    if (!res || !clienteEmail.trim()) return;
+    setPropLoading(true);
+    setPropError(null);
+    setPropResult(null);
+    try {
+      const portesCents = Math.max(0, Math.round((parseFloat(portes.replace(",", ".")) || 0) * 100));
+      const r = await fetch("/api/admin/cotizar/proposal", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ref: ref.trim(),
+          qty: parseInt(qty, 10) || 1,
+          marginPct: marginPct ? Number(marginPct) : undefined,
+          techniqueCode: res.marking?.techniqueCode,
+          portesCents,
+          couponCode: couponCode.trim() || undefined,
+          email: clienteEmail.trim(),
+          name: clienteNombre.trim() || undefined,
+          company: clienteEmpresa.trim() || undefined,
+          send,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setPropError(d.error || `Error ${r.status}`);
+        return;
+      }
+      setPropResult(d);
+    } catch {
+      setPropError("Error de red");
+    } finally {
+      setPropLoading(false);
     }
   }
 
@@ -305,6 +353,72 @@ export default function CotizarPage() {
                   <div className="sm:col-span-2 flex justify-end">
                     <button onClick={() => window.print()} className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark">Imprimir / Guardar PDF</button>
                   </div>
+                </section>
+
+                {/* Propuesta formal numerada + email al cliente */}
+                <section className="mt-4 rounded-3xl border-2 border-social/40 bg-bone p-5" data-noprint>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-social">Propuesta formal (numerada + email)</p>
+                  <p className="mt-1 text-[12px] text-ink/60">
+                    Genera una propuesta <strong>PROP-AÑO-NNNN</strong> guardada en el sistema, con PDF de marca, y opcionalmente la envía al email del cliente. Aparece en <code className="font-mono">/admin/propuestas</code>. El envío va incluido en el precio.
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-ink/55">Email del cliente *</label>
+                      <input
+                        type="email"
+                        value={clienteEmail}
+                        onChange={(e) => setClienteEmail(e.target.value)}
+                        placeholder="cliente@empresa.com"
+                        className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-ink/55">Empresa (opcional)</label>
+                      <input
+                        value={clienteEmpresa}
+                        onChange={(e) => setClienteEmpresa(e.target.value)}
+                        placeholder="Nombre de la empresa"
+                        className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => enviarPropuesta(true)}
+                      disabled={propLoading || !clienteEmail.trim()}
+                      className="rounded-full bg-social px-5 py-2.5 text-sm font-semibold text-bone shadow hover:opacity-90 disabled:opacity-40"
+                    >
+                      {propLoading ? "…" : "Enviar propuesta al cliente ✉️"}
+                    </button>
+                    <button
+                      onClick={() => enviarPropuesta(false)}
+                      disabled={propLoading || !clienteEmail.trim()}
+                      className="rounded-full border border-line bg-bone-soft px-5 py-2.5 text-sm font-semibold text-ink hover:border-ink/30 disabled:opacity-40"
+                    >
+                      Guardar sin enviar
+                    </button>
+                  </div>
+                  {propError && <p className="mt-3 rounded-xl bg-accent-wash p-3 text-sm text-accent-deep">⚠ {propError}</p>}
+                  {propResult && (
+                    <div className="mt-3 rounded-xl bg-social/10 p-3 text-sm text-ink">
+                      <p className="font-semibold text-social">
+                        ✓ Propuesta {propResult.proposalNumber} {propResult.emailed ? "enviada al cliente" : "guardada"}.
+                      </p>
+                      {propResult.emailError && (
+                        <p className="mt-1 text-[12px] text-accent-deep">
+                          El email falló ({propResult.emailError}) — la propuesta quedó guardada, puedes reenviarla.
+                        </p>
+                      )}
+                      <a
+                        href={propResult.downloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 inline-block text-[13px] font-medium text-accent underline"
+                      >
+                        Ver / descargar PDF →
+                      </a>
+                    </div>
+                  )}
                 </section>
 
                 {/* Bloque imprimible (lo que ve el cliente — SIN proveedor ni coste) */}
