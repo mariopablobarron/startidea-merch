@@ -22,6 +22,20 @@ type Stats = {
   byPrize: { id: string; label: string; kind: string; count: number }[];
   bySource: { ruleta: number; classic: number };
 };
+type SorteoDraw = {
+  month: string;
+  winnerEmail: string;
+  winnerName: string | null;
+  drawnAt: string;
+  eligibleCount: number;
+  notified: boolean;
+};
+type Sorteo = {
+  month: string;
+  eligibleCount: number;
+  alreadyDrawnThisMonth: boolean;
+  draws: SorteoDraw[];
+};
 
 const KIND_BADGE: Record<Kind, string> = {
   perk: "Perk (coste ~0)",
@@ -35,6 +49,10 @@ export default function RuletaAdminPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [sorteo, setSorteo] = useState<Sorteo | null>(null);
+  const [drawing, setDrawing] = useState(false);
+  const [notifyWinner, setNotifyWinner] = useState(true);
+  const [drawMsg, setDrawMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/ruleta/config", { credentials: "include" })
@@ -44,6 +62,10 @@ export default function RuletaAdminPage() {
     fetch("/api/admin/ruleta/stats", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => d.stats && setStats(d.stats))
+      .catch(() => {});
+    fetch("/api/admin/ruleta/draw", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => d.ok && setSorteo(d))
       .catch(() => {});
   }, []);
 
@@ -74,6 +96,35 @@ export default function RuletaAdminPage() {
       setErr("Error de red");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function drawWinner() {
+    setDrawing(true);
+    setDrawMsg(null);
+    try {
+      const res = await fetch("/api/admin/ruleta/draw", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notify: notifyWinner, force: sorteo?.alreadyDrawnThisMonth || false }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setDrawMsg(d.error || "No se pudo sortear");
+        return;
+      }
+      const fresh = await (await fetch("/api/admin/ruleta/draw", { credentials: "include" })).json();
+      if (fresh.ok) setSorteo(fresh);
+      setDrawMsg(
+        d.alreadyDrawn
+          ? `Este mes ya tenía ganador: ${d.draw.winnerEmail}`
+          : `🎉 Ganador: ${d.draw.winnerEmail}${d.draw.notified ? " (avisado por email)" : ""}`,
+      );
+    } catch {
+      setDrawMsg("Error de red");
+    } finally {
+      setDrawing(false);
     }
   }
 
@@ -147,6 +198,77 @@ export default function RuletaAdminPage() {
       </section>
 
       {/* ── Editor de premios ────────────────────────────── */}
+      {/* ── Sorteo del mes ───────────────────────────────── */}
+      <section className="mb-8">
+        <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+          Sorteo del mes 🎁
+        </h2>
+        <div className="rounded-2xl border border-line bg-bone p-4">
+          {!sorteo ? (
+            <p className="text-sm text-ink/50">Cargando…</p>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-ink/80">
+                    <span className="font-semibold text-ink">{sorteo.eligibleCount}</span> participantes
+                    elegibles este mes ({sorteo.month})
+                  </p>
+                  <p className="text-[11px] text-ink/50">
+                    Entran quienes ganaron «sorteo», siguen suscritos y no han ganado antes.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-1.5 text-xs text-ink/70">
+                    <input
+                      type="checkbox"
+                      checked={notifyWinner}
+                      onChange={(e) => setNotifyWinner(e.target.checked)}
+                    />
+                    Avisar por email
+                  </label>
+                  <button
+                    onClick={drawWinner}
+                    disabled={drawing || sorteo.eligibleCount === 0}
+                    className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow hover:bg-accent-dark disabled:opacity-50"
+                  >
+                    {drawing
+                      ? "Sorteando…"
+                      : sorteo.alreadyDrawnThisMonth
+                        ? "Volver a sortear"
+                        : "Sortear ganador"}
+                  </button>
+                </div>
+              </div>
+              {drawMsg && <p className="mt-3 text-sm text-accent-deep">{drawMsg}</p>}
+              {sorteo.draws.length > 0 && (
+                <table className="mt-4 w-full text-sm">
+                  <thead>
+                    <tr className="text-[11px] uppercase tracking-wider text-ink/50">
+                      <td className="py-1">Mes</td>
+                      <td className="py-1">Ganador</td>
+                      <td className="py-1 text-right">Participantes</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorteo.draws.map((d) => (
+                      <tr key={d.month} className="border-t border-line">
+                        <td className="py-1.5 text-ink/80">{d.month}</td>
+                        <td className="py-1.5 text-ink">
+                          {d.winnerEmail}
+                          {d.notified ? " ✉️" : ""}
+                        </td>
+                        <td className="py-1.5 text-right text-ink/70">{d.eligibleCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
