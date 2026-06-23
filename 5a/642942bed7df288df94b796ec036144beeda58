@@ -1,0 +1,27 @@
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_6c3750926c09c9 395-430
+  s_65877aa637ec34::t_51adfdaacf8c11 771-832
+  s_65877aa637ec34::t_900a4e097f2fef 272-279
+src/app/api/admin/cotizar/proposal/route.ts
+  s_65877aa637ec34::t_e8dc3836272503 5,14-17,19-20,67-77,80,82-83,88-91
+src/app/api/quote-request-product/route.ts
+  s_65877aa637ec34::t_ad85a8012814e8 1-107
+src/lib/proposal-from-cotizacion.ts
+  s_65877aa637ec34::t_f80f595fa137d2 1-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "5a642942bed7df288df94b796ec036144beeda58",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
