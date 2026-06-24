@@ -121,7 +121,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   label="Analytics"
                   items={[
                     ...(session.role === "CEO" || session.role === "FACTURACION"
-                      ? [{ href: "/admin/analytics", label: "Ventas + facturación", title: "Dashboard interno" }]
+                      ? [
+                          { href: "/admin/analytics", label: "Ventas + facturación", title: "Dashboard interno" },
+                          {
+                            href: "/admin/facturascripts",
+                            label: "Facturas (ERP) 🧾",
+                            title: "Estado y reintento de facturas en FacturaScripts (facturas.startidea.tech)",
+                          },
+                        ]
                       : []),
                     ...(isCEOorComercial
                       ? [
