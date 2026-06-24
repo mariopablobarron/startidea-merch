@@ -179,7 +179,7 @@ export const facturaScripts = {
    * según la secuencia (idempresa, ejercicio, codserie). NO duplica si la
    * factura ya existe — controla idempotencia en tu lado con `fsInvoiceCode`.
    */
-  crearFactura(params: FsFactura): Promise<FsFacturaResponse> {
+  async crearFactura(params: FsFactura): Promise<FsFacturaResponse> {
     const body: Record<string, string | number> = {
       codcliente: params.codcliente,
       codserie: params.codserie ?? FS_CODSERIE,
@@ -188,7 +188,16 @@ export const facturaScripts = {
       observaciones: params.observaciones ?? "",
       lineas: JSON.stringify(params.lineas),
     };
-    return fsPost<FsFacturaResponse>("/crearFacturaCliente", body);
+    const res = await fsPost<FsFacturaResponse>("/crearFacturaCliente", body);
+    // La API de FacturaScripts devuelve los numéricos como STRING ("9", "12.10").
+    // Normalizamos en el borde para que el resto del sistema (marcarPagada,
+    // persistencia en Payment.fsInvoiceId Int) reciba números de verdad — si no,
+    // el update de Prisma falla y se rompe la idempotencia → factura duplicada.
+    if (res?.doc) {
+      res.doc.idfactura = Number(res.doc.idfactura);
+      res.doc.total = Number(res.doc.total);
+    }
+    return res;
   },
 
   /**
