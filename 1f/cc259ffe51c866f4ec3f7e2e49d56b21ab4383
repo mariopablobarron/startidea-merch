@@ -1,0 +1,24 @@
+src/lib/proposal-from-cotizacion.ts
+  s_65877aa637ec34::t_6f7f08fc4ab493 6
+src/lib/proposal-types.ts
+  s_65877aa637ec34::t_a1797f2a4bc92b 56-86
+  s_65877aa637ec34::t_5e4e220bcdf787 1-2
+src/lib/proposal-types.test.ts
+  s_65877aa637ec34::t_7004d5cafad1a9 1-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "1fcc259ffe51c866f4ec3f7e2e49d56b21ab4383",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
