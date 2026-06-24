@@ -367,6 +367,25 @@ function ProposalSendPanel({
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const p = cart.autoProposal;
 
+  async function generateDraft() {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const res = await fetch(`/api/admin/cart-quotes/${cart.id}/draft-proposal`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        onUpdate({ autoProposalId: data.autoProposal.id, autoProposal: data.autoProposal });
+      } else {
+        setFeedback({ ok: false, msg: data.error || "Error" });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function send() {
     if (!p) return;
     if (!confirm(`¿Enviar la propuesta ${p.proposalNumber} por email a ${cart.email}?`)) return;
@@ -396,10 +415,20 @@ function ProposalSendPanel({
     <div className="mt-6 rounded-2xl border border-line bg-bone p-5">
       <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Propuesta al cliente</p>
       {!p ? (
-        <p className="mt-1 text-sm text-ink/60">
-          El agente genera un borrador de propuesta automáticamente para cotizaciones nuevas con precio.
-          Aún no hay una vinculada a esta cotización.
-        </p>
+        <>
+          <p className="mt-1 text-sm text-ink/60">
+            El agente genera un borrador automáticamente para cotizaciones nuevas con precio. Aún no
+            hay una vinculada — puedes generarla ahora (carritos antiguos o sin procesar).
+          </p>
+          <button
+            type="button"
+            onClick={generateDraft}
+            disabled={busy}
+            className="mt-3 rounded-full bg-ink px-4 py-2 text-xs font-semibold text-white hover:bg-accent disabled:opacity-40"
+          >
+            {busy ? "Generando…" : "📝 Generar borrador ahora"}
+          </button>
+        </>
       ) : p.status === "draft" ? (
         <>
           <p className="mt-1 font-display text-lg font-semibold text-ink">
