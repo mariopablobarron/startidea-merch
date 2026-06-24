@@ -3,7 +3,7 @@ import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { type CotizarOk } from "./cotizar-core";
-import { computeProposalTotals, type ProposalQuoteItem } from "./proposal-types";
+import { computeProposalTotals, cotizacionToProposalItem, type ProposalQuoteItem } from "./proposal-types";
 import { generateProposalNumber } from "./proposal-number";
 import { RecommenderProposalPdf } from "./recommender-proposal-pdf";
 import { sendProposalEmail } from "./proposal-mailer";
@@ -20,30 +20,6 @@ import { signProposalToken } from "./proposal-token";
  */
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
-
-/** Una línea todo-incluido (producto+marcaje+portes ya en el total). */
-export function cotizacionToProposalItem(quote: CotizarOk): ProposalQuoteItem {
-  return {
-    description: quote.product.name,
-    notFound: false,
-    quantity: quote.qty,
-    sizes: null,
-    technique: quote.marking?.techniqueLabel ?? null,
-    colorRequested: null,
-    product: {
-      slug: quote.product.slug,
-      name: quote.product.name,
-      ref: quote.product.publicRef, // STM-XXX / slug — NUNCA supplierRef
-      url: `${SITE_URL}/catalogo/${quote.product.slug}`,
-      primaryImageUrl: quote.product.imageUrl,
-    },
-    unitPriceCents: Math.round(quote.pvp.baseTotal / quote.qty),
-    markingPerUnitCents: 0,
-    markingSetupCents: 0,
-    totalCents: quote.pvp.baseTotal,
-    priceSource: quote.product.hasRealPricing ? "tier" : "estimate",
-  };
-}
 
 export type CreateProposalArgs = {
   quote: CotizarOk;
