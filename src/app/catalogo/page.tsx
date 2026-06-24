@@ -350,6 +350,17 @@ export default async function CatalogoPage({
                 Buscar
               </button>
             </form>
+
+            <p className="mt-4 text-sm text-ink/60">
+              ¿No sabes cuál elegir?{" "}
+              <Link
+                href="/recomendador"
+                className="font-medium text-accent underline-offset-4 hover:underline"
+              >
+                Cuéntale a nuestro asistente IA lo que necesitas
+              </Link>{" "}
+              y te recomienda productos y un presupuesto al instante.
+            </p>
           </div>
         </section>
 
