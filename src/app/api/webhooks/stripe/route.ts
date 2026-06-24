@@ -393,19 +393,28 @@ async function postPaymentAutoflow(args: {
   // fsInvoiceCode, no hace nada. Errores se guardan en Payment.fsError para
   // reintento manual desde admin; NO rompen el flujo del webhook (Stripe debe
   // recibir 200 OK siempre).
-  void syncPaymentToFacturaScripts(paymentId)
-    .then((res) => {
-      if (res.ok) {
-        console.log(
-          "[stripe webhook] fs-sync",
-          paymentId,
-          res.alreadySynced ? "(ya sincronizado)" : `→ factura ${res.fsInvoiceCode}`,
-        );
-      } else {
-        console.error("[stripe webhook fs-sync]", paymentId, res.error);
-      }
-    })
-    .catch((err) => console.error("[stripe webhook fs-sync exception]", paymentId, err));
+  // GATE: la emisión automática de factura solo se ejecuta si está habilitada
+  // explícitamente. Mientras el modelo de IVA cobro↔factura no esté resuelto
+  // (Stripe cobra base; la factura saldría base×1,21 → descuadre legal), este
+  // camino queda OFF por defecto. Encender con FACTURASCRIPTS_SYNC_ENABLED=true
+  // SOLO tras decidir el IVA. `simulate-payment` (admin manual) NO está gateado.
+  if (process.env.FACTURASCRIPTS_SYNC_ENABLED === "true") {
+    void syncPaymentToFacturaScripts(paymentId)
+      .then((res) => {
+        if (res.ok) {
+          console.log(
+            "[stripe webhook] fs-sync",
+            paymentId,
+            res.alreadySynced ? "(ya sincronizado)" : `→ factura ${res.fsInvoiceCode}`,
+          );
+        } else {
+          console.error("[stripe webhook fs-sync]", paymentId, res.error);
+        }
+      })
+      .catch((err) => console.error("[stripe webhook fs-sync exception]", paymentId, err));
+  } else {
+    console.log("[stripe webhook] fs-sync OFF (FACTURASCRIPTS_SYNC_ENABLED!=true)", paymentId);
+  }
 }
 
 function internalPaymentEmailHtml(args: {
