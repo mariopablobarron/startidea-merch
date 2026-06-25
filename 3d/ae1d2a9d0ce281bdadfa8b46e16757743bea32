@@ -1,0 +1,41 @@
+src/components/AdsPixels.tsx
+  s_65877aa637ec34::t_f638895fb97564 45,93
+src/components/AdminPushPanel.tsx
+  s_65877aa637ec34::t_f638895fb97564 3,30,56,61
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_f638895fb97564 10,19-32,38-39,61-93,150-189,239,266-279,496,505-512,514,516,693,750,756
+src/middleware.ts
+  s_65877aa637ec34::t_f638895fb97564 2,13-28,32-37,46-51
+src/app/recursos/calculadora-rsc/CalculadoraRscClient.tsx
+  s_65877aa637ec34::t_f638895fb97564 23-26,28
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_f638895fb97564 97-118,125,143-146,159,226,244-247,253,260
+next.config.ts
+  s_65877aa637ec34::t_f638895fb97564 36
+src/app/api/search/semantic/route.ts
+  s_65877aa637ec34::t_f638895fb97564 4,46,48,74
+docs/spec-iva-carrito-cupon.md
+  s_65877aa637ec34::t_f638895fb97564 1-54
+src/app/files/[...path]/route.ts
+  s_65877aa637ec34::t_f638895fb97564 23-24,67-68,75-84
+src/app/api/clientes/invoice/[paymentId]/route.ts
+  s_65877aa637ec34::t_f638895fb97564 5,81,89-95,97,138
+src/lib/auth.ts
+  s_65877aa637ec34::t_f638895fb97564 1,10-57,70-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "3dae1d2a9d0ce281bdadfa8b46e16757743bea32",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
