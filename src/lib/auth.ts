@@ -1,10 +1,58 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 export function safeEqual(a: string, b: string) {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
   if (ab.length !== bb.length) return false;
   return timingSafeEqual(ab, bb);
+}
+
+function cookieValue(req: Request, name: string): string | null {
+  const cookieHeader = req.headers.get("cookie") || "";
+  const m = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+function verifyLegacyAdminCookie(token: string): boolean {
+  const secret = process.env.ADMIN_SECRET || "";
+  if (!secret) return false;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  const [version, expStr, sig] = parts;
+  if (version !== "v1") return false;
+  const exp = Number(expStr);
+  if (!Number.isFinite(exp) || Date.now() / 1000 > exp) return false;
+  const expected = createHmac("sha256", secret).update(`${version}.${expStr}`).digest("base64url");
+  return safeEqual(sig, expected);
+}
+
+function verifyJwtCookie(token: string): boolean {
+  const secret = process.env.ADMIN_JWT_SECRET || process.env.ADMIN_SECRET || "";
+  if (!secret) return false;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  const [headerB64, payloadB64, sig] = parts;
+  try {
+    const header = JSON.parse(Buffer.from(headerB64, "base64url").toString("utf8")) as {
+      alg?: string;
+    };
+    if (header.alg !== "HS256") return false;
+
+    const expected = createHmac("sha256", secret)
+      .update(`${headerB64}.${payloadB64}`)
+      .digest("base64url");
+    if (!safeEqual(sig, expected)) return false;
+
+    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8")) as {
+      exp?: number;
+      userId?: string;
+      email?: string;
+    };
+    if (payload.exp && Date.now() / 1000 > payload.exp) return false;
+    return Boolean(payload.userId && payload.email);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -19,11 +67,9 @@ export function requireAdminSecret(req: Request): { ok: true } | { ok: false; st
     const provided = req.headers.get("x-admin-secret") ?? new URL(req.url).searchParams.get("secret") ?? "";
     if (provided && safeEqual(provided, secret)) return { ok: true };
   }
-  // 2. Cookie de sesión admin (cualquier rol)
-  const cookieHeader = req.headers.get("cookie") || "";
-  if (cookieHeader.includes("merch_admin=")) {
-    return { ok: true };
-  }
+  // 2. Cookie de sesión admin verificada (JWT actual o HMAC legacy).
+  const token = cookieValue(req, "merch_admin");
+  if (token && (verifyJwtCookie(token) || verifyLegacyAdminCookie(token))) return { ok: true };
   return { ok: false, status: 401, reason: "No autenticado" };
 }
 
