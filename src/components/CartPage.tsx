@@ -7,6 +7,7 @@ import { readCart, writeCart, removeItem, clearCart, cartTotalCents, type CartIt
 import { DeliveryEstimate } from "@/components/DeliveryEstimate";
 import { trackLead, trackInitiateCheckout } from "@/lib/ads-events";
 import { waLink, waCartQuoteMessage, trackWaClick } from "@/lib/whatsapp";
+import { withIva, ivaPart } from "@/lib/iva";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -15,11 +16,27 @@ const EUR = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 2,
 });
 
+/**
+ * Quita ?recover de la URL tras procesarlo, sin recargar ni re-fetch (history
+ * API, no useRouter), para que un refresh o un enlace compartido no vuelva a
+ * disparar la recuperación.
+ */
+function stripRecoverParam() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (url.searchParams.has("recover")) {
+    url.searchParams.delete("recover");
+    window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+  }
+}
+
 export function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Recuperación cross-device en curso (rehidratando la cesta desde el servidor).
+  const [recovering, setRecovering] = useState(false);
 
   // form
   const [name, setName] = useState("");
@@ -41,6 +58,39 @@ export function CartPage() {
     }
     refresh();
     window.addEventListener("merch:cart-change", refresh);
+
+    // Recuperación de carrito abandonado. Los emails de recordatorio enlazan a
+    // /cotizar?recover={cartId} → /carrito?recover={cartId}. Al llegar aquí:
+    //  1. Marcamos el carrito como recuperado (métrica recovery del dashboard),
+    //     siempre — venga del mismo dispositivo o de otro.
+    //  2. Si la cesta local está vacía (otro dispositivo / navegador), la
+    //     rehidratamos con los items que el CartQuote guarda en servidor.
+    const recoverId = new URLSearchParams(window.location.search).get("recover");
+    if (recoverId) {
+      const path = `/api/cart-quote/${encodeURIComponent(recoverId)}`;
+      // (1) marca recoveredAt (idempotente en el servidor), fire-and-forget.
+      void fetch(path, { method: "POST" }).catch(() => {});
+      // (2) rehidratación sólo si no hay nada local que perder.
+      if (readCart().length === 0) {
+        setRecovering(true);
+        fetch(path)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
+            if (data && Array.isArray(data.items) && data.items.length > 0) {
+              // writeCart emite "merch:cart-change" → refresh() → setItems.
+              writeCart(data.items as CartItem[]);
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            setRecovering(false);
+            stripRecoverParam();
+          });
+      } else {
+        stripRecoverParam();
+      }
+    }
+
     return () => window.removeEventListener("merch:cart-change", refresh);
   }, []);
 
@@ -97,6 +147,46 @@ export function CartPage() {
     writeCart(next);
   }
 
+  const subtotal = cartTotalCents(items);
+  const discount = couponDiscount?.discountCents || 0;
+  const total = Math.max(0, subtotal - discount);
+  const iva = ivaPart(total);
+  const totalWithIva = withIva(total);
+
+  useEffect(() => {
+    const code = couponDiscount?.code;
+    if (!code || subtotal <= 0) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/coupons/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, totalCents: subtotal }),
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!data.ok) {
+          setCouponDiscount(null);
+          setCouponError(data.reason || "Código no válido para el nuevo total");
+          return;
+        }
+        setCouponDiscount({
+          code: data.code,
+          label: data.label,
+          discountCents: data.discountCents,
+        });
+        setCouponError(null);
+      } catch {
+        if (!cancelled) setCouponError("No se pudo recalcular el cupón.");
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [couponDiscount?.code, subtotal]);
+
   /** Quita del carrito todos los items que no tienen precio calculado. */
   function removeUnpricedItems() {
     const next = readCart().filter(
@@ -146,7 +236,7 @@ export function CartPage() {
       }
       // Evento de conversión Lead a los pixels (GA4 ahora; Meta/Google/LinkedIn
       // en cuanto se configuren sus IDs). El valor es el total del carrito.
-      const valueEur = Math.round(cartTotalCents(items)) / 100;
+      const valueEur = Math.round(totalWithIva) / 100;
       trackLead({ method: directPay ? "cotizacion-pago-directo" : "cotizacion", value: valueEur });
       // Si pidió pago directo y el backend nos devuelve URL, redirige a Stripe.
       if (directPay && data.payUrl) {
@@ -171,6 +261,20 @@ export function CartPage() {
     e.preventDefault();
     // Por defecto el form submit (Enter) usa cotización tradicional.
     submitCart(false);
+  }
+
+  if (items.length === 0 && recovering && !success) {
+    return (
+      <div className="rounded-3xl border border-line bg-bone p-16 text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <p className="mt-5 font-display text-2xl font-semibold text-ink">
+          Restaurando tu cotización…
+        </p>
+        <p className="mx-auto mt-3 max-w-md text-ink/60">
+          Recuperamos los productos que habías configurado. Un momento.
+        </p>
+      </div>
+    );
   }
 
   if (items.length === 0 && !success) {
@@ -209,10 +313,6 @@ export function CartPage() {
       </div>
     );
   }
-
-  const subtotal = cartTotalCents(items);
-  const discount = couponDiscount?.discountCents || 0;
-  const total = Math.max(0, subtotal - discount);
 
   async function applyCouponCode() {
     setCouponError(null);
@@ -393,7 +493,7 @@ export function CartPage() {
 
         <div className="rounded-2xl border border-line bg-bone-soft p-5">
           <div className="flex items-center justify-between text-sm text-ink/70">
-            <span>Subtotal</span>
+            <span>Subtotal (sin IVA)</span>
             <span className="tabular-nums">{EUR.format(subtotal / 100)}</span>
           </div>
           {discount > 0 && (
@@ -402,10 +502,18 @@ export function CartPage() {
               <span className="tabular-nums">−{EUR.format(discount / 100)}</span>
             </div>
           )}
+          <div className="mt-1 flex items-center justify-between text-sm text-ink/70">
+            <span>Base imponible</span>
+            <span className="tabular-nums">{EUR.format(total / 100)}</span>
+          </div>
+          <div className="mt-1 flex items-center justify-between text-sm text-ink/70">
+            <span>IVA 21%</span>
+            <span className="tabular-nums">{EUR.format(iva / 100)}</span>
+          </div>
           <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-            <p className="text-xs uppercase tracking-wider text-ink/50">Total estimado</p>
+            <p className="text-xs uppercase tracking-wider text-ink/50">Total con IVA</p>
             <p className="font-display text-2xl font-semibold tabular-nums text-ink">
-              {EUR.format(total / 100)}
+              {EUR.format(totalWithIva / 100)}
             </p>
           </div>
           <div className="mt-3 border-t border-line pt-3">
@@ -582,7 +690,7 @@ export function CartPage() {
                           <rect x="2" y="5" width="20" height="14" rx="2" />
                           <path d="M2 10h20" />
                         </svg>
-                        Pagar ahora · {EUR.format(total / 100)}
+                        Pagar ahora · {EUR.format(totalWithIva / 100)}
                       </>
                     )}
                   </button>
@@ -639,13 +747,13 @@ export function CartPage() {
                   markingTechniqueName: it.markingTechniqueName,
                   markingPositionId: it.markingPositionId,
                 })),
-                EUR.format(total / 100),
+                EUR.format(totalWithIva / 100),
               ),
             )}
             target="_blank"
             rel="noopener"
             onClick={() => {
-              trackLead({ method: "whatsapp-carrito", value: total / 100 });
+              trackLead({ method: "whatsapp-carrito", value: totalWithIva / 100 });
               trackWaClick("carrito");
             }}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#25D366] bg-[#25D366]/5 px-6 py-3 text-sm font-semibold text-[#0e6b3a] transition hover:bg-[#25D366]/10"

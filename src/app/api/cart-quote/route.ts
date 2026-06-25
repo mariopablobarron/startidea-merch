@@ -94,13 +94,35 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
   const total = data.items.reduce((sum, it) => sum + (it.totalClientCents || 0), 0);
+  const couponCode = (data.couponCode || "").trim();
+  let coupon:
+    | {
+        id: string;
+        code: string;
+        label: string;
+        discountCents: number;
+      }
+    | null = null;
+  if (couponCode) {
+    const validation = await validateCoupon(couponCode, total);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.reason }, { status: 400 });
+    }
+    coupon = {
+      id: validation.coupon.id,
+      code: validation.coupon.code,
+      label: validation.coupon.label,
+      discountCents: validation.discountCents,
+    };
+  }
+  const payableTotal = Math.max(0, total - (coupon?.discountCents || 0));
 
   // Pago directo: requiere precio en TODOS los items + total > 0.
   // Si cumple, generamos token y marcamos como SENT (lista para pago).
   const allPriced = data.items.every(
     (it) => typeof it.totalClientCents === "number" && it.totalClientCents > 0,
   );
-  const directPay = Boolean(data.directPay && allPriced && total > 0);
+  const directPay = Boolean(data.directPay && allPriced && payableTotal > 0);
   const paymentLinkToken = directPay
     ? `pay_${randomBytes(20).toString("base64url")}`
     : null;
@@ -118,7 +140,10 @@ export async function POST(req: Request) {
       message: data.message || null,
       deadline: data.deadline || null,
       source: data.source || (directPay ? "carrito-pago-directo" : "carrito"),
-      estimatedTotalCents: total,
+      estimatedTotalCents: payableTotal,
+      internalNotes: coupon
+        ? `Cupón aplicado: ${coupon.code} (${coupon.label}) · descuento ${(coupon.discountCents / 100).toFixed(2)} €`
+        : undefined,
       // Pago directo: status SENT (admin verá que ya está en checkout),
       // depósito 100% por defecto, token presente. acceptedTotalCents
       // requerido por /api/pay/[token]/checkout para crear Stripe Session.
@@ -131,7 +156,7 @@ export async function POST(req: Request) {
       paymentLinkToken,
       paymentLinkSentAt: directPay ? new Date() : null,
       depositPercent: directPay ? 100 : null,
-      acceptedTotalCents: directPay ? total : null,
+      acceptedTotalCents: directPay ? payableTotal : null,
       items: {
         create: data.items.map((it) => {
           // Resolver shape efectivo: array markings prima; si no, los campos planos.
@@ -198,7 +223,7 @@ export async function POST(req: Request) {
     sendEmail({
       to: RESEND_TO_INTERNAL,
       replyTo: data.email,
-      subject: `[Carrito] ${data.name}${data.company ? " · " + data.company : ""} · ${EUR.format(total / 100)}`,
+      subject: `[Carrito] ${data.name}${data.company ? " · " + data.company : ""} · ${EUR.format(payableTotal / 100)}`,
       html: internalCartHtml(cart),
       context: `cart-quote internal · ${cart.id}`,
     }),
@@ -216,31 +241,23 @@ export async function POST(req: Request) {
     void attachReferral(cart.id, refSlug).catch(() => {});
   }
 
-  // Aplicar cupón si llegó (silencioso si falla — el admin puede decidir)
-  if (data.couponCode) {
-    const validation = await validateCoupon(data.couponCode, total);
-    if (validation.ok) {
-      await applyCoupon(cart.id, validation.coupon.id, validation.discountCents);
-      await prisma.cartQuote.update({
-        where: { id: cart.id },
-        data: {
-          internalNotes: `Cupón aplicado: ${validation.coupon.code} (${validation.coupon.label}) · descuento ${(validation.discountCents / 100).toFixed(2)} €`,
-        },
-      });
-    }
+  // Aplicar cupón validado server-side. Esto consume uso y guarda el descuento
+  // exacto que ya se restó de estimatedTotalCents/acceptedTotalCents.
+  if (coupon) {
+    await applyCoupon(cart.id, coupon.id, coupon.discountCents);
   }
 
   // Notificación push al equipo (fire-and-forget)
   void notifyAdmins({
     title: `Nuevo carrito · ${data.name}`,
-    body: `${cart.items.length} producto${cart.items.length === 1 ? "" : "s"} · ${EUR.format(total / 100)}${data.company ? ` · ${data.company}` : ""}`,
+    body: `${cart.items.length} producto${cart.items.length === 1 ? "" : "s"} · ${EUR.format(payableTotal / 100)}${data.company ? ` · ${data.company}` : ""}`,
     url: `/admin/cart-quotes/${cart.id}`,
     tag: `cart-${cart.id}`,
     requireInteraction: true,
   }).catch((err) => console.error("[cart-quote push]", err));
 
   void notifyTelegram(
-    `🛒 <b>Nuevo carrito</b>\n${data.name}${data.company ? ` · ${data.company}` : ""}\n${cart.items.length} productos · <b>${EUR.format(total / 100)}</b>\n📧 ${data.email}`,
+    `🛒 <b>Nuevo carrito</b>\n${data.name}${data.company ? ` · ${data.company}` : ""}\n${cart.items.length} productos · <b>${EUR.format(payableTotal / 100)}</b>\n📧 ${data.email}`,
   ).catch(() => {});
 
   return NextResponse.json({

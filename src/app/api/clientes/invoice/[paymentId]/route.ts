@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateCustomerRequest } from "@/lib/customer-auth";
 import { generateInvoicePdfBuffer, type InvoiceData } from "@/lib/invoice-pdf";
+import { IVA_RATE } from "@/lib/iva";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const DEFAULT_VAT_RATE = 0.21; // 21% España general
 
 /**
  * Genera (o devuelve cacheada) la factura PDF de un Payment del cliente
@@ -79,7 +78,7 @@ export async function GET(
   // Construir datos factura: el amountCents pagado YA incluye IVA (Stripe).
   // Calculamos base imponible y cuota IVA al revés.
   const totalCents = payment.amountCents;
-  const baseCents = Math.round(totalCents / (1 + DEFAULT_VAT_RATE));
+  const baseCents = Math.round(totalCents / (1 + IVA_RATE));
   const vatCents = totalCents - baseCents;
 
   // Items: si todos los CartQuoteItem tienen totalClientCents, los proporcionamos
@@ -87,11 +86,15 @@ export async function GET(
   const itemsHaveAllPrices = payment.cart.items.every((it) => it.totalClientCents != null);
   let pdfItems: InvoiceData["items"];
   if (itemsHaveAllPrices) {
-    // Convertir totales con IVA → sin IVA proporcionalmente
-    const factor = baseCents / totalCents;
+    // Las líneas del carrito están en base sin IVA y pueden representar el
+    // pedido completo. Para depósitos y cupones, facturamos solo la parte
+    // proporcional realmente pagada.
+    const fullOrderBaseCents =
+      payment.cart.acceptedTotalCents ||
+      payment.cart.items.reduce((sum, it) => sum + (it.totalClientCents || 0), 0);
+    const factor = fullOrderBaseCents > 0 ? baseCents / fullOrderBaseCents : 0;
     pdfItems = payment.cart.items.map((it) => {
-      const itemTotalWithVat = it.totalClientCents ?? 0;
-      const itemTotalNoVat = Math.round(itemTotalWithVat * factor);
+      const itemTotalNoVat = Math.round((it.totalClientCents ?? 0) * factor);
       const itemUnitNoVat = Math.round(itemTotalNoVat / Math.max(1, it.quantity));
       const markingDesc =
         it.markingTechniqueName && it.markingPositionId
@@ -132,7 +135,7 @@ export async function GET(
     paymentDate: payment.paidAt ?? issuedAt,
     items: pdfItems,
     baseCents,
-    vatRate: DEFAULT_VAT_RATE,
+    vatRate: IVA_RATE,
     vatCents,
     totalCents,
   };
