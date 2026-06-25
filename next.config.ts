@@ -33,6 +33,7 @@ const SECURITY_HEADERS = [
 
 const config: NextConfig = {
   output: "standalone",
+  outputFileTracingRoot: process.cwd(),
   // Quita la cabecera "x-powered-by: Next.js" — info técnica innecesaria.
   poweredByHeader: false,
   images: {

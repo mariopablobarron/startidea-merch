@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type SubInfo = { id: string; label: string | null; createdAt: string; lastUsedAt: string | null };
 
@@ -27,7 +27,7 @@ export function AdminPushPanel({ secret }: { secret: string }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       setState({ kind: "unsupported", reason: "Tu navegador no soporta notificaciones push." });
       return;
@@ -53,12 +53,12 @@ export function AdminPushPanel({ secret }: { secret: string }) {
     } else {
       setState({ kind: "needs-permission", vapidPublicKey: data.vapidPublicKey });
     }
-  }
+  }, [secret]);
 
   useEffect(() => {
     if (!secret) return;
     refresh();
-  }, [secret]);
+  }, [refresh, secret]);
 
   async function activate() {
     if (state.kind !== "needs-permission") return;

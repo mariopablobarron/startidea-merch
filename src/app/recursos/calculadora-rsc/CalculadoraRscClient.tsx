@@ -20,9 +20,12 @@ export function CalculadoraRscClient() {
   const [downloaded, setDownloaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const inputs = { employees, annualBudgetEur, substitutionPct };
+  const inputs = useMemo(
+    () => ({ employees, annualBudgetEur, substitutionPct }),
+    [employees, annualBudgetEur, substitutionPct],
+  );
   const validation = validateRoiInputs(inputs);
-  const results = useMemo(() => computeRoi(inputs), [employees, annualBudgetEur, substitutionPct]);
+  const results = useMemo(() => computeRoi(inputs), [inputs]);
 
   async function downloadPdf(e: React.FormEvent) {
     e.preventDefault();
