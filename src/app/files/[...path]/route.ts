@@ -20,6 +20,8 @@ const MIME: Record<string, string> = {
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 
+const ACTIVE_EXTENSIONS = new Set([".svg", ".html", ".htm", ".pdf"]);
+
 /**
  * Sirve archivos del volumen /uploads (customer-logos, etc).
  *
@@ -62,12 +64,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ path: s
   const buf = await readFile(resolved);
   const ext = path.extname(resolved).toLowerCase();
   const mime = MIME[ext] || "application/octet-stream";
+  const filename = path.basename(resolved).replace(/["\r\n]/g, "_");
+  const isActive = ACTIVE_EXTENSIONS.has(ext);
 
   return new NextResponse(new Uint8Array(buf), {
     headers: {
       "Content-Type": mime,
       "Cache-Control": "public, max-age=31536000, immutable",
       "Content-Length": String(buf.length),
+      "X-Content-Type-Options": "nosniff",
+      ...(isActive
+        ? {
+            "Content-Security-Policy":
+              "sandbox; default-src 'none'; img-src 'self' data: blob:; style-src 'unsafe-inline'",
+          }
+        : {}),
+      ...(ext === ".html" || ext === ".htm"
+        ? { "Content-Disposition": `attachment; filename="${filename}"` }
+        : {}),
     },
   });
 }
