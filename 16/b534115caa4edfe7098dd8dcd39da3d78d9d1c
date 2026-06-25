@@ -1,0 +1,21 @@
+src/app/api/search/semantic/route.ts
+  s_65877aa637ec34::t_f638895fb97564 4,46,48,74
+src/app/files/[...path]/route.ts
+  s_65877aa637ec34::t_f638895fb97564 23-24,67-68,75-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "16b534115caa4edfe7098dd8dcd39da3d78d9d1c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
