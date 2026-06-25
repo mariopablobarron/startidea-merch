@@ -8,9 +8,17 @@ export function safeEqual(a: string, b: string) {
 }
 
 function cookieValue(req: Request, name: string): string | null {
+  // Parseo sin RegExp dinámica (evita el falso positivo ReDoS de semgrep y es
+  // más directo): partimos por ';' y buscamos la cookie por nombre exacto.
   const cookieHeader = req.headers.get("cookie") || "";
-  const m = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
-  return m ? decodeURIComponent(m[1]) : null;
+  for (const part of cookieHeader.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() === name) {
+      return decodeURIComponent(part.slice(eq + 1).trim());
+    }
+  }
+  return null;
 }
 
 function verifyLegacyAdminCookie(token: string): boolean {
