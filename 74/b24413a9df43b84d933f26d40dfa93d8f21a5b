@@ -1,0 +1,25 @@
+next.config.ts
+  s_65877aa637ec34::t_f638895fb97564 36
+src/components/AdminPushPanel.tsx
+  s_65877aa637ec34::t_f638895fb97564 3,30,56,61
+src/app/recursos/calculadora-rsc/CalculadoraRscClient.tsx
+  s_65877aa637ec34::t_f638895fb97564 23-26,28
+src/components/AdsPixels.tsx
+  s_65877aa637ec34::t_f638895fb97564 45,93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "74b24413a9df43b84d933f26d40dfa93d8f21a5b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
