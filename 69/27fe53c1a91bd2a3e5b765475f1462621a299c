@@ -1,0 +1,25 @@
+.github/workflows/security-audit.yml
+  s_65877aa637ec34::t_52a85aadcae5a0 38,41,50,52,63,77,89-90,92,105-106
+.github/workflows/lighthouse-ci.yml
+  s_65877aa637ec34::t_52a85aadcae5a0 56
+.github/workflows/ci.yml
+  s_65877aa637ec34::t_52a85aadcae5a0 15,18,21
+.github/workflows/deploy.yml
+  s_65877aa637ec34::t_52a85aadcae5a0 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "6927fe53c1a91bd2a3e5b765475f1462621a299c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
