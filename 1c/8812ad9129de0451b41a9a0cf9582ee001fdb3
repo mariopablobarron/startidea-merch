@@ -1,0 +1,29 @@
+src/app/api/m/[hash]/route.ts
+  s_65877aa637ec34::t_4b61d93626e86d 92-100
+  s_65877aa637ec34::t_14f1775180a848 9-25
+  s_2bf6b3c96d0971::t_d66b6f29b61f7d 8,101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "1c8812ad9129de0451b41a9a0cf9582ee001fdb3",
+  "prompts": {},
+  "sessions": {
+    "s_2bf6b3c96d0971": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d109502e-cc87-4c88-8b59-7c97a8e898ac",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
