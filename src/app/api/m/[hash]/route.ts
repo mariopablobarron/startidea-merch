@@ -6,6 +6,24 @@ export const dynamic = "force-dynamic";
 const MAX_BYTES = 12 * 1024 * 1024; // 12 MB — una imagen legítima no lo supera
 
 /**
+ * Detecta el tipo de imagen por los magic bytes del inicio del fichero.
+ * Necesario porque algunos CDN de proveedor (p.ej. printposition de MidOcean)
+ * sirven JPEG válidos con content-type genérico "application/octet-stream".
+ * Devuelve null si no reconoce una imagen → así seguimos rechazando HTML real.
+ */
+function sniffImageType(b: Uint8Array): string | null {
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return "image/png";
+  if (b.length >= 6 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return "image/gif";
+  if (
+    b.length >= 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+    b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50
+  )
+    return "image/webp";
+  return null;
+}
+
+/**
  * Defensa SSRF (defensa en profundidad): originalUrl SIEMPRE lo escribe
  * ensureMediaAsset con URLs de CDN de proveedor, pero bloqueamos hosts
  * internos/privados por si entrara una fila por otra vía. (bug-bounty 2026-06-17)
@@ -63,11 +81,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ hash: s
     return new Response("Upstream " + upstream.status, { status: 502 });
   }
 
-  const ct = upstream.headers.get("content-type") || "image/jpeg";
-  if (!ct.startsWith("image/")) {
-    return new Response("Upstream no es imagen", { status: 502 });
-  }
-
   if (Number(upstream.headers.get("content-length") || 0) > MAX_BYTES) {
     return new Response("Imagen demasiado grande", { status: 502 });
   }
@@ -75,6 +88,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ hash: s
   const buf = await upstream.arrayBuffer();
   if (buf.byteLength > MAX_BYTES) {
     return new Response("Imagen demasiado grande", { status: 502 });
+  }
+
+  // No nos fiamos solo de la cabecera content-type: si no es image/*, detectamos
+  // por magic bytes (algunos CDN sirven JPEG como application/octet-stream).
+  const headerCt = upstream.headers.get("content-type") || "";
+  const ct = headerCt.startsWith("image/")
+    ? headerCt
+    : sniffImageType(new Uint8Array(buf.slice(0, 16)));
+  if (!ct) {
+    return new Response("Upstream no es imagen", { status: 502 });
   }
   return new Response(buf, {
     status: 200,
