@@ -11,6 +11,7 @@ on:
       - 'docs/**'
       - 'README.md'
       - '.gitignore'
+      - '.github/**'
   workflow_dispatch: {}
 
 concurrency:
