@@ -7,13 +7,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * POST /api/admin/proposals/[id]/send-to-client
+ * POST /api/admin/proposals/[id]/resend
  *
- * Envío 1-clic de una propuesta BORRADOR (generada por el agente auto-proposal)
- * al cliente. Re-renderiza el PDF desde quoteItems, lo manda por email con
- * Resend, marca status draft→sent y pasa el carrito vinculado a SENT.
+ * REENVÍA al cliente una propuesta YA enviada (el cliente la perdió, no llegó,
+ * quiere revisarla otra vez). Re-renderiza el PDF actual desde quoteItems y lo
+ * manda de nuevo por email, refrescando sentAt/resendId SIN degradar el estado
+ * (sent/opened/accepted se conservan).
  *
- * Idempotente: si la propuesta ya no es "draft", devuelve 409 (usa /resend).
+ * Para el primer envío de un BORRADOR usar /send-to-client (aquí devuelve 409).
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await authenticateAdminRequest(req);
@@ -22,14 +23,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const proposal = await prisma.proposal.findUnique({ where: { id } });
   if (!proposal) return NextResponse.json({ error: "Propuesta no encontrada" }, { status: 404 });
-  if (proposal.status !== "draft") {
+  if (proposal.status === "draft") {
     return NextResponse.json(
-      { error: "La propuesta ya no es un borrador (¿ya enviada?). Usa Reenviar." },
+      { error: "Es un borrador sin enviar. Usa «Enviar al cliente»." },
       { status: 409 },
     );
   }
 
-  const result = await deliverProposal(proposal, session.email);
+  const result = await deliverProposal(proposal, session.email, { resend: true });
   if (!result.ok) {
     return NextResponse.json(
       { error: result.error, detail: result.detail },

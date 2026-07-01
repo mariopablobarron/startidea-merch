@@ -15,6 +15,7 @@ import { signProposalToken } from "@/lib/proposal-token";
 import type { ProposalQuoteItem } from "@/lib/proposal-types";
 import { predictProposalsBatch } from "@/lib/insights/proposal-prediction";
 import { SendProposalDraftButton } from "@/components/SendProposalDraftButton";
+import { ResendProposalButton } from "@/components/ResendProposalButton";
 
 export const metadata: Metadata = {
   title: "Propuestas (recomendador)",
@@ -243,8 +244,14 @@ export default async function PropuestasListPage({
                         >
                           Ver PDF →
                         </a>
-                        {p.status === "draft" && (
+                        {p.status === "draft" ? (
                           <SendProposalDraftButton
+                            proposalId={p.id}
+                            proposalNumber={p.proposalNumber}
+                            email={p.email}
+                          />
+                        ) : (
+                          <ResendProposalButton
                             proposalId={p.id}
                             proposalNumber={p.proposalNumber}
                             email={p.email}
