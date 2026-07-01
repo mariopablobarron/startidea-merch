@@ -9,6 +9,8 @@ const EUR = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 2,
 });
 
+const fmtPrice = (cents: number | null) => (cents == null ? "—" : `${EUR.format(cents / 100)} €`);
+
 type Override = {
   customName: string | null;
   customFromPriceCents: number | null;
@@ -35,6 +37,22 @@ type ProductRow = {
 };
 
 type Filter = "all" | "active" | "featured" | "hidden" | "edited";
+
+type BulkPreviewItem = {
+  id: string;
+  name: string;
+  ref: string | null;
+  currentFromPriceCents: number | null;
+  newFromPriceCents: number | null;
+  changed: boolean;
+};
+type BulkPreview = {
+  marginPct: number | null;
+  count: number;
+  changedCount: number;
+  items: BulkPreviewItem[];
+  missing: string[];
+};
 const FILTER_LABELS: Record<Filter, string> = {
   all: "Todos",
   active: "Activos",
@@ -57,6 +75,7 @@ export default function AdminProductsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkMsg, setBulkMsg] = useState<string | null>(null);
+  const [bulkPreview, setBulkPreview] = useState<BulkPreview | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -123,14 +142,42 @@ export default function AdminProductsPage() {
     }
   }
 
-  // ─── Bulk: aplicar margen % a múltiples productos ─────────────────────────
-  async function applyBulkMargin(marginPct: number | null) {
+  // ─── Bulk paso 1: previsualizar el impacto (antes→después) ────────────────
+  async function requestBulkPreview(marginPct: number | null) {
     if (selected.size === 0) return;
-    const label =
-      marginPct == null
-        ? `Quitar margen % de ${selected.size} productos seleccionados? (vuelven al precio del proveedor)`
-        : `Aplicar margen ${marginPct >= 0 ? "+" : ""}${marginPct}% a ${selected.size} productos seleccionados?`;
-    if (!confirm(label)) return;
+    setBulkBusy(true);
+    setBulkMsg(null);
+    setBulkPreview(null);
+    try {
+      const r = await fetch("/api/admin/products/bulk-margin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ productIds: [...selected], marginPct, preview: true }),
+      });
+      const data = await r.json();
+      if (!r.ok || !data.ok) {
+        setBulkMsg(`⚠ ${data.error || `Error ${r.status}`}`);
+        return;
+      }
+      setBulkPreview({
+        marginPct,
+        count: data.count,
+        changedCount: data.changedCount,
+        items: data.items,
+        missing: data.missing ?? [],
+      });
+    } catch (e) {
+      setBulkMsg(`⚠ ${e instanceof Error ? e.message : "Error de red"}`);
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  // ─── Bulk paso 2: aplicar el margen ya previsualizado ─────────────────────
+  async function confirmBulkApply() {
+    if (!bulkPreview) return;
+    const { marginPct } = bulkPreview;
     setBulkBusy(true);
     setBulkMsg(null);
     try {
@@ -138,10 +185,7 @@ export default function AdminProductsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          productIds: [...selected],
-          marginPct,
-        }),
+        body: JSON.stringify({ productIds: [...selected], marginPct }),
       });
       const data = await r.json();
       if (!r.ok) {
@@ -152,6 +196,7 @@ export default function AdminProductsPage() {
         `✓ ${data.updated} producto${data.updated === 1 ? "" : "s"} actualizado${data.updated === 1 ? "" : "s"}` +
           (data.missing?.length ? ` (${data.missing.length} no encontrados)` : ""),
       );
+      setBulkPreview(null);
       setSelected(new Set());
       await load();
     } catch (e) {
@@ -313,25 +358,25 @@ export default function AdminProductsPage() {
             </button>
             <div className="flex flex-1 flex-wrap items-center justify-end gap-1.5">
               <span className="text-xs text-ink/55">Aplicar margen:</span>
-              <BulkMarginButton onClick={() => applyBulkMargin(-20)} disabled={bulkBusy}>
+              <BulkMarginButton onClick={() => requestBulkPreview(-20)} disabled={bulkBusy}>
                 −20%
               </BulkMarginButton>
-              <BulkMarginButton onClick={() => applyBulkMargin(-10)} disabled={bulkBusy}>
+              <BulkMarginButton onClick={() => requestBulkPreview(-10)} disabled={bulkBusy}>
                 −10%
               </BulkMarginButton>
-              <BulkMarginButton onClick={() => applyBulkMargin(20)} disabled={bulkBusy}>
+              <BulkMarginButton onClick={() => requestBulkPreview(20)} disabled={bulkBusy}>
                 +20%
               </BulkMarginButton>
-              <BulkMarginButton onClick={() => applyBulkMargin(35)} disabled={bulkBusy}>
+              <BulkMarginButton onClick={() => requestBulkPreview(35)} disabled={bulkBusy}>
                 +35%
               </BulkMarginButton>
-              <BulkMarginButton onClick={() => applyBulkMargin(60)} disabled={bulkBusy}>
+              <BulkMarginButton onClick={() => requestBulkPreview(60)} disabled={bulkBusy}>
                 +60%
               </BulkMarginButton>
-              <BulkMarginCustom onApply={applyBulkMargin} disabled={bulkBusy} />
+              <BulkMarginCustom onApply={requestBulkPreview} disabled={bulkBusy} />
               <button
                 type="button"
-                onClick={() => applyBulkMargin(null)}
+                onClick={() => requestBulkPreview(null)}
                 disabled={bulkBusy}
                 className="ml-2 rounded-full border border-line bg-bone px-3 py-1 text-xs text-ink/60 hover:border-accent hover:text-ink disabled:opacity-50"
                 title="Vuelve al precio original del proveedor"
@@ -346,6 +391,92 @@ export default function AdminProductsPage() {
                 {bulkMsg}
               </p>
             )}
+          </div>
+        )}
+
+        {/* Panel de previsualización: antes→después antes de aplicar (destructivo) */}
+        {bulkPreview && (
+          <div className="mb-3 rounded-2xl border border-accent/50 bg-bone p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-ink">
+                Previsualización ·{" "}
+                {bulkPreview.marginPct == null
+                  ? "quitar margen % (volver al global)"
+                  : `margen ${bulkPreview.marginPct >= 0 ? "+" : ""}${bulkPreview.marginPct}%`}
+              </p>
+              <p className="text-xs text-ink/60">
+                {bulkPreview.changedCount} de {bulkPreview.count} cambian de precio
+              </p>
+            </div>
+            <div className="mt-3 max-h-64 overflow-auto rounded-lg border border-line/70">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-bone-soft text-ink/60">
+                  <tr>
+                    <th className="px-3 py-1.5 text-left font-medium">Producto</th>
+                    <th className="px-3 py-1.5 text-right font-medium">Antes</th>
+                    <th className="px-3 py-1.5 text-right font-medium">Después</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bulkPreview.items.map((it) => {
+                    const up =
+                      it.currentFromPriceCents != null &&
+                      it.newFromPriceCents != null &&
+                      it.newFromPriceCents > it.currentFromPriceCents;
+                    const down =
+                      it.currentFromPriceCents != null &&
+                      it.newFromPriceCents != null &&
+                      it.newFromPriceCents < it.currentFromPriceCents;
+                    return (
+                      <tr
+                        key={it.id}
+                        className={`border-t border-line/50 ${it.changed ? "" : "opacity-45"}`}
+                      >
+                        <td className="px-3 py-1.5">
+                          <span className="text-ink">{it.name}</span>
+                          {it.ref && (
+                            <span className="ml-1 font-mono text-[10px] text-ink/50">{it.ref}</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-ink/55">
+                          {fmtPrice(it.currentFromPriceCents)}
+                        </td>
+                        <td
+                          className={`px-3 py-1.5 text-right font-semibold tabular-nums ${
+                            up ? "text-accent-deep" : down ? "text-social" : "text-ink/60"
+                          }`}
+                        >
+                          {fmtPrice(it.newFromPriceCents)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {bulkPreview.missing.length > 0 && (
+              <p className="mt-2 text-[11px] text-accent-deep">
+                {bulkPreview.missing.length} no encontrados (se omiten)
+              </p>
+            )}
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setBulkPreview(null)}
+                disabled={bulkBusy}
+                className="rounded-full border border-line bg-bone px-4 py-1.5 text-xs text-ink/70 hover:text-ink disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmBulkApply}
+                disabled={bulkBusy}
+                className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-bone hover:bg-accent-deep disabled:opacity-50"
+              >
+                {bulkBusy ? "Aplicando…" : `Confirmar y aplicar a ${selected.size}`}
+              </button>
+            </div>
           </div>
         )}
 
