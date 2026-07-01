@@ -1,0 +1,21 @@
+src/app/clientes/[token]/page.tsx
+  s_65877aa637ec34::t_b2b622a525ddf9 167-221
+  s_65877aa637ec34::t_7f0ff50b0147c6 59-73
+  s_65877aa637ec34::t_4f205c8467f7e9 19-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "14940faf422c66d0bfbca1f2ce39daae14b2558e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
