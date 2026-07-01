@@ -136,6 +136,20 @@ export async function POST(req: Request) {
     }
   }
 
-  // 200 a todo lo demás (delivered, etc.) — aceptados sin error.
+  // ENTREGA → marca deliveredAt (primera vez). Permite ver el % de entrega de
+  // cada broadcast en nuestro propio admin sin depender del dashboard de Resend.
+  if (type === "email.delivered") {
+    const d = event.data as { email_id?: string };
+    if (d?.email_id) {
+      await prisma.broadcastDelivery
+        .updateMany({
+          where: { resendId: d.email_id, deliveredAt: null },
+          data: { deliveredAt: new Date() },
+        })
+        .catch(() => {});
+    }
+  }
+
+  // 200 a todo lo demás — aceptados sin error.
   return NextResponse.json({ ok: true });
 }

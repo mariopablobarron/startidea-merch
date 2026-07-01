@@ -41,7 +41,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // Estadísticas de engagement (aperturas/clics) desde los deliveries.
   // openedAt/clickedAt → destinatarios ÚNICOS que abrieron/clicaron;
   // openCount/clickCount → aperturas/clics TOTALES (un mismo email puede abrir varias veces).
-  const [opened, clicked, agg] = await Promise.all([
+  const [delivered, opened, clicked, agg] = await Promise.all([
+    prisma.broadcastDelivery.count({ where: { broadcastId: id, deliveredAt: { not: null } } }),
     prisma.broadcastDelivery.count({ where: { broadcastId: id, openedAt: { not: null } } }),
     prisma.broadcastDelivery.count({ where: { broadcastId: id, clickedAt: { not: null } } }),
     prisma.broadcastDelivery.aggregate({
@@ -50,9 +51,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }),
   ]);
   const stats = {
+    delivered,
     opened,
     clicked,
+    // % de entrega sobre enviados (Resend email.delivered). Solo cuenta para
+    // broadcasts enviados DESPUÉS de activar el webhook email.delivered.
+    deliveryRate: b.sentCount > 0 ? Math.round((delivered / b.sentCount) * 100) : 0,
     openRate: b.sentCount > 0 ? Math.round((opened / b.sentCount) * 100) : 0,
+    // Apertura sobre ENTREGADOS (más honesto que sobre enviados cuando la entrega no es total).
+    openRateOnDelivered: delivered > 0 ? Math.round((opened / delivered) * 100) : 0,
     clickRate: b.sentCount > 0 ? Math.round((clicked / b.sentCount) * 100) : 0,
     totalOpens: agg._sum.openCount ?? 0,
     totalClicks: agg._sum.clickCount ?? 0,

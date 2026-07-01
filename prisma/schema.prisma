@@ -2123,6 +2123,10 @@ model BroadcastDelivery {
   sentAt      DateTime        @default(now())
   // Estadísticas: id de Resend para mapear eventos del webhook + apertura.
   resendId    String?
+  // Resend email.delivered — permite ver el % de entrega en nuestro propio
+  // admin sin depender del dashboard de Resend (columna aditiva; la sincroniza
+  // `prisma db push` en el arranque del contenedor).
+  deliveredAt DateTime?
   openedAt    DateTime?
   openCount   Int             @default(0)
   // Clics (Resend email.clicked) — requiere click-tracking activo en Resend.

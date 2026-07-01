@@ -41,9 +41,12 @@ type Broadcast = {
   failedCount: number;
   createdBy: string | null;
   stats?: {
+    delivered: number;
     opened: number;
     clicked: number;
+    deliveryRate: number;
     openRate: number;
+    openRateOnDelivered: number;
     clickRate: number;
     totalOpens: number;
     totalClicks: number;
@@ -372,12 +375,22 @@ export default function BroadcastEditorPage({
 
         {/* Estadísticas — solo cuando ya se envió */}
         {broadcast.status === "SENT" && broadcast.stats && (
-          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <StatCard label="Enviados" value={broadcast.sentCount.toLocaleString("es-ES")} sub={broadcast.failedCount > 0 ? `${broadcast.failedCount} fallidos` : "sin fallos"} />
+            <StatCard
+              label="Entregados"
+              value={broadcast.stats.delivered > 0 ? `${broadcast.stats.deliveryRate}%` : "—"}
+              sub={broadcast.stats.delivered > 0 ? `${broadcast.stats.delivered.toLocaleString("es-ES")} en bandeja` : "sin datos aún"}
+              accent={broadcast.stats.deliveryRate >= 90}
+            />
             <StatCard
               label="Aperturas"
               value={`${broadcast.stats.openRate}%`}
-              sub={`${broadcast.stats.opened.toLocaleString("es-ES")} personas`}
+              sub={
+                broadcast.stats.delivered > 0
+                  ? `${broadcast.stats.opened.toLocaleString("es-ES")} · ${broadcast.stats.openRateOnDelivered}% de entregados`
+                  : `${broadcast.stats.opened.toLocaleString("es-ES")} personas`
+              }
               accent={broadcast.stats.opened > 0}
             />
             <StatCard
@@ -395,7 +408,7 @@ export default function BroadcastEditorPage({
         )}
         {broadcast.status === "SENT" && broadcast.stats && broadcast.stats.opened === 0 && (
           <p className="mb-6 -mt-3 text-[11px] text-ink/45">
-            Las aperturas y clics tardan unos minutos en llegar (vía webhook de Resend). Si tras un rato siguen a 0, revisa que el webhook de Resend apunte a <code>/api/webhooks/resend</code> con los eventos opened/clicked activos.
+            Aperturas/clics tardan unos minutos (webhook de Resend). Si <strong>Entregados</strong> es alto pero las aperturas siguen a 0, suele ser que la campaña salió antes de activar el open-tracking (píxel no inyectado) — se medirá en la siguiente. Si <strong>Entregados</strong> es bajo, es entregabilidad (dominio frío en warmup). El webhook debe apuntar a <code>/api/webhooks/resend</code> con los eventos delivered/opened/clicked activos.
           </p>
         )}
 
