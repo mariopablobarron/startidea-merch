@@ -24,6 +24,7 @@ type ProductRow = {
   id: string;
   slug: string;
   name: string;
+  supplier: string;
   supplierRef: string;
   internalRef: string | null;
   primaryImageUrl: string | null;
@@ -49,6 +50,7 @@ export default function AdminProductsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("active");
+  const [supplier, setSupplier] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Bulk selection — set de productIds marcados
@@ -63,6 +65,7 @@ export default function AdminProductsPage() {
       const params = new URLSearchParams({
         q,
         filter,
+        ...(supplier ? { supplier } : {}),
         page: String(page),
         perPage: "30",
       });
@@ -80,7 +83,7 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, filter, page]);
+  }, [q, filter, supplier, page]);
 
   useEffect(() => {
     load();
@@ -252,7 +255,7 @@ export default function AdminProductsPage() {
               setQ(e.target.value);
               setPage(1);
             }}
-            placeholder="Buscar por nombre o ref…"
+            placeholder="Buscar por nombre, STM-… o ref de proveedor…"
             className="w-72 rounded-full border border-line bg-bone px-4 py-2 text-sm outline-none focus:border-accent"
           />
           <div className="flex gap-1.5">
@@ -274,6 +277,21 @@ export default function AdminProductsPage() {
               </button>
             ))}
           </div>
+          <select
+            value={supplier}
+            onChange={(e) => {
+              setSupplier(e.target.value);
+              setPage(1);
+            }}
+            title="Filtrar por proveedor"
+            className="rounded-full border border-line bg-bone px-3 py-1.5 text-xs outline-none focus:border-accent"
+          >
+            <option value="">Todos los proveedores</option>
+            <option value="midocean">MidOcean</option>
+            <option value="makito">Makito</option>
+            <option value="cifra">Cifra</option>
+            <option value="adivin">Adivin</option>
+          </select>
         </div>
 
         {error && (
@@ -415,6 +433,9 @@ export default function AdminProductsPage() {
                         <td className="p-3">
                           <div className="font-medium text-ink">{displayName}</div>
                           <div className="text-[11px] text-ink/50">
+                            <span className="mr-1.5 rounded bg-ink/5 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-ink/60" title="Proveedor">
+                              {p.supplier}
+                            </span>
                             <span className="font-mono text-accent" title="Referencia pública Startidea (la que ven los clientes)">
                               {p.internalRef || "—"}
                             </span>

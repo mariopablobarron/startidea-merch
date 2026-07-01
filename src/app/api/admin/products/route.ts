@@ -22,6 +22,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") || "").trim();
   const filter = url.searchParams.get("filter") || "active";
+  const supplier = (url.searchParams.get("supplier") || "").trim();
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
   const perPage = Math.min(100, parseInt(url.searchParams.get("perPage") || "30", 10) || 30);
 
@@ -31,9 +32,12 @@ export async function GET(req: Request) {
           OR: [
             { name: { contains: q, mode: "insensitive" as const } },
             { supplierRef: { contains: q, mode: "insensitive" as const } },
+            { internalRef: { contains: q, mode: "insensitive" as const } },
+            { slug: { contains: q, mode: "insensitive" as const } },
           ],
         }
       : {}),
+    ...(supplier ? { supplier: supplier as Prisma.ProductWhereInput["supplier"] } : {}),
     ...(filter === "active" ? { active: true } : {}),
     ...(filter === "featured" ? { override: { is: { featured: true } } } : {}),
     ...(filter === "hidden" ? { override: { is: { hidden: true } } } : {}),
@@ -50,6 +54,7 @@ export async function GET(req: Request) {
         id: true,
         slug: true,
         name: true,
+        supplier: true,
         supplierRef: true,
         internalRef: true,
         primaryImageUrl: true,
