@@ -1,0 +1,30 @@
+src/app/api/admin/proposals/[id]/send-to-client/route.ts
+  s_65877aa637ec34::t_4b20c29d5a2d32 4,16,27,32-33,35-36,42-43
+src/components/ResendProposalButton.tsx
+  s_65877aa637ec34::t_3e23ad2186baf5 1-58
+src/app/admin/propuestas/page.tsx
+  s_65877aa637ec34::t_da08d48322ebf4 247,253-254
+  s_65877aa637ec34::t_c8c0565475fa09 18
+  s_65877aa637ec34::t_2a96adb18daf80 255-257
+  s_65877aa637ec34::t_8bd77cb4966bbe 258
+src/app/api/admin/proposals/[id]/resend/route.ts
+  s_65877aa637ec34::t_90ad96465204b6 1-46
+src/lib/proposal-deliver.ts
+  s_65877aa637ec34::t_f20a9106d1e61a 1-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "7822e21c82bf66d3069720e418efc99a8846fcd4",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
