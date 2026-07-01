@@ -52,6 +52,26 @@ type Result = {
   };
 };
 
+// Parámetros de una línea (mismo shape que /api/admin/cotizar) para re-cotizar
+// server-side al guardar.
+type LineInput = {
+  ref: string;
+  qty: number;
+  marginPct?: number;
+  techniqueCode?: string;
+  portesCents: number;
+  couponCode?: string;
+};
+// Línea acumulada en la cesta: input para guardar + snapshot para mostrar.
+type BasketLine = {
+  input: LineInput;
+  product: string;
+  ref: string;
+  techniqueLabel: string | null;
+  qty: number;
+  baseTotalCents: number;
+};
+
 export default function CotizarPage() {
   const [ref, setRef] = useState("");
   const [qty, setQty] = useState("250");
@@ -74,6 +94,13 @@ export default function CotizarPage() {
   const [propError, setPropError] = useState<string | null>(null);
   const [propResult, setPropResult] = useState<
     { proposalNumber: string; downloadUrl: string; emailed: boolean; emailError?: string } | null
+  >(null);
+  // presupuesto MULTILÍNEA → CartQuote
+  const [lines, setLines] = useState<BasketLine[]>([]);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveResult, setSaveResult] = useState<
+    { cartId: string; itemCount: number; estimatedTotalCents: number } | null
   >(null);
 
   async function cotizar(techniqueCode?: string) {
@@ -149,6 +176,76 @@ export default function CotizarPage() {
       setPropLoading(false);
     }
   }
+
+  // ─── Presupuesto multilínea ──────────────────────────────────────────────
+  function addLineToBasket() {
+    if (!res) return;
+    const input: LineInput = {
+      ref: ref.trim(),
+      qty: parseInt(qty, 10) || 1,
+      marginPct: marginPct ? Number(marginPct) : undefined,
+      techniqueCode: res.marking?.techniqueCode,
+      portesCents: Math.max(0, Math.round((parseFloat(portes.replace(",", ".")) || 0) * 100)),
+      couponCode: couponCode.trim() || undefined,
+    };
+    setLines((prev) => [
+      ...prev,
+      {
+        input,
+        product: res.product.name,
+        ref: res.product.publicRef,
+        techniqueLabel: res.marking?.techniqueLabel ?? null,
+        qty: res.qty,
+        baseTotalCents: res.pvp.baseTotal,
+      },
+    ]);
+    setSaveResult(null);
+    // limpiar para teclear la siguiente línea
+    setRef("");
+    setRes(null);
+    setError(null);
+    setShowDoc(false);
+  }
+
+  function removeLine(i: number) {
+    setLines((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function guardarPresupuesto() {
+    if (lines.length === 0 || !clienteNombre.trim() || !clienteEmail.trim()) return;
+    setSaveLoading(true);
+    setSaveError(null);
+    setSaveResult(null);
+    try {
+      const r = await fetch("/api/admin/cotizar/save-lines", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contact: {
+            name: clienteNombre.trim(),
+            email: clienteEmail.trim(),
+            company: clienteEmpresa.trim() || undefined,
+          },
+          notes: notas.trim() || undefined,
+          lines: lines.map((l) => l.input),
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        setSaveError(d.error || `Error ${r.status}`);
+        return;
+      }
+      setSaveResult({ cartId: d.cartId, itemCount: d.itemCount, estimatedTotalCents: d.estimatedTotalCents });
+      setLines([]);
+    } catch {
+      setSaveError("Error de red");
+    } finally {
+      setSaveLoading(false);
+    }
+  }
+
+  const basketBaseCents = lines.reduce((s, l) => s + l.baseTotalCents, 0);
 
   const pvpGoods = res ? res.pvp.productoTotal + res.pvp.marcajeTotal : 0;
   const showEnvioLine = res ? res.envioGratis || res.pvp.envioTotal > 0 || res.coste.portesTotal > 0 : false;
@@ -244,6 +341,123 @@ export default function CotizarPage() {
           {error && <p className="mt-3 rounded-xl bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}
         </section>
 
+        {/* Presupuesto multilínea → CartQuote guardado */}
+        {(lines.length > 0 || saveResult) && (
+          <section className="mt-6 rounded-3xl border-2 border-social/40 bg-bone p-5" data-noprint>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-social">
+              Presupuesto multilínea{lines.length > 0 ? ` · ${lines.length} línea${lines.length === 1 ? "" : "s"}` : ""}
+            </p>
+
+            {saveResult ? (
+              <div className="mt-3 rounded-xl bg-social/10 p-4 text-sm text-ink">
+                ✓ Presupuesto guardado — {saveResult.itemCount} línea{saveResult.itemCount === 1 ? "" : "s"} ·{" "}
+                {EUR.format(saveResult.estimatedTotalCents / 100)} (sin IVA).{" "}
+                <a
+                  href={`/admin/cart-quotes/${saveResult.cartId}`}
+                  className="font-semibold text-accent-deep underline"
+                >
+                  Abrir en pedidos →
+                </a>
+              </div>
+            ) : (
+              <>
+                <table className="mt-3 w-full text-sm">
+                  <tbody className="divide-y divide-line">
+                    {lines.map((l, i) => (
+                      <tr key={i}>
+                        <td className="py-1.5">
+                          <span className="text-ink">{l.product}</span>{" "}
+                          <span className="font-mono text-[10px] text-ink/45">{l.ref}</span>
+                          {l.techniqueLabel && (
+                            <span className="text-[11px] text-ink/55"> · {l.techniqueLabel}</span>
+                          )}
+                        </td>
+                        <td className="py-1.5 text-right font-mono tabular-nums text-ink/70">{l.qty}×</td>
+                        <td className="py-1.5 text-right font-mono tabular-nums">
+                          {EUR.format(l.baseTotalCents / 100)}
+                        </td>
+                        <td className="py-1.5 pl-2 text-right">
+                          <button
+                            onClick={() => removeLine(i)}
+                            className="text-xs text-ink/40 hover:text-accent-deep"
+                            title="Quitar línea"
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="border-t-2 border-social/30">
+                      <td className="pt-2 font-semibold text-ink" colSpan={2}>
+                        Base total (sin IVA)
+                      </td>
+                      <td className="pt-2 text-right font-mono font-semibold tabular-nums" colSpan={2}>
+                        {EUR.format(basketBaseCents / 100)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-ink/55">Cliente *</label>
+                    <input
+                      value={clienteNombre}
+                      onChange={(e) => setClienteNombre(e.target.value)}
+                      placeholder="Nombre de contacto"
+                      className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-ink/55">Email *</label>
+                    <input
+                      type="email"
+                      value={clienteEmail}
+                      onChange={(e) => setClienteEmail(e.target.value)}
+                      placeholder="cliente@empresa.com"
+                      className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-ink/55">Empresa</label>
+                    <input
+                      value={clienteEmpresa}
+                      onChange={(e) => setClienteEmpresa(e.target.value)}
+                      placeholder="(opcional)"
+                      className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-ink/55">Notas internas</label>
+                    <input
+                      value={notas}
+                      onChange={(e) => setNotas(e.target.value)}
+                      placeholder="(opcional)"
+                      className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+                    />
+                  </div>
+                </div>
+
+                {saveError && (
+                  <p className="mt-2 rounded-xl bg-accent-wash p-2 text-xs text-accent-deep">⚠ {saveError}</p>
+                )}
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-[11px] text-ink/45">
+                    Se guarda como pedido editable en <code className="font-mono">/admin/cart-quotes</code>.
+                  </p>
+                  <button
+                    onClick={guardarPresupuesto}
+                    disabled={saveLoading || !clienteNombre.trim() || !clienteEmail.trim()}
+                    className="rounded-full bg-social px-5 py-2.5 text-sm font-semibold text-bone transition hover:opacity-90 disabled:opacity-50"
+                  >
+                    {saveLoading ? "Guardando…" : "Guardar presupuesto →"}
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
         {res && (
           <>
             {/* Producto + técnicas */}
@@ -333,12 +547,20 @@ export default function CotizarPage() {
                 {res.cuponError && (
                   <p className="mt-2 rounded-lg bg-accent-wash px-3 py-1.5 text-[11px] text-accent-deep">⚠ Cupón: {res.cuponError}</p>
                 )}
-                <button
-                  onClick={() => setShowDoc(true)}
-                  className="mt-4 w-full rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-bone transition hover:bg-accent"
-                >
-                  Generar presupuesto →
-                </button>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <button
+                    onClick={addLineToBasket}
+                    className="rounded-full border-2 border-social px-4 py-2.5 text-sm font-semibold text-social transition hover:bg-social hover:text-bone"
+                  >
+                    ➕ Añadir al presupuesto
+                  </button>
+                  <button
+                    onClick={() => setShowDoc(true)}
+                    className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-bone transition hover:bg-accent"
+                  >
+                    Generar presupuesto →
+                  </button>
+                </div>
               </div>
             </section>
 
