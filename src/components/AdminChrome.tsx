@@ -28,6 +28,9 @@ export function AdminChrome({ children }: { children: React.ReactNode }) {
               <Link href="/admin/quick" className="hover:text-accent">
                 Quick
               </Link>
+              <Link href="/admin/cotizar" className="hover:text-accent">
+                Cotizar
+              </Link>
               <Link href="/admin/quotes" className="hover:text-accent">
                 Cotizaciones
               </Link>
@@ -36,6 +39,9 @@ export function AdminChrome({ children }: { children: React.ReactNode }) {
               </Link>
               <Link href="/admin/products" className="hover:text-accent">
                 Productos
+              </Link>
+              <Link href="/admin/marketing/broadcasts" className="hover:text-accent">
+                Marketing
               </Link>
             </nav>
           </div>
