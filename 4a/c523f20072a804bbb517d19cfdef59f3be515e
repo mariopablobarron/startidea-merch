@@ -1,0 +1,26 @@
+src/lib/proposal-deliver.ts
+  s_65877aa637ec34::t_0f86312a01c5d8 62-65,73
+src/app/api/proposal/[number]/accept/route.ts
+  s_65877aa637ec34::t_b2d25640232fab 66-71,76-77,89,91
+  s_65877aa637ec34::t_9fc6ce739e49a6 110,132
+  s_65877aa637ec34::t_1f6e30ce876e9a 1-65,72-75,78-88,90,92-109,111-131,133-148
+src/lib/proposal-mailer.ts
+  s_65877aa637ec34::t_ebae64dc984680 26
+  s_65877aa637ec34::t_8938eaa19b8cbf 83,86-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "4ac523f20072a804bbb517d19cfdef59f3be515e",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
