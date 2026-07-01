@@ -16,6 +16,27 @@ const EUR = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 0,
 });
 
+// Etiquetas de cara al cliente para el estado de cada envío. Nunca revelan el
+// proveedor; FAILED se suaviza a "En revisión" para no alarmar.
+const PO_STATUS: Record<string, { label: string; cls: string }> = {
+  PENDING: { label: "En preparación", cls: "bg-bone-soft text-ink/60" },
+  PLACED: { label: "Confirmado", cls: "bg-accent-mist text-accent-deep" },
+  IN_PRODUCTION: { label: "En producción", cls: "bg-accent-mist text-accent-deep" },
+  SHIPPED: { label: "Enviado", cls: "bg-social/15 text-social" },
+  DELIVERED: { label: "Entregado", cls: "bg-social/15 text-social" },
+  CANCELED: { label: "Cancelado", cls: "bg-bone-soft text-ink/40" },
+  FAILED: { label: "En revisión", cls: "bg-bone-soft text-ink/60" },
+};
+
+function fmtDay(d: Date | null) {
+  if (!d) return null;
+  return new Date(d).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export default async function CustomerDashboardPage({
   params,
 }: {
@@ -35,6 +56,21 @@ export default async function CustomerDashboardPage({
     include: {
       items: { select: { quantity: true, productName: true, productRef: true } },
       payments: { where: { status: "PAID" }, select: { amountCents: true } },
+      // Envíos al cliente. Ojo: NO seleccionamos `supplier` — el cliente nunca
+      // ve el proveedor (MidOcean/Makito). El transportista (trackingCarrier) sí.
+      purchaseOrders: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          status: true,
+          estimatedDeliveryDate: true,
+          shippedAt: true,
+          deliveredAt: true,
+          trackingCarrier: true,
+          trackingNumber: true,
+          trackingUrl: true,
+        },
+      },
     },
   });
 
@@ -128,6 +164,61 @@ export default async function CustomerDashboardPage({
                     ))}
                     {c.items.length > 5 && <li>… y {c.items.length - 5} más</li>}
                   </ul>
+
+                  {c.purchaseOrders.length > 0 && (
+                    <div className="mt-4 border-t border-line/70 pt-3">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink/50">
+                        Seguimiento del envío
+                      </p>
+                      <ul className="mt-2 space-y-2">
+                        {c.purchaseOrders.map((po, i) => {
+                          const st = PO_STATUS[po.status] ?? {
+                            label: po.status,
+                            cls: "bg-bone-soft text-ink/60",
+                          };
+                          const eta = fmtDay(po.estimatedDeliveryDate);
+                          const delivered = fmtDay(po.deliveredAt);
+                          return (
+                            <li
+                              key={po.id}
+                              className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/70"
+                            >
+                              {c.purchaseOrders.length > 1 && (
+                                <span className="font-medium text-ink/50">Envío {i + 1}</span>
+                              )}
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-[11px] uppercase tracking-wider ${st.cls}`}
+                              >
+                                {st.label}
+                              </span>
+                              {po.status === "DELIVERED" && delivered ? (
+                                <span>Entregado el {delivered}</span>
+                              ) : eta ? (
+                                <span>Entrega estimada: {eta}</span>
+                              ) : null}
+                              {po.trackingNumber &&
+                                (po.trackingUrl ? (
+                                  <a
+                                    href={po.trackingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium text-accent hover:underline"
+                                  >
+                                    Ver seguimiento
+                                    {po.trackingCarrier ? ` (${po.trackingCarrier})` : ""} →
+                                  </a>
+                                ) : (
+                                  <span className="text-ink/50">
+                                    {po.trackingCarrier ? `${po.trackingCarrier} · ` : ""}
+                                    <span className="font-mono">{po.trackingNumber}</span>
+                                  </span>
+                                ))}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
