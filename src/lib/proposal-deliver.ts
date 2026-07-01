@@ -59,7 +59,10 @@ export async function deliverProposal(
   }
 
   const token = signProposalToken(proposal.id);
-  const downloadUrl = `${SITE_URL}/api/proposal/${encodeURIComponent(proposal.proposalNumber)}/pdf?token=${encodeURIComponent(token)}`;
+  const num = encodeURIComponent(proposal.proposalNumber);
+  const tok = encodeURIComponent(token);
+  const downloadUrl = `${SITE_URL}/api/proposal/${num}/pdf?token=${tok}`;
+  const acceptUrl = `${SITE_URL}/api/proposal/${num}/accept?token=${tok}`;
 
   const emailResult = await sendProposalEmail({
     proposalNumber: proposal.proposalNumber,
@@ -67,6 +70,7 @@ export async function deliverProposal(
     name: proposal.name,
     totals,
     downloadUrl,
+    acceptUrl,
     pdfBuffer,
   });
   if (!emailResult.ok) {

@@ -23,6 +23,7 @@ type SendProposalEmailParams = {
   name?: string | null;
   totals: ProposalTotals;
   downloadUrl: string;
+  acceptUrl?: string;
   pdfBuffer: Buffer;
 };
 
@@ -79,9 +80,17 @@ export async function sendProposalEmail(
             descargarlo directamente:
           </p>
 
-          <p style="margin:24px 0;text-align:center;">
+          <p style="margin:24px 0 12px 0;text-align:center;">
             <a href="${params.downloadUrl}" style="display:inline-block;background:#0a0a0b;color:#fff;text-decoration:none;padding:14px 28px;border-radius:999px;font-size:14px;font-weight:600;">Descargar PDF</a>
           </p>
+          ${
+            params.acceptUrl
+              ? `<p style="margin:0 0 8px 0;text-align:center;">
+            <a href="${params.acceptUrl}" style="display:inline-block;background:#0f9d58;color:#fff;text-decoration:none;padding:14px 28px;border-radius:999px;font-size:14px;font-weight:600;">✓ Aceptar esta propuesta</a>
+          </p>
+          <p style="font-size:12px;line-height:1.5;color:#6b6b6b;margin:0;text-align:center;">Aceptar no implica pago: nos autorizas a preparar el mockup y la cotización vinculante.</p>`
+              : ""
+          }
 
           <p style="font-size:14px;line-height:1.6;color:#444;margin:24px 0 0 0;">
             Cuando quieras avanzar a una cotización vinculante con mockup técnico,
