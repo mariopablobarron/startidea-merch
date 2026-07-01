@@ -1,0 +1,26 @@
+src/app/api/admin/products/bulk-margin/route.ts
+  s_65877aa637ec34::t_374722346aaf20 5,13-15,19-21,26-29,35,53,55-98
+src/app/admin/products/page.tsx
+  s_65877aa637ec34::t_468f0a3598cd52 145-146,150,156-188,199
+  s_65877aa637ec34::t_7500e2e0e37d70 361,364,367,370,373,376,379
+  s_65877aa637ec34::t_9159b21cf06aae 397-482
+  s_65877aa637ec34::t_28d58b3ed6143d 78
+  s_65877aa637ec34::t_6063e41eafad3e 12-13
+  s_65877aa637ec34::t_3d5fd1a7998448 40-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "105cf6aea46e2a6b2180b40b8ec38cb7af2f2c5a",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
