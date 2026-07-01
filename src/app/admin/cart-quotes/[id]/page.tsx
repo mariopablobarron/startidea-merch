@@ -93,6 +93,16 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  // Edición de líneas
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editQty, setEditQty] = useState("");
+  const [editUnit, setEditUnit] = useState("");
+  const [itemBusy, setItemBusy] = useState(false);
+  const [itemErr, setItemErr] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [addRef, setAddRef] = useState("");
+  const [addQty, setAddQty] = useState("");
+  const [addMargin, setAddMargin] = useState("60");
 
   // Auth: cookie merch_admin (sesión nueva). El backend acepta también
   // el header legacy X-Admin-Secret pero no lo enviamos — la cookie
@@ -120,6 +130,100 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
     if (data.cart) setCart((prev) => (prev ? { ...prev, ...data.cart } : null));
   }
 
+  // ─── Edición de líneas del presupuesto ────────────────────────────────────
+  async function reload() {
+    const r = await fetch(`/api/admin/cart-quotes/${id}`);
+    const d = await r.json();
+    if (!d.error) setCart(d);
+  }
+
+  function startEdit(it: CartItem) {
+    setEditingId(it.id);
+    setEditQty(String(it.quantity));
+    setEditUnit(it.unitPriceClientCents != null ? (it.unitPriceClientCents / 100).toFixed(2) : "");
+    setItemErr(null);
+  }
+
+  async function saveItem(itemId: string) {
+    setItemBusy(true);
+    setItemErr(null);
+    try {
+      const quantity = parseInt(editQty, 10);
+      const unit = editUnit.trim()
+        ? Math.round((parseFloat(editUnit.replace(",", ".")) || 0) * 100)
+        : undefined;
+      const payload: { quantity?: number; unitPriceClientCents?: number } = {};
+      if (Number.isFinite(quantity) && quantity > 0) payload.quantity = quantity;
+      if (unit != null && Number.isFinite(unit) && unit >= 0) payload.unitPriceClientCents = unit;
+      const r = await fetch(`/api/admin/cart-quotes/${id}/items/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        setItemErr(d.error || `Error ${r.status}`);
+        return;
+      }
+      setEditingId(null);
+      await reload();
+    } catch {
+      setItemErr("Error de red");
+    } finally {
+      setItemBusy(false);
+    }
+  }
+
+  async function deleteItem(itemId: string) {
+    if (!confirm("¿Quitar esta línea del presupuesto?")) return;
+    setItemBusy(true);
+    setItemErr(null);
+    try {
+      const r = await fetch(`/api/admin/cart-quotes/${id}/items/${itemId}`, { method: "DELETE" });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        setItemErr(d.error || `Error ${r.status}`);
+        return;
+      }
+      await reload();
+    } catch {
+      setItemErr("Error de red");
+    } finally {
+      setItemBusy(false);
+    }
+  }
+
+  async function addItem() {
+    const qty = parseInt(addQty, 10);
+    if (!addRef.trim() || !Number.isFinite(qty) || qty < 1) return;
+    setItemBusy(true);
+    setItemErr(null);
+    try {
+      const r = await fetch(`/api/admin/cart-quotes/${id}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ref: addRef.trim(),
+          qty,
+          marginPct: addMargin ? Number(addMargin) : undefined,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        setItemErr(d.error || `Error ${r.status}`);
+        return;
+      }
+      setAddRef("");
+      setAddQty("");
+      setShowAdd(false);
+      await reload();
+    } catch {
+      setItemErr("Error de red");
+    } finally {
+      setItemBusy(false);
+    }
+  }
+
   if (error) {
     return (
       <main className="p-12">
@@ -131,6 +235,9 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
   if (!cart) {
     return <main className="p-12 text-ink/60">Cargando…</main>;
   }
+
+  // Líneas no editables si el pedido ya se cursó al proveedor o está archivado.
+  const locked = cart.status === "ORDERED" || cart.status === "ARCHIVED";
 
   return (
     <main className="min-h-screen bg-bone-soft p-8">
@@ -245,9 +352,132 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
                   )}
                 </div>
               </div>
+              {!locked &&
+                (editingId === it.id ? (
+                  <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-line/60 pt-3">
+                    <label className="text-[10px] uppercase tracking-wider text-ink/55">
+                      Cantidad
+                      <input
+                        value={editQty}
+                        onChange={(e) => setEditQty(e.target.value)}
+                        inputMode="numeric"
+                        className="mt-1 block w-24 rounded-lg border border-line bg-bone-soft px-2 py-1 text-right font-mono text-sm outline-none focus:border-accent"
+                      />
+                    </label>
+                    <label className="text-[10px] uppercase tracking-wider text-ink/55">
+                      PVP unit. € (sin IVA)
+                      <input
+                        value={editUnit}
+                        onChange={(e) => setEditUnit(e.target.value)}
+                        inputMode="decimal"
+                        className="mt-1 block w-28 rounded-lg border border-line bg-bone-soft px-2 py-1 text-right font-mono text-sm outline-none focus:border-accent"
+                      />
+                    </label>
+                    <button
+                      onClick={() => saveItem(it.id)}
+                      disabled={itemBusy}
+                      className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-bone hover:bg-accent-deep disabled:opacity-50"
+                    >
+                      {itemBusy ? "Guardando…" : "Guardar"}
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="rounded-full border border-line px-3 py-1.5 text-xs text-ink/60 hover:text-ink"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex gap-3 border-t border-line/60 pt-3">
+                    <button
+                      onClick={() => startEdit(it)}
+                      className="text-xs font-medium text-accent hover:underline"
+                    >
+                      ✎ Editar
+                    </button>
+                    <button
+                      onClick={() => deleteItem(it.id)}
+                      disabled={itemBusy}
+                      className="text-xs text-ink/40 hover:text-accent-deep disabled:opacity-50"
+                    >
+                      ✕ Quitar
+                    </button>
+                  </div>
+                ))}
             </div>
           ))}
         </div>
+
+        {/* Subtotal + edición/añadir de líneas */}
+        {itemErr && (
+          <p className="mt-3 rounded-xl bg-accent-wash p-2 text-xs text-accent-deep">⚠ {itemErr}</p>
+        )}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-ink/70">
+            Base estimada (sin IVA):{" "}
+            <strong className="tabular-nums text-ink">
+              {EUR.format((cart.estimatedTotalCents ?? 0) / 100)}
+            </strong>
+          </p>
+          {!locked && !showAdd && (
+            <button
+              onClick={() => setShowAdd(true)}
+              className="rounded-full border-2 border-social px-4 py-1.5 text-xs font-semibold text-social transition hover:bg-social hover:text-bone"
+            >
+              ➕ Añadir línea
+            </button>
+          )}
+          {locked && (
+            <span className="text-[11px] text-ink/45">
+              Pedido en producción — líneas bloqueadas
+            </span>
+          )}
+        </div>
+        {!locked && showAdd && (
+          <div className="mt-3 flex flex-wrap items-end gap-2 rounded-2xl border border-social/40 bg-bone p-4">
+            <label className="text-[10px] uppercase tracking-wider text-ink/55">
+              Referencia
+              <input
+                value={addRef}
+                onChange={(e) => setAddRef(e.target.value)}
+                placeholder="STM-… o ref proveedor"
+                className="mt-1 block w-52 rounded-lg border border-line bg-bone-soft px-2 py-1 font-mono text-sm outline-none focus:border-accent"
+              />
+            </label>
+            <label className="text-[10px] uppercase tracking-wider text-ink/55">
+              Cantidad
+              <input
+                value={addQty}
+                onChange={(e) => setAddQty(e.target.value)}
+                inputMode="numeric"
+                placeholder="250"
+                className="mt-1 block w-24 rounded-lg border border-line bg-bone-soft px-2 py-1 text-right font-mono text-sm outline-none focus:border-accent"
+              />
+            </label>
+            <label className="text-[10px] uppercase tracking-wider text-ink/55">
+              Margen %
+              <input
+                value={addMargin}
+                onChange={(e) => setAddMargin(e.target.value)}
+                inputMode="numeric"
+                className="mt-1 block w-20 rounded-lg border border-line bg-bone-soft px-2 py-1 text-right font-mono text-sm outline-none focus:border-accent"
+              />
+            </label>
+            <button
+              onClick={addItem}
+              disabled={itemBusy || !addRef.trim() || !addQty.trim()}
+              className="rounded-full bg-social px-4 py-1.5 text-xs font-semibold text-bone transition hover:opacity-90 disabled:opacity-50"
+            >
+              {itemBusy ? "Añadiendo…" : "Añadir"}
+            </button>
+            <button
+              onClick={() => setShowAdd(false)}
+              className="rounded-full border border-line px-3 py-1.5 text-xs text-ink/60 hover:text-ink"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
 
         {/* Notas internas */}
         <div className="mt-6 rounded-2xl border border-line bg-bone p-5">
