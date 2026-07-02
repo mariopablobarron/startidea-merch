@@ -1,0 +1,25 @@
+src/lib/auto-proposal.ts
+  s_65877aa637ec34::t_8f56e7226df5fc 98
+src/app/admin/propuestas/page.tsx
+  s_65877aa637ec34::t_5eea270d31df57 94
+  s_65877aa637ec34::t_34e51b109cb094 248-256
+prisma/schema.prisma
+  s_65877aa637ec34::t_19432d916f2c15 1630-1633
+  s_65877aa637ec34::t_a2cc1f0961699d 1652
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "7cc92a253b67d400bad29876b438ec7bb92f53ea",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
