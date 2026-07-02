@@ -1,0 +1,28 @@
+src/app/api/webhooks/resend/route.ts
+  s_65877aa637ec34::t_7902eac40108dc 72-81
+prisma/schema.prisma
+  s_65877aa637ec34::t_150b3c7adaa07d 2135-2137
+src/app/api/admin/broadcasts/[id]/route.ts
+  s_65877aa637ec34::t_4bdeef20f44321 44,48,58-60
+src/app/admin/marketing/broadcasts/[id]/page.tsx
+  s_65877aa637ec34::t_9d45f6f482b825 405-412
+  s_65877aa637ec34::t_c74cead4af2a69 47,52
+  s_65877aa637ec34::t_3e3a9693dde267 380
+  s_65877aa637ec34::t_7f6791a08619c4 404
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "b3910279e854bdc52522c5e3350fd680c1a5adeb",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
