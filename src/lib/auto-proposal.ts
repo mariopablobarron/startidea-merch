@@ -95,6 +95,7 @@ export async function draftProposalFromCart(cartId: string): Promise<CartDraftRe
       ivaCents: totals.ivaCents,
       totalCents: totals.totalCents,
       status: "draft", // NO enviado — el admin lo revisa y manda con 1 clic
+      cartQuoteId: cartId, // enlace bidireccional carrito↔propuesta
     },
     select: { id: true },
   });

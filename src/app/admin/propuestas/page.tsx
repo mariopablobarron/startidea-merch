@@ -91,6 +91,7 @@ export default async function PropuestasListPage({
           openedAt: true,
           acceptedAt: true,
           quoteItems: true,
+          cartQuoteId: true,
         },
       }),
       prisma.proposal.count(),
@@ -244,6 +245,15 @@ export default async function PropuestasListPage({
                         >
                           Ver PDF →
                         </a>
+                        {p.cartQuoteId && (
+                          <a
+                            href={`/admin/cart-quotes/${p.cartQuoteId}`}
+                            className="text-xs font-medium text-ink/55 hover:text-accent hover:underline"
+                            title="Carrito/presupuesto de origen"
+                          >
+                            ↗ carrito
+                          </a>
+                        )}
                         {p.status === "draft" ? (
                           <SendProposalDraftButton
                             proposalId={p.id}

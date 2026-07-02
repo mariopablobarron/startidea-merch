@@ -1627,6 +1627,10 @@ model Proposal {
   totalCents         Int // subtotal + iva
   recommenderQueryId String? // FK opcional — origen del brief
   recommenderQuery   RecommenderQuery? @relation(fields: [recommenderQueryId], references: [id], onDelete: SetNull)
+  // FK opcional al CartQuote de origen (propuesta generada desde un carrito /
+  // presupuesto). Scalar suelto (como CartQuote.autoProposalId) → enlace
+  // bidireccional carrito↔propuesta. Columna aditiva (db push).
+  cartQuoteId        String?
   // Status: sent | opened | accepted | rejected
   status             String   @default("sent")
   sentAt             DateTime @default(now())
@@ -1645,6 +1649,7 @@ model Proposal {
   @@index([sentAt])
   @@index([status])
   @@index([recommenderQueryId])
+  @@index([cartQuoteId])
 }
 
 /// MediaAsset — mapeo opaco hash→originalUrl para que el HTML público
