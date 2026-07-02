@@ -178,7 +178,7 @@ export async function matchProductByHint(
       id: true,
       slug: true,
       name: true,
-      supplierRef: true,
+      internalRef: true,
       primaryImageUrl: true,
       material: true,
       category: { select: { name: true } },
@@ -211,7 +211,9 @@ export async function matchProductByHint(
     id: c.id,
     slug: c.slug,
     name: c.override?.customName || c.name,
-    productRef: c.supplierRef,
+    // NUNCA supplierRef: este productRef acaba en CartQuoteItem y se muestra al
+    // cliente en /clientes/[token]. Ref pública (STM-XXX) o slug.
+    productRef: c.internalRef || c.slug,
     primaryImageUrl: c.primaryImageUrl,
     category: c.category?.name ?? null,
     material: c.material,

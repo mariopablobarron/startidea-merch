@@ -301,7 +301,7 @@ Devuelve la propuesta como JSON descrita arriba.`;
     select: {
       id: true,
       slug: true,
-      supplierRef: true,
+      internalRef: true,
       name: true,
       primaryImageUrl: true,
       category: { select: { name: true } },
@@ -336,7 +336,9 @@ Devuelve la propuesta como JSON descrita arriba.`;
 
       return {
         productSlug: p.slug,
-        productRef: p.supplierRef,
+        // NUNCA supplierRef: este productRef se muestra al cliente en
+        // /clientes/[token] (línea ~162). Usamos la ref pública (STM-XXX) o el slug.
+        productRef: p.internalRef || p.slug,
         productName: p.name,
         primaryImageUrl: p.primaryImageUrl,
         quantity: it.quantity,
