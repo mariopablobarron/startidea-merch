@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { OrderTimeline, type TimelineEvent } from "@/components/OrderTimeline";
 import { PurchaseOrdersBlock } from "@/components/admin/PurchaseOrdersBlock";
+import { ResendProposalButton } from "@/components/ResendProposalButton";
 
 type CartItem = {
   id: string;
@@ -677,12 +678,22 @@ function ProposalSendPanel({
           </button>
         </>
       ) : (
-        <p className="mt-1 text-sm text-ink/80">
-          {p.proposalNumber} · <strong>{proposalStatusLabel(p.status)}</strong>
-          {p.sentAt && p.status !== "accepted" && (
-            <span className="text-ink/50"> · {new Date(p.sentAt).toLocaleDateString("es-ES")}</span>
-          )}
-        </p>
+        <div className="mt-1">
+          <p className="text-sm text-ink/80">
+            {p.proposalNumber} · <strong>{proposalStatusLabel(p.status)}</strong>
+            {p.sentAt && p.status !== "accepted" && (
+              <span className="text-ink/50"> · {new Date(p.sentAt).toLocaleDateString("es-ES")}</span>
+            )}
+          </p>
+          {/* Reenvío 1-clic si el cliente no reacciona — sin salir de la ficha */}
+          <div className="mt-3">
+            <ResendProposalButton
+              proposalId={p.id}
+              proposalNumber={p.proposalNumber}
+              email={cart.email}
+            />
+          </div>
+        </div>
       )}
       {feedback && (
         <p className={`mt-2 text-xs ${feedback.ok ? "text-social" : "text-accent-deep"}`}>
