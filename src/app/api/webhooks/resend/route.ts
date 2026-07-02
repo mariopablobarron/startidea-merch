@@ -69,6 +69,16 @@ export async function POST(req: Request) {
   if (type === "email.bounced" || type === "email.complained") {
     const emails = extractEmails(event.data);
     const reason = type === "email.complained" ? "complaint" : "bounce";
+    // Marca bouncedAt en el delivery correspondiente (tasa de rebote por campaña).
+    const bd = event.data as { email_id?: string };
+    if (bd?.email_id) {
+      await prisma.broadcastDelivery
+        .updateMany({
+          where: { resendId: bd.email_id, bouncedAt: null },
+          data: { bouncedAt: new Date() },
+        })
+        .catch(() => {});
+    }
     for (const email of emails) {
       await suppressEmail(email, reason);
       await prisma.newsletterSubscriber

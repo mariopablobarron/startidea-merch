@@ -44,10 +44,12 @@ type Broadcast = {
     delivered: number;
     opened: number;
     clicked: number;
+    bounced: number;
     deliveryRate: number;
     openRate: number;
     openRateOnDelivered: number;
     clickRate: number;
+    bounceRate: number;
     totalOpens: number;
     totalClicks: number;
   };
@@ -375,7 +377,7 @@ export default function BroadcastEditorPage({
 
         {/* Estadísticas — solo cuando ya se envió */}
         {broadcast.status === "SENT" && broadcast.stats && (
-          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <StatCard label="Enviados" value={broadcast.sentCount.toLocaleString("es-ES")} sub={broadcast.failedCount > 0 ? `${broadcast.failedCount} fallidos` : "sin fallos"} />
             <StatCard
               label="Entregados"
@@ -398,6 +400,15 @@ export default function BroadcastEditorPage({
               value={`${broadcast.stats.clickRate}%`}
               sub={`${broadcast.stats.clicked.toLocaleString("es-ES")} personas`}
               accent={broadcast.stats.clicked > 0}
+            />
+            <StatCard
+              label="Rebotes"
+              value={`${broadcast.stats.bounceRate}%`}
+              sub={
+                broadcast.stats.bounceRate > 3
+                  ? `⚠ ${broadcast.stats.bounced} · alto (>3%)`
+                  : `${broadcast.stats.bounced.toLocaleString("es-ES")} rebotes`
+              }
             />
             <StatCard
               label="Interacciones"

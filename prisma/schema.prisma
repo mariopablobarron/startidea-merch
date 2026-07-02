@@ -2132,6 +2132,9 @@ model BroadcastDelivery {
   // Clics (Resend email.clicked) — requiere click-tracking activo en Resend.
   clickedAt   DateTime?
   clickCount  Int             @default(0)
+  // Rebote duro / queja (Resend email.bounced / email.complained) — para ver la
+  // tasa de rebote por campaña en nuestro admin (columna aditiva, db push).
+  bouncedAt   DateTime?
 
   @@unique([broadcastId, email])
   @@index([broadcastId])

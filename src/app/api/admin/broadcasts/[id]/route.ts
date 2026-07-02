@@ -41,10 +41,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // Estadísticas de engagement (aperturas/clics) desde los deliveries.
   // openedAt/clickedAt → destinatarios ÚNICOS que abrieron/clicaron;
   // openCount/clickCount → aperturas/clics TOTALES (un mismo email puede abrir varias veces).
-  const [delivered, opened, clicked, agg] = await Promise.all([
+  const [delivered, opened, clicked, bounced, agg] = await Promise.all([
     prisma.broadcastDelivery.count({ where: { broadcastId: id, deliveredAt: { not: null } } }),
     prisma.broadcastDelivery.count({ where: { broadcastId: id, openedAt: { not: null } } }),
     prisma.broadcastDelivery.count({ where: { broadcastId: id, clickedAt: { not: null } } }),
+    prisma.broadcastDelivery.count({ where: { broadcastId: id, bouncedAt: { not: null } } }),
     prisma.broadcastDelivery.aggregate({
       where: { broadcastId: id },
       _sum: { openCount: true, clickCount: true },
@@ -54,6 +55,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     delivered,
     opened,
     clicked,
+    bounced,
+    // Tasa de rebote sobre enviados. >3% = mala reputación → warmup/limpieza de lista.
+    bounceRate: b.sentCount > 0 ? Math.round((bounced / b.sentCount) * 100) : 0,
     // % de entrega sobre enviados (Resend email.delivered). Solo cuenta para
     // broadcasts enviados DESPUÉS de activar el webhook email.delivered.
     deliveryRate: b.sentCount > 0 ? Math.round((delivered / b.sentCount) * 100) : 0,
