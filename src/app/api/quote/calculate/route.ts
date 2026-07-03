@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { defaultTiersFromBase, formatMoney, orderTotalCents, pickTier } from "@/lib/pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 import { computeClientPricing } from "@/lib/product-pricing";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,6 +50,11 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Generoso: el configurador legítimo recalcula en cada cambio de cantidad.
+  // Solo frena bots que machacan el cálculo de precios (protege CPU del VPS).
+  const rl = rateLimit(req, { key: "quote-calculate", max: 120, windowMs: 60_000 });
+  if (!rl.ok) return rl.response;
+
   let body: unknown;
   try {
     body = await req.json();

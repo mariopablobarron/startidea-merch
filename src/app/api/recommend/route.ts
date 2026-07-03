@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { captureError } from "@/lib/insights/capture-error";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   estimateBaseCentsFromName,
   defaultTiersFromBase,
@@ -36,6 +37,11 @@ const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4.5";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
 export async function POST(req: Request) {
+  // Estricto: cada llamada dispara un LLM (coste real + CPU). 10 usos/5 min
+  // por IP sobran para un visitante legítimo del recomendador.
+  const rl = rateLimit(req, { key: "recommend", max: 10, windowMs: 5 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   let body: unknown;
   try {
     body = await req.json();
