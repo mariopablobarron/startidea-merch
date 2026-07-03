@@ -4,6 +4,7 @@ import { getAdminSession } from "@/lib/admin-auth";
 import { LogoutButton } from "@/components/admin/LogoutButton";
 import { NavDropdown } from "@/components/admin/NavDropdown";
 import { CommandPalette } from "@/components/admin/CommandPalette";
+import { AdminShortcuts } from "@/components/admin/AdminShortcuts";
 
 export const metadata: Metadata = {
   title: "Panel · TodoMerchandising",
@@ -178,6 +179,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {children}
       {/* Spell C1 — Cmd+K palette global del admin (Cmd/Ctrl+K abre, Esc cierra) */}
       {session && <CommandPalette />}
+      {/* Atajos de teclado g+i / g+q / … — antes vivían en AdminChrome; ahora
+          globales para todo el panel (AdminChrome se elimina por doble header). */}
+      {session && <AdminShortcuts />}
     </div>
   );
 }

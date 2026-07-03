@@ -13,7 +13,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
-import { AdminChrome } from "@/components/AdminChrome";
 import {
   getConversionFunnel,
   getSuggestions,
@@ -69,7 +68,7 @@ export default async function QuickPage() {
   }
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-md px-4 py-6">
         <nav className="mb-4 flex items-center justify-between text-xs">
           <Link href="/admin/insights" className="text-ink/55 hover:text-accent">
@@ -192,6 +191,6 @@ export default async function QuickPage() {
           Catálogo: {health.activeProducts.toLocaleString("es-ES")} productos · {health.pctStock}% stock
         </p>
       </div>
-    </AdminChrome>
+    </>
   );
 }

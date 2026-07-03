@@ -12,7 +12,6 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
 import { getAdminSession } from "@/lib/admin-auth";
-import { AdminChrome } from "@/components/AdminChrome";
 import { prisma } from "@/lib/prisma";
 import { TeamClient } from "./TeamClient";
 
@@ -50,7 +49,7 @@ export default async function AdminTeamPage() {
   ).length;
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-4xl px-6 py-8">
         <nav className="mb-2 flex items-center gap-2 text-xs text-ink/50">
           <Link href="/admin" className="hover:text-accent">
@@ -74,6 +73,6 @@ export default async function AdminTeamPage() {
           currentUserId={session.userId}
         />
       </div>
-    </AdminChrome>
+    </>
   );
 }

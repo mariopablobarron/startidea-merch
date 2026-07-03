@@ -9,7 +9,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
-import { AdminChrome } from "@/components/AdminChrome";
 import { prisma } from "@/lib/prisma";
 import { messageSignature } from "@/lib/insights/error-signature";
 import { isPinned } from "@/lib/insights/pinned-errors";
@@ -77,7 +76,7 @@ export default async function ErrorDetailPage({
     }).format(d);
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-5xl px-6 py-8">
         <nav className="mb-2 flex items-center gap-2 text-xs text-ink/50">
           <Link href="/admin" className="hover:text-accent">
@@ -244,6 +243,6 @@ export default async function ErrorDetailPage({
           </section>
         )}
       </div>
-    </AdminChrome>
+    </>
   );
 }

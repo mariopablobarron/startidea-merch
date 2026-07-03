@@ -8,7 +8,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
-import { AdminChrome } from "@/components/AdminChrome";
 import {
   getMakitoB2BMode,
   getRateBucketStatus,
@@ -34,7 +33,7 @@ export default async function MakitoSupplierPage() {
   const rate = getRateBucketStatus();
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-4xl px-6 py-8">
         <nav className="mb-2 flex items-center gap-2 text-xs text-ink/50">
           <Link href="/admin" className="hover:text-accent">
@@ -152,6 +151,6 @@ MAKITO_B2B_PROD_CLIENT_SECRET=<production client secret>`}
           </section>
         )}
       </div>
-    </AdminChrome>
+    </>
   );
 }

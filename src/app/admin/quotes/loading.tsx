@@ -1,8 +1,7 @@
-import { AdminChrome } from "@/components/AdminChrome";
 
 export default function Loading() {
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="h-9 w-64 animate-pulse rounded-lg bg-ink/10" />
         <div className="mt-2 h-4 w-32 animate-pulse rounded bg-ink/5" />
@@ -22,6 +21,6 @@ export default function Loading() {
           ))}
         </div>
       </div>
-    </AdminChrome>
+    </>
   );
 }

@@ -4,7 +4,6 @@ import { redirect, notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
-import { AdminChrome } from "@/components/AdminChrome";
 import type { QuoteStatus } from "@prisma/client";
 
 export const metadata: Metadata = {
@@ -61,7 +60,7 @@ export default async function QuoteDetailPage({
   if (!q) notFound();
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-5xl px-6 py-10">
         <Link href="/admin/quotes" className="text-sm text-ink/60 hover:text-accent">
           ← Volver al listado
@@ -211,7 +210,7 @@ export default async function QuoteDetailPage({
           )}
         </section>
       </div>
-    </AdminChrome>
+    </>
   );
 }
 

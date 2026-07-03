@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
-import { AdminChrome } from "@/components/AdminChrome";
 
 export const metadata: Metadata = {
   title: "Captación",
@@ -81,7 +80,7 @@ export default async function CaptacionPage() {
   );
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div>
           <h1 className="font-display text-3xl font-semibold text-ink">Captación</h1>
@@ -177,6 +176,6 @@ export default async function CaptacionPage() {
           )}
         </div>
       </div>
-    </AdminChrome>
+    </>
   );
 }

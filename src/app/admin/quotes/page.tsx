@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
-import { AdminChrome } from "@/components/AdminChrome";
 import type { QuoteStatus } from "@prisma/client";
 
 export const metadata: Metadata = {
@@ -66,7 +65,7 @@ export default async function QuotesListPage({
   const total = Object.values(summary).reduce((a, b) => a + b, 0);
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -151,7 +150,7 @@ export default async function QuotesListPage({
           )}
         </div>
       </div>
-    </AdminChrome>
+    </>
   );
 }
 

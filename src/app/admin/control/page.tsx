@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
-import { AdminChrome } from "@/components/AdminChrome";
 import { AutoRefresh } from "@/components/AutoRefresh";
 
 export const metadata: Metadata = {
@@ -89,7 +88,7 @@ export default async function ControlCenterPage() {
   );
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -209,6 +208,6 @@ export default async function ControlCenterPage() {
           <Link href="/admin/propuestas" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">Propuestas</Link>
         </div>
       </div>
-    </AdminChrome>
+    </>
   );
 }

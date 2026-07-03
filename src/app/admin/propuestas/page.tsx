@@ -10,7 +10,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
-import { AdminChrome } from "@/components/AdminChrome";
 import { signProposalToken } from "@/lib/proposal-token";
 import type { ProposalQuoteItem } from "@/lib/proposal-types";
 import { predictProposalsBatch } from "@/lib/insights/proposal-prediction";
@@ -103,7 +102,7 @@ export default async function PropuestasListPage({
   const probabilities = await predictProposalsBatch(proposals.map((p) => p.id));
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-7xl px-6 py-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -277,6 +276,6 @@ export default async function PropuestasListPage({
         </div>
       )}
       </div>
-    </AdminChrome>
+    </>
   );
 }

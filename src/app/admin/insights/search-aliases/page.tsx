@@ -8,7 +8,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
-import { AdminChrome } from "@/components/AdminChrome";
 import { prisma } from "@/lib/prisma";
 import { SearchAliasesClient } from "./SearchAliasesClient";
 
@@ -30,7 +29,7 @@ export default async function SearchAliasesPage({
     take: 200,
   });
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-5xl px-6 py-8">
         <nav className="mb-2 flex items-center gap-2 text-xs text-ink/50">
           <Link href="/admin" className="hover:text-accent">
@@ -66,6 +65,6 @@ export default async function SearchAliasesPage({
           prefillQuery={prefill ?? ""}
         />
       </div>
-    </AdminChrome>
+    </>
   );
 }

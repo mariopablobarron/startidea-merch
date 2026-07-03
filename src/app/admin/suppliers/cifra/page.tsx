@@ -12,7 +12,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
-import { AdminChrome } from "@/components/AdminChrome";
 import { CifraClient } from "./CifraClient";
 
 export const metadata: Metadata = {
@@ -29,7 +28,7 @@ export default async function CifraSupplierPage() {
   const lang = process.env.CIFRA_LANG || "es";
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-4xl px-6 py-8">
         <nav className="mb-2 flex items-center gap-2 text-xs text-ink/50">
           <Link href="/admin" className="hover:text-accent">
@@ -114,6 +113,6 @@ CIFRA_LANG=es`}
           </section>
         )}
       </div>
-    </AdminChrome>
+    </>
   );
 }

@@ -9,7 +9,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
-import { AdminChrome } from "@/components/AdminChrome";
 import { listCronNames, getCronHistory } from "@/lib/cron-tracking";
 
 export const metadata: Metadata = {
@@ -45,7 +44,7 @@ export default async function CronsPage() {
   );
 
   return (
-    <AdminChrome>
+    <>
       <div className="mx-auto max-w-5xl px-6 py-8">
         <nav className="mb-2 flex items-center gap-2 text-xs text-ink/50">
           <Link href="/admin" className="hover:text-accent">
@@ -174,6 +173,6 @@ export default async function CronsPage() {
           </div>
         )}
       </div>
-    </AdminChrome>
+    </>
   );
 }
