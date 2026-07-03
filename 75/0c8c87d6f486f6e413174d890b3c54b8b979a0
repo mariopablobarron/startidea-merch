@@ -1,0 +1,64 @@
+src/app/admin/quotes/loading.tsx
+  s_65877aa637ec34::t_4372d05f789361 4,24
+src/app/admin/insights/actions-log/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 52,117
+src/app/admin/insights/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 234,1253
+src/app/admin/insights/crons/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 47,176
+src/app/admin/propuestas/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 105,279
+src/app/admin/quotes/[id]/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 63,213
+src/app/admin/suppliers/midocean/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 33,127
+src/app/admin/captacion/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 83,179
+src/app/admin/insights/integrations/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 52,108
+src/app/admin/insights/errors/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 41,97
+src/app/admin/insights/experiments/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 34,66
+src/app/admin/team/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 52,76
+src/app/admin/control/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 91,211
+src/app/admin/insights/compare/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 85,241
+src/app/admin/suppliers/makito/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 36,154
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_38ee3bb5c9e03b 7
+  s_65877aa637ec34::t_854526f392b649 182-184
+src/app/admin/insights/errors/[id]/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 79,246
+src/app/admin/quick/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 71,194
+src/app/admin/insights/notifications/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 22,44
+src/app/admin/quotes/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 68,153
+src/app/admin/suppliers/cifra/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 31,116
+src/app/admin/insights/ai-usage/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 45,249
+src/app/admin/insights/search-aliases/page.tsx
+  s_65877aa637ec34::t_4372d05f789361 32,68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "750c8c87d6f486f6e413174d890b3c54b8b979a0",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
