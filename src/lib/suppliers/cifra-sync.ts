@@ -22,6 +22,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { extractSize } from "@/lib/variant-grouping";
 import {
   fetchProducts,
   fetchPriceTiers,
@@ -283,6 +284,9 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 colorName: color.name,
                 colorGroup: color.group,
                 colorHex: color.hex,
+                // Feed sin talla; en algunas familias textiles (T-1090-XS) el
+                // sufijo del model ES la talla. Alfabéticas conocidas o null.
+                size: extractSize({ size: null, sku: v.model }),
                 imageUrl: proxiedVariantImg,
                 stockQty: typeof v.quantity === "number" ? v.quantity : 0,
                 stockUpdatedAt: new Date(),
@@ -291,6 +295,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 colorName: color.name,
                 colorGroup: color.group,
                 colorHex: color.hex,
+                size: extractSize({ size: null, sku: v.model }),
                 imageUrl: proxiedVariantImg,
                 stockQty: typeof v.quantity === "number" ? v.quantity : 0,
                 stockUpdatedAt: new Date(),

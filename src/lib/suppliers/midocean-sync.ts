@@ -12,6 +12,7 @@ import {
   type MidoceanRawPrintProduct,
 } from "./midocean";
 import { normalizeTechniqueName } from "@/lib/marking-techniques-es";
+import { extractSize } from "@/lib/variant-grouping";
 
 export type MidoceanSyncResult = {
   startedAt: string;
@@ -297,6 +298,10 @@ async function upsertProduct(
       variantId: v.variant_id,
       colorName: v.color_description,
       colorGroup: v.color_group,
+      // El feed de MidOcean NO trae talla: en textil va embebida en el SKU
+      // (S17000-BF-3XL → 3XL). extractSize solo acepta tallas ALFABÉTICAS
+      // conocidas — los sufijos numéricos (MO9268-03 = color) devuelven null.
+      size: extractSize({ size: null, sku: v.sku }),
       gtin: v.gtin,
       imageUrl: pickPrimaryImage(v.digital_assets),
       images: variantImages(v.digital_assets),
