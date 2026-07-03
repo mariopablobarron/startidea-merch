@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { ProductOrderForm } from "@/components/ProductOrderForm";
 import { ProductColorProvider } from "@/components/product-color-context";
 import { ProductGallery } from "@/components/ProductGallery";
+import { groupColorOptions } from "@/lib/variant-grouping";
 import { CompareToggle } from "@/components/CompareToggle";
 // ProductOrderForm fusiona PriceTierTable + QuantityConfigurator + MarkingCalculator
 // en un único flujo: cantidad → toggle marcaje → opciones → total + CTAs.
@@ -124,6 +125,12 @@ export default async function ProductDetailPage({
 
   const totalStock = product.variants.reduce((sum, v) => sum + v.stockQty, 0);
   const colorVariants = product.variants.filter((v) => v.colorName);
+  // Agrupamos por color (deduplicado) con sus tallas; las imágenes se pasan ya
+  // por proxyImageUrl (oculta el CDN del proveedor) al ser cliente el receptor.
+  const colorOptions = groupColorOptions(colorVariants).map((o) => ({
+    ...o,
+    imageUrl: proxyImageUrl(o.imageUrl),
+  }));
 
   // Tabla de tallas — agrupar variantes únicas por size si existe
   const sizes = Array.from(
@@ -247,12 +254,7 @@ export default async function ProductDetailPage({
               <ProductGallery
                 primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
                 productName={displayName}
-                colorVariants={colorVariants.map((v) => ({
-                  id: v.id,
-                  sku: v.sku,
-                  colorName: v.colorName,
-                  imageUrl: proxyImageUrl(v.imageUrl),
-                }))}
+                colorOptions={colorOptions}
               />
 
               {/* Descripción larga + ficha técnica */}

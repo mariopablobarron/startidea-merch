@@ -2,36 +2,63 @@
 
 import Image from "next/image";
 import { useProductColor } from "./product-color-context";
+import type { ColorOption, SizeOption } from "@/lib/variant-grouping";
 
-export type GalleryColorVariant = {
-  id: string;
-  sku: string;
-  colorName: string | null;
-  imageUrl: string | null; // ya pasada por proxyImageUrl en el servidor
-};
+/** Talla por defecto al elegir un color: la de más stock. */
+function defaultSize(opt: ColorOption): SizeOption | null {
+  if (opt.sizes.length === 0) return null;
+  return opt.sizes.reduce((best, s) => (s.stockQty > best.stockQty ? s : best), opt.sizes[0]);
+}
 
 /**
- * Imagen grande del producto + swatches de color SELECCIONABLES.
+ * Imagen grande + selector de COLOR (deduplicado) y de TALLA.
  *
- * Al clicar un color: cambia la imagen principal a la de esa variante y marca
- * el swatch. El color elegido se guarda en el Context (product-color-context)
- * para que el ProductOrderForm lo incluya en el carrito/cotización. Clicar el
- * color ya activo lo deselecciona (vuelve a la imagen base del producto).
+ * - Colores: un swatch por color único (no por variante color×talla). Clic →
+ *   cambia la imagen principal, marca el color y preselecciona su talla de más
+ *   stock. Clicar el color activo lo deselecciona.
+ * - Tallas: aparecen bajo los colores para el color elegido (o el único color).
+ *   Clic → fija la variante exacta (SKU con esa talla).
+ *
+ * La variante final (sku + colorName + size + imagen) se guarda en el Context
+ * para que el ProductOrderForm la meta en el carrito/pedido.
  */
 export function ProductGallery({
   primaryImageUrl,
   productName,
-  colorVariants,
+  colorOptions,
 }: {
   primaryImageUrl: string | null;
   productName: string;
-  colorVariants: GalleryColorVariant[];
+  colorOptions: ColorOption[];
 }) {
   const { selected, setSelected } = useProductColor();
+
+  // Color activo: si solo hay uno, ese; si hay varios, el que coincide con lo elegido.
+  const activeColor =
+    colorOptions.length === 1
+      ? colorOptions[0]
+      : colorOptions.find((o) => o.colorName === selected?.colorName) ?? null;
+
   const bigImage = selected?.imageUrl ?? primaryImageUrl;
-  const bigAlt = selected?.colorName
-    ? `${productName} — ${selected.colorName}`
-    : productName;
+  const bigAlt = selected?.colorName ? `${productName} — ${selected.colorName}` : productName;
+
+  function selectColor(opt: ColorOption) {
+    if (selected?.colorName === opt.colorName) {
+      setSelected(null);
+      return;
+    }
+    const ds = defaultSize(opt);
+    setSelected({
+      sku: ds ? ds.sku : opt.primarySku,
+      colorName: opt.colorName,
+      size: ds ? ds.size : null,
+      imageUrl: opt.imageUrl,
+    });
+  }
+
+  function selectSize(opt: ColorOption, s: SizeOption) {
+    setSelected({ sku: s.sku, colorName: opt.colorName, size: s.size, imageUrl: opt.imageUrl });
+  }
 
   return (
     <div>
@@ -51,10 +78,11 @@ export function ProductGallery({
         )}
       </div>
 
-      {colorVariants.length > 1 && (
+      {/* Selector de COLOR (solo si hay más de un color) */}
+      {colorOptions.length > 1 && (
         <div className="mt-6">
           <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
-            {colorVariants.length} variantes de color
+            {colorOptions.length} colores
             {selected?.colorName && (
               <span className="ml-2 font-semibold normal-case tracking-normal text-ink/75">
                 · {selected.colorName}
@@ -62,38 +90,65 @@ export function ProductGallery({
             )}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {colorVariants.map((v) => {
-              const isSel = selected?.sku === v.sku;
+            {colorOptions.map((opt) => {
+              const isSel = selected?.colorName === opt.colorName;
               return (
                 <button
-                  key={v.id}
+                  key={opt.key}
                   type="button"
-                  onClick={() =>
-                    setSelected(
-                      isSel
-                        ? null
-                        : { sku: v.sku, colorName: v.colorName, imageUrl: v.imageUrl },
-                    )
-                  }
-                  title={v.colorName ?? undefined}
+                  onClick={() => selectColor(opt)}
+                  title={opt.colorName ?? undefined}
                   aria-pressed={isSel}
-                  aria-label={v.colorName ? `Color ${v.colorName}` : v.sku}
+                  aria-label={opt.colorName ? `Color ${opt.colorName}` : opt.primarySku}
                   className={`relative h-16 w-16 overflow-hidden rounded-xl border bg-bone transition ${
-                    isSel
-                      ? "border-accent ring-2 ring-accent"
-                      : "border-line hover:border-accent/50"
+                    isSel ? "border-accent ring-2 ring-accent" : "border-line hover:border-accent/50"
                   }`}
                 >
-                  {v.imageUrl && (
+                  {opt.imageUrl && (
                     <Image
-                      src={v.imageUrl}
-                      alt={v.colorName ?? v.sku}
+                      src={opt.imageUrl}
+                      alt={opt.colorName ?? opt.primarySku}
                       fill
                       sizes="64px"
                       className="object-contain p-1"
                       unoptimized
                     />
                   )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Selector de TALLA (del color activo) */}
+      {activeColor && activeColor.sizes.length > 0 && (
+        <div className="mt-5">
+          <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
+            Talla
+            {selected?.size && selected?.colorName === activeColor.colorName && (
+              <span className="ml-2 font-semibold normal-case tracking-normal text-ink/75">
+                · {selected.size}
+              </span>
+            )}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {activeColor.sizes.map((s) => {
+              const isSel =
+                selected?.size === s.size && selected?.colorName === activeColor.colorName;
+              return (
+                <button
+                  key={s.sku}
+                  type="button"
+                  onClick={() => selectSize(activeColor, s)}
+                  aria-pressed={isSel}
+                  className={`min-w-[2.75rem] rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                    isSel
+                      ? "border-accent bg-accent text-white"
+                      : "border-line bg-bone text-ink hover:border-accent/50"
+                  }`}
+                >
+                  {s.size}
                 </button>
               );
             })}

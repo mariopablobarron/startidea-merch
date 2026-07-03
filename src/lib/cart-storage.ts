@@ -28,6 +28,7 @@ export type CartItem = {
   quantity: number;
   variantSku?: string | null;
   colorName?: string | null;
+  size?: string | null;
   // Shape plano (deprecated pero mantenido): primer marcaje
   markingTechniqueCode?: string | null;
   markingTechniqueName?: string | null;

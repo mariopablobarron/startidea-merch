@@ -362,6 +362,7 @@ export function ProductOrderForm({
       primaryImageUrl: selectedColor?.imageUrl ?? primaryImageUrl,
       variantSku: selectedColor?.sku ?? null,
       colorName: selectedColor?.colorName ?? null,
+      size: selectedColor?.size ?? null,
       quantity: finalQty,
       // Shape plano (compatibilidad): primer marcaje
       markingTechniqueCode: allMarkings[0]?.techniqueCode ?? null,
@@ -389,7 +390,9 @@ export function ProductOrderForm({
             colours > 1 ? ` · ${colours} colores` : ""
           }`
         : " · sin marcaje";
-    const colorTxt = selectedColor?.colorName ? ` · color ${selectedColor.colorName}` : "";
+    const colorTxt = selectedColor?.colorName
+      ? ` · ${selectedColor.colorName}${selectedColor.size ? ` talla ${selectedColor.size}` : ""}`
+      : "";
     const detail = `${productName} (ref. ${productRef}) · ${finalQty} uds${colorTxt}${markingTxt}`;
     try {
       sessionStorage.setItem("merch:prefill", detail);

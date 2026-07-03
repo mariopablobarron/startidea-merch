@@ -13,6 +13,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 export type SelectedColorVariant = {
   sku: string;
   colorName: string | null;
+  size: string | null; // talla elegida (null si el color no tiene tallas)
   imageUrl: string | null; // ya pasada por proxyImageUrl en el servidor
 };
 
