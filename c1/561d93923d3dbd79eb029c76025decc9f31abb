@@ -1,0 +1,21 @@
+src/lib/variant-grouping.ts
+  s_65877aa637ec34::t_ce37e584579a70 48-56,60
+src/lib/variant-grouping.test.ts
+  s_65877aa637ec34::t_9d973cefe82232 1-85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c1561d93923d3dbd79eb029c76025decc9f31abb",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
