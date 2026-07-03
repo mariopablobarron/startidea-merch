@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { extractSize } from "@/lib/variant-grouping";
 
 export const metadata: Metadata = {
   title: "Tu impacto · TodoMerchandising",
@@ -54,7 +55,15 @@ export default async function CustomerDashboardPage({
     where: { email: seed.email },
     orderBy: { createdAt: "desc" },
     include: {
-      items: { select: { quantity: true, productName: true, productRef: true } },
+      items: {
+        select: {
+          quantity: true,
+          productName: true,
+          productRef: true,
+          colorName: true,
+          variantSku: true,
+        },
+      },
       payments: { where: { status: "PAID" }, select: { amountCents: true } },
       // Envíos al cliente. Ojo: NO seleccionamos `supplier` — el cliente nunca
       // ve el proveedor (MidOcean/Makito). El transportista (trackingCarrier) sí.
@@ -160,6 +169,13 @@ export default async function CustomerDashboardPage({
                     {c.items.slice(0, 5).map((it, i) => (
                       <li key={i}>
                         {it.quantity} × {it.productName} <span className="font-mono text-[10px]">({it.productRef})</span>
+                        {(() => {
+                          const talla = it.variantSku ? extractSize({ size: null, sku: it.variantSku }) : null;
+                          const extra = [it.colorName, talla ? `talla ${talla}` : null]
+                            .filter(Boolean)
+                            .join(" · ");
+                          return extra ? <span className="text-ink/50"> — {extra}</span> : null;
+                        })()}
                       </li>
                     ))}
                     {c.items.length > 5 && <li>… y {c.items.length - 5} más</li>}
