@@ -45,13 +45,19 @@ export type ColorOption = {
   totalStock: number;
 };
 
-/** Talla de una variante: `size` si viene relleno, si no el sufijo del SKU. */
+/**
+ * Talla de una variante. Prioridad:
+ *  1. Campo `size` si viene relleno (Makito lo rellena: S/M/L, 38, 40…). Fiable.
+ *  2. Si no, el sufijo del SKU PERO SOLO si es una talla ALFABÉTICA conocida
+ *     (S…6XL). Los sufijos NUMÉRICOS del SKU son códigos de COLOR en varios
+ *     proveedores (MidOcean `MO9268-03`, no talla), así que NUNCA los tratamos
+ *     como talla — evita tallas fantasma. Las tallas numéricas reales (calzado)
+ *     llegan por el campo `size`, no por el SKU.
+ */
 export function extractSize(v: { size: string | null; sku: string }): string | null {
   if (v.size && v.size.trim()) return v.size.trim().toUpperCase();
   const seg = (v.sku.split("-").pop() ?? "").toUpperCase();
-  if (SIZE_RANK.has(seg)) return seg;
-  if (/^\d{1,3}(\.\d)?$/.test(seg)) return seg; // tallas numéricas (calzado, etc.)
-  return null;
+  return SIZE_RANK.has(seg) ? seg : null;
 }
 
 function sizeSort(a: SizeOption, b: SizeOption): number {
