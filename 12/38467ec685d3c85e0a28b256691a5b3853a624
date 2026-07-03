@@ -1,0 +1,23 @@
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_b602a87834f0ea 287-289,298
+  s_65877aa637ec34::t_bcfcf167338c12 25
+src/lib/suppliers/midocean-sync.ts
+  s_65877aa637ec34::t_e67b1be0cd42a5 301-304
+  s_65877aa637ec34::t_973e977c1e9011 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1238467ec685d3c85e0a28b256691a5b3853a624",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
