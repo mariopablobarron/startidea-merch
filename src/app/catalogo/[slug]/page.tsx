@@ -9,6 +9,8 @@ import { RelatedProducts } from "@/components/RelatedProducts";
 import { DeliveryEstimate } from "@/components/DeliveryEstimate";
 import { prisma } from "@/lib/prisma";
 import { ProductOrderForm } from "@/components/ProductOrderForm";
+import { ProductColorProvider } from "@/components/product-color-context";
+import { ProductGallery } from "@/components/ProductGallery";
 import { CompareToggle } from "@/components/CompareToggle";
 // ProductOrderForm fusiona PriceTierTable + QuantityConfigurator + MarkingCalculator
 // en un único flujo: cantidad → toggle marcaje → opciones → total + CTAs.
@@ -232,6 +234,7 @@ export default async function ProductDetailPage({
         </div>
 
         <section className="py-10 lg:py-14">
+          <ProductColorProvider>
           <div className="mx-auto grid max-w-8xl gap-12 px-6 lg:grid-cols-[1.3fr,1fr] lg:px-10">
             {/* IZQUIERDA — galería + variantes + descripción.
                 En mobile va DESPUÉS del configurador (order-2) para que
@@ -241,54 +244,16 @@ export default async function ProductDetailPage({
                 quedaba a y=5316. Con este reorder el configurador queda
                 "above the fold" en mobile. */}
             <div className="order-2 lg:order-1">
-              <div className="relative aspect-square overflow-hidden rounded-3xl border border-line bg-bone-soft">
-                {proxyImageUrl(product.primaryImageUrl) ? (
-                  <Image
-                    src={proxyImageUrl(product.primaryImageUrl)!}
-                    alt={displayName}
-                    fill
-                    sizes="(max-width:1024px) 100vw, 60vw"
-                    unoptimized
-                    className="object-contain p-8"
-                    priority
-                  />
-                ) : (
-                  <div className="grid h-full place-items-center text-ink/30">Sin imagen</div>
-                )}
-              </div>
-
-              {colorVariants.length > 1 && (
-                <div className="mt-6">
-                  <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
-                    {colorVariants.length} variantes de color
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {colorVariants.slice(0, 14).map((v) => (
-                      <div
-                        key={v.id}
-                        className="relative h-16 w-16 overflow-hidden rounded-xl border border-line bg-bone"
-                        title={v.colorName ?? undefined}
-                      >
-                        {proxyImageUrl(v.imageUrl) && (
-                          <Image
-                            src={proxyImageUrl(v.imageUrl)!}
-                            alt={v.colorName ?? v.sku}
-                            fill
-                            sizes="64px"
-                            className="object-contain p-1"
-                            unoptimized
-                          />
-                        )}
-                      </div>
-                    ))}
-                    {colorVariants.length > 14 && (
-                      <div className="grid h-16 w-16 place-items-center rounded-xl border border-line text-xs text-ink/50">
-                        +{colorVariants.length - 14}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              <ProductGallery
+                primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
+                productName={displayName}
+                colorVariants={colorVariants.map((v) => ({
+                  id: v.id,
+                  sku: v.sku,
+                  colorName: v.colorName,
+                  imageUrl: proxyImageUrl(v.imageUrl),
+                }))}
+              />
 
               {/* Descripción larga + ficha técnica */}
               {displayDescription && (
@@ -584,6 +549,7 @@ export default async function ProductDetailPage({
               </div>
             </aside>
           </div>
+          </ProductColorProvider>
         </section>
 
         <RelatedProducts

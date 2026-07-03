@@ -17,6 +17,7 @@ import { spellConfetti } from "@/lib/spells/confetti";
 import { AnimatedPrice } from "@/lib/spells/animated-price";
 import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 import { ExtraMarkingsPanel, type ExtraMarking } from "./ExtraMarkingsPanel";
+import { useProductColor } from "./product-color-context";
 
 /**
  * Formulario unificado de pedido en ficha de producto.
@@ -96,6 +97,9 @@ export function ProductOrderForm({
   } | null;
   positions: Position[];
 }) {
+  // Variante de color elegida en la galería (Context compartido con la ficha)
+  const { selected: selectedColor } = useProductColor();
+
   // Fuente única de tramos locales (para el modo SIN marcaje)
   const localTiers: PriceTier[] = useMemo(() => {
     if (tiers && tiers.length > 0) return tiers;
@@ -354,7 +358,10 @@ export function ProductOrderForm({
       productSlug,
       productRef,
       productName,
-      primaryImageUrl,
+      // Si el cliente eligió una variante de color, usamos su imagen y datos
+      primaryImageUrl: selectedColor?.imageUrl ?? primaryImageUrl,
+      variantSku: selectedColor?.sku ?? null,
+      colorName: selectedColor?.colorName ?? null,
       quantity: finalQty,
       // Shape plano (compatibilidad): primer marcaje
       markingTechniqueCode: allMarkings[0]?.techniqueCode ?? null,
@@ -382,7 +389,8 @@ export function ProductOrderForm({
             colours > 1 ? ` · ${colours} colores` : ""
           }`
         : " · sin marcaje";
-    const detail = `${productName} (ref. ${productRef}) · ${finalQty} uds${markingTxt}`;
+    const colorTxt = selectedColor?.colorName ? ` · color ${selectedColor.colorName}` : "";
+    const detail = `${productName} (ref. ${productRef}) · ${finalQty} uds${colorTxt}${markingTxt}`;
     try {
       sessionStorage.setItem("merch:prefill", detail);
       sessionStorage.setItem("merch:prefill-ref", productRef);
