@@ -22,6 +22,7 @@ export type VariantInput = {
   sku: string;
   colorName: string | null;
   colorGroup: string | null;
+  colorHex?: string | null;
   size: string | null;
   imageUrl: string | null;
   stockQty: number;
@@ -37,6 +38,8 @@ export type ColorOption = {
   /** Identificador estable del color (colorName normalizado, o sku si no hay nombre). */
   key: string;
   colorName: string | null;
+  /** Hex del color (si el proveedor lo da) — fallback visual cuando no hay foto. */
+  colorHex: string | null;
   imageUrl: string | null;
   /** Tallas de este color, ordenadas. Vacío si el color no tiene tallas. */
   sizes: SizeOption[];
@@ -87,6 +90,7 @@ export function groupColorOptions(variants: VariantInput[]): ColorOption[] {
       opt = {
         key,
         colorName: v.colorName,
+        colorHex: v.colorHex ?? null,
         imageUrl: v.imageUrl,
         sizes: [],
         primarySku: v.sku,
@@ -94,8 +98,9 @@ export function groupColorOptions(variants: VariantInput[]): ColorOption[] {
       };
       byColor.set(key, opt);
     }
-    // La imagen del color: primera no nula que aparezca
+    // La imagen/hex del color: primer valor no nulo que aparezca
     if (!opt.imageUrl && v.imageUrl) opt.imageUrl = v.imageUrl;
+    if (!opt.colorHex && v.colorHex) opt.colorHex = v.colorHex;
     opt.totalStock += v.stockQty ?? 0;
 
     const size = extractSize(v);

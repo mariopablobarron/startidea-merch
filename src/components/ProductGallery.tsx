@@ -104,7 +104,7 @@ export function ProductGallery({
                     isSel ? "border-accent ring-2 ring-accent" : "border-line hover:border-accent/50"
                   }`}
                 >
-                  {opt.imageUrl && (
+                  {opt.imageUrl ? (
                     <Image
                       src={opt.imageUrl}
                       alt={opt.colorName ?? opt.primarySku}
@@ -113,7 +113,14 @@ export function ProductGallery({
                       className="object-contain p-1"
                       unoptimized
                     />
-                  )}
+                  ) : opt.colorHex ? (
+                    // Sin foto de variante: círculo con el hex del proveedor
+                    <span
+                      aria-hidden
+                      className="absolute inset-2 rounded-full border border-line/60"
+                      style={{ background: opt.colorHex }}
+                    />
+                  ) : null}
                 </button>
               );
             })}
@@ -133,25 +140,35 @@ export function ProductGallery({
             )}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {activeColor.sizes.map((s) => {
-              const isSel =
-                selected?.size === s.size && selected?.colorName === activeColor.colorName;
-              return (
-                <button
-                  key={s.sku}
-                  type="button"
-                  onClick={() => selectSize(activeColor, s)}
-                  aria-pressed={isSel}
-                  className={`min-w-[2.75rem] rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-                    isSel
-                      ? "border-accent bg-accent text-white"
-                      : "border-line bg-bone text-ink hover:border-accent/50"
-                  }`}
-                >
-                  {s.size}
-                </button>
-              );
-            })}
+            {(() => {
+              // Solo bloqueamos tallas a 0 si el color opera con stock: si TODAS
+              // están a 0 es un producto bajo pedido y todas siguen pedibles.
+              const colorHasStock = activeColor.sizes.some((s) => s.stockQty > 0);
+              return activeColor.sizes.map((s) => {
+                const isSel =
+                  selected?.size === s.size && selected?.colorName === activeColor.colorName;
+                const outOfStock = colorHasStock && s.stockQty <= 0;
+                return (
+                  <button
+                    key={s.sku}
+                    type="button"
+                    onClick={() => selectSize(activeColor, s)}
+                    disabled={outOfStock}
+                    aria-pressed={isSel}
+                    title={outOfStock ? "Sin stock en esta talla" : undefined}
+                    className={`min-w-[2.75rem] rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                      outOfStock
+                        ? "cursor-not-allowed border-line/60 bg-bone-soft text-ink/30 line-through"
+                        : isSel
+                          ? "border-accent bg-accent text-white"
+                          : "border-line bg-bone text-ink hover:border-accent/50"
+                    }`}
+                  >
+                    {s.size}
+                  </button>
+                );
+              });
+            })()}
           </div>
         </div>
       )}
