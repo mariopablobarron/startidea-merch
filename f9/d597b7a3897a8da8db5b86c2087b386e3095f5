@@ -1,0 +1,24 @@
+src/lib/variant-grouping.ts
+  s_65877aa637ec34::t_3851420eed95da 41-42
+  s_65877aa637ec34::t_84c67cb412a8c9 25
+  s_65877aa637ec34::t_a2d75aab52f620 93,101,103
+src/components/ProductGallery.tsx
+  s_65877aa637ec34::t_de256d991fbdcb 107,116-123
+  s_65877aa637ec34::t_9d45286787428b 143-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f9d597b7a3897a8da8db5b86c2087b386e3095f5",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
