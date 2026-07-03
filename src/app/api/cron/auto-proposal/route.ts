@@ -43,7 +43,14 @@ export const POST = wrapCronHandler("auto-proposal", async (req: Request) => {
 
   const candidates = await prisma.cartQuote.findMany({
     where: {
-      status: "NEW",
+      // NEW = recomendador/carrito público. IN_PROGRESS + source=admin-cotizador =
+      // presupuestos que el comercial guarda en /admin/cotizar, que también quieren
+      // borrador automático. NO ampliamos a TODOS los IN_PROGRESS a propósito: el
+      // ai-quote-builder también nace IN_PROGRESS pero tiene su propio flujo.
+      OR: [
+        { status: "NEW" },
+        { status: "IN_PROGRESS", source: "admin-cotizador" },
+      ],
       autoProposalAt: null, // dedup: aún sin borrador
       createdAt: { lte: minBefore, gte: maxBefore },
       items: { some: { totalClientCents: { gt: 0 } } },

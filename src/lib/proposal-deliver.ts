@@ -78,13 +78,15 @@ export async function deliverProposal(
   }
 
   if (proposal.status === "draft") {
-    // Primer envío: marca enviada + pasa el carrito vinculado a SENT (si sigue NEW).
+    // Primer envío: marca enviada + pasa el carrito vinculado a SENT. Cubre tanto
+    // los carritos del recomendador (NEW) como los del cotizador admin (IN_PROGRESS),
+    // que ahora también reciben borrador automático del agente 24h.
     await prisma.proposal.update({
       where: { id: proposal.id },
       data: { status: "sent", sentAt: now, resendId: emailResult.id },
     });
     await prisma.cartQuote.updateMany({
-      where: { autoProposalId: proposal.id, status: "NEW" },
+      where: { autoProposalId: proposal.id, status: { in: ["NEW", "IN_PROGRESS"] } },
       data: { status: "SENT" },
     });
   } else {
