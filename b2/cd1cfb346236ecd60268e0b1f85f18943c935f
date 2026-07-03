@@ -1,0 +1,23 @@
+src/app/api/recommend/route.ts
+  s_65877aa637ec34::t_cdebc7fef65247 6
+  s_65877aa637ec34::t_fb0182642e821f 40-44
+src/app/api/quote/calculate/route.ts
+  s_65877aa637ec34::t_7f5d37425e2f4e 8
+  s_65877aa637ec34::t_d8f6b020f8bb9f 53-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b2cd1cfb346236ecd60268e0b1f85f18943c935f",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
