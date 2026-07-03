@@ -66,23 +66,33 @@ export function writeCart(items: CartItem[]) {
   } catch {}
 }
 
+/**
+ * Dos líneas del carrito son "la misma" si coinciden producto + técnica de
+ * marcaje + VARIANTE (color/talla). Distinta variante ⇒ línea separada: así el
+ * cliente puede pedir el mismo producto en varios colores o tallas.
+ */
+function sameLine(a: CartItem, b: CartItem): boolean {
+  return (
+    a.productSlug === b.productSlug &&
+    (a.markingTechniqueCode ?? null) === (b.markingTechniqueCode ?? null) &&
+    (a.variantSku ?? null) === (b.variantSku ?? null)
+  );
+}
+
 export function addItem(item: CartItem) {
   const items = readCart();
-  // mismo producto + misma técnica + misma cantidad → reemplazar
-  const idx = items.findIndex(
-    (it) => it.productSlug === item.productSlug && it.markingTechniqueCode === item.markingTechniqueCode,
-  );
+  // mismo producto + técnica + variante → reemplazar (re-añadir actualiza qty)
+  const idx = items.findIndex((it) => sameLine(it, item));
   if (idx >= 0) items.splice(idx, 1);
   items.push(item);
   writeCart(items);
 }
 
-export function removeItem(productSlug: string, markingTechniqueCode?: string | null) {
-  const items = readCart().filter(
-    (it) =>
-      !(it.productSlug === productSlug &&
-        (markingTechniqueCode == null || it.markingTechniqueCode === markingTechniqueCode)),
-  );
+/** Elimina la línea en la posición `index` del carrito. */
+export function removeItemAt(index: number) {
+  const items = readCart();
+  if (index < 0 || index >= items.length) return;
+  items.splice(index, 1);
   writeCart(items);
 }
 

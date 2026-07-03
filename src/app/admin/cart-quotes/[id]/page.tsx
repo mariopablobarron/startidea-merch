@@ -5,6 +5,7 @@ import Link from "next/link";
 import { OrderTimeline, type TimelineEvent } from "@/components/OrderTimeline";
 import { PurchaseOrdersBlock } from "@/components/admin/PurchaseOrdersBlock";
 import { ResendProposalButton } from "@/components/ResendProposalButton";
+import { extractSize } from "@/lib/variant-grouping";
 
 type CartItem = {
   id: string;
@@ -336,6 +337,10 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
                   <p className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
                     <span className="rounded-full bg-bone-soft px-2 py-0.5">Cant: {it.quantity}</span>
                     {it.colorName && <span className="rounded-full bg-bone-soft px-2 py-0.5">{it.colorName}</span>}
+                    {(() => {
+                      const t = it.variantSku ? extractSize({ size: null, sku: it.variantSku }) : null;
+                      return t ? <span className="rounded-full bg-bone-soft px-2 py-0.5">Talla {t}</span> : null;
+                    })()}
                     {it.markingTechniqueName && (
                       <span className="rounded-full bg-accent-wash px-2 py-0.5 text-accent-deep">
                         {it.markingTechniqueName} en {it.markingPositionId}{it.markingColours && it.markingColours > 1 ? ` · ${it.markingColours} col.` : ""}

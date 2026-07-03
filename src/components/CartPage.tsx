@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { readCart, writeCart, removeItem, clearCart, cartTotalCents, type CartItem } from "@/lib/cart-storage";
+import { readCart, writeCart, removeItemAt, clearCart, cartTotalCents, type CartItem } from "@/lib/cart-storage";
 import { DeliveryEstimate } from "@/components/DeliveryEstimate";
 import { trackLead, trackInitiateCheckout } from "@/lib/ads-events";
 import { waLink, waCartQuoteMessage, trackWaClick } from "@/lib/whatsapp";
@@ -138,9 +138,9 @@ export function CartPage() {
     };
   }, [items, couponDiscount]);
 
-  function updateQty(slug: string, techCode: string | null | undefined, qty: number) {
-    const next = readCart().map((it) =>
-      it.productSlug === slug && it.markingTechniqueCode === techCode
+  function updateQty(index: number, qty: number) {
+    const next = readCart().map((it, idx) =>
+      idx === index
         ? { ...it, quantity: Math.max(1, qty), totalClientCents: it.unitPriceClientCents ? it.unitPriceClientCents * Math.max(1, qty) : it.totalClientCents }
         : it,
     );
@@ -354,7 +354,7 @@ export function CartPage() {
 
         {items.map((it, i) => (
           <article
-            key={`${it.productSlug}-${it.markingTechniqueCode || "_"}-${i}`}
+            key={`${it.productSlug}-${it.variantSku || "_"}-${it.markingTechniqueCode || "_"}-${i}`}
             className="grid gap-5 rounded-3xl border border-line bg-bone p-5 sm:grid-cols-[120px,1fr]"
           >
             <div className="relative aspect-square overflow-hidden rounded-2xl bg-bone-soft">
@@ -378,6 +378,21 @@ export function CartPage() {
                 {it.productName}
               </Link>
               <p className="text-xs text-ink/50">Ref. {it.productRef}</p>
+
+              {(it.colorName || it.size) && (
+                <p className="mt-1.5 flex flex-wrap gap-1.5">
+                  {it.colorName && (
+                    <span className="rounded-full bg-bone-soft px-2.5 py-0.5 text-[11px] font-medium text-ink/70">
+                      {it.colorName}
+                    </span>
+                  )}
+                  {it.size && (
+                    <span className="rounded-full bg-bone-soft px-2.5 py-0.5 text-[11px] font-medium text-ink/70">
+                      Talla {it.size}
+                    </span>
+                  )}
+                </p>
+              )}
 
               {it.customerLogoUrl && (
                 <div className="mt-2 flex items-center gap-2 rounded-lg bg-bone-soft p-1.5">
@@ -418,7 +433,7 @@ export function CartPage() {
                     type="number"
                     value={it.quantity}
                     onChange={(e) =>
-                      updateQty(it.productSlug, it.markingTechniqueCode, parseInt(e.target.value) || 1)
+                      updateQty(i, parseInt(e.target.value) || 1)
                     }
                     min={1}
                     max={1_000_000}
@@ -440,7 +455,7 @@ export function CartPage() {
 
               <button
                 type="button"
-                onClick={() => removeItem(it.productSlug, it.markingTechniqueCode)}
+                onClick={() => removeItemAt(i)}
                 className="mt-3 text-xs text-ink/50 hover:text-accent"
               >
                 Quitar
