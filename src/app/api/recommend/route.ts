@@ -4,7 +4,9 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { captureError } from "@/lib/insights/capture-error";
 import { rateLimit } from "@/lib/rate-limit";
+import { publicRef } from "@/lib/internal-ref";
 import {
+  applyMargin,
   estimateBaseCentsFromName,
   defaultTiersFromBase,
   pickTier,
@@ -120,7 +122,7 @@ export async function POST(req: Request) {
     take: 500,
     select: {
       slug: true,
-      supplierRef: true,
+      id: true, internalRef: true,
       name: true,
       brand: true,
       shortDescription: true,
@@ -134,7 +136,7 @@ export async function POST(req: Request) {
   const catalogBlock = products
     .map(
       (p, i) =>
-        `[${i + 1}] ${p.name} · ref ${p.supplierRef} · ${p.category?.name || "—"} · ${p.material || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${p.enhancedShortDescription || p.shortDescription || ""}`,
+        `[${i + 1}] ${p.name} · ref ${publicRef(p)} · ${p.category?.name || "—"} · ${p.material || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${p.enhancedShortDescription || p.shortDescription || ""}`,
     )
     .join("\n");
 
@@ -308,7 +310,7 @@ Devuelve SOLO el JSON descrito.`;
         select: {
           slug: true,
           name: true,
-          supplierRef: true,
+          id: true, internalRef: true,
           primaryImageUrl: true,
           category: { select: { name: true } },
         },
@@ -317,7 +319,7 @@ Devuelve SOLO el JSON descrito.`;
       return {
         slug: p.slug,
         name: p.name,
-        ref: p.supplierRef,
+        ref: publicRef(p), // NUNCA supplierRef en endpoint público
         category: p.category?.name,
         primaryImageUrl: p.primaryImageUrl,
         url: `/catalogo/${p.slug}`,
@@ -391,7 +393,7 @@ Devuelve SOLO el JSON descrito.`;
         select: {
           slug: true,
           name: true,
-          supplierRef: true,
+          id: true, internalRef: true,
           primaryImageUrl: true,
           fromPriceCents: true,
           category: { select: { name: true } },
@@ -409,7 +411,7 @@ Devuelve SOLO el JSON descrito.`;
       base.product = {
         slug: p.slug,
         name: p.name,
-        ref: p.supplierRef,
+        ref: publicRef(p), // NUNCA supplierRef en endpoint público
         url: `/catalogo/${p.slug}`,
         primaryImageUrl: p.primaryImageUrl,
       };
@@ -445,7 +447,10 @@ Devuelve SOLO el JSON descrito.`;
           base.priceSource = "estimate";
         }
       }
-      base.unitPriceCents = tierCents;
+      // El PriceTier/fromPriceCents es COSTE NETO de proveedor: al público
+      // SIEMPRE con margen (auditoría 2026-07-04: se mostraban netos).
+      const unitClientCents = tierCents !== null ? applyMargin(tierCents) : null;
+      base.unitPriceCents = unitClientCents;
 
       // 3) Coste marcaje si LLM detectó técnica
       if (it.technique && tierCents !== null) {
@@ -455,9 +460,9 @@ Devuelve SOLO el JSON descrito.`;
       }
 
       // 4) Total
-      if (tierCents !== null) {
+      if (unitClientCents !== null) {
         base.totalCents =
-          tierCents * base.quantity +
+          unitClientCents * base.quantity +
           base.markingPerUnitCents * base.quantity +
           base.markingSetupCents;
       }
