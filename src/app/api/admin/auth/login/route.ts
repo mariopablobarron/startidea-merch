@@ -6,6 +6,7 @@ import {
   verifyPassword,
   signSession,
   sessionCookieValue,
+  recordLoginEvent,
 } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
@@ -53,11 +54,22 @@ export async function POST(req: Request) {
 
   const user = await findAdminUserByEmail(parsed.data.email);
   if (!user || !user.active) {
+    recordLoginEvent({
+      email: parsed.data.email,
+      method: "password",
+      ok: false,
+      reason: user ? "inactive" : "unknown_user",
+      req,
+    });
     return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
   }
   const ok = await verifyPassword(parsed.data.password, user.passwordHash);
-  if (!ok) return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
+  if (!ok) {
+    recordLoginEvent({ email: user.email, method: "password", ok: false, reason: "bad_password", req });
+    return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
+  }
 
+  recordLoginEvent({ email: user.email, method: "password", ok: true, req });
   await prisma.adminUser.update({
     where: { id: user.id },
     data: { lastLoginAt: new Date() },

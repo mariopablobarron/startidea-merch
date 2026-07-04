@@ -125,3 +125,34 @@ export function clearSessionCookieValue(): string {
 export async function findAdminUserByEmail(email: string) {
   return prisma.adminUser.findUnique({ where: { email: email.toLowerCase() } });
 }
+
+/**
+ * Auditoría de accesos: registra el intento (éxito o rechazo) sin bloquear
+ * nunca el flujo de login (fire-and-forget; los fallos de auditoría se tragan).
+ */
+export function recordLoginEvent(e: {
+  email: string;
+  method: "password" | "google";
+  ok: boolean;
+  reason?: string;
+  req?: Request;
+}): void {
+  const ip = e.req
+    ? e.req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      e.req.headers.get("x-real-ip") ||
+      null
+    : null;
+  const userAgent = e.req?.headers.get("user-agent")?.slice(0, 300) ?? null;
+  void prisma.adminLoginEvent
+    .create({
+      data: {
+        email: e.email.toLowerCase().slice(0, 200),
+        method: e.method,
+        ok: e.ok,
+        reason: e.reason ?? null,
+        ip,
+        userAgent,
+      },
+    })
+    .catch(() => {});
+}

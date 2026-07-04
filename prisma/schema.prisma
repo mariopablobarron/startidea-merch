@@ -921,6 +921,21 @@ model AdminUser {
   @@index([active])
 }
 
+// Auditoría de accesos al panel (password + Google): quién, cuándo, desde
+// dónde, y si el intento fue rechazado (p.ej. Gmail no autorizado).
+model AdminLoginEvent {
+  id        String   @id @default(cuid())
+  email     String
+  method    String // "password" | "google"
+  ok        Boolean
+  reason    String? // "no_autorizado" | "bad_password" | "inactive" ...
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 enum AdminRole {
   CEO // todo · gestión usuarios · facturación · análisis
   COMERCIAL // cotizaciones, propuestas IA, sin costes ni payments

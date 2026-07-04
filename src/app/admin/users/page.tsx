@@ -12,6 +12,16 @@ type AdminUser = {
   lastLoginAt: string | null;
 };
 
+type LoginEvent = {
+  id: string;
+  email: string;
+  method: string;
+  ok: boolean;
+  reason: string | null;
+  ip: string | null;
+  createdAt: string;
+};
+
 const ROLES: AdminUser["role"][] = ["CEO", "COMERCIAL", "FACTURACION", "OPERACIONES"];
 
 const ROLE_LABEL: Record<AdminUser["role"], string> = {
@@ -32,6 +42,7 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState<AdminUser["role"]>("COMERCIAL");
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState<string | null>(null);
+  const [events, setEvents] = useState<LoginEvent[]>([]);
 
   async function load() {
     const res = await fetch("/api/admin/users");
@@ -45,6 +56,11 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     load();
+    // Auditoría de accesos (solo CEO; si falla, la sección queda vacía)
+    fetch("/api/admin/auth/events")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setEvents(d?.events || []))
+      .catch(() => {});
   }, []);
 
   async function create(e: React.FormEvent) {
@@ -194,6 +210,58 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
         </section>
+
+        {events.length > 0 && (
+          <section className="mt-10">
+            <h2 className="font-display text-xl font-semibold text-ink">Últimos accesos</h2>
+            <p className="mt-1 text-sm text-ink/60">
+              Auditoría de inicios de sesión (contraseña y Google), incluidos los rechazados.
+            </p>
+            <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-bone">
+              <table className="w-full text-sm">
+                <thead className="border-b border-line bg-bone-soft text-left text-[11px] uppercase tracking-wider text-ink/50">
+                  <tr>
+                    <th className="px-4 py-2.5">Cuándo</th>
+                    <th className="px-4 py-2.5">Email</th>
+                    <th className="px-4 py-2.5">Método</th>
+                    <th className="px-4 py-2.5">Resultado</th>
+                    <th className="px-4 py-2.5">IP</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((ev) => (
+                    <tr key={ev.id} className="border-b border-line/60">
+                      <td className="px-4 py-2.5 text-xs text-ink/60">
+                        {new Date(ev.createdAt).toLocaleString("es-ES", {
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-4 py-2.5">{ev.email}</td>
+                      <td className="px-4 py-2.5 text-xs text-ink/60">
+                        {ev.method === "google" ? "Google" : "Contraseña"}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {ev.ok ? (
+                          <span className="rounded-full bg-social/15 px-2 py-0.5 text-[11px] font-medium text-social">
+                            ✓ entró
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-accent-wash px-2 py-0.5 text-[11px] font-medium text-accent-deep">
+                            ✗ {ev.reason || "rechazado"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 font-mono text-[11px] text-ink/50">{ev.ip || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );

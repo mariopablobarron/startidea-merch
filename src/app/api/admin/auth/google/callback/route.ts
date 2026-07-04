@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
-import { signSession, findAdminUserByEmail } from "@/lib/admin-auth";
+import { signSession, findAdminUserByEmail, recordLoginEvent } from "@/lib/admin-auth";
 
 /**
  * Callback del login con Google. Verifica todo antes de crear sesión:
@@ -96,7 +96,17 @@ export async function GET(req: Request) {
 
   // 5. El email DEBE ser un AdminUser activo — puerta de autorización
   const admin = await findAdminUserByEmail(email);
-  if (!admin || !admin.active) return fail("no_autorizado");
+  if (!admin || !admin.active) {
+    recordLoginEvent({
+      email,
+      method: "google",
+      ok: false,
+      reason: admin ? "inactive" : "no_autorizado",
+      req,
+    });
+    return fail("no_autorizado");
+  }
+  recordLoginEvent({ email: admin.email, method: "google", ok: true, req });
 
   // Sesión (mismo JWT que el login por contraseña) con el rol del AdminUser
   const token = await signSession({
