@@ -1,0 +1,33 @@
+src/components/SortSelect.tsx
+  s_65877aa637ec34::t_edc74db83ea126 16,23,32
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_d18f929e12bcb3 57-59
+  s_65877aa637ec34::t_14f61031a653bc 312-324
+  s_65877aa637ec34::t_6fb3482a832a43 629,643,655
+  s_65877aa637ec34::t_fd1095d7b0e762 551,570,590
+  s_65877aa637ec34::t_e71b3ca17643a8 160-178,189
+  s_65877aa637ec34::t_bd33f6d48e11dd 677
+  s_65877aa637ec34::t_ca643fd2a58c44 957,966,972
+  s_65877aa637ec34::t_8840413d8b8bbf 267-272
+  s_65877aa637ec34::t_9db06bd2d3995a 203
+  s_65877aa637ec34::t_7335f334f2d1fe 820
+  s_65877aa637ec34::t_ed87f810b63c42 470-504,511,529
+  s_65877aa637ec34::t_6a25a44adc4c1f 67,81
+  s_65877aa637ec34::t_893e6f2f0cf035 273,325
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9da01de1d3e92327ca09ff2e60335550f5b7987f",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
