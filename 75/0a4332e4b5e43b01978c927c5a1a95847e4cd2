@@ -1,0 +1,31 @@
+src/lib/sync-circuit-breaker.ts
+  s_65877aa637ec34::t_a6103d50b37d1c 1-54
+src/lib/suppliers/midocean-sync.ts
+  s_65877aa637ec34::t_297b0a5a752973 16-17,106-108,122,125-133
+src/app/api/cron/override-price-drift/route.ts
+  s_65877aa637ec34::t_ea4c56096f733f 1-95
+src/lib/cron-catalog.ts
+  s_65877aa637ec34::t_1171506ca2709f 201-210
+src/lib/sync-circuit-breaker.test.ts
+  s_65877aa637ec34::t_27188a38d251b0 1-56
+src/lib/suppliers/makito-sync.ts
+  s_65877aa637ec34::t_297b0a5a752973 20-21,256,379,385,389-396
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_297b0a5a752973 26-27,154,310,316,320-327
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "750a4332e4b5e43b01978c927c5a1a95847e4cd2",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
