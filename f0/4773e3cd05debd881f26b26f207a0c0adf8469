@@ -1,0 +1,33 @@
+src/app/admin/products/loading.tsx
+  s_65877aa637ec34::t_1d81e57040ea9c 1-29
+src/app/admin/insights/loading.tsx
+  s_65877aa637ec34::t_a5c9111682729c 1-33
+src/app/admin/analytics/loading.tsx
+  s_65877aa637ec34::t_a0ed69c6cc8e9f 1-34
+src/app/admin/orders/loading.tsx
+  s_65877aa637ec34::t_b7adac611a1f5a 1-28
+src/app/admin/clientes/loading.tsx
+  s_65877aa637ec34::t_922c6a968e6009 1-27
+src/app/admin/propuestas/loading.tsx
+  s_65877aa637ec34::t_ae5d1ccb9e535b 1-27
+src/app/admin/loading.tsx
+  s_65877aa637ec34::t_e4ed6677f61e98 1-32
+src/app/admin/cart-quotes/loading.tsx
+  s_65877aa637ec34::t_59a9c0746cf583 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f04773e3cd05debd881f26b26f207a0c0adf8469",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
