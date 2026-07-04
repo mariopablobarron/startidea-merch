@@ -73,6 +73,15 @@ function safeSlug(s: string): string {
     .slice(0, 100);
 }
 
+function toQty(q: unknown): number {
+  // El feed de Cifra manda quantity a veces como number y a veces como STRING
+  // ("123"). El guard typeof===number colapsaba TODO el stock a 0 (auditoría
+  // 2026-07-04: 100% del stock Cifra a cero con sync verde).
+  if (typeof q === "number" && Number.isFinite(q)) return Math.max(0, Math.trunc(q));
+  const n = parseInt(String(q ?? "0"), 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 export async function runCifraSync(): Promise<CifraSyncResult> {
   const startedAt = new Date();
   const errors: CifraSyncResult["errors"] = [];
@@ -291,7 +300,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 // sufijo del model ES la talla. Alfabéticas conocidas o null.
                 size: extractSize({ size: null, sku: v.model }),
                 imageUrl: proxiedVariantImg,
-                stockQty: typeof v.quantity === "number" ? v.quantity : 0,
+                stockQty: toQty(v.quantity),
                 stockUpdatedAt: new Date(),
               },
               update: {
@@ -300,7 +309,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 colorHex: color.hex,
                 size: extractSize({ size: null, sku: v.model }),
                 imageUrl: proxiedVariantImg,
-                stockQty: typeof v.quantity === "number" ? v.quantity : 0,
+                stockQty: toQty(v.quantity),
                 stockUpdatedAt: new Date(),
               },
             });

@@ -429,8 +429,15 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
         const rawSec = (t as unknown as Record<string, number | string>)[`section${i}`];
         const price = (t as unknown as Record<string, number>)[`price${i}`];
         let sec: number;
+        // El primer tramo llega como "-500" ("hasta 500"). El parser XML puede
+        // entregarlo como STRING "-500" o como NUMBER -500 — ambos son el
+        // primer tramo (minQty=1). El caso number negativo caía en `sec > 0`
+        // y DESCARTABA el tramo: 4.452 productos cotizaban SIEMPRE al precio
+        // de 500+ uds (auditoría 2026-07-04).
         if (typeof rawSec === "string" && rawSec.startsWith("-")) {
           sec = 1; // primer tramo
+        } else if (typeof rawSec === "number" && rawSec < 0) {
+          sec = 1; // primer tramo (parser XML lo convirtió a número)
         } else {
           sec = typeof rawSec === "number" ? rawSec : parseInt(String(rawSec || "0"), 10);
         }
