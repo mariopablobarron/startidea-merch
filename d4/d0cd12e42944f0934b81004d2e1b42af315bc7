@@ -1,0 +1,21 @@
+src/app/admin/layout.tsx
+  s_65877aa637ec34::t_04ce7828d0b5c8 5-9,12,33-158,161,167-168,174-179,181-185,195,208
+src/components/admin/MobileAdminNav.tsx
+  s_65877aa637ec34::t_82293b2cb0b560 1-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d4d0cd12e42944f0934b81004d2e1b42af315bc7",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
