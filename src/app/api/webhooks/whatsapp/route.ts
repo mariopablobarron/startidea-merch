@@ -72,7 +72,9 @@ export async function POST(req: Request) {
         const text = msg.type === "text" ? msg.text?.body || "" : `[${msg.type}]`;
         void notifyTelegram(
           `📲 <b>WhatsApp entrante</b>\n${name ? `${name} · ` : ""}+${from}\n${text.slice(0, 500)}`,
-        ).catch(() => {});
+        ).catch((e) =>
+          console.error("[webhooks-whatsapp] notifyTelegram falló:", e instanceof Error ? e.message : e),
+        );
       }
     }
   }

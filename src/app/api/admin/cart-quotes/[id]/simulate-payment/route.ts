@@ -130,7 +130,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       `Email: ${emailResult.ok ? "✓" : "✗ " + (emailResult.error || "")}\n` +
       `Por: ${session.email}`,
     { parseMode: "HTML" },
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[simulate-payment] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({
     ok: true,

@@ -62,7 +62,9 @@ export async function POST(req: Request) {
           <p style="color:#6b6b6b;font-size:12px;margin-top:32px;">STARTIDEA MALAGA SL · CIF B19583632</p>
         </div>`,
       })
-      .catch(() => {});
+      .catch((e) =>
+        console.error("[magic-link] resend.emails.send falló:", e instanceof Error ? e.message : e),
+      );
   }
   return NextResponse.json({ ok: true });
 }

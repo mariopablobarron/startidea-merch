@@ -35,7 +35,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       console.error("[proof approve] midocean error", r);
       void notifyTelegram(
         `⚠️ <b>Fallo al aprobar proof en MidOcean</b>\n${proof.cart.name} · cart <code>${proof.cartId.slice(0, 8)}</code>\nNO se ha marcado APPROVED local. Revisar/reintentar manualmente.`,
-      ).catch(() => {});
+      ).catch((e) =>
+        console.error("[proof approve] notifyTelegram (fallo midocean) falló:", e instanceof Error ? e.message : e),
+      );
       return NextResponse.json(
         { error: "No se pudo confirmar la aprobación con el proveedor. Inténtalo de nuevo en unos minutos." },
         { status: 502 },
@@ -74,7 +76,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
 
   void notifyTelegram(
     `✅ <b>Mockup aprobado</b>\n${proof.cart.name}${proof.cart.company ? ` · ${proof.cart.company}` : ""}\n📧 ${proof.cart.email}\nCart <code>${proof.cartId.slice(0, 8)}</code> · pasamos producción a marcha`,
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[proof approve] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({ ok: true, status: updated.status });
 }

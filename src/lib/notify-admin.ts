@@ -32,7 +32,9 @@ export async function notifyAdmins(
       title: payload.title,
       body: payload.body ?? "",
       url: payload.url,
-    }).catch(() => {});
+    }).catch((e) =>
+      console.error("[notify-admin] notifySlack falló:", e instanceof Error ? e.message : e),
+    );
   }
 
   // Push browser
@@ -44,11 +46,15 @@ export async function notifyAdmins(
     subs.map(async (s) => {
       const r = await sendPush(s, payload);
       if (r.gone) {
-        await prisma.pushSubscription.delete({ where: { id: s.id } }).catch(() => {});
+        await prisma.pushSubscription.delete({ where: { id: s.id } }).catch((e) =>
+          console.error("[notify-admin] delete PushSubscription falló:", e instanceof Error ? e.message : e),
+        );
       } else if (r.ok) {
         await prisma.pushSubscription
           .update({ where: { id: s.id }, data: { lastUsedAt: new Date() } })
-          .catch(() => {});
+          .catch((e) =>
+            console.error("[notify-admin] update PushSubscription falló:", e instanceof Error ? e.message : e),
+          );
       }
     }),
   );

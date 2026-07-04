@@ -78,7 +78,9 @@ export async function POST(req: Request) {
         where: { id: d.voice_session_id },
         data: { resultingCartId: cart.id },
       })
-      .catch(() => {});
+      .catch((e) =>
+        console.error("[request-callback] atribuir VoiceSession falló:", e instanceof Error ? e.message : e),
+      );
   }
 
   // Notificación INMEDIATA a Mario (TG + email)
@@ -95,7 +97,9 @@ export async function POST(req: Request) {
   ]
     .filter(Boolean)
     .join("\n");
-  void notifyTelegram(tgMsg).catch(() => {});
+  void notifyTelegram(tgMsg).catch((e) =>
+    console.error("[request-callback] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   // Email interno (backup)
   void sendEmail({
@@ -110,7 +114,9 @@ export async function POST(req: Request) {
       ${d.reason ? `<p><strong>Razón:</strong> ${escapeHtml(d.reason)}</p>` : ""}
       <p style="margin-top:24px"><a href="https://merchandising.hubstartidea.es/admin/cart-quotes/${cart.id}" style="background:#C8102E;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Abrir en admin</a></p>
     `,
-  }).catch(() => {});
+  }).catch((e) =>
+    console.error("[request-callback] sendEmail interno falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({
     ok: true,

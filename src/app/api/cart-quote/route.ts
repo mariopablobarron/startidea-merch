@@ -238,7 +238,9 @@ export async function POST(req: Request) {
   // Si hay referral activo (cookie o querystring), asociar partner
   const refSlug = readPartnerSlug(req);
   if (refSlug) {
-    void attachReferral(cart.id, refSlug).catch(() => {});
+    void attachReferral(cart.id, refSlug).catch((e) =>
+      console.error("[cart-quote] attachReferral falló:", e instanceof Error ? e.message : e),
+    );
   }
 
   // Aplicar cupón validado server-side. Esto consume uso y guarda el descuento
@@ -258,7 +260,9 @@ export async function POST(req: Request) {
 
   void notifyTelegram(
     `🛒 <b>Nuevo carrito</b>\n${data.name}${data.company ? ` · ${data.company}` : ""}\n${cart.items.length} productos · <b>${EUR.format(payableTotal / 100)}</b>\n📧 ${data.email}`,
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[cart-quote] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({
     ok: true,

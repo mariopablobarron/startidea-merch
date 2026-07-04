@@ -141,7 +141,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ number:
       `✅ <b>Propuesta ACEPTADA por el cliente</b> (${proposal.proposalNumber})\n` +
         `→ ${proposal.email}\nTotal: ${fmt(proposal.totalCents)}\n` +
         `Prepara mockup + cotización vinculante.`,
-    ).catch(() => {});
+    ).catch((e) =>
+      console.error("[proposal-accept] notifyTelegram falló:", e instanceof Error ? e.message : e),
+    );
   }
 
   return htmlResponse(page({ title: "¡Gracias!", heading: "Propuesta aceptada ✓", bodyHtml: acceptedBody(proposal) }));

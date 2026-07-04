@@ -288,7 +288,9 @@ async function postPaymentAutoflow(args: {
   const affiliateBaseCents =
     cartWithItems?.acceptedTotalCents ?? Math.round(amountCents / (1 + IVA_RATE));
 
-  void markReferralEarned(cartId, affiliateBaseCents).catch(() => {});
+  void markReferralEarned(cartId, affiliateBaseCents).catch((e) =>
+    console.error("[stripe webhook] markReferralEarned falló:", e instanceof Error ? e.message : e),
+  );
 
   // F2 (25-may): si el cart se pagó con un cupón vinculado a afiliado,
   // crea entries COMMISSION + CREDIT en el ledger del partner.
@@ -321,7 +323,9 @@ async function postPaymentAutoflow(args: {
   const viaLabel = via === "express-checkout" ? " (Apple/Google Pay)" : "";
   void notifyTelegram(
     `💰 <b>Pago recibido</b>${viaLabel}\n${customer.name}${customer.company ? ` · ${customer.company}` : ""}\n<b>${amountFmt} €</b>\n📧 ${customer.email}`,
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[stripe webhook] notifyTelegram pago recibido falló:", e instanceof Error ? e.message : e),
+  );
 
   void emitWebhook("payment.completed", {
     cartId,

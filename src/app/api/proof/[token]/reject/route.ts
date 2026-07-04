@@ -65,7 +65,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
 
   void notifyTelegram(
     `❌ <b>Mockup rechazado</b>\n${proof.cart.name}${proof.cart.company ? ` · ${proof.cart.company}` : ""}\n📧 ${proof.cart.email}\nMotivo: <i>${parsed.data.reason.slice(0, 200)}</i>\nCart <code>${proof.cartId.slice(0, 8)}</code>`,
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[proof reject] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({ ok: true, status: updated.status });
 }

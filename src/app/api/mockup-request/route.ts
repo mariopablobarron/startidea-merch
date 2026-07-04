@@ -136,7 +136,9 @@ export async function POST(req: Request) {
       (data.brief ? `Brief: ${data.brief.slice(0, 300)}\n` : "") +
       `Admin: ${SITE_URL}/admin/mockup-requests/${created.id}`,
     { parseMode: "HTML" },
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[mockup-request] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   // 3) Email interno al buzón pedidos@ (para tener pista en Gmail)
   if (process.env.RESEND_FROM_NOTIFY || process.env.RESEND_FROM) {
@@ -168,7 +170,9 @@ export async function POST(req: Request) {
           <p style="margin:18px 0 0;font-size:11px;color:#a09e98;">ID: ${created.id}</p>
         </div>
       </div>`,
-    }).catch(() => {});
+    }).catch((e) =>
+      console.error("[mockup-request] sendEmail interno falló:", e instanceof Error ? e.message : e),
+    );
   }
 
   return NextResponse.json({ ok: true, id: created.id });

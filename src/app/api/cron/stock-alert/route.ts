@@ -93,7 +93,9 @@ export async function POST(req: Request) {
     `<a href="https://merchandising.hubstartidea.es/admin/stock">Ver panel completo →</a>`,
   );
 
-  await notifyTelegram(lines.join("\n")).catch(() => {});
+  await notifyTelegram(lines.join("\n")).catch((e) =>
+    console.error("[stock-alert] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({
     ok: true,

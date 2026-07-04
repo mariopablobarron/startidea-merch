@@ -118,7 +118,9 @@ export async function POST(req: Request) {
       `Empleados: ${data.employees} · Presupuesto: ${data.annualBudgetEur}€/año · Sustitución: ${data.substitutionPct}%\n` +
       `Resultado: ${results.co2SavedKg} kg CO₂ · ${results.workHoursDignified} h trabajo digno`,
     { parseMode: "HTML" },
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[calculadora-rsc] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({ ok: true, id: created.id, results });
 }

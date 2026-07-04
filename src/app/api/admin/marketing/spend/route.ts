@@ -99,6 +99,8 @@ export async function DELETE(req: Request) {
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
-  await prisma.marketingSpend.delete({ where: { id } }).catch(() => {});
+  await prisma.marketingSpend.delete({ where: { id } }).catch((e) =>
+    console.error("[admin-marketing-spend] delete falló:", e instanceof Error ? e.message : e),
+  );
   return NextResponse.json({ ok: true });
 }

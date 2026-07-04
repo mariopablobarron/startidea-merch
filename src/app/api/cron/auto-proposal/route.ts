@@ -85,13 +85,17 @@ export const POST = wrapCronHandler("auto-proposal", async (req: Request) => {
           `${draft.itemCount} producto${draft.itemCount === 1 ? "" : "s"} · <b>${EUR.format(draft.totalCents / 100)}</b> (IVA incl.)\n` +
           `📄 PDF: ${draft.downloadUrl}\n` +
           `✍️ Revisar y enviar (1 clic): ${SITE_URL}/admin/propuestas`,
-      ).catch(() => {});
+      ).catch((e) =>
+        console.error("[auto-proposal] notifyTelegram falló:", e instanceof Error ? e.message : e),
+      );
       void notifyAdmins({
         title: `🤖 Propuesta lista para ${cart.name}`,
         body: `${draft.itemCount} prod. · ${EUR.format(draft.totalCents / 100)} — revisar y enviar`,
         url: `/admin/propuestas`,
         tag: `auto-proposal-${cart.id}`,
-      }).catch(() => {});
+      }).catch((e) =>
+        console.error("[auto-proposal] notifyAdmins falló:", e instanceof Error ? e.message : e),
+      );
 
       results.push({ cartId: cart.id, ok: true, proposalNumber: draft.proposalNumber });
     } catch (e) {
@@ -100,7 +104,9 @@ export const POST = wrapCronHandler("auto-proposal", async (req: Request) => {
       // para que el admin lo haga a mano si hace falta.
       void notifyTelegram(
         `⚠️ <b>auto-proposal FALLÓ</b>\nCart ${cart.id.slice(0, 8)} · ${cart.name}\n${msg.slice(0, 200)}`,
-      ).catch(() => {});
+      ).catch((e) =>
+        console.error("[auto-proposal] notifyTelegram (aviso de fallo) falló:", e instanceof Error ? e.message : e),
+      );
       results.push({ cartId: cart.id, ok: false, error: msg });
     }
   }

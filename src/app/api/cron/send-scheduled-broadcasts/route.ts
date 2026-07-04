@@ -55,7 +55,9 @@ export async function POST(req: Request) {
             : `✕ ${r.subject.slice(0, 60)} — ${r.error}`,
         )
         .join("\n"),
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[send-scheduled-broadcasts] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({ ok: true, processed: due.length, sentTotal, results });
 }

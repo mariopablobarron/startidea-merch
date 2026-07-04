@@ -187,7 +187,9 @@ async function sendStep(
           validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
       });
-    } catch {}
+    } catch (e) {
+      console.error("[post-order-drip] upsert cupón D+45 falló:", e instanceof Error ? e.message : e);
+    }
 
     await sendEmail({
       to: cart.email,

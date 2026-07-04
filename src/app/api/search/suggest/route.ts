@@ -32,7 +32,9 @@ export async function GET(req: Request) {
         where: { queryLower },
         data: { hitCount: { increment: 1 } },
       })
-      .catch(() => {});
+      .catch((e) =>
+        console.error("[search-suggest] increment hitCount alias falló:", e instanceof Error ? e.message : e),
+      );
     return NextResponse.json(
       { redirectTo: alias.redirectTo, products: [], categories: [] },
       { headers: { "Cache-Control": "private, max-age=60" } },
@@ -139,12 +141,15 @@ export async function GET(req: Request) {
                   tag: `search-${queryLower}`,
                 },
                 { event: "search_no_results" },
-              ).catch(() => {});
+              ).catch((e) =>
+                console.error("[search-suggest] notifyAdmins demanda no cubierta falló:", e instanceof Error ? e.message : e),
+              );
             }
           }
         }
-      } catch {
+      } catch (e) {
         // Silencioso, no bloquea la búsqueda
+        console.error("[search-suggest] log de búsqueda falló:", e instanceof Error ? e.message : e);
       }
     })();
   }

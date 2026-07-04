@@ -139,8 +139,9 @@ export async function POST(req: Request) {
           },
         });
         code = candidate;
-      } catch {
+      } catch (e) {
         // colisión de code único → reintenta
+        console.error("[ruleta] create cupón (colisión, reintenta):", e instanceof Error ? e.message : e);
       }
     }
     if (!code) {
@@ -198,7 +199,9 @@ export async function POST(req: Request) {
     // Compensación: si ya habíamos creado el cupón, bórralo para no dejar un
     // cupón huérfano usable que el dedup no vería en un reintento.
     if (code) {
-      await prisma.coupon.delete({ where: { code } }).catch(() => {});
+      await prisma.coupon.delete({ where: { code } }).catch((delErr) =>
+        console.error("[ruleta] delete cupón compensación falló:", delErr instanceof Error ? delErr.message : delErr),
+      );
     }
     console.error("[ruleta] upsert subscriber falló", e);
     return NextResponse.json({ error: "No se pudo registrar, reinténtalo" }, { status: 500 });

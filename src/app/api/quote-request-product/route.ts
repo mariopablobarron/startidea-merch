@@ -96,12 +96,16 @@ export async function POST(req: Request) {
       (proposalNumber
         ? `📄 Borrador ${proposalNumber} listo — revisa y envía en /admin/propuestas`
         : `⚠️ Sin precio automático — gestionar manualmente`),
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[quote-request-product] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
   void notifyAdmins({
     title: "Nueva solicitud de presupuesto",
     body: `${productName} ×${d.qty} · ${d.email}${proposalNumber ? ` · borrador ${proposalNumber}` : ""}`,
     url: `${SITE_URL}/admin/propuestas`,
-  }).catch(() => {});
+  }).catch((e) =>
+    console.error("[quote-request-product] notifyAdmins falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({ ok: true });
 }

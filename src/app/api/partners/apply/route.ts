@@ -85,7 +85,9 @@ export async function POST(req: Request) {
       (data.message ? `Mensaje: ${data.message.slice(0, 300)}\n` : "") +
       `Admin: ${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es"}/admin/marketing/partners`,
     { parseMode: "HTML" },
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[partners-apply] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({ ok: true, id: created.id });
 }

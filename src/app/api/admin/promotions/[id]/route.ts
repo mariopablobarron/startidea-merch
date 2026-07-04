@@ -80,6 +80,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 
   const { id } = await params;
-  await prisma.promotion.delete({ where: { id } }).catch(() => {});
+  await prisma.promotion.delete({ where: { id } }).catch((e) =>
+    console.error("[admin-promotions] delete falló:", e instanceof Error ? e.message : e),
+  );
   return NextResponse.json({ ok: true });
 }

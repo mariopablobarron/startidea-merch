@@ -154,7 +154,9 @@ export async function POST(req: Request) {
         `Propuesta: ${proposalNumber}\n` +
         `To: ${parsed.email}\n` +
         `Error: ${message.slice(0, 300)}`,
-    ).catch(() => {});
+    ).catch((e) =>
+      console.error("[proposal-send] notifyTelegram (aviso PDF fallido) falló:", e instanceof Error ? e.message : e),
+    );
     return NextResponse.json(
       { error: "PDF_RENDER_FAILED", detail: message },
       { status: 500 },
@@ -223,8 +225,9 @@ export async function POST(req: Request) {
       where: { id: proposalId },
       data: { resendId: emailResult.id },
     });
-  } catch {
+  } catch (e) {
     // No crítico, seguimos
+    console.error("[proposal-send] guardar resendId falló:", e instanceof Error ? e.message : e);
   }
 
   // 6b. Bump proposalCount + lastCartAddAt en ProductView por cada item
@@ -269,7 +272,9 @@ export async function POST(req: Request) {
     `\n` +
     `Total: ${(totals.totalCents / 100).toFixed(2)}€ (IVA incl.)\n` +
     `Items: ${items.length}`;
-  void notifyTelegram(`📨 <b>Propuesta enviada</b>\n${summary}`).catch(() => {});
+  void notifyTelegram(`📨 <b>Propuesta enviada</b>\n${summary}`).catch((e) =>
+    console.error("[proposal-send] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
   void (async () => {
     if (await isNotificationEnabled("proposal_received")) {
       await notifyAdmins(
@@ -282,7 +287,9 @@ export async function POST(req: Request) {
         { event: "proposal_received" },
       );
     }
-  })().catch(() => {});
+  })().catch((e) =>
+    console.error("[proposal-send] notifyAdmins falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({
     ok: true,

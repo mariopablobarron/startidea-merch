@@ -80,7 +80,9 @@ export async function POST(req: Request) {
           mode: "recommend",
         },
       })
-      .catch(() => {});
+      .catch((e) =>
+        console.error("[recommend] persistir recommenderQuery fallback falló:", e instanceof Error ? e.message : e),
+      );
     const keywords = extractKeywords(brief);
     return NextResponse.json(
       {

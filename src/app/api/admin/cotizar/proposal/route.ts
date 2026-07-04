@@ -81,7 +81,9 @@ export async function POST(req: Request) {
       `Cliente: ${d.name || d.company || d.email}\n` +
       `Total: ${(quote.pvp.totalConIva / 100).toFixed(2)} € (IVA inc.)\n` +
       `${d.send ? (result.emailed ? "✉️ Enviada por email" : "⚠️ Email FALLÓ — guardada igualmente") : "💾 Borrador (revisar y enviar en /admin/propuestas)"}`,
-  ).catch(() => {});
+  ).catch((e) =>
+    console.error("[admin-cotizar-proposal] notifyTelegram falló:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({
     ok: true,

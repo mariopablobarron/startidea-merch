@@ -104,7 +104,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       template: "enlace_pago",
       language: "es",
       bodyParams: [firstName, EUR.format(withIva(depositCents) / 100), url],
-    }).catch(() => {});
+    }).catch((e) =>
+      console.error("[payment-link] sendWhatsAppTemplate falló:", e instanceof Error ? e.message : e),
+    );
   }
 
   return NextResponse.json({

@@ -127,7 +127,9 @@ export async function POST(req: Request) {
   if (published > 0 || failed > 0) {
     void notifyTelegram(
       `📢 <b>Publicación auto</b>\n${published} OK · ${failed} fallidos${errors.length > 0 ? `\n${errors.slice(0, 3).join("\n")}` : ""}`,
-    ).catch(() => {});
+    ).catch((e) =>
+      console.error("[publish-scheduled] notifyTelegram falló:", e instanceof Error ? e.message : e),
+    );
   }
 
   return NextResponse.json({
