@@ -54,6 +54,9 @@ const SORT_LABELS: Record<Sort, string> = {
   recent: "Sincronizados recientemente",
 };
 
+// Orden fijo de tallas (no alfabético: "XL" < "XS" rompería el orden natural).
+const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL"];
+
 export default async function CatalogoPage({
   searchParams,
 }: {
@@ -61,6 +64,7 @@ export default async function CatalogoPage({
     q?: string;
     cat?: string;
     color?: string;
+    talla?: string;
     mat?: string;
     page?: string;
     sort?: Sort;
@@ -74,6 +78,7 @@ export default async function CatalogoPage({
   const q = normalizeSearch(qRaw);
   const catSlug = (sp.cat || "").trim();
   const colorGroup = (sp.color || "").trim();
+  const talla = (sp.talla || "").trim();
   const material = (sp.mat || "").trim();
   const priceMin = sp.priceMin ? Math.max(0, parseInt(sp.priceMin, 10) || 0) : null;
   const priceMax = sp.priceMax ? Math.max(0, parseInt(sp.priceMax, 10) || 0) : null;
@@ -152,24 +157,36 @@ export default async function CatalogoPage({
         }
       : undefined;
 
-  // Stock filter: al menos una variante con stockQty > 0
-  const stockFilter: Prisma.ProductWhereInput | undefined = inStock
-    ? { variants: { some: { stockQty: { gt: 0 } } } }
-    : undefined;
+  // Filtro de variantes: color, talla y stock deben viajar en UN único
+  // `variants.some`, porque son claves del mismo objeto `where` — si se
+  // spreadean por separado (como antes con colorGroup y stockFilter en
+  // objetos distintos), la última en el spread pisa a las anteriores y
+  // el filtro previo deja de aplicarse en silencio.
+  const variantsFilter: Prisma.ProductWhereInput | undefined =
+    colorGroup || talla || inStock
+      ? {
+          variants: {
+            some: {
+              ...(talla ? { size: talla } : {}),
+              ...(colorGroup
+                ? { colorGroup: { equals: colorGroup, mode: "insensitive" as const } }
+                : {}),
+              ...(inStock ? { stockQty: { gt: 0 } } : {}),
+            },
+          },
+        }
+      : undefined;
 
   const where: Prisma.ProductWhereInput = {
     active: true,
     NOT: { override: { is: { hidden: true } } },
     ...(searchClause ? searchClause : {}),
     ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
-    ...(colorGroup
-      ? { variants: { some: { colorGroup: { equals: colorGroup, mode: "insensitive" as const } } } }
-      : {}),
     ...(material
       ? { material: { contains: material, mode: "insensitive" as const } }
       : {}),
     ...(priceFilter || {}),
-    ...(stockFilter || {}),
+    ...(variantsFilter || {}),
   };
 
   // Productos destacados (override.featured = true) siempre primero,
@@ -183,7 +200,7 @@ export default async function CatalogoPage({
         : { name: "asc" },
   ];
 
-  const [products, total, topCategories, subCategories, colorGroups, materials, activePromos] =
+  const [products, total, topCategories, subCategories, colorGroups, sizes, materials, activePromos] =
     await Promise.all([
       prisma.product.findMany({
         where,
@@ -247,6 +264,13 @@ export default async function CatalogoPage({
         orderBy: { colorGroup: "asc" },
         take: 12,
       }),
+      // Tallas disponibles en el conjunto filtrado (textiles principalmente;
+      // null en productos sin talla, se excluyen del groupBy).
+      prisma.productVariant.groupBy({
+        by: ["size"],
+        where: { product: { is: where }, size: { not: null } },
+        _count: { _all: true },
+      }),
       // Materiales más comunes
       prisma.product.groupBy({
         by: ["material"],
@@ -284,6 +308,20 @@ export default async function CatalogoPage({
   }
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  // Ordenar tallas disponibles según SIZE_ORDER (no alfabético). Tallas fuera
+  // de la lista fija (raras en el feed proveedor) se añaden al final A–Z.
+  const availableSizes = sizes
+    .map((s) => s.size)
+    .filter((s): s is string => !!s)
+    .sort((a, b) => {
+      const ia = SIZE_ORDER.indexOf(a);
+      const ib = SIZE_ORDER.indexOf(b);
+      if (ia === -1 && ib === -1) return a.localeCompare(b);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
 
   // Sidebar de categorías: hay cientos de categorías top-level (feed de
   // proveedores). Mostrar las ~14 con más productos (las relevantes) + un
@@ -429,12 +467,48 @@ export default async function CatalogoPage({
                   </div>
                 </FilterBlock>
 
+                <FilterBlock title="Talla">
+                  <Chip
+                    href={buildHref({
+                      q: qRaw,
+                      cat: catSlug,
+                      color: colorGroup,
+                      mat: material,
+                      sort,
+                      priceMin: priceMin?.toString(),
+                      priceMax: priceMax?.toString(),
+                      stock: inStock ? "1" : undefined,
+                    })}
+                    active={!talla}
+                    label="Cualquiera"
+                  />
+                  {SIZE_ORDER.filter((s) => availableSizes.includes(s)).map((s) => (
+                    <Chip
+                      key={s}
+                      href={buildHref({
+                        q: qRaw,
+                        cat: catSlug,
+                        color: colorGroup,
+                        talla: s,
+                        mat: material,
+                        sort,
+                        priceMin: priceMin?.toString(),
+                        priceMax: priceMax?.toString(),
+                        stock: inStock ? "1" : undefined,
+                      })}
+                      active={talla === s}
+                      label={s}
+                    />
+                  ))}
+                </FilterBlock>
+
                 {colorGroups.length > 0 && (
                   <FilterBlock title="Color">
                     <Chip
                       href={buildHref({
                         q: qRaw,
                         cat: catSlug,
+                        talla,
                         mat: material,
                         sort,
                         priceMin: priceMin?.toString(),
@@ -452,6 +526,7 @@ export default async function CatalogoPage({
                           href={buildHref({
                             q: qRaw,
                             cat: catSlug,
+                            talla,
                             mat: material,
                             color: c.colorGroup!,
                             sort,
@@ -473,6 +548,7 @@ export default async function CatalogoPage({
                         q: qRaw,
                         cat: catSlug,
                         color: colorGroup,
+                        talla,
                         sort,
                         priceMin: priceMin?.toString(),
                         priceMax: priceMax?.toString(),
@@ -491,6 +567,7 @@ export default async function CatalogoPage({
                             q: qRaw,
                             cat: catSlug,
                             color: colorGroup,
+                            talla,
                             mat: m.material!,
                             sort,
                             priceMin: priceMin?.toString(),
@@ -510,6 +587,7 @@ export default async function CatalogoPage({
                     {q && <input type="hidden" name="q" value={qRaw} />}
                     {catSlug && <input type="hidden" name="cat" value={catSlug} />}
                     {colorGroup && <input type="hidden" name="color" value={colorGroup} />}
+                    {talla && <input type="hidden" name="talla" value={talla} />}
                     {material && <input type="hidden" name="mat" value={material} />}
                     {sort && <input type="hidden" name="sort" value={sort} />}
                     {inStock && <input type="hidden" name="stock" value="1" />}
@@ -548,6 +626,7 @@ export default async function CatalogoPage({
                       q: qRaw,
                       cat: catSlug,
                       color: colorGroup,
+                      talla,
                       mat: material,
                       sort,
                       priceMin: priceMin?.toString(),
@@ -561,6 +640,7 @@ export default async function CatalogoPage({
                       q: qRaw,
                       cat: catSlug,
                       color: colorGroup,
+                      talla,
                       mat: material,
                       sort,
                       stock: "1",
@@ -572,7 +652,7 @@ export default async function CatalogoPage({
                   />
                 </FilterBlock>
 
-                {(q || catSlug || colorGroup || material || priceMin !== null || priceMax !== null || inStock) && (
+                {(q || catSlug || colorGroup || talla || material || priceMin !== null || priceMax !== null || inStock) && (
                   <Link
                     href="/catalogo"
                     className="mt-6 inline-block text-xs text-ink/60 underline-offset-4 hover:text-accent hover:underline"
@@ -594,7 +674,7 @@ export default async function CatalogoPage({
                       </>
                     )}
                   </p>
-                  <SortSelect current={sort} q={q} cat={catSlug} color={colorGroup} mat={material} />
+                  <SortSelect current={sort} q={q} cat={catSlug} color={colorGroup} talla={talla} mat={material} />
                 </div>
 
                 {total === 0 ? (
@@ -737,7 +817,7 @@ export default async function CatalogoPage({
                       })}
                     </div>
 
-                    <Pagination page={page} totalPages={totalPages} q={q} cat={catSlug} color={colorGroup} mat={material} sort={sort} />
+                    <Pagination page={page} totalPages={totalPages} q={q} cat={catSlug} color={colorGroup} talla={talla} mat={material} sort={sort} />
                   </>
                 )}
               </div>
@@ -874,6 +954,7 @@ function Pagination({
   q,
   cat,
   color,
+  talla,
   mat,
   sort,
 }: {
@@ -882,12 +963,13 @@ function Pagination({
   q: string;
   cat: string;
   color: string;
+  talla: string;
   mat: string;
   sort: Sort;
 }) {
   if (totalPages <= 1) return null;
   function url(p: number) {
-    return buildHref({ q, cat, color, mat, sort, page: String(p) });
+    return buildHref({ q, cat, color, talla, mat, sort, page: String(p) });
   }
   return (
     <div className="mt-12 flex items-center justify-between gap-3 text-sm">
