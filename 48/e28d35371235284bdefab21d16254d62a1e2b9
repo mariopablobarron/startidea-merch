@@ -1,0 +1,28 @@
+src/lib/coupons.test.ts
+  s_65877aa637ec34::t_f0863d30feaf83 1-144,152-195
+  s_65877aa637ec34::t_88f3eca5857539 148-149
+  s_65877aa637ec34::t_a64d2eeb275754 145-147,150-151
+src/lib/pricing.test.ts
+  s_65877aa637ec34::t_ac31c9122854d3 172-178
+  s_65877aa637ec34::t_5654056d5c6edb 1-171,179-184
+src/lib/affiliates.test.ts
+  s_65877aa637ec34::t_374b92668df3fa 1-236
+src/lib/coupons.ts
+  s_65877aa637ec34::t_a64d2eeb275754 34-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "48e28d35371235284bdefab21d16254d62a1e2b9",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
