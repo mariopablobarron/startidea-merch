@@ -17,6 +17,8 @@
  *   8. SupplierSync finish con stats
  */
 
+import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
+import { notifyTelegram } from "@/lib/telegram";
 import { XMLParser } from "fast-xml-parser";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -251,6 +253,7 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
     return Math.abs(h).toString(36).slice(0, 4);
   }
 
+  const breaker = createSyncBreaker();
   for (let i = 0; i < products.length; i += CHUNK) {
     const chunk = products.slice(i, i + CHUNK);
     await Promise.all(
@@ -373,14 +376,24 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
             });
             variantsUpserted++;
           }
+          breaker.ok();
         } catch (e) {
           errors.push({
             ref,
             message: e instanceof Error ? e.message : String(e),
           });
+          breaker.fail();
         }
       }),
     );
+    if (breaker.tripped()) {
+      const msg = `Sync ABORTADO — ${breaker.summary()}`;
+      errors.push({ ref: "_circuit_breaker", message: msg });
+      void notifyTelegram(`⛔ makito-sync: ${msg}`).catch((err) =>
+        console.error("[makito-sync] notifyTelegram falló:", err instanceof Error ? err.message : err),
+      );
+      break;
+    }
   }
 
   // 4. Precios productos · XML

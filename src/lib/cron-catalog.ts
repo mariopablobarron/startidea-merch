@@ -198,6 +198,16 @@ export const CRON_CATALOG: CronEntry[] = [
     frequencyHours: 24,
     description: "Seguimiento de propuestas (PDF) enviadas sin responder (D3/D7)",
   },
+  {
+    name: "override-price-drift",
+    endpointPath: "/api/cron/override-price-drift",
+    method: "POST",
+    schedule: "semanal lunes 09:00",
+    scheduleCron: "0 9 * * 1",
+    frequencyHours: 168,
+    description:
+      "Watchdog de overrides de precio desfasados: avisa si el neto del proveedor subio y el PVP fijado quedo con margen <30% (o bajo coste)",
+  },
 ];
 
 export function findCron(name: string): CronEntry | null {

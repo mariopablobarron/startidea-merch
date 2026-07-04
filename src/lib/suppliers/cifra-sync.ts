@@ -23,6 +23,8 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { extractSize } from "@/lib/variant-grouping";
+import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
+import { notifyTelegram } from "@/lib/telegram";
 import {
   fetchProducts,
   fetchPriceTiers,
@@ -149,6 +151,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
 
   const CHUNK = 50;
   const roots = Array.from(byRoot.keys());
+  const breaker = createSyncBreaker();
   for (let i = 0; i < roots.length; i += CHUNK) {
     const chunk = roots.slice(i, i + CHUNK);
     await Promise.all(
@@ -304,14 +307,24 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
             variantsUpserted++;
             stockUpdated++;
           }
+          breaker.ok();
         } catch (e) {
           errors.push({
             ref: rootmodel,
             message: e instanceof Error ? e.message : String(e),
           });
+          breaker.fail();
         }
       }),
     );
+    if (breaker.tripped()) {
+      const msg = `Sync ABORTADO — ${breaker.summary()}`;
+      errors.push({ ref: "_circuit_breaker", message: msg });
+      void notifyTelegram(`⛔ cifra-sync: ${msg}`).catch((err) =>
+        console.error("[cifra-sync] notifyTelegram falló:", err instanceof Error ? err.message : err),
+      );
+      break;
+    }
   }
 
   // 5. Pricelist — fetchPriceTiers + upsert por variant.sku=model

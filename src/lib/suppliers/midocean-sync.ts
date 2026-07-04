@@ -13,6 +13,8 @@ import {
 } from "./midocean";
 import { normalizeTechniqueName } from "@/lib/marking-techniques-es";
 import { extractSize } from "@/lib/variant-grouping";
+import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
+import { notifyTelegram } from "@/lib/telegram";
 
 export type MidoceanSyncResult = {
   startedAt: string;
@@ -101,7 +103,9 @@ export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
     }
   }
 
-  // 5. productos
+  // 5. productos — circuit-breaker: si el feed degrada (formato roto, API
+  // caída a mitad), ABORTA en vez de quemar CPU fallando ítem a ítem.
+  const breaker = createSyncBreaker();
   for (const raw of products) {
     // Skipea productos sin nombre (e.g. catálogos físicos del propio MidOcean)
     if (!raw.product_name || !raw.product_name.trim()) continue;
@@ -115,8 +119,18 @@ export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
           positionsUpserted += pos;
         },
       });
+      breaker.ok();
     } catch (e) {
       errors.push({ ref: raw.master_code, message: e instanceof Error ? e.message : String(e) });
+      breaker.fail();
+    }
+    if (breaker.tripped()) {
+      const msg = `Sync ABORTADO — ${breaker.summary()}`;
+      errors.push({ ref: "_circuit_breaker", message: msg });
+      void notifyTelegram(`⛔ midocean-sync: ${msg}`).catch((err) =>
+        console.error("[midocean-sync] notifyTelegram falló:", err instanceof Error ? err.message : err),
+      );
+      break;
     }
   }
 
