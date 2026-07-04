@@ -1,0 +1,21 @@
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_d6eaf565e63215 76-84,303,312
+src/lib/suppliers/makito-sync.ts
+  s_65877aa637ec34::t_d6eaf565e63215 432-436,439-440
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2a77f6c80a2f3e5feece489992b2adcfe51abb7c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
