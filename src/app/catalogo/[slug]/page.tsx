@@ -508,6 +508,7 @@ export default async function ProductDetailPage({
                 tiers={tiers}
                 baseCentsForEstimate={baseCents}
                 orderFixedPromo={pricing.orderFixedPromo}
+                colorOptions={colorOptions}
                 positions={product.positions.map((pos) => ({
                   id: pos.id,
                   positionId: pos.positionId,

@@ -18,6 +18,7 @@ import { AnimatedPrice } from "@/lib/spells/animated-price";
 import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 import { ExtraMarkingsPanel, type ExtraMarking } from "./ExtraMarkingsPanel";
 import { useProductColor } from "./product-color-context";
+import type { ColorOption } from "@/lib/variant-grouping";
 
 /**
  * Formulario unificado de pedido en ficha de producto.
@@ -80,6 +81,7 @@ export function ProductOrderForm({
   baseCentsForEstimate,
   orderFixedPromo,
   positions,
+  colorOptions,
 }: {
   productSlug: string;
   productRef: string;
@@ -96,6 +98,8 @@ export function ProductOrderForm({
     badgeColor: string | null;
   } | null;
   positions: Position[];
+  /** Colores+tallas del producto (para el pedido multi-talla). */
+  colorOptions?: ColorOption[];
 }) {
   // Variante de color elegida en la galería (Context compartido con la ficha)
   const { selected: selectedColor } = useProductColor();
@@ -113,7 +117,33 @@ export function ProductOrderForm({
   const [qty, setQty] = useState<number>(25);
   const [customQty, setCustomQty] = useState<string>("");
   const usingCustom = customQty.trim() !== "";
-  const finalQty = usingCustom ? Math.max(1, parseInt(customQty, 10) || 0) : qty;
+
+  // ── Pedido MULTI-TALLA (matriz talla×cantidad, textil B2B) ──
+  // El precio unitario se decide por la TIRADA TOTAL: 100 uds repartidas
+  // S/M/L/XL pagan el tramo de 100, no 4× el tramo de 25. Por eso la suma de
+  // la matriz se convierte en finalQty y TODO el cálculo existente (tramos,
+  // marcaje vía API, promos) funciona sin cambios.
+  const activeColorOpt = useMemo(() => {
+    if (!colorOptions || colorOptions.length === 0) return undefined;
+    if (colorOptions.length === 1) return colorOptions[0];
+    return colorOptions.find((o) => o.colorName === selectedColor?.colorName);
+  }, [colorOptions, selectedColor?.colorName]);
+  const matrixSizes = activeColorOpt?.sizes ?? [];
+  const canMultiSize = matrixSizes.length > 1;
+  const [multiSize, setMultiSize] = useState(false);
+  const [sizesQty, setSizesQty] = useState<Record<string, number>>({});
+  // Cambiar de color reinicia la matriz (los SKUs por talla son otros)
+  useEffect(() => {
+    setSizesQty({});
+  }, [activeColorOpt?.key]);
+  const matrixTotal = Object.values(sizesQty).reduce((s, n) => s + (n || 0), 0);
+  const matrixActive = multiSize && canMultiSize && !!activeColorOpt;
+
+  const finalQty = matrixActive
+    ? Math.max(1, matrixTotal)
+    : usingCustom
+      ? Math.max(1, parseInt(customQty, 10) || 0)
+      : qty;
 
   const [withMarking, setWithMarking] = useState<boolean>(canMark);
   const [positionIdx, setPositionIdx] = useState(0);
@@ -306,6 +336,9 @@ export function ProductOrderForm({
   const recentlyAdded = addedAt != null && Date.now() - addedAt < 2500;
 
   function onAddToCart(e?: React.MouseEvent<HTMLButtonElement>) {
+    // Multi-talla sin cantidades: nada que añadir
+    if (matrixActive && matrixTotal <= 0) return;
+
     // Spell A1 — confetti desde el botón pulsado (desktop o sticky mobile)
     const btn = e?.currentTarget;
     if (btn instanceof HTMLElement) spellConfetti(btn, { count: 70 });
@@ -354,6 +387,39 @@ export function ProductOrderForm({
         ]
       : [];
 
+    // Multi-talla: una línea de carrito POR TALLA, todas al precio unitario
+    // del tramo de la tirada total (unitCents ya se calculó con finalQty=suma).
+    if (matrixActive && activeColorOpt) {
+      for (const s of matrixSizes) {
+        const q = sizesQty[s.sku] ?? 0;
+        if (q <= 0) continue;
+        addItem({
+          productSlug,
+          productRef,
+          productName,
+          primaryImageUrl: activeColorOpt.imageUrl ?? primaryImageUrl,
+          variantSku: s.sku,
+          colorName: activeColorOpt.colorName,
+          size: s.size,
+          quantity: q,
+          markingTechniqueCode: allMarkings[0]?.techniqueCode ?? null,
+          markingTechniqueName: allMarkings[0]?.techniqueName ?? null,
+          markingPositionId: allMarkings[0]?.positionId ?? null,
+          markingColours: allMarkings[0]?.numberOfColors ?? null,
+          markingComplexity: withMarking ? manipulation : null,
+          markings: allMarkings.length > 0 ? allMarkings : undefined,
+          unitPriceClientCents: unitCents,
+          totalClientCents: unitCents != null ? unitCents * q : null,
+          customerLogoUrl: withMarking ? logo?.url ?? null : null,
+          customerLogoFilename: withMarking ? logo?.filename ?? null : null,
+          customerLogoSize: withMarking ? logo?.size ?? null : null,
+        });
+      }
+      trackProductEvent({ slug: productSlug }, "cart_add");
+      setAddedAt(Date.now());
+      return;
+    }
+
     addItem({
       productSlug,
       productRef,
@@ -390,9 +456,15 @@ export function ProductOrderForm({
             colours > 1 ? ` · ${colours} colores` : ""
           }`
         : " · sin marcaje";
-    const colorTxt = selectedColor?.colorName
-      ? ` · ${selectedColor.colorName}${selectedColor.size ? ` talla ${selectedColor.size}` : ""}`
-      : "";
+    const colorTxt =
+      matrixActive && activeColorOpt
+        ? ` · ${activeColorOpt.colorName ?? ""} tallas ${matrixSizes
+            .filter((s) => (sizesQty[s.sku] ?? 0) > 0)
+            .map((s) => `${s.size}:${sizesQty[s.sku]}`)
+            .join(" ")}`
+        : selectedColor?.colorName
+          ? ` · ${selectedColor.colorName}${selectedColor.size ? ` talla ${selectedColor.size}` : ""}`
+          : "";
     const detail = `${productName} (ref. ${productRef}) · ${finalQty} uds${colorTxt}${markingTxt}`;
     try {
       sessionStorage.setItem("merch:prefill", detail);
@@ -453,6 +525,82 @@ export function ProductOrderForm({
         <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
           ① Cantidad
         </p>
+
+        {/* Toggle multi-talla: solo en textil con talla y color activo */}
+        {canMultiSize && activeColorOpt && (
+          <button
+            type="button"
+            onClick={() => setMultiSize((v) => !v)}
+            aria-pressed={multiSize}
+            className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+              multiSize
+                ? "border-accent bg-accent/5 text-accent"
+                : "border-line bg-bone-soft text-ink/70 hover:border-accent/50"
+            }`}
+          >
+            {multiSize ? "✓" : "▦"} Repartir por tallas
+            {activeColorOpt.colorName ? ` · ${activeColorOpt.colorName}` : ""}
+          </button>
+        )}
+
+        {/* Matriz talla×cantidad (sustituye a los presets cuando está activa) */}
+        {matrixActive && activeColorOpt && (
+          <div className="mt-2 rounded-xl border border-line bg-bone-soft p-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {(() => {
+                const colorHasStock = matrixSizes.some((s) => s.stockQty > 0);
+                return matrixSizes.map((s) => {
+                  const outOfStock = colorHasStock && s.stockQty <= 0;
+                  return (
+                    <label
+                      key={s.sku}
+                      className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-sm ${
+                        outOfStock ? "border-line/60 opacity-40" : "border-line bg-bone"
+                      }`}
+                      title={outOfStock ? "Sin stock en esta talla" : undefined}
+                    >
+                      <span
+                        className={`font-semibold ${
+                          outOfStock ? "text-ink/40 line-through" : "text-ink"
+                        }`}
+                      >
+                        {s.size}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={1_000_000}
+                        disabled={outOfStock}
+                        placeholder="0"
+                        value={sizesQty[s.sku] || ""}
+                        onChange={(e) => {
+                          const n = parseInt(e.target.value, 10);
+                          setSizesQty((prev) => ({
+                            ...prev,
+                            [s.sku]: Number.isFinite(n) && n > 0 ? n : 0,
+                          }));
+                        }}
+                        className="w-20 rounded-lg border border-line bg-bone-soft px-2 py-1 text-right text-sm tabular-nums outline-none focus:border-accent"
+                      />
+                    </label>
+                  );
+                });
+              })()}
+            </div>
+            <p className="mt-3 flex items-center justify-between text-xs text-ink/60">
+              <span>
+                Total: <strong className="tabular-nums text-ink">{matrixTotal}</strong> uds
+              </span>
+              <span>
+                {matrixTotal > 0
+                  ? `precio unitario del tramo de ${matrixTotal} uds`
+                  : "pon cantidades por talla"}
+              </span>
+            </p>
+          </div>
+        )}
+
+        {!matrixActive && (
         <ul className="mt-2 grid gap-2 sm:grid-cols-2">
           {QTYS.map((q) => {
             const t = pickTier(localTiers, q);
@@ -514,6 +662,7 @@ export function ProductOrderForm({
             </label>
           </li>
         </ul>
+        )}
       </div>
 
       {/* 2. Toggle marcaje */}
