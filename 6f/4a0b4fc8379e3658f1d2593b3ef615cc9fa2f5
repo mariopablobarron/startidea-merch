@@ -1,0 +1,29 @@
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_934b5daf0c084c 459-467
+  s_65877aa637ec34::t_062129bdb6e95a 339-341
+  s_65877aa637ec34::t_502bd65db5c313 528-603
+  s_65877aa637ec34::t_71c9326db8cda2 21
+  s_65877aa637ec34::t_6bfeb41c5befb8 665
+  s_65877aa637ec34::t_7988eee3fe71f7 101-102
+  s_65877aa637ec34::t_83f21739ad5398 84
+  s_65877aa637ec34::t_6f7df3f528cefe 120-146
+  s_65877aa637ec34::t_31d786c9fdb363 390-422
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_80c056645da3ad 511
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6f4a0b4fc8379e3658f1d2593b3ef615cc9fa2f5",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
