@@ -1,0 +1,31 @@
+src/app/admin/users/page.tsx
+  s_65877aa637ec34::t_b55b262a5e34ca 15-24,45,59-63,213-264
+src/app/api/admin/auth/login/route.ts
+  s_65877aa637ec34::t_6e8e8c4a3300b1 9
+  s_65877aa637ec34::t_4bbdabe2db871e 57-63,67-70,72
+prisma/schema.prisma
+  s_65877aa637ec34::t_7b57ab0a05c9a1 924-938
+src/lib/admin-auth.ts
+  s_65877aa637ec34::t_543c58e3d7d10e 128-158
+src/app/api/admin/auth/google/callback/route.ts
+  s_65877aa637ec34::t_1b05782ed9881e 99-109
+  s_65877aa637ec34::t_4be4d2694b664e 5
+src/app/api/admin/auth/events/route.ts
+  s_65877aa637ec34::t_bc64ee3bd02d0d 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0401240b23d3510c41ae5c399359069df08de518",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
