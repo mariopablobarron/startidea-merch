@@ -1,0 +1,19 @@
+src/app/api/recommend/route.ts
+  s_65877aa637ec34::t_13578511dce0ef 7,9,125,139,313,322,396,414,450-453,463,465
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "10de213e061e0cabac5a318c2601beb24bc6444f",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
