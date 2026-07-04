@@ -190,6 +190,23 @@ async function main() {
     });
     if (existing) updated++; else created++;
 
+    // El CSV de Adivin trae PVP (pvp_sin_iva), NO coste neto: sin este
+    // override, product-pricing aplicaría el x1,6 global ENCIMA del PVP
+    // (doble margen, +60% — auditoría 2026-07-04). customFromPriceCents
+    // fija el precio cliente exacto del CSV.
+    if (cents != null && cents > 0) {
+      await prisma.productOverride.upsert({
+        where: { productId: product.id },
+        create: {
+          productId: product.id,
+          customFromPriceCents: cents,
+          updatedBy: "import-adivin",
+          internalNotes: "PVP del CSV Adivin (customFromPriceCents evita doble margen)",
+        },
+        update: { customFromPriceCents: cents, updatedBy: "import-adivin" },
+      });
+    }
+
     // internalRef determinista (STM-XXXXXX) si aún no tiene
     if (!product.internalRef) {
       await prisma.product.update({
