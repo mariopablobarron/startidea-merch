@@ -44,7 +44,7 @@ const FUNNEL: { status: string; label: string }[] = [
 const STATUS_BADGE: Record<string, string> = {
   NEW: "bg-bone-soft text-ink/70",
   IN_PROGRESS: "bg-accent-mist text-accent-deep",
-  SENT: "bg-amber-100 text-amber-700",
+  SENT: "bg-accent-wash text-accent-deep",
   CONFIRMED: "bg-social/20 text-social",
   ORDERED: "bg-social/20 text-social",
   LOST: "bg-accent-wash text-accent-deep",

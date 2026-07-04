@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminPushPanel } from "@/components/AdminPushPanel";
+import { StatCard } from "@/components/admin/StatCard";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -183,28 +184,29 @@ export default function AdminDashboardPage() {
           <>
             {/* Tarjetas KPI top */}
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Kpi
-                label="Cotizaciones este mes"
-                value={data.counts.carts.thisMonth.toString()}
-                sub={`${data.counts.carts.last30} últimos 30 días · ${data.counts.carts.total} histórico`}
-                href="/admin/cart-quotes"
-              />
-              <Kpi
+              <Link href="/admin/cart-quotes" className="block transition hover:opacity-90">
+                <StatCard
+                  label="Cotizaciones este mes"
+                  value={data.counts.carts.thisMonth.toString()}
+                  hint={`${data.counts.carts.last30} últimos 30 días · ${data.counts.carts.total} histórico`}
+                />
+              </Link>
+              <StatCard
                 label="Cobrado este mes"
                 value={EUR.format(data.revenueCents.paidThisMonth / 100)}
-                sub={`${data.counts.payments.thisMonth} pagos · ${EUR.format(data.revenueCents.paidTotal / 100)} histórico`}
-                color="social"
+                hint={`${data.counts.payments.thisMonth} pagos · ${EUR.format(data.revenueCents.paidTotal / 100)} histórico`}
+                tone="social"
               />
-              <Kpi
+              <StatCard
                 label="Aceptado últimos 90d"
                 value={EUR.format(data.revenueCents.acceptedLast90 / 100)}
-                sub={`${EUR.format(data.revenueCents.estimatedLast90 / 100)} estimado en cesta`}
+                hint={`${EUR.format(data.revenueCents.estimatedLast90 / 100)} estimado en cesta`}
               />
-              <Kpi
+              <StatCard
                 label="Conversión"
                 value={`${data.conversionPct}%`}
-                sub="cesta → pedido confirmado"
-                color="accent"
+                hint="cesta → pedido confirmado"
+                tone="accent"
               />
             </section>
 
@@ -339,39 +341,6 @@ export default function AdminDashboardPage() {
       </div>
     </main>
   );
-}
-
-function Kpi({
-  label,
-  value,
-  sub,
-  href,
-  color,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  href?: string;
-  color?: "accent" | "social";
-}) {
-  const card = (
-    <div
-      className={`rounded-3xl border bg-bone p-6 transition ${
-        href ? "border-line hover:border-accent" : "border-line"
-      }`}
-    >
-      <p className="text-[11px] font-medium uppercase tracking-wider text-ink/50">{label}</p>
-      <p
-        className={`mt-3 font-display text-3xl font-semibold tabular-nums ${
-          color === "accent" ? "text-accent" : color === "social" ? "text-social" : "text-ink"
-        }`}
-      >
-        {value}
-      </p>
-      {sub && <p className="mt-2 text-xs text-ink/60">{sub}</p>}
-    </div>
-  );
-  return href ? <Link href={href}>{card}</Link> : card;
 }
 
 function FunnelBar({

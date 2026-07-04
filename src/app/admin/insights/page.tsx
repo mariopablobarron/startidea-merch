@@ -23,6 +23,7 @@ import { getAISuggestions } from "@/lib/insights/ai-suggestions";
 import { getErrorSummary } from "@/lib/insights/capture-error";
 import { SuggestionActionButton } from "@/components/SuggestionActionButton";
 import { ShareDashboardButton } from "@/components/admin/ShareDashboardButton";
+import { StatCard } from "@/components/admin/StatCard";
 
 const EUR = (cents: number) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -151,34 +152,13 @@ function Heatmap({ cells }: { cells: { dow: number; hour: number; visits: number
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  hint,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  highlight?: "success" | "warn" | "danger";
-}) {
-  const ring =
-    highlight === "danger"
-      ? "ring-2 ring-accent/40"
-      : highlight === "warn"
-        ? "ring-2 ring-amber-300"
-        : highlight === "success"
-          ? "ring-2 ring-emerald-300"
-          : "";
-  return (
-    <div className={`rounded-3xl border border-line bg-bone p-5 ${ring}`}>
-      <p className="text-[11px] font-medium uppercase tracking-wider text-ink/60">
-        {label}
-      </p>
-      <p className="mt-2 font-display text-3xl font-semibold text-ink">{value}</p>
-      {hint && <p className="mt-1 text-xs text-ink/55">{hint}</p>}
-    </div>
-  );
+// Mapea el antiguo highlight (danger/warn/success) al tone de StatCard.
+// danger→ring-accent (crítico), warn→ring-amber (ahora tone "warn" = accent-wash), success→ring-emerald (tone "social").
+function toneFromHighlight(highlight?: "success" | "warn" | "danger"): "neutral" | "accent" | "social" | "warn" {
+  if (highlight === "danger") return "accent";
+  if (highlight === "warn") return "warn";
+  if (highlight === "success") return "social";
+  return "neutral";
 }
 
 export default async function InsightsPage({
@@ -431,28 +411,28 @@ export default async function InsightsPage({
             📦 Salud del catálogo
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard
+            <StatCard
               label="Productos activos"
               value={health.activeProducts.toLocaleString("es-ES")}
               hint={`${health.totalProducts.toLocaleString("es-ES")} en BD total`}
             />
-            <KpiCard
+            <StatCard
               label="Variantes (SKUs)"
               value={health.totalVariants.toLocaleString("es-ES")}
               hint={`${health.variantsWithPrice.toLocaleString("es-ES")} con precio (100%)`}
-              highlight="success"
+              tone="social"
             />
-            <KpiCard
+            <StatCard
               label="Variantes con stock"
               value={`${health.pctStock}%`}
               hint={`${health.variantsWithStock.toLocaleString("es-ES")} de ${health.totalVariants.toLocaleString("es-ES")}`}
-              highlight={health.pctStock >= 80 ? "success" : health.pctStock >= 60 ? "warn" : "danger"}
+              tone={toneFromHighlight(health.pctStock >= 80 ? "success" : health.pctStock >= 60 ? "warn" : "danger")}
             />
-            <KpiCard
+            <StatCard
               label="% con imagen"
               value={`${health.pctImage}%`}
               hint={`${health.productsWithImage.toLocaleString("es-ES")} de ${health.activeProducts.toLocaleString("es-ES")} activos`}
-              highlight={health.pctImage >= 90 ? "success" : health.pctImage >= 70 ? "warn" : "danger"}
+              tone={toneFromHighlight(health.pctImage >= 90 ? "success" : health.pctImage >= 70 ? "warn" : "danger")}
             />
           </div>
         </section>
@@ -532,7 +512,7 @@ export default async function InsightsPage({
             Del visitante al pedido cerrado. Tasas típicas B2B: 1-3% views→carrito · 10-25% carrito→propuesta.
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard
+            <StatCard
               label="Views catálogo"
               value={funnel.views30d.toLocaleString("es-ES")}
               hint={
@@ -541,13 +521,13 @@ export default async function InsightsPage({
                   : "Visitas únicas a fichas de producto"
               }
             />
-            <KpiCard
+            <StatCard
               label="Añadidos a carrito"
               value={funnel.cartAdds30d.toLocaleString("es-ES")}
               hint={`${funnel.cartConvPct}% conversión views → carrito`}
-              highlight={funnel.cartConvPct >= 2 ? "success" : funnel.cartConvPct >= 1 ? "warn" : "danger"}
+              tone={toneFromHighlight(funnel.cartConvPct >= 2 ? "success" : funnel.cartConvPct >= 1 ? "warn" : "danger")}
             />
-            <KpiCard
+            <StatCard
               label="Consultas recomendador"
               value={funnel.recommenderQueries30d.toLocaleString("es-ES")}
               hint={
@@ -556,7 +536,7 @@ export default async function InsightsPage({
                   : "Briefs procesados por la IA"
               }
             />
-            <KpiCard
+            <StatCard
               label="Propuestas enviadas"
               value={funnel.proposals30d.toLocaleString("es-ES")}
               hint={
@@ -564,7 +544,7 @@ export default async function InsightsPage({
                   ? `${funnel.proposalConvPct}% conv · ${funnel.proposals30dDelta > 0 ? "▲" : "▼"} ${Math.abs(funnel.proposals30dDelta).toFixed(1)}% vs prev`
                   : `${funnel.proposalConvPct}% conversión carrito → propuesta`
               }
-              highlight={funnel.proposalConvPct >= 15 ? "success" : funnel.proposalConvPct >= 5 ? "warn" : "danger"}
+              tone={toneFromHighlight(funnel.proposalConvPct >= 15 ? "success" : funnel.proposalConvPct >= 5 ? "warn" : "danger")}
             />
           </div>
         </section>
@@ -792,22 +772,22 @@ export default async function InsightsPage({
               generador de propuestas admin + voice agent.
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiCard
+              <StatCard
                 label="Consultas totales"
                 value={aiUsage.totalQueries.toLocaleString("es-ES")}
                 hint={`${aiUsage.byModel.length} modelos distintos`}
               />
-              <KpiCard
+              <StatCard
                 label="Tokens input"
                 value={`${(aiUsage.totalPromptTokens / 1000).toFixed(0)}K`}
                 hint="prompt + system + catálogo"
               />
-              <KpiCard
+              <StatCard
                 label="Tokens output"
                 value={`${(aiUsage.totalCompletionTokens / 1000).toFixed(0)}K`}
                 hint="respuesta generada"
               />
-              <KpiCard
+              <StatCard
                 label="Coste estimado"
                 value={`${aiUsage.totalCostEur.toFixed(2)} €`}
                 hint={`~${(aiUsage.totalCostEur / aiUsage.windowDays).toFixed(2)} €/día`}
@@ -882,12 +862,12 @@ export default async function InsightsPage({
               detectar qué te piden, qué herramientas falla más y cuánto cuesta.
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiCard
+              <StatCard
                 label="Sesiones 30d"
                 value={carmen.sessions30d.toLocaleString("es-ES")}
                 hint={`${carmen.sessions7d} esta semana`}
               />
-              <KpiCard
+              <StatCard
                 label="Duración media"
                 value={
                   carmen.avgDurationSec
@@ -896,7 +876,7 @@ export default async function InsightsPage({
                 }
                 hint="Tiempo de conversación promedio"
               />
-              <KpiCard
+              <StatCard
                 label="Sesiones a carrito"
                 value={`${carmen.cartConversions30d}`}
                 hint={
@@ -904,11 +884,11 @@ export default async function InsightsPage({
                     ? `${Math.round((carmen.cartConversions30d / carmen.sessions30d) * 100)}% conv. voz → cotización`
                     : "—"
                 }
-                highlight={
+                tone={toneFromHighlight(
                   carmen.cartConversions30d > 0 ? "success" : undefined
-                }
+                )}
               />
-              <KpiCard
+              <StatCard
                 label="Coste 30d"
                 value={EUR(carmen.totalCostCents)}
                 hint="ElevenLabs estimado"
@@ -1043,20 +1023,20 @@ export default async function InsightsPage({
               problemas sin depender de Sentry externo.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-3 mb-4">
-              <KpiCard
+              <StatCard
                 label="Total acumulado"
                 value={errorSummary.total.toLocaleString("es-ES")}
                 hint="Histórico completo"
               />
-              <KpiCard
+              <StatCard
                 label="Sin resolver"
                 value={errorSummary.unresolved.toLocaleString("es-ES")}
-                highlight={errorSummary.unresolved > 0 ? "warn" : "success"}
+                tone={toneFromHighlight(errorSummary.unresolved > 0 ? "warn" : "success")}
               />
-              <KpiCard
+              <StatCard
                 label="Últimas 24h"
                 value={errorSummary.last24h.toLocaleString("es-ES")}
-                highlight={errorSummary.last24h > 5 ? "danger" : undefined}
+                tone={toneFromHighlight(errorSummary.last24h > 5 ? "danger" : undefined)}
               />
             </div>
             {errorSummary.topErrors.length > 0 && (

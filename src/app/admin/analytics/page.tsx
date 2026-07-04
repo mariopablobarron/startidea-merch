@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { StatCard } from "@/components/admin/StatCard";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -101,10 +102,10 @@ export default function AdminAnalyticsPage() {
         {data && (
           <>
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Kpi label="Pageviews" value={data.summary.totalPageviews.toLocaleString("es-ES")} sub={`${data.summary.uniqueSessions} sesiones únicas`} />
-              <Kpi label="Add to cart" value={data.summary.addsToCart.toLocaleString("es-ES")} sub={`${pct(data.summary.addsToCart, data.summary.totalPageviews)} de pageviews`} color="accent" />
-              <Kpi label="Cotizaciones" value={data.summary.cartCount.toLocaleString("es-ES")} sub={`${pct(data.summary.cartCount, data.summary.addsToCart)} de adds`} />
-              <Kpi label="Pagos cobrados" value={data.summary.paymentCount.toLocaleString("es-ES")} sub={EUR.format(data.summary.paidCents / 100)} color="social" />
+              <StatCard label="Pageviews" value={data.summary.totalPageviews.toLocaleString("es-ES")} hint={`${data.summary.uniqueSessions} sesiones únicas`} />
+              <StatCard label="Add to cart" value={data.summary.addsToCart.toLocaleString("es-ES")} hint={`${pct(data.summary.addsToCart, data.summary.totalPageviews)} de pageviews`} tone="accent" />
+              <StatCard label="Cotizaciones" value={data.summary.cartCount.toLocaleString("es-ES")} hint={`${pct(data.summary.cartCount, data.summary.addsToCart)} de adds`} />
+              <StatCard label="Pagos cobrados" value={data.summary.paymentCount.toLocaleString("es-ES")} hint={EUR.format(data.summary.paidCents / 100)} tone="social" />
             </section>
 
             {/* Funnel */}
@@ -203,32 +204,6 @@ function pct(num: number, den: number): string {
   if (!den) return "—";
   const v = (num / den) * 100;
   return `${v < 1 ? v.toFixed(2) : v.toFixed(1)}%`;
-}
-
-function Kpi({
-  label,
-  value,
-  sub,
-  color,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  color?: "accent" | "social";
-}) {
-  return (
-    <div className="rounded-3xl border border-line bg-bone p-6">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-ink/50">{label}</p>
-      <p
-        className={`mt-3 font-display text-3xl font-semibold tabular-nums ${
-          color === "accent" ? "text-accent" : color === "social" ? "text-social" : "text-ink"
-        }`}
-      >
-        {value}
-      </p>
-      {sub && <p className="mt-2 text-xs text-ink/60">{sub}</p>}
-    </div>
-  );
 }
 
 function FunnelStep({
