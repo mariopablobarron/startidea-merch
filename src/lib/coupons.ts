@@ -31,7 +31,10 @@ export async function validateCoupon(code: string, totalCents: number): Promise<
 
   let discount = 0;
   if (coupon.kind === "PERCENT") {
-    const pct = Math.min(100, Math.max(1, coupon.percentValue || 0));
+    // Clamp 0..100: un PERCENT mal configurado a 0/null NO aplica descuento
+    // (cae en el guard discount<=0 de abajo). Antes Math.max(1,...) imponía un
+    // suelo del 1% en silencio — bug cazado por coupons.test.ts.
+    const pct = Math.min(100, Math.max(0, coupon.percentValue || 0));
     discount = Math.round((totalCents * pct) / 100);
   } else if (coupon.kind === "FIXED") {
     discount = Math.min(totalCents, coupon.fixedCents || 0);
