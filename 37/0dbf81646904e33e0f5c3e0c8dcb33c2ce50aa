@@ -1,0 +1,33 @@
+src/lib/quote-server-pricing.ts
+  s_65877aa637ec34::t_75db9e42ff1cf8 1-144
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_ffbc332c982d35 12-13
+  s_65877aa637ec34::t_5c2586f853bdf5 142-173,176-177,179,181-200,224-226
+  s_65877aa637ec34::t_0dbae13ccafbeb 288-289
+  s_65877aa637ec34::t_7020ea6a1bcb58 174-175,178,180
+  s_65877aa637ec34::t_78db2d6c56041a 78-121
+  s_65877aa637ec34::t_90b8b83a243fa6 262-264,266-273
+src/app/api/quote/calculate/route.ts
+  s_65877aa637ec34::t_080af1c2bafd00 8
+  s_65877aa637ec34::t_9b6caa90f8a25e 194
+src/app/api/search/suggest/route.ts
+  s_65877aa637ec34::t_5dde873b29d059 51-52,58,61
+  s_65877aa637ec34::t_6ccca57b79d163 165
+  s_65877aa637ec34::t_4f75d9d49728d7 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "370dbf81646904e33e0f5c3e0c8dcb33c2ce50aa",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
