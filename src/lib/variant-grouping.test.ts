@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractSize, groupColorOptions, type VariantInput } from "./variant-grouping";
+import { extractSize, groupColorOptions, colorGroupFromName, type VariantInput } from "./variant-grouping";
 
 function v(partial: Partial<VariantInput> & { sku: string }): VariantInput {
   return {
@@ -81,5 +81,55 @@ describe("groupColorOptions", () => {
     expect(opts).toHaveLength(1);
     expect(opts[0].sizes.map((s) => s.size)).toEqual(["S", "M", "XL"]);
     expect(opts[0].totalStock).toBe(65);
+  });
+});
+
+describe("colorGroupFromName", () => {
+  it("mapea compuestos a su familia base", () => {
+    const cases: [string, string][] = [
+      ["Marino", "azul"],
+      ["Azul Claro", "azul"],
+      ["Marino Oscuro", "azul"],
+      ["Verde Botella", "verde"],
+      ["Verde Militar", "verde"],
+      ["Kaki", "verde"],
+      ["Fucsia", "rosa"],
+      ["Salmón", "rosa"],
+      ["Rosa Fluor", "rosa"],
+      ["Burdeos", "rojo"],
+      ["Granate", "rojo"],
+      ["Naranja Fluor", "naranja"],
+      ["Plateado", "gris"],
+      ["Gris Oscuro", "gris"],
+      ["Amarillo Fluor", "amarillo"],
+      ["Natural", "beige"],
+      ["Arena", "beige"],
+      ["Beig", "beige"],
+      ["Dorado", "dorado"],
+      ["Morado", "morado"],
+      ["Transparente", "transparente"],
+      ["Negro", "negro"],
+      ["Blanco", "blanco"],
+    ];
+    for (const [name, group] of cases) {
+      expect(colorGroupFromName(name), name).toBe(group);
+    }
+  });
+
+  it("combinaciones → multicolor", () => {
+    expect(colorGroupFromName("Blanco/Rojo")).toBe("multicolor");
+    expect(colorGroupFromName("Rainbow")).toBe("multicolor");
+  });
+
+  it("ruido no-color → null (no ensucia el filtro)", () => {
+    for (const n of ["S/C", "Circular", "Estrella", "Papa Noel", "España", "", "   "]) {
+      expect(colorGroupFromName(n), n).toBeNull();
+    }
+    expect(colorGroupFromName(null)).toBeNull();
+  });
+
+  it("es insensible a mayúsculas y acentos", () => {
+    expect(colorGroupFromName("SALMON")).toBe("rosa");
+    expect(colorGroupFromName("Púrpura")).toBe("morado");
   });
 });

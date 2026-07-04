@@ -31,6 +31,7 @@ import {
 } from "./makito";
 import { resolveCleanProductSlug } from "./midocean-sync";
 import { ensureMediaAsset } from "@/lib/proxy-image";
+import { colorGroupFromName } from "@/lib/variant-grouping";
 
 const SUPPLIER = "makito" as const;
 const CHUNK = 25; // productos por batch (Makito tiene 4482, son ~180 chunks)
@@ -361,7 +362,9 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
                 sku: matnr,
                 variantId: matnr,
                 colorName: String(v.colourname || v.colour || "").trim() || null,
-                colorGroup: null,
+                // El feed Makito NO trae grupo de color → lo derivamos del nombre
+                // para que el producto entre en el filtro de color del catálogo.
+                colorGroup: colorGroupFromName(String(v.colourname || v.colour || "")),
                 colorHex: null,
                 size: String(v.size || "").trim() || null,
                 imageUrl: variantImg,
@@ -370,6 +373,7 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
               },
               update: {
                 colorName: String(v.colourname || v.colour || "").trim() || null,
+                colorGroup: colorGroupFromName(String(v.colourname || v.colour || "")),
                 size: String(v.size || "").trim() || null,
                 imageUrl: variantImg,
               },

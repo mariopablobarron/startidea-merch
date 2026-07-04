@@ -121,3 +121,56 @@ export function groupColorOptions(variants: VariantInput[]): ColorOption[] {
   for (const opt of options) opt.sizes.sort(sizeSort);
   return options;
 }
+
+/**
+ * Familia de color canónica (minúsculas) a partir de un nombre de color en
+ * texto libre. Sirve para el FILTRO de color del catálogo: MidOcean y Cifra
+ * traen `color_group`/`group` del feed, pero Makito NO (lo dejaba a null) y
+ * Cifra falla cuando el sufijo no está en su diccionario → el 64% del catálogo
+ * quedaba fuera del filtro. Deriva el grupo por palabras clave del nombre.
+ *
+ * Devuelve null si el "color" es en realidad ruido (forma/figura navideña,
+ * "s/c" sin color) para no ensuciar las facetas del filtro. Los nombres
+ * compuestos ("azul marino", "verde botella") caen en su familia base.
+ */
+const COLOR_GROUP_RULES: ReadonlyArray<readonly [RegExp, string]> = [
+  // Combinaciones "blanco/rojo", "azul/blanco" → multicolor (antes que nada).
+  [/^[a-z]+\/[a-z]/, "multicolor"],
+  [/\b(multicolor|rainbow|arco ?iris|surtido|varios)\b/, "multicolor"],
+  // Familias. Orden: variantes que colisionarían (marino→azul) van con su base.
+  [/\b(marino|azul|turquesa|celeste|cian|royal|denim|cobalto)\b/, "azul"],
+  [/\b(verde|kaki|caqui|lima|menta|oliva|militar|botella|pistacho)\b/, "verde"],
+  [/\b(rojo|roja|granate|burdeos|carmes[ií]|teja|bermell[oó]n)\b/, "rojo"],
+  [/\b(rosa|fucsia|magenta|salm[oó]n|fresa|sand[ií]a|coral|frambuesa|chicle|palo de rosa)\b/, "rosa"],
+  [/\b(naranja|mandarina|calabaza|teja)\b/, "naranja"],
+  [/\b(morado|violeta|lila|p[uú]rpura|malva|berenjena)\b/, "morado"],
+  [/\b(marr[oó]n|chocolate|caf[eé]|caramelo|tostado|camel|cobre|teja oscura)\b/, "marron"],
+  [/\b(dorado|dorada|oro|gold)\b/, "dorado"],
+  [/\b(amarillo|amarilla|lim[oó]n|mostaza|fluor amarillo)\b/, "amarillo"],
+  [/\b(gris|plata|plateado|plateada|antracita|marengo)\b/, "gris"],
+  [/\b(beige|beig|arena|natural|nude|crema|tierra|hueso|marfil|crudo)\b/, "beige"],
+  [/\b(negro|negra)\b/, "negro"],
+  [/\b(blanco|blanca)\b/, "blanco"],
+  [/\b(transparente|trasl[uú]cido|cristal|incoloro)\b/, "transparente"],
+];
+
+/** Tokens que NO son colores (formas, figuras, "sin color") → sin grupo. */
+const NON_COLOR = new Set([
+  "s/c", "s/t", "n/a", "na", "sin color", "surtir",
+  "circular", "cuadrado", "rectangulo", "rectángulo", "ovalado",
+  "arbol", "árbol", "estrella", "gato", "reno", "papa noel", "sandia",
+  "corazon", "corazón", "españa", "spain", "flor",
+]);
+
+export function colorGroupFromName(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const raw = name.trim().toLowerCase();
+  if (!raw) return null;
+  if (NON_COLOR.has(raw)) return null;
+  // Normaliza acentos para el matching por palabra clave.
+  const norm = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const [re, group] of COLOR_GROUP_RULES) {
+    if (re.test(norm)) return group;
+  }
+  return null;
+}
