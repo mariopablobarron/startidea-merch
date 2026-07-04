@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { defaultTiersFromBase, formatMoney, orderTotalCents, pickTier } from "@/lib/pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 import { computeClientPricing } from "@/lib/product-pricing";
+import { publicRef } from "@/lib/internal-ref";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -190,7 +191,7 @@ export async function POST(req: Request) {
     product: {
       slug: product.slug,
       name: product.name,
-      ref: product.supplierRef,
+      ref: publicRef(product), // NUNCA supplierRef en endpoint público
       priceSource,
     },
     // Compatibilidad legacy: si solo había 1 marca, expongo "marking" en el shape antiguo

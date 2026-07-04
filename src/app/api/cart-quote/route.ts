@@ -9,6 +9,8 @@ import { notifyTelegram } from "@/lib/telegram";
 import { readPartnerSlug, attachReferral } from "@/lib/referral";
 import { readAttribution } from "@/lib/attribution";
 import { rateLimit } from "@/lib/rate-limit";
+import { loadActivePromotions } from "@/lib/promotions";
+import { computeServerLinePricing, type ServerMarkingInput } from "@/lib/quote-server-pricing";
 import type { Prisma } from "@prisma/client";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
@@ -73,6 +75,50 @@ const EUR = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 2,
 });
 
+type CartItem = z.infer<typeof ItemSchema>;
+type NormalizedMarking = {
+  positionId: string;
+  positionLabel: string | null;
+  techniqueCode: string;
+  techniqueName: string | null;
+  numberOfColors: number;
+  manipulationCode: string | null;
+  notes: string | null;
+};
+
+/**
+ * Resuelve el shape efectivo de marcajes de un item: el array `markings` prima;
+ * si no viene, se reconstruye desde los campos planos (compat legacy 1-marca).
+ * Fuente ÚNICA — la usan tanto el recálculo server-side como la persistencia.
+ */
+function normalizeMarkings(it: CartItem): NormalizedMarking[] {
+  if (it.markings && it.markings.length > 0) {
+    return it.markings.map((m) => ({
+      positionId: m.positionId,
+      positionLabel: m.positionLabel ?? null,
+      techniqueCode: m.techniqueCode,
+      techniqueName: m.techniqueName ?? null,
+      numberOfColors: m.numberOfColors,
+      manipulationCode: m.manipulationCode ?? null,
+      notes: m.notes ?? null,
+    }));
+  }
+  if (it.markingPositionId && it.markingTechniqueCode) {
+    return [
+      {
+        positionId: it.markingPositionId,
+        positionLabel: null,
+        techniqueCode: it.markingTechniqueCode,
+        techniqueName: it.markingTechniqueName || null,
+        numberOfColors: it.markingColours || 1,
+        manipulationCode: it.markingComplexity || null,
+        notes: null,
+      },
+    ];
+  }
+  return [];
+}
+
 export async function POST(req: Request) {
   // Anti-spam: 10 leads/5 min por IP (suficiente para un equipo legítimo
   // navegando entre productos, prohibitivo para un bot enviando masivamente).
@@ -93,7 +139,65 @@ export async function POST(req: Request) {
     );
   }
   const data = parsed.data;
-  const total = data.items.reduce((sum, it) => sum + (it.totalClientCents || 0), 0);
+  const clientTotal = data.items.reduce((sum, it) => sum + (it.totalClientCents || 0), 0);
+
+  // Pago directo: SOLO si el cliente lo pide y todos los items traen precio.
+  const allPriced = data.items.every(
+    (it) => typeof it.totalClientCents === "number" && it.totalClientCents > 0,
+  );
+  const wantsDirectPay = Boolean(data.directPay && allPriced);
+
+  // ── RECÁLCULO SERVER-SIDE (autoritativo) ─────────────────────────────────
+  // El total que llega del navegador (totalClientCents) NO es de fiar: si vamos
+  // a COBRAR en Stripe (directPay) hay que recalcular cada línea en servidor con
+  // el mismo pipeline que la ficha. Ese total es el que se cobra; el del cliente
+  // solo vale para un presupuesto no vinculante.
+  let serverLineTotals: (number | null)[] | null = null;
+  let serverTotal: number | null = null;
+  if (wantsDirectPay) {
+    const activePromos = await loadActivePromotions();
+    const recalced = await Promise.all(
+      data.items.map((it) => {
+        const serverMarkings: ServerMarkingInput[] = normalizeMarkings(it).map((m) => ({
+          techniqueCode: m.techniqueCode,
+          numberOfColours: m.numberOfColors,
+          manipulationCode: m.manipulationCode,
+        }));
+        return computeServerLinePricing(
+          { productSlug: it.productSlug, quantity: it.quantity, markings: serverMarkings },
+          activePromos,
+        );
+      }),
+    );
+    if (recalced.every((r) => r.ok)) {
+      serverLineTotals = recalced.map((r) => (r.ok ? r.totalClientCents : null));
+      const computed = serverLineTotals.reduce<number>((s, v) => s + (v ?? 0), 0);
+      serverTotal = computed;
+      // Señal de fraude/bug: el navegador envió un total que no cuadra con el
+      // servidor. No bloquea (cobramos el del servidor), pero deja rastro.
+      if (Math.abs(computed - clientTotal) > Math.max(100, clientTotal * 0.02)) {
+        console.warn(
+          `[cart-quote] total cliente ${clientTotal} ≠ servidor ${computed} — se cobra el del servidor`,
+        );
+      }
+    } else {
+      // Alguna línea no se pudo recalcular → NO cobramos un importe no verificado.
+      // Degradamos a presupuesto normal (sin payment link) y avisamos al admin.
+      const reasons = recalced.filter((r) => !r.ok).map((r) => (r.ok ? "" : r.reason));
+      console.error("[cart-quote] recálculo server-side falló, degrado directPay:", reasons);
+      void notifyTelegram(
+        `⚠️ <b>cart-quote: pago directo degradado a presupuesto</b>\n` +
+          `No se pudo recalcular en servidor: ${reasons.join(" · ").slice(0, 300)}`,
+      ).catch((e) =>
+        console.error("[cart-quote] notifyTelegram (degradación) falló:", e instanceof Error ? e.message : e),
+      );
+    }
+  }
+
+  // Total autoritativo: servidor para pago directo verificado, cliente para
+  // presupuesto normal (no vinculante, no se cobra).
+  const total = serverTotal ?? clientTotal;
+
   const couponCode = (data.couponCode || "").trim();
   let coupon:
     | {
@@ -117,12 +221,9 @@ export async function POST(req: Request) {
   }
   const payableTotal = Math.max(0, total - (coupon?.discountCents || 0));
 
-  // Pago directo: requiere precio en TODOS los items + total > 0.
-  // Si cumple, generamos token y marcamos como SENT (lista para pago).
-  const allPriced = data.items.every(
-    (it) => typeof it.totalClientCents === "number" && it.totalClientCents > 0,
-  );
-  const directPay = Boolean(data.directPay && allPriced && payableTotal > 0);
+  // directPay real: además de pedirlo, el recálculo server-side tuvo que cuadrar
+  // (serverTotal !== null). Si degradó, es un presupuesto, no un cobro.
+  const directPay = Boolean(wantsDirectPay && serverTotal !== null && payableTotal > 0);
   const paymentLinkToken = directPay
     ? `pay_${randomBytes(20).toString("base64url")}`
     : null;
@@ -158,24 +259,18 @@ export async function POST(req: Request) {
       depositPercent: directPay ? 100 : null,
       acceptedTotalCents: directPay ? payableTotal : null,
       items: {
-        create: data.items.map((it) => {
-          // Resolver shape efectivo: array markings prima; si no, los campos planos.
-          // Si hay array, el primer elemento es ESPEJO de los campos planos.
-          const markingsArr = it.markings && it.markings.length > 0
-            ? it.markings
-            : it.markingPositionId && it.markingTechniqueCode
-              ? [{
-                  positionId: it.markingPositionId,
-                  positionLabel: null,
-                  techniqueCode: it.markingTechniqueCode,
-                  techniqueName: it.markingTechniqueName || null,
-                  numberOfColors: it.markingColours || 1,
-                  manipulationCode: it.markingComplexity || null,
-                  notes: null,
-                }]
-              : [];
-
+        create: data.items.map((it, i) => {
+          // Shape efectivo de marcajes (array prima; si no, campos planos).
+          const markingsArr = normalizeMarkings(it);
           const first = markingsArr[0];
+          // Cuando hubo recálculo server-side (pago directo verificado), persistimos
+          // el precio AUTORITATIVO, no el que envió el navegador.
+          const lineTotal =
+            serverLineTotals != null ? serverLineTotals[i] : (it.totalClientCents ?? null);
+          const lineUnit =
+            serverLineTotals != null && lineTotal != null && it.quantity > 0
+              ? Math.round(lineTotal / it.quantity)
+              : (it.unitPriceClientCents ?? null);
           return {
             productSlug: it.productSlug,
             productRef: it.productRef,
@@ -190,8 +285,8 @@ export async function POST(req: Request) {
             markingPositionId: first?.positionId ?? null,
             markingColours: first?.numberOfColors ?? null,
             markingComplexity: first?.manipulationCode ?? it.markingComplexity ?? null,
-            unitPriceClientCents: it.unitPriceClientCents ?? null,
-            totalClientCents: it.totalClientCents ?? null,
+            unitPriceClientCents: lineUnit,
+            totalClientCents: lineTotal,
             notes: it.notes ?? null,
             customerLogoUrl: it.customerLogoUrl ?? null,
             customerLogoFilename: it.customerLogoFilename ?? null,

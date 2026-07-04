@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { getNotificationRules } from "@/lib/notification-rules";
+import { publicRef } from "@/lib/internal-ref";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,15 +48,17 @@ export async function GET(req: Request) {
         active: true,
         OR: [
           { name: { contains: q, mode: "insensitive" } },
-          { supplierRef: { contains: q, mode: "insensitive" } },
+          // Búsqueda por NUESTRA ref (STM-XXXXXX), nunca por la del proveedor.
+          { internalRef: { contains: q, mode: "insensitive" } },
         ],
       },
       orderBy: [{ name: "asc" }],
       take: 8,
       select: {
+        id: true,
         slug: true,
         name: true,
-        supplierRef: true,
+        internalRef: true,
         primaryImageUrl: true,
         category: { select: { name: true } },
       },
@@ -159,7 +162,7 @@ export async function GET(req: Request) {
       products: products.map((p) => ({
         slug: p.slug,
         name: p.name,
-        ref: p.supplierRef,
+        ref: publicRef(p), // NUNCA supplierRef en endpoint público
         imageUrl: p.primaryImageUrl,
         category: p.category?.name,
       })),
