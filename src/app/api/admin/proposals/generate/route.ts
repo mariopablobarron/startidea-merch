@@ -5,7 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminSecret } from "@/lib/auth";
 import { extractJsonFromAIResponse } from "@/lib/json-extract";
 import { generateEmbedding, cosineSimilarity } from "@/lib/embeddings";
-import { defaultTiersFromBase, estimateBaseCentsFromName, pickTier } from "@/lib/pricing";
+import { defaultTiersFromBase, pickTier } from "@/lib/pricing";
+import { computeClientPricing } from "@/lib/product-pricing";
+import { loadActivePromotions } from "@/lib/promotions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -303,8 +305,14 @@ Devuelve la propuesta como JSON descrita arriba.`;
       slug: true,
       internalRef: true,
       name: true,
+      brand: true,
+      categoryId: true,
+      fromPriceCents: true,
       primaryImageUrl: true,
       category: { select: { name: true } },
+      override: {
+        select: { customFromPriceCents: true, marginPct: true, marketingTags: true },
+      },
       variants: {
         take: 1,
         select: { sku: true, priceTiers: { orderBy: { minQty: "asc" } } },
@@ -313,26 +321,45 @@ Devuelve la propuesta como JSON descrita arriba.`;
   });
   const bySlug = new Map(dbProducts.map((p) => [p.slug, p]));
 
-  const margin = Number(process.env.MARGIN_MULTIPLIER ?? "1.6");
+  const activePromos = await loadActivePromotions();
   const validItems = recs.items
     .map((it) => {
       const p = bySlug.get(it.slug);
       if (!p) return null;
 
-      // Calcular precio cliente unitario
+      // Precio cliente por el pipeline CANÓNICO (override + promos), el mismo
+      // que ficha/cotizador — antes ignoraba override y las propuestas Adivin
+      // salían con precio inventado (auditoría 2026-07-09, M26).
       const variant = p.variants[0];
-      let netCents = 0;
-      if (variant?.priceTiers?.length) {
-        const tier = pickPriceTier(variant.priceTiers, it.quantity);
-        if (tier) netCents = tier.unitPriceCents;
-      }
-      if (netCents === 0) {
-        const baseCents = estimateBaseCentsFromName(p.name, p.category?.name);
-        const tier = pickTier(defaultTiersFromBase(baseCents), it.quantity);
-        netCents = tier?.unitPriceCents ?? baseCents;
-      }
-      const unitClient = Math.round(netCents * margin);
+      const cp = computeClientPricing({
+        product: {
+          id: p.id,
+          name: p.name,
+          brand: p.brand,
+          categoryId: p.categoryId,
+          fromPriceCents: p.fromPriceCents,
+          category: p.category ? { name: p.category.name } : null,
+        },
+        override: p.override
+          ? {
+              customFromPriceCents: p.override.customFromPriceCents,
+              marginPct: p.override.marginPct,
+              marketingTags: p.override.marketingTags,
+            }
+          : null,
+        providerNetTiers: variant?.priceTiers?.map((t) => ({
+          minQty: t.minQty,
+          unitPriceCents: t.unitPriceCents,
+        })),
+        activePromos,
+      });
+      const clientTiers =
+        cp.clientTiers ??
+        (cp.baseCentsForEstimate ? defaultTiersFromBase(cp.baseCentsForEstimate) : []);
+      const unitClient =
+        pickTier(clientTiers, it.quantity)?.unitPriceCents ?? cp.baseCentsForEstimate ?? 0;
       const totalClient = unitClient * it.quantity;
+      if (unitClient <= 0) return null;
 
       return {
         productSlug: p.slug,

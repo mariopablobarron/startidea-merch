@@ -8,9 +8,12 @@ import {
   type BriefLine,
   type MatchedProduct,
 } from "@/lib/quote-ai-builder";
-import { calculateMarkingCost, applyMargin } from "@/lib/marking-cost";
+import { applyMargin } from "@/lib/marking-cost";
+import { quoteMarkingNet } from "@/lib/marking-quote";
 import { prisma } from "@/lib/prisma";
-import { defaultTiersFromBase, estimateBaseCentsFromName, pickTier } from "@/lib/pricing";
+import { defaultTiersFromBase, pickTier } from "@/lib/pricing";
+import { computeClientPricing } from "@/lib/product-pricing";
+import { loadActivePromotions } from "@/lib/promotions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -151,49 +154,69 @@ async function processLine(line: BriefLine): Promise<GeneratedLine> {
       return base;
     }
 
-    // Coste neto producto/ud (tiers proveedor o estimate)
+    // Precio CLIENTE del producto — pipeline CANÓNICO (override + promos),
+    // el mismo que la ficha. Antes usaba customFromPriceCents como si fuera
+    // COSTE y aplicaba ×1,6 encima → doble margen en los 59 Adivin (+60%),
+    // e ignoraba promociones para el resto (auditoría 2026-07-09, A15).
     const variantWithTiers = product.variants.find((v) => v.priceTiers.length > 0);
-    let netUnitCostCents = 0;
-    if (variantWithTiers?.priceTiers.length) {
-      const tiers = variantWithTiers.priceTiers.map((t) => ({
-        minQty: t.minQty,
-        unitPriceCents: t.unitPriceCents,
-      }));
-      const sorted = [...tiers].sort((a, b) => a.minQty - b.minQty);
-      let chosen = sorted[0];
-      for (const t of sorted) if (totalQty >= t.minQty) chosen = t;
-      netUnitCostCents = chosen.unitPriceCents;
-    }
-    if (netUnitCostCents === 0) {
-      const baseCents =
-        product.override?.customFromPriceCents ??
-        estimateBaseCentsFromName(product.name, product.category?.name);
-      const tier = pickTier(defaultTiersFromBase(baseCents), totalQty);
-      netUnitCostCents = tier?.unitPriceCents ?? baseCents;
-    }
+    const providerNetTiers = variantWithTiers?.priceTiers.map((t) => ({
+      minQty: t.minQty,
+      unitPriceCents: t.unitPriceCents,
+    }));
+    const activePromos = await loadActivePromotions();
+    const cp = computeClientPricing({
+      product: {
+        id: product.id,
+        name: product.name,
+        brand: product.brand,
+        categoryId: product.categoryId,
+        fromPriceCents: product.fromPriceCents,
+        category: product.category ? { name: product.category.name } : null,
+      },
+      override: product.override
+        ? {
+            customFromPriceCents: product.override.customFromPriceCents,
+            marginPct: product.override.marginPct,
+            marketingTags: product.override.marketingTags,
+          }
+        : null,
+      providerNetTiers,
+      activePromos,
+    });
+    const clientTiers =
+      cp.clientTiers ??
+      (cp.baseCentsForEstimate ? defaultTiersFromBase(cp.baseCentsForEstimate) : []);
+    const productUnitClientCents =
+      pickTier(clientTiers, totalQty)?.unitPriceCents ?? cp.baseCentsForEstimate ?? 0;
 
-    const productNetCostCents = netUnitCostCents * totalQty;
-
-    // Coste marcaje neto si hay técnica
-    let markingNetCostCents = 0;
+    // Marcaje: cascada unificada; margen SOLO sobre el neto del marcaje.
+    let markingClientCents = 0;
     let markingWarning: string | undefined;
     if (tech) {
       try {
-        const marking = await calculateMarkingCost({
+        const netTier = providerNetTiers
+          ? pickTier(
+              providerNetTiers.map((t) => ({ ...t, source: "PROVIDER" as const })),
+              totalQty,
+            )
+          : null;
+        const q = await quoteMarkingNet({
+          productId: product.id,
+          supplier: product.supplier,
           techniqueCode: tech.techniqueCode,
           quantity: totalQty,
+          productNetUnitCents: netTier?.unitPriceCents ?? product.fromPriceCents ?? 0,
           numberOfColours: base.numberOfColours,
           positionCount: 1,
         });
-        markingNetCostCents = marking.totalCostCents;
-        markingWarning = marking.warning;
+        markingClientCents = applyMargin(q.netTotalCents);
+        markingWarning = q.warning;
       } catch (e) {
         markingWarning = e instanceof Error ? e.message : "Marcaje fallo";
       }
     }
 
-    const totalNetCostCents = productNetCostCents + markingNetCostCents;
-    const totalClientCents = applyMargin(totalNetCostCents);
+    const totalClientCents = productUnitClientCents * totalQty + markingClientCents;
     base.unitPriceCents = Math.round(totalClientCents / Math.max(1, totalQty));
     base.totalPriceCents = totalClientCents;
     if (markingWarning) base.error = `Marcaje: ${markingWarning}`;

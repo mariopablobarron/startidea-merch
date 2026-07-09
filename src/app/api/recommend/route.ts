@@ -5,12 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { captureError } from "@/lib/insights/capture-error";
 import { rateLimit } from "@/lib/rate-limit";
 import { publicRef } from "@/lib/internal-ref";
-import {
-  applyMargin,
-  estimateBaseCentsFromName,
-  defaultTiersFromBase,
-  pickTier,
-} from "@/lib/pricing";
+import { defaultTiersFromBase, pickTier } from "@/lib/pricing";
+import { computeClientPricing } from "@/lib/product-pricing";
+import { loadActivePromotions } from "@/lib/promotions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -331,12 +328,19 @@ Devuelve SOLO el JSON descrito.`;
   // 3b) Enriquecer quoteItems con producto real + cálculo de precio.
   // Para cada item: si tiene slug, busca producto y calcula precio real con
   // PriceTier si existe, o estimación si no. Marcaje añade setup + por ud.
+  // Tarifas ORIENTATIVAS de marcaje a nivel cliente (el importe real lo
+  // recalcula el checkout server-side). transfer/sublimacion/doming/vinilo
+  // faltaban y cotizaban el marcaje a 0 € (auditoría 2026-07-09, A14).
   const TECHNIQUE_PER_UNIT_CENTS: Record<string, number> = {
     serigrafia: 60,
     bordado: 140,
     laser: 95,
     dtf: 110,
     tampografia: 50,
+    transfer: 90,
+    sublimacion: 85,
+    doming: 120,
+    vinilo: 80,
   };
   const TECHNIQUE_SETUP_CENTS: Record<string, number> = {
     serigrafia: 4000,
@@ -344,7 +348,12 @@ Devuelve SOLO el JSON descrito.`;
     laser: 3500,
     dtf: 3000,
     tampografia: 3500,
+    transfer: 3500,
+    sublimacion: 3000,
+    doming: 4000,
+    vinilo: 3000,
   };
+  const activePromos = await loadActivePromotions();
   type QuoteItemEnriched = {
     description: string;
     notFound: boolean;
@@ -394,9 +403,14 @@ Devuelve SOLO el JSON descrito.`;
           slug: true,
           name: true,
           id: true, internalRef: true,
+          brand: true,
+          categoryId: true,
           primaryImageUrl: true,
           fromPriceCents: true,
           category: { select: { name: true } },
+          override: {
+            select: { customFromPriceCents: true, marginPct: true, marketingTags: true },
+          },
           variants: {
             select: {
               priceTiers: {
@@ -416,44 +430,44 @@ Devuelve SOLO el JSON descrito.`;
         primaryImageUrl: p.primaryImageUrl,
       };
 
-      // 1) Intentar usar PriceTier real del variant con tarifa
-      let tierCents: number | null = null;
-      for (const v of p.variants) {
-        if (v.priceTiers.length > 0) {
-          const t = pickTier(
-            v.priceTiers.map((pt) => ({
-              minQty: pt.minQty,
-              unitPriceCents: pt.unitPriceCents,
-              source: "PROVIDER" as const,
-            })),
-            base.quantity,
-          );
-          if (t) {
-            tierCents = t.unitPriceCents;
-            base.priceSource = "tier";
-            break;
-          }
-        }
-      }
-      // 2) Fallback: estimación desde el nombre + curva default
-      if (tierCents === null) {
-        const baseCents =
-          p.fromPriceCents && p.fromPriceCents > 0
-            ? p.fromPriceCents
-            : estimateBaseCentsFromName(p.name, p.category?.name);
-        const t = pickTier(defaultTiersFromBase(baseCents), base.quantity);
-        if (t) {
-          tierCents = t.unitPriceCents;
-          base.priceSource = "estimate";
-        }
-      }
-      // El PriceTier/fromPriceCents es COSTE NETO de proveedor: al público
-      // SIEMPRE con margen (auditoría 2026-07-04: se mostraban netos).
-      const unitClientCents = tierCents !== null ? applyMargin(tierCents) : null;
+      // Precio cliente por el pipeline CANÓNICO (override + promos), el mismo
+      // que la ficha. Antes: applyMargin(fromPriceCents) sin override → los 59
+      // Adivin salían +60% y el resto ignoraba promociones (auditoría A14).
+      const variantWithTiers = p.variants.find((v) => v.priceTiers.length > 0);
+      const cp = computeClientPricing({
+        product: {
+          id: p.id,
+          name: p.name,
+          brand: p.brand,
+          categoryId: p.categoryId,
+          fromPriceCents: p.fromPriceCents,
+          category: p.category ? { name: p.category.name } : null,
+        },
+        override: p.override
+          ? {
+              customFromPriceCents: p.override.customFromPriceCents,
+              marginPct: p.override.marginPct,
+              marketingTags: p.override.marketingTags,
+            }
+          : null,
+        providerNetTiers: variantWithTiers?.priceTiers.map((pt) => ({
+          minQty: pt.minQty,
+          unitPriceCents: pt.unitPriceCents,
+        })),
+        activePromos,
+      });
+      const clientTiers =
+        cp.clientTiers ??
+        (cp.baseCentsForEstimate ? defaultTiersFromBase(cp.baseCentsForEstimate) : []);
+      const unitClientCents =
+        pickTier(clientTiers, base.quantity)?.unitPriceCents ??
+        cp.baseCentsForEstimate ??
+        null;
+      base.priceSource = cp.clientTiers ? "tier" : "estimate";
       base.unitPriceCents = unitClientCents;
 
       // 3) Coste marcaje si LLM detectó técnica
-      if (it.technique && tierCents !== null) {
+      if (it.technique && unitClientCents !== null) {
         const k = it.technique.toLowerCase();
         base.markingPerUnitCents = TECHNIQUE_PER_UNIT_CENTS[k] ?? 0;
         base.markingSetupCents = TECHNIQUE_SETUP_CENTS[k] ?? 0;

@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { getAvailableMarkingRules, quoteMarkingForRule } from "@/lib/supplier-marking-rules";
-import { calculateMarkingCost } from "@/lib/marking-cost";
+import { getAvailableMarkingRules } from "@/lib/supplier-marking-rules";
+import { quoteMarkingNet } from "@/lib/marking-quote";
 import { validateCoupon } from "@/lib/coupons";
-import { applyMargin } from "@/lib/pricing";
+import { applyMargin, defaultTiersFromBase, pickTier } from "@/lib/pricing";
+import { computeClientPricing } from "@/lib/product-pricing";
+import { loadActivePromotions } from "@/lib/promotions";
 import { withIva, ivaPart } from "@/lib/iva";
 
 /**
@@ -101,10 +103,15 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
       slug: true,
       name: true,
       brand: true,
+      categoryId: true,
+      category: { select: { name: true } },
       fromPriceCents: true,
       markingTechniqueHint: true,
       markingSizeHint: true,
       primaryImageUrl: true,
+      override: {
+        select: { customFromPriceCents: true, marginPct: true, marketingTags: true },
+      },
     },
   });
   if (!product) {
@@ -115,7 +122,6 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
     };
   }
   const prod = product; // narrowing no-nulo estable
-  const isMidocean = prod.supplier === "midocean";
 
   // Coste NETO del producto al tramo de cantidad
   const tiers = await prisma.priceTier.findMany({
@@ -149,11 +155,16 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
   let costeMarcajeTotal = 0;
 
   if (!techniqueCode) {
-    if (isMidocean) {
-      const positions = await prisma.markingPosition.findMany({
-        where: { productId: prod.id },
-        include: { techniques: { include: { technique: true } } },
-      });
+    // Las MISMAS técnicas que ofrece la ficha pública: posiciones del producto
+    // (todos los proveedores — Makito y Cifra también las tienen); el camino
+    // hint+reglas queda como fallback para productos sin posiciones. Antes el
+    // cotizador enrutaba todo lo no-midocean a reglas y daba 404 para técnicas
+    // Makito que la ficha SÍ tarificaba (auditoría 2026-07-09, A13/M7).
+    const positions = await prisma.markingPosition.findMany({
+      where: { productId: prod.id },
+      include: { techniques: { include: { technique: true } } },
+    });
+    if (positions.length > 0) {
       const byCode = new Map<string, TechniqueOpt>();
       for (const pos of positions) {
         for (const t of pos.techniques) {
@@ -174,12 +185,17 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
         markingTechniqueHint: prod.markingTechniqueHint,
       });
     }
-  } else if (isMidocean) {
-    let mc;
+  } else {
+    // Cascada UNIFICADA (la misma que ficha y checkout): scales reales /
+    // tarifa por producto (PDF Cifra) / regla markup. Coste NETO.
+    let q;
     try {
-      mc = await calculateMarkingCost({
+      q = await quoteMarkingNet({
+        productId: prod.id,
+        supplier: prod.supplier,
         techniqueCode: techniqueCode.toUpperCase(),
         quantity: qty,
+        productNetUnitCents: netUnitCents,
         numberOfColours,
         printAreaCm2,
         manipulationCode,
@@ -187,35 +203,20 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
     } catch {
       return { ok: false, status: 404, error: `Técnica "${techniqueCode}" no válida para este producto.` };
     }
-    costeMarcajeTotal = mc.totalCostCents;
-    marking = {
-      techniqueCode: techniqueCode.toUpperCase(),
-      techniqueLabel: mc.techniqueName,
-      setupCents: mc.setupCents,
-      totalMarkingCents: mc.totalCostCents,
-      warning: mc.warning,
-    };
-  } else {
-    const m = await quoteMarkingForRule({
-      supplier: prod.supplier,
-      techniqueCode: techniqueCode.toUpperCase(),
-      productId: prod.id,
-      productUnitPriceCents: netUnitCents,
-      qty,
-    });
-    if (!m) {
+    if (!q.ok) {
       return {
         ok: false,
         status: 404,
-        error: `Sin regla de marcaje para "${techniqueCode}". Configúrala o pide coste al proveedor.`,
+        error: `Sin tarifa de marcaje para "${techniqueCode}": ${q.warning ?? "pedir coste al proveedor"}.`,
       };
     }
-    costeMarcajeTotal = m.totalMarkingCents;
+    costeMarcajeTotal = q.netTotalCents;
     marking = {
       techniqueCode: techniqueCode.toUpperCase(),
-      techniqueLabel: m.techniqueLabel,
-      setupCents: m.setupCents,
-      totalMarkingCents: m.totalMarkingCents,
+      techniqueLabel: q.techniqueLabel,
+      setupCents: q.setupCents,
+      totalMarkingCents: q.netTotalCents,
+      warning: q.warning,
     };
   }
 
@@ -223,7 +224,40 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
   const costeProductoTotal = netUnitCents * qty;
   const costeTotal = costeProductoTotal + costeMarcajeTotal + portesCents;
 
-  const pvpProductoTotal = pvp(netUnitCents, marginPct) * qty;
+  // PVP del producto: pipeline CANÓNICO (override + promociones), el mismo que
+  // ve el cliente en la ficha. Antes se ignoraban override y promos y el
+  // cotizador/las propuestas salían ~+17,6% sobre la ficha (y +60% en Adivin).
+  // marginPct manual del admin sigue mandando como override explícito.
+  let pvpProductoUnit: number;
+  if (marginPct != null) {
+    pvpProductoUnit = pvp(netUnitCents, marginPct);
+  } else {
+    const activePromos = await loadActivePromotions();
+    const cp = computeClientPricing({
+      product: {
+        id: prod.id,
+        name: prod.name,
+        brand: prod.brand,
+        categoryId: prod.categoryId,
+        fromPriceCents: prod.fromPriceCents,
+        category: prod.category ? { name: prod.category.name } : null,
+      },
+      override: prod.override
+        ? {
+            customFromPriceCents: prod.override.customFromPriceCents,
+            marginPct: prod.override.marginPct,
+            marketingTags: prod.override.marketingTags,
+          }
+        : null,
+      providerNetTiers: tiers.map((t) => ({ minQty: t.minQty, unitPriceCents: t.unitPriceCents })),
+      activePromos,
+    });
+    const clientTiers =
+      cp.clientTiers ??
+      (cp.baseCentsForEstimate ? defaultTiersFromBase(cp.baseCentsForEstimate) : []);
+    pvpProductoUnit = pickTier(clientTiers, qty)?.unitPriceCents ?? pvp(netUnitCents);
+  }
+  const pvpProductoTotal = pvpProductoUnit * qty;
   const pvpMarcajeTotal = pvp(costeMarcajeTotal, marginPct);
   const pvpEnvio = pvp(portesCents, marginPct);
   const pvpAntes = pvpProductoTotal + pvpMarcajeTotal + pvpEnvio;
