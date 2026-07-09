@@ -633,57 +633,78 @@ async function upsertMarkingTechnique(t: MakitoMarkingTechniquePrice): Promise<v
 }
 
 async function upsertMarkingScales(t: MakitoMarkingTechniquePrice): Promise<number> {
-  const techniqueCode = `MK_${t.code}`;
+  // Las técnicas Makito viven en DOS juegos de códigos (incidente 2026-06-15):
+  // "MK_F" (tarifa histórica) y "MK_F_100316" (las que crea el enrich y a las
+  // que apuntan las POSICIONES de los productos — DTF: 2.049 posiciones).
+  // Las scales deben aterrizar en TODOS los códigos existentes, o la ficha
+  // busca la tarifa en el código con sufijo y encuentra 0 (marcaje a 0 €).
+  const candidates = [`MK_${t.code}`, `MK_${t.code}_${t.technique_ref}`];
+  const targets = (
+    await prisma.markingTechnique.findMany({
+      where: { code: { in: candidates } },
+      select: { code: true },
+    })
+  ).map((x) => x.code);
   let count = 0;
-  // 10 tramos posibles, la mayoría sólo usa 5
-  for (let i = 1; i <= 10; i++) {
-    const rawSec = (t as unknown as Record<string, number>)[`section_${i}`];
-    const price = (t as unknown as Record<string, number>)[`price_${i}`];
-    const priceCol = (t as unknown as Record<string, number>)[`price_col_${i}`];
-    const priceCm = (t as unknown as Record<string, number>)[`price_cm_${i}`];
-    // Primer tramo negativo = "hasta N" → minQty 1 (misma convención que los
-    // PriceTier de producto; antes se descartaba y se perdía el tramo pequeño).
-    const sec = rawSec && rawSec < 0 ? 1 : rawSec;
-    if (!sec || sec <= 0) continue;
-    // DTF y familia tarifan POR CM² (price_cm_i); el resto por unidad (price_i).
-    // Antes solo se leía price_i → las 3 técnicas DTF quedaban SIN tarifa y
-    // 894 productos cotizaban el marcaje a 0 € (auditoría 2026-07-09).
-    const perCm2 = (!price || price <= 0) && priceCm != null && priceCm > 0;
-    const unitCostCents = perCm2 ? Math.round(priceCm * 100) : Math.round((price ?? 0) * 100);
-    if (unitCostCents <= 0) continue;
-    // Prisma 6 rechaza rangeId=null en compound unique. Mismo bug que ya
-    // arreglamos en cifra-sync para Category. Usamos findFirst + create.
-    const existing = await prisma.markingPriceScale.findFirst({
-      where: { techniqueCode, rangeId: null, minQty: sec },
-      select: { id: true },
-    });
-    try {
-      if (existing) {
-        await prisma.markingPriceScale.update({
-          where: { id: existing.id },
-          data: {
-            unitCostCents,
-            perCm2,
-            nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
-          },
-        });
-      } else {
-        await prisma.markingPriceScale.create({
-          data: {
-            techniqueCode,
-            rangeId: null,
-            areaFromCm2: null,
-            areaToCm2: null,
-            minQty: sec,
-            unitCostCents,
-            perCm2,
-            nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
-          },
-        });
+  for (const techniqueCode of targets) {
+    // 10 tramos posibles, la mayoría sólo usa 5
+    for (let i = 1; i <= 10; i++) {
+      const rawSec = (t as unknown as Record<string, number>)[`section_${i}`];
+      const price = (t as unknown as Record<string, number>)[`price_${i}`];
+      const priceCol = (t as unknown as Record<string, number>)[`price_col_${i}`];
+      const priceCm = (t as unknown as Record<string, number>)[`price_cm_${i}`];
+      // Primer tramo negativo = "hasta N" → minQty 1 (misma convención que los
+      // PriceTier de producto; antes se descartaba y se perdía el tramo pequeño).
+      const sec = rawSec && rawSec < 0 ? 1 : rawSec;
+      if (!sec || sec <= 0) continue;
+      // DTF y familia tarifan POR CM² (price_cm_i); el resto por unidad
+      // (price_i). Antes solo se leía price_i → las 3 técnicas DTF quedaban
+      // SIN tarifa y ~900 productos cotizaban el marcaje a 0 €. Unidades:
+      // price_cm llega en € con 4 decimales (0,0034 €/cm²) → en céntimos
+      // enteros redondea a 0; se guarda ×10.000 (centésimas de céntimo).
+      const perCm2 = (!price || price <= 0) && priceCm != null && priceCm > 0;
+      const unitCostCents = perCm2
+        ? Math.round(priceCm * 10000)
+        : Math.round((price ?? 0) * 100);
+      if (unitCostCents <= 0) continue;
+      const minUnitCents =
+        perCm2 && t.min_unit && t.min_unit > 0 ? Math.round(t.min_unit * 100) : null;
+      // Prisma 6 rechaza rangeId=null en compound unique. Mismo bug que ya
+      // arreglamos en cifra-sync para Category. Usamos findFirst + create.
+      const existing = await prisma.markingPriceScale.findFirst({
+        where: { techniqueCode, rangeId: null, minQty: sec },
+        select: { id: true },
+      });
+      try {
+        if (existing) {
+          await prisma.markingPriceScale.update({
+            where: { id: existing.id },
+            data: {
+              unitCostCents,
+              perCm2,
+              minUnitCents,
+              nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
+            },
+          });
+        } else {
+          await prisma.markingPriceScale.create({
+            data: {
+              techniqueCode,
+              rangeId: null,
+              areaFromCm2: null,
+              areaToCm2: null,
+              minQty: sec,
+              unitCostCents,
+              perCm2,
+              minUnitCents,
+              nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
+            },
+          });
+        }
+        count++;
+      } catch {
+        // race condition entre llamadas paralelas — silent
       }
-      count++;
-    } catch {
-      // race condition entre llamadas paralelas — silent
     }
   }
   return count;

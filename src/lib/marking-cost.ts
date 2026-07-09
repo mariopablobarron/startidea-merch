@@ -114,7 +114,13 @@ export async function calculateMarkingCost(input: MarkingCostInput): Promise<Mar
         warning: "Técnica por cm² sin área de impresión conocida — pedir cotización manual.",
       };
     }
-    unitCostCents = Math.round(scale.unitCostCents * printAreaCm2);
+    // unitCostCents de perCm2 va en CENTÉSIMAS de céntimo/cm² (×10.000 en el
+    // sync porque 0,0034 €/cm² redondeaba a 0 en céntimos). Suelo min_unit
+    // del proveedor si existe (DTF: 0,45 €/ud mínimo).
+    unitCostCents = Math.max(
+      Math.round((scale.unitCostCents * printAreaCm2) / 100),
+      scale.minUnitCents ?? 0,
+    );
   } else {
     unitCostCents = scale.unitCostCents;
   }

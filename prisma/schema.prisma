@@ -888,9 +888,13 @@ model MarkingPriceScale {
   areaToCm2           Float? // área máxima del rango (cm²)
   minQty              Int // tramo mínimo aplicable
   unitCostCents       Int // coste neto por unidad (céntimos EUR) — o por cm² si perCm2
-  // Tarifa POR CM² (DTF Makito: price_cm_i). El coste unitario real =
-  // unitCostCents × área de impresión; sin área conocida NO se cotiza.
+  // Tarifa POR CM² (DTF Makito: price_cm_i). OJO unidades: aquí unitCostCents
+  // guarda CENTÉSIMAS de céntimo por cm² (price_cm € × 10.000 — 0,0034 €/cm²
+  // → 34), porque en céntimos enteros la tarifa redondeaba a 0. El coste
+  // unitario real = round(unitCostCents × área / 100), con suelo minUnitCents.
+  // Sin área conocida NO se cotiza.
   perCm2              Boolean          @default(false)
+  minUnitCents        Int? // suelo €/ud del proveedor (min_unit Makito) para perCm2
   nextColourCostCents Int? // coste por tinta extra (si la técnica tiene multicolor)
   updatedAt           DateTime         @default(now())
 

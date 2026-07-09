@@ -193,6 +193,7 @@ export type MakitoMarkingTechniquePrice = {
   cliche?: number;
   cliche_repetition?: number;
   min?: number;
+  min_unit?: number; // suelo €/ud (DTF: precio mínimo por unidad)
 };
 
 export type MakitoImage = {
