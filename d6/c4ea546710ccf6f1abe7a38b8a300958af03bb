@@ -1,0 +1,61 @@
+src/app/api/clientes/me/route.ts
+  s_65877aa637ec34::t_f22680402008e3 1-95
+src/components/portal/FavoriteHeart.tsx
+  s_65877aa637ec34::t_fb67f8c8ca66f1 1-110
+src/components/portal/QuickOrder.tsx
+  s_65877aa637ec34::t_7bdc12e6c0608a 1-102
+src/app/api/clientes/favorites/route.ts
+  s_65877aa637ec34::t_95af5e823866d5 1-75
+src/components/portal/ProfileForm.tsx
+  s_65877aa637ec34::t_71226fdcd306ff 1-105
+src/app/clientes/page.tsx
+  s_65877aa637ec34::t_b8138487748a68 9
+  s_65877aa637ec34::t_84acb43f018815 101-103
+  s_65877aa637ec34::t_2b9c697453df9e 245
+  s_65877aa637ec34::t_8838df107ce432 325,342
+  s_65877aa637ec34::t_9caa1abfe9ab72 8,10-12
+  s_65877aa637ec34::t_00c0a11fb26c69 420-549,564-598
+  s_65877aa637ec34::t_5e6e2f55f0b9b5 75-97,100,104-126
+  s_65877aa637ec34::t_b92dffd0d13f25 162-179
+  s_65877aa637ec34::t_3a5ece581acd08 550-563
+  s_65877aa637ec34::t_d4d5a98dd0c27e 98-99
+prisma/schema.prisma
+  s_65877aa637ec34::t_4495ee5baa1f4d 173
+  s_65877aa637ec34::t_e9baddaef5c653 969-977,981-994
+  s_5f94dd38282e5f::t_2a757bb81dc9fd 995-996
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_bb55fccdc6b866 24
+  s_65877aa637ec34::t_c1f1beb0d67ad9 442-448
+src/components/portal/ReorderButton.tsx
+  s_65877aa637ec34::t_3a9d7aae73dd9a 1-69
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_cc761891ff3f69 353-367
+  s_65877aa637ec34::t_96a04504f6852b 64-73
+  s_65877aa637ec34::t_09cf459606f773 40-41
+src/app/api/clientes/reorder/route.ts
+  s_65877aa637ec34::t_c0a34261f32444 1-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d6c4ea546710ccf6f1abe7a38b8a300958af03bb",
+  "prompts": {},
+  "sessions": {
+    "s_5f94dd38282e5f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "843717a3-637c-4098-b935-6fa820a8e078",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
