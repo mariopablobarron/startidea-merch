@@ -1,0 +1,25 @@
+prisma/schema.prisma
+  s_65877aa637ec34::t_e413e68da3d09f 891-895,897
+src/lib/marking-cost.ts
+  s_65877aa637ec34::t_8fc537b01e9ce1 117-123
+src/lib/suppliers/makito-sync.ts
+  s_65877aa637ec34::t_d6701aa84b4cdb 636-647,649-706
+src/lib/suppliers/makito.ts
+  s_65877aa637ec34::t_c9d991607fe9ab 196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "4807037ecbf1ac33a58ba42a979d9567a1418834",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
