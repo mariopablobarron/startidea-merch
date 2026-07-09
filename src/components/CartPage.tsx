@@ -37,6 +37,8 @@ export function CartPage() {
   const [error, setError] = useState<string | null>(null);
   // Recuperación cross-device en curso (rehidratando la cesta desde el servidor).
   const [recovering, setRecovering] = useState(false);
+  // "Repetir pedido" del portal: productos del pedido original ya retirados.
+  const [reorderUnavailable, setReorderUnavailable] = useState<string[]>([]);
 
   // form
   const [name, setName] = useState("");
@@ -58,6 +60,16 @@ export function CartPage() {
     }
     refresh();
     window.addEventListener("merch:cart-change", refresh);
+
+    // Aviso de "Repetir pedido" (portal cliente): productos que ya no están.
+    try {
+      const raw = sessionStorage.getItem("merch:reorder-unavailable");
+      if (raw) {
+        sessionStorage.removeItem("merch:reorder-unavailable");
+        const names = JSON.parse(raw) as string[];
+        if (Array.isArray(names) && names.length > 0) setReorderUnavailable(names);
+      }
+    } catch {}
 
     // Recuperación de carrito abandonado. Los emails de recordatorio enlazan a
     // /cotizar?recover={cartId} → /carrito?recover={cartId}. Al llegar aquí:
@@ -338,6 +350,21 @@ export function CartPage() {
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1.4fr,1fr]">
+      {reorderUnavailable.length > 0 && (
+        <div className="rounded-2xl border border-accent/30 bg-accent-mist p-4 text-sm text-ink/80 lg:col-span-2">
+          <p className="font-medium text-accent-deep">
+            Hemos cargado tu pedido anterior, pero {reorderUnavailable.length === 1 ? "este producto ya no está disponible" : "estos productos ya no están disponibles"}:
+          </p>
+          <ul className="mt-1 list-inside list-disc text-xs text-ink/60">
+            {reorderUnavailable.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs text-ink/55">
+            Cuéntanoslo en el mensaje del pedido y te proponemos alternativas equivalentes.
+          </p>
+        </div>
+      )}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-ink/60">

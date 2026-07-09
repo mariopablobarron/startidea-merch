@@ -170,6 +170,7 @@ model Product {
   slugRedirects        ProductSlugRedirect[] @relation("SlugRedirects")
   mockupRequests       MockupRequest[]
   productMarkingPrices ProductMarkingPrice[]
+  customerFavorites    CustomerFavorite[]
   view                 ProductView?
 
   @@unique([supplier, supplierRef])
@@ -965,7 +966,32 @@ model CustomerUser {
   magicLinkToken     String?   @unique
   magicLinkExpiresAt DateTime?
 
+  // "Mis datos" del portal (aditivos, nullable → db push seguro). El cliente
+  // los rellena una vez y sirven para facturar/enviar sin repreguntar.
+  phone           String?
+  taxId           String? // CIF/NIF para factura
+  billingAddress  String? @db.Text
+  shippingAddress String? @db.Text
+
+  favorites CustomerFavorite[]
+
   @@index([active])
+}
+
+// Favoritos del portal cliente (corazón en ficha + sección en /clientes).
+// Clave por email (no userId): enlaza con el histórico de CartQuote, que
+// también va por email, y sobrevive a recreaciones del usuario.
+model CustomerFavorite {
+  id        String   @id @default(cuid())
+  email     String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    CustomerUser @relation(fields: [email], references: [email], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([email, productId])
+  @@index([email])
 }
 
 // ============================================================================

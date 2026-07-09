@@ -21,6 +21,7 @@ import { type PriceTier } from "@/lib/pricing";
 import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
 import { computeClientPricing } from "@/lib/product-pricing";
 import { publicRef } from "@/lib/internal-ref";
+import { FavoriteHeart } from "@/components/portal/FavoriteHeart";
 import { publicBrand } from "@/lib/brand-filter";
 import { displayPositionId } from "@/lib/marking-position-display";
 import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
@@ -438,9 +439,13 @@ export default async function ProductDetailPage({
                   {publicBrand(product.brand)}
                 </p>
               )}
-              <h1 className="mt-3 font-display text-3xl font-semibold text-ink lg:text-4xl">
-                {displayName}
-              </h1>
+              <div className="mt-3 flex items-start justify-between gap-3">
+                <h1 className="font-display text-3xl font-semibold text-ink lg:text-4xl">
+                  {displayName}
+                </h1>
+                {/* Favoritos del portal cliente (sin sesión → lleva al login) */}
+                <FavoriteHeart productId={product.id} />
+              </div>
               {marketingTags.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {marketingTags.map((t) => (

@@ -5,6 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { OrderTimeline } from "@/components/OrderTimeline";
 import { buildCartTimelineEvents } from "@/lib/cart-timeline";
+import { signProposalToken } from "@/lib/proposal-token";
+import { clientFromPriceCents } from "@/lib/product-pricing";
+import { ReorderButton } from "@/components/portal/ReorderButton";
+import { QuickOrder } from "@/components/portal/QuickOrder";
+import { ProfileForm } from "@/components/portal/ProfileForm";
 
 export const metadata: Metadata = {
   title: "Portal cliente",
@@ -67,6 +72,58 @@ export default async function CustomerPortalPage() {
     },
   });
 
+  // Propuestas comerciales, favoritos y perfil — en paralelo (mismo email).
+  const [proposals, favorites, profile] = await Promise.all([
+    prisma.proposal.findMany({
+      where: { email: session.email },
+      orderBy: { sentAt: "desc" },
+      select: {
+        id: true,
+        proposalNumber: true,
+        totalCents: true,
+        status: true,
+        sentAt: true,
+      },
+    }),
+    prisma.customerFavorite.findMany({
+      where: { email: session.email },
+      orderBy: { createdAt: "desc" },
+      include: {
+        product: {
+          select: {
+            slug: true,
+            name: true,
+            primaryImageUrl: true,
+            active: true,
+            // fromPriceCents es COSTE NETO — solo se muestra tras pasar por
+            // clientFromPriceCents (margen/override), nunca crudo.
+            fromPriceCents: true,
+            override: {
+              select: { customFromPriceCents: true, marginPct: true, marketingTags: true },
+            },
+          },
+        },
+      },
+    }),
+    prisma.customerUser.findUnique({
+      where: { email: session.email },
+      select: {
+        email: true,
+        name: true,
+        company: true,
+        phone: true,
+        taxId: true,
+        billingAddress: true,
+        shippingAddress: true,
+      },
+    }),
+  ]);
+
+  // Facturas: todos los pagos PAID de todos los carritos, más recientes primero.
+  const invoices = carts
+    .flatMap((c) => c.payments.map((p) => ({ ...p, cartId: c.id })))
+    .sort((a, b) => (b.paidAt?.getTime() ?? 0) - (a.paidAt?.getTime() ?? 0));
+
   const ordered = carts.filter((c) => c.status === "ORDERED");
   const totalItems = ordered.reduce(
     (sum, c) => sum + c.items.reduce((s, it) => s + it.quantity, 0),
@@ -102,6 +159,24 @@ export default async function CustomerPortalPage() {
               </form>
             </div>
           </div>
+          {/* Navegación de secciones del portal */}
+          <nav className="mt-6 flex flex-wrap gap-2 text-xs" aria-label="Secciones del portal">
+            {[
+              ["#pedidos", "Pedidos"],
+              ["#presupuestos", "Presupuestos"],
+              ["#facturas", "Facturas"],
+              ["#favoritos", "Favoritos"],
+              ["#datos", "Mis datos"],
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-full border border-line bg-bone-soft px-3.5 py-1.5 font-medium text-ink/70 hover:border-accent hover:text-accent"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
         </div>
       </header>
 
@@ -167,7 +242,7 @@ export default async function CustomerPortalPage() {
       </section>
 
       {/* Histórico */}
-      <section className="py-12 lg:py-16">
+      <section id="pedidos" className="scroll-mt-6 py-12 lg:py-16">
         <div className="mx-auto max-w-6xl px-6 lg:px-10">
           <h2 className="font-display text-2xl font-semibold text-ink">
             Tus cotizaciones y pedidos
@@ -247,7 +322,7 @@ export default async function CustomerPortalPage() {
                           </a>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {c.proofs.find((p) => p.status === "PENDING") && (
                           <Link
                             href={`/proof/${c.proofs.find((p) => p.status === "PENDING")?.token}`}
@@ -264,6 +339,7 @@ export default async function CustomerPortalPage() {
                             💳 Pagar
                           </Link>
                         )}
+                        <ReorderButton cartId={c.id} />
                       </div>
                     </div>
 
@@ -340,6 +416,185 @@ export default async function CustomerPortalPage() {
               })}
             </ul>
           )}
+
+          {/* ── Presupuestos comerciales ─────────────────────────────────── */}
+          <div id="presupuestos" className="mt-14 scroll-mt-6">
+            <h2 className="font-display text-2xl font-semibold text-ink">Tus presupuestos</h2>
+            {proposals.length === 0 ? (
+              <p className="mt-3 text-sm text-ink/60">
+                No tienes presupuestos formales. Pídelo desde el{" "}
+                <Link href="/recomendador" className="text-accent hover:underline">
+                  recomendador
+                </Link>{" "}
+                o desde tu carrito.
+              </p>
+            ) : (
+              <ul className="mt-5 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-bone">
+                {proposals.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                    <div>
+                      <p className="font-mono text-sm font-semibold text-ink">{p.proposalNumber}</p>
+                      <p className="text-xs text-ink/50">
+                        {new Date(p.sentAt).toLocaleDateString("es-ES", {
+                          day: "2-digit",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                        {" · "}
+                        {EUR.format(p.totalCents / 100)} IVA incl.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 uppercase tracking-wider ${
+                          p.status === "accepted"
+                            ? "bg-social/15 text-social"
+                            : p.status === "rejected"
+                              ? "bg-bone-soft text-ink/40"
+                              : "bg-accent-mist text-accent-deep"
+                        }`}
+                      >
+                        {p.status === "accepted"
+                          ? "Aceptado"
+                          : p.status === "rejected"
+                            ? "Rechazado"
+                            : p.status === "opened"
+                              ? "Abierto"
+                              : "Enviado"}
+                      </span>
+                      <a
+                        href={`/api/proposal/${p.proposalNumber}/pdf?token=${encodeURIComponent(signProposalToken(p.id))}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-accent underline-offset-4 hover:underline"
+                      >
+                        📄 PDF
+                      </a>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* ── Facturas ─────────────────────────────────────────────────── */}
+          <div id="facturas" className="mt-14 scroll-mt-6">
+            <h2 className="font-display text-2xl font-semibold text-ink">Tus facturas</h2>
+            {invoices.length === 0 ? (
+              <p className="mt-3 text-sm text-ink/60">
+                Aún no hay facturas — aparecerán aquí con cada pago confirmado.
+              </p>
+            ) : (
+              <ul className="mt-5 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-bone">
+                {invoices.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-ink">
+                        {p.invoiceNumber ? `Factura ${p.invoiceNumber}` : "Factura (se emite al descargar)"}
+                      </p>
+                      <p className="text-xs text-ink/50">
+                        {p.paidAt
+                          ? new Date(p.paidAt).toLocaleDateString("es-ES", {
+                              day: "2-digit",
+                              month: "long",
+                              year: "numeric",
+                            })
+                          : "—"}
+                        {" · "}
+                        {EUR.format(p.amountCents / 100)}
+                      </p>
+                    </div>
+                    <a
+                      href={`/api/clientes/invoice/${p.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-accent underline-offset-4 hover:underline"
+                    >
+                      🧾 Descargar PDF
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* ── Favoritos ────────────────────────────────────────────────── */}
+          <div id="favoritos" className="mt-14 scroll-mt-6">
+            <h2 className="font-display text-2xl font-semibold text-ink">Tus favoritos</h2>
+            {favorites.length === 0 ? (
+              <p className="mt-3 text-sm text-ink/60">
+                Guarda productos con el corazón ♡ de cada ficha y los tendrás aquí para tu
+                próximo pedido.
+              </p>
+            ) : (
+              <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {favorites.map((f) => (
+                  <li key={f.id}>
+                    <Link
+                      href={`/catalogo/${f.product.slug}`}
+                      className="flex items-center gap-3 rounded-2xl border border-line bg-bone p-3 hover:border-accent"
+                    >
+                      {f.product.primaryImageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={f.product.primaryImageUrl}
+                          alt=""
+                          className="h-14 w-14 rounded-xl border border-line object-cover"
+                          loading="lazy"
+                        />
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-ink">
+                          {f.product.name}
+                        </span>
+                        {(() => {
+                          if (!f.product.active) {
+                            return <span className="text-[11px] text-ink/45">No disponible ahora</span>;
+                          }
+                          const client = clientFromPriceCents(
+                            f.product.fromPriceCents,
+                            f.product.override,
+                          );
+                          return client != null ? (
+                            <span className="text-[11px] text-ink/55">
+                              Desde {(client / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                            </span>
+                          ) : null;
+                        })()}
+                      </span>
+                      <span className="text-xs text-accent">Ver →</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* ── Pedido rápido + Mis datos ────────────────────────────────── */}
+          <div id="datos" className="mt-14 grid scroll-mt-6 gap-6 lg:grid-cols-2">
+            <div className="rounded-3xl border border-line bg-bone p-6 lg:p-8">
+              <h2 className="font-display text-xl font-semibold text-ink">Pedido rápido</h2>
+              <p className="mt-1 text-sm text-ink/60">
+                ¿Ya sabes qué quieres? Busca por referencia o nombre y ve directo a configurarlo.
+              </p>
+              <div className="mt-4">
+                <QuickOrder />
+              </div>
+            </div>
+            <div className="rounded-3xl border border-line bg-bone p-6 lg:p-8">
+              <h2 className="font-display text-xl font-semibold text-ink">Mis datos</h2>
+              <p className="mt-1 text-sm text-ink/60">
+                Contacto, CIF y direcciones — los usamos para tus facturas y envíos.
+              </p>
+              <div className="mt-4">
+                {profile ? (
+                  <ProfileForm initial={profile} />
+                ) : (
+                  <p className="text-sm text-ink/50">No se pudo cargar el perfil.</p>
+                )}
+              </div>
+            </div>
+          </div>
 
           <div className="mt-10 rounded-3xl border border-line bg-bone p-6 lg:p-8">
             <h3 className="font-display text-xl font-semibold text-ink">¿Necesitas algo?</h3>
