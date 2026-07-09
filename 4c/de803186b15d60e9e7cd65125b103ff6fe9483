@@ -1,0 +1,43 @@
+src/lib/marking-quote.ts
+  s_65877aa637ec34::t_f9a1181410ea8a 1-109
+src/lib/product-pricing.test.ts
+  s_65877aa637ec34::t_889e76a53a4b21 137,144-150,163-167
+prisma/schema.prisma
+  s_65877aa637ec34::t_83f416b5d6996d 890-893
+src/lib/suppliers/makito-sync.ts
+  s_65877aa637ec34::t_8cdc2746aa6cf7 640,643-653,665-666,678-679
+src/lib/product-pricing.ts
+  s_65877aa637ec34::t_c1286c08ff62d7 164-182
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_6d970aa78cab94 170,175
+src/lib/marking-cost.ts
+  s_65877aa637ec34::t_5509fd5defaeb0 22-25
+  s_65877aa637ec34::t_efb90d384c4773 200
+  s_65877aa637ec34::t_aaa5ec760b2442 162-164,176,183-199,201-206
+  s_65877aa637ec34::t_f2ff46d26d9947 99-120,128-136
+src/app/api/quote/calculate/route.ts
+  s_65877aa637ec34::t_e99992b13d6c8d 3-4
+  s_65877aa637ec34::t_ec885b2b445fd4 149-160,163-167,170,176,179
+  s_65877aa637ec34::t_722055bf8e0176 180-183
+src/lib/suppliers/midocean-pricelist-sync.ts
+  s_65877aa637ec34::t_1d61d0390c5b74 165-166
+  s_65877aa637ec34::t_33f08cc06efe82 74-87
+src/lib/quote-server-pricing.ts
+  s_65877aa637ec34::t_79503748a7dadb 2-3,22,68-75,116-128,131-162,164-169,172,174-176,178-184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "4cde803186b15d60e9e7cd65125b103ff6fe9483",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
