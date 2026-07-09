@@ -1,0 +1,25 @@
+src/app/api/admin/proposals/generate/route.ts
+  s_65877aa637ec34::t_bcef3f0f0bd6a5 8-10,308-310,313-315,324,330-332,334-360,362
+src/app/api/admin/quote-ai/generate/route.ts
+  s_65877aa637ec34::t_16fe0286dd254f 11-12,14-16,157-160,162-193,197-205,208,212-213,219
+src/app/api/recommend/route.ts
+  s_65877aa637ec34::t_e82a044259c396 8-10,331-333,340-343,351-354,356,406-407,411-413,433-466,470
+src/lib/cotizar-core.ts
+  s_65877aa637ec34::t_79afab5f0f20d8 2-3,5-7,106-107,112-114,158-167,188-191,193-195,198,206,210,213,216-219,227-260
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "802a700ee0e93b244af748975fb764f0b8601a82",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
