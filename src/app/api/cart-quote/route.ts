@@ -70,6 +70,10 @@ const Schema = z.object({
   directPay: z.boolean().optional(),
   // Consentimiento para recibir el presupuesto por WhatsApp (opt-in RGPD).
   whatsappOptIn: z.boolean().optional(),
+  // Datos fiscales opcionales (los manda el perfil del portal cliente si hay
+  // sesión) — van directos a la factura del Payment.
+  vatNumber: z.string().max(40).optional().or(z.literal("")),
+  shippingAddress: z.string().max(600).optional().or(z.literal("")),
 });
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -252,6 +256,8 @@ export async function POST(req: Request) {
       whatsappOptIn: data.whatsappOptIn ?? false,
       message: data.message || null,
       deadline: data.deadline || null,
+      vatNumber: data.vatNumber || null,
+      shippingAddress: data.shippingAddress || null,
       source: data.source || (directPay ? "carrito-pago-directo" : "carrito"),
       estimatedTotalCents: payableTotal,
       internalNotes: coupon

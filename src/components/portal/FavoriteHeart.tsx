@@ -26,7 +26,14 @@ function loadFavorites(): Promise<Set<string> | null> {
   return favsPromise;
 }
 
-export function FavoriteHeart({ productId }: { productId: string }) {
+export function FavoriteHeart({
+  productId,
+  size = "md",
+}: {
+  productId: string;
+  /** "sm" para superponer en tarjetas del catálogo; "md" en la ficha. */
+  size?: "md" | "sm";
+}) {
   // null = sin sesión (o aún cargando); Set = sesión activa
   const [fav, setFav] = useState<boolean | null>(null);
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -49,7 +56,10 @@ export function FavoriteHeart({ productId }: { productId: string }) {
     };
   }, [productId]);
 
-  async function toggle() {
+  async function toggle(e: React.MouseEvent) {
+    // La card del catálogo es un <Link>: el corazón no debe navegar.
+    e.preventDefault();
+    e.stopPropagation();
     if (loggedIn === false) {
       window.location.href = "/clientes/login";
       return;
@@ -88,7 +98,9 @@ export function FavoriteHeart({ productId }: { productId: string }) {
       title={title}
       aria-label={title}
       aria-pressed={fav === true}
-      className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
+      className={`inline-flex items-center justify-center rounded-full border transition-colors ${
+        size === "sm" ? "h-10 w-10 bg-bone/90 shadow-sm" : "h-11 w-11"
+      } ${
         fav
           ? "border-accent bg-accent-mist text-accent"
           : "border-line bg-bone-soft text-ink/50 hover:border-accent hover:text-accent"
@@ -96,7 +108,7 @@ export function FavoriteHeart({ productId }: { productId: string }) {
     >
       <svg
         viewBox="0 0 24 24"
-        className="h-5 w-5"
+        className={size === "sm" ? "h-4 w-4" : "h-5 w-5"}
         fill={fav ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth="1.8"

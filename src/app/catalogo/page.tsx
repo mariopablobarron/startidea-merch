@@ -14,6 +14,7 @@ import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
 import { collectionPageJsonLd } from "@/lib/jsonld";
 import { SortSelect } from "@/components/SortSelect";
 import { CompareBadge } from "@/components/CatalogCardActions";
+import { FavoriteHeart } from "@/components/portal/FavoriteHeart";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
@@ -722,6 +723,10 @@ export default async function CatalogoPage({
                             href={`/catalogo/${p.slug}`}
                             className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-3 transition hover:border-accent/40 lg:p-4"
                           >
+                            {/* Favorito arriba a la derecha (los badges van a la izquierda) */}
+                            <div className="absolute right-3 top-3 z-10">
+                              <FavoriteHeart productId={p.id} size="sm" />
+                            </div>
                             {/* Badges de marketing arriba a la izquierda */}
                             {(isFeatured || tags.length > 0 || hasPromo) && (
                               <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1">

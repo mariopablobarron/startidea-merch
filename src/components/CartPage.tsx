@@ -39,6 +39,12 @@ export function CartPage() {
   const [recovering, setRecovering] = useState(false);
   // "Repetir pedido" del portal: productos del pedido original ya retirados.
   const [reorderUnavailable, setReorderUnavailable] = useState<string[]>([]);
+  // CIF y dirección del perfil del portal (si hay sesión): viajan con la
+  // cotización para que la factura salga completa sin repreguntar.
+  const [profileExtras, setProfileExtras] = useState<{
+    taxId: string | null;
+    shippingAddress: string | null;
+  } | null>(null);
 
   // form
   const [name, setName] = useState("");
@@ -70,6 +76,31 @@ export function CartPage() {
         if (Array.isArray(names) && names.length > 0) setReorderUnavailable(names);
       }
     } catch {}
+
+    // Prefill desde "Mis datos" del portal (si hay sesión de cliente). Solo
+    // rellena campos VACÍOS — nunca pisa lo que el usuario ya escribió.
+    void fetch("/api/clientes/me")
+      .then(async (r) => {
+        if (!r.ok) return; // 401 = anónimo, flujo normal
+        const j = (await r.json()) as {
+          profile?: {
+            name: string;
+            company: string | null;
+            email: string;
+            phone: string | null;
+            taxId: string | null;
+            shippingAddress: string | null;
+          };
+        };
+        const p = j.profile;
+        if (!p) return;
+        setName((v) => v || p.name || "");
+        setCompany((v) => v || p.company || "");
+        setEmail((v) => v || p.email || "");
+        setPhone((v) => v || p.phone || "");
+        setProfileExtras({ taxId: p.taxId, shippingAddress: p.shippingAddress });
+      })
+      .catch(() => {});
 
     // Recuperación de carrito abandonado. Los emails de recordatorio enlazan a
     // /cotizar?recover={cartId} → /carrito?recover={cartId}. Al llegar aquí:
@@ -234,6 +265,10 @@ export function CartPage() {
           couponCode: couponDiscount ? couponDiscount.code : undefined,
           items,
           directPay,
+          // Datos fiscales del perfil del portal (si hay sesión): la factura
+          // sale con CIF y dirección sin repreguntar al cliente.
+          vatNumber: profileExtras?.taxId || undefined,
+          shippingAddress: profileExtras?.shippingAddress || undefined,
         }),
       });
       const data = (await res.json()) as {
