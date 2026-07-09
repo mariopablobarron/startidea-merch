@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { calculateMarkingCost, applyMargin } from "@/lib/marking-cost";
+import { applyMargin } from "@/lib/marking-cost";
+import { quoteMarkingNet } from "@/lib/marking-quote";
 import { defaultTiersFromBase, orderTotalCents, pickTier } from "@/lib/pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 import { computeClientPricing } from "@/lib/product-pricing";
@@ -18,6 +19,7 @@ import { computeClientPricing } from "@/lib/product-pricing";
 
 export type ServerMarkingInput = {
   techniqueCode: string;
+  positionId?: string | null;
   numberOfColours?: number | null;
   printAreaCm2?: number | null;
   manipulationCode?: string | null;
@@ -63,6 +65,14 @@ export async function computeServerLinePricing(
       },
       category: { select: { name: true } },
       override: true,
+      // Posiciones + técnicas del producto: los parámetros de marcaje que
+      // envía el navegador NO son de fiar — validamos pertenencia y usamos
+      // el área/maxColors de la BD (auditoría 2026-07-09).
+      positions: {
+        include: {
+          techniques: { include: { technique: { select: { code: true } } } },
+        },
+      },
     },
   });
   if (!product) return { ok: false, reason: `Producto no encontrado: ${line.productSlug}` };
@@ -103,18 +113,75 @@ export async function computeServerLinePricing(
     ? "provider"
     : "estimate";
 
+  // Unitario NETO al tramo (para reglas markup % de la cascada Cifra).
+  const netTierForQty = variantWithTiers
+    ? pickTier(
+        variantWithTiers.priceTiers.map((t) => ({
+          minQty: t.minQty,
+          unitPriceCents: t.unitPriceCents,
+          source: "PROVIDER" as const,
+        })),
+        line.quantity,
+      )
+    : null;
+  const productNetUnitCents = netTierForQty?.unitPriceCents ?? product.fromPriceCents ?? 0;
+
   let markingNetTotalCents = 0;
   for (const m of line.markings) {
+    // 1) La técnica DEBE pertenecer al producto. Preferimos la posición que
+    //    dice el cliente; si no casa, buscamos cualquier posición del producto
+    //    que ofrezca esa técnica. Si ninguna → NO se cobra (degrada a
+    //    presupuesto): un cliente podía inyectar una técnica barata ajena.
+    const positions = product.positions;
+    if (positions.length === 0) {
+      return { ok: false, reason: `Producto sin posiciones de marcaje; marcaje ${m.techniqueCode} no verificable` };
+    }
+    const claimed = m.positionId
+      ? positions.find((p) => p.positionId === m.positionId)
+      : undefined;
+    const holder =
+      claimed && claimed.techniques.some((t) => t.technique.code === m.techniqueCode)
+        ? claimed
+        : positions.find((p) => p.techniques.some((t) => t.technique.code === m.techniqueCode));
+    if (!holder) {
+      return { ok: false, reason: `Técnica ${m.techniqueCode} no disponible para este producto` };
+    }
+    const link = holder.techniques.find((t) => t.technique.code === m.techniqueCode)!;
+
+    // 2) Área desde la BD (dimensiones de la posición), no del navegador.
+    const dbAreaCm2 =
+      holder.maxWidthMm && holder.maxHeightMm
+        ? (holder.maxWidthMm / 10) * (holder.maxHeightMm / 10)
+        : null;
+    const printAreaCm2 = dbAreaCm2 ?? m.printAreaCm2 ?? null;
+
+    // 3) Colores capados a maxColors de la técnica en esa posición.
+    const requestedColours = m.numberOfColours ?? 1;
+    const numberOfColours =
+      link.maxColors != null ? Math.min(requestedColours, link.maxColors) : requestedColours;
+
     try {
-      const br = await calculateMarkingCost({
+      // Cascada unificada (misma que ficha y cotizador). Si NO hay tarifa
+      // fiable (warning), NO se cobra un marcaje a 0 €: la línea degrada y el
+      // pago directo se convierte en presupuesto.
+      const q = await quoteMarkingNet({
+        productId: product.id,
+        supplier: product.supplier,
         techniqueCode: m.techniqueCode,
         quantity: line.quantity,
+        productNetUnitCents,
         positionCount: m.positionCount ?? undefined,
-        printAreaCm2: m.printAreaCm2 ?? undefined,
-        numberOfColours: m.numberOfColours ?? undefined,
-        manipulationCode: m.manipulationCode ?? undefined,
+        printAreaCm2,
+        numberOfColours,
+        manipulationCode: m.manipulationCode,
       });
-      markingNetTotalCents += br.totalCostCents ?? 0;
+      if (!q.ok) {
+        return {
+          ok: false,
+          reason: `Marcaje ${m.techniqueCode} sin tarifa fiable: ${q.warning ?? "sin tramo aplicable"}`,
+        };
+      }
+      markingNetTotalCents += q.netTotalCents;
     } catch (e) {
       return {
         ok: false,

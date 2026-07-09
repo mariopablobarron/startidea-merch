@@ -167,10 +167,12 @@ export async function POST(req: Request) {
       data.items.map((it) => {
         const serverMarkings: ServerMarkingInput[] = normalizeMarkings(it).map((m) => ({
           techniqueCode: m.techniqueCode,
+          positionId: m.positionId,
           numberOfColours: m.numberOfColors,
           manipulationCode: m.manipulationCode,
           // Sin el área, las técnicas AreaRange cogerían el tramo más barato
           // y el checkout cobraría MENOS que la ficha (revisión 2026-07-08).
+          // (El servidor prioriza el área de la BD; esta es solo pista.)
           printAreaCm2: m.printAreaCm2,
         }));
         return computeServerLinePricing(

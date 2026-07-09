@@ -19,7 +19,10 @@ export type MarkingCostInput = {
   positionCount?: number;          // posiciones distintas a marcar (default 1)
   printAreaCm2?: number;           // área de impresión en cm² (para AreaRange/ColourAreaRange)
   numberOfColours?: number;        // 1, 2, 3, 4… (para multicolor)
-  manipulationCode?: string;       // "A","B","C","D","E","Z" — default "A"
+  // "A".."E","Z" — undefined = default "A" (MidOcean). NULL explícito = SIN
+  // manipulación: las técnicas de Cifra/Makito no llevan el fee de archivo de
+  // MidOcean (auditoría 2026-07-09, M17).
+  manipulationCode?: string | null;
   isRepeatOrder?: boolean;         // true si reusa archivo cliché de pedido anterior
 };
 
@@ -93,7 +96,28 @@ export async function calculateMarkingCost(input: MarkingCostInput): Promise<Mar
     };
   }
 
-  const unitCostCents = scale.unitCostCents;
+  // Tarifa por cm² (DTF): el coste unitario real depende del área. Sin área
+  // conocida NO inventamos un precio — warning y que el caller decida (el
+  // checkout degrada a presupuesto; jamás cobrar 0 € o un área falsa).
+  let unitCostCents: number;
+  if (scale.perCm2) {
+    if (printAreaCm2 == null || printAreaCm2 <= 0) {
+      return {
+        techniqueCode,
+        techniqueName: technique.name,
+        pricingType: technique.pricingType,
+        unitCostCents: 0,
+        setupCents: 0,
+        manipulationCents: 0,
+        nextColourTotalCents: 0,
+        totalCostCents: 0,
+        warning: "Técnica por cm² sin área de impresión conocida — pedir cotización manual.",
+      };
+    }
+    unitCostCents = Math.round(scale.unitCostCents * printAreaCm2);
+  } else {
+    unitCostCents = scale.unitCostCents;
+  }
 
   // 4) Setup (fijo por pedido). repeatOrder usa setupRepeat si existe.
   const setupCents =
@@ -101,12 +125,15 @@ export async function calculateMarkingCost(input: MarkingCostInput): Promise<Mar
       ? technique.setupRepeatCents
       : (technique.setupCents ?? 0);
 
-  // 5) Manipulación (depende de complejidad del logo)
-  const manipulation = await prisma.printManipulation.findUnique({
-    where: { code: manipulationCode },
-  });
-  const manipulationUnit = manipulation?.unitCostCents ?? 0;
-  const manipulationCents = manipulationUnit * quantity;
+  // 5) Manipulación (depende de complejidad del logo). null explícito = sin fee
+  // (técnicas no-MidOcean); undefined = default "A".
+  let manipulationCents = 0;
+  if (manipulationCode !== null) {
+    const manipulation = await prisma.printManipulation.findUnique({
+      where: { code: manipulationCode },
+    });
+    manipulationCents = (manipulation?.unitCostCents ?? 0) * quantity;
+  }
 
   // 6) Coste por colores extra (si la técnica tiene multicolor)
   let nextColourTotalCents = 0;
@@ -132,17 +159,9 @@ export async function calculateMarkingCost(input: MarkingCostInput): Promise<Mar
   };
 }
 
-function filterScalesByArea(
-  scales: Array<{
-    rangeId: string | null;
-    areaFromCm2: number | null;
-    areaToCm2: number | null;
-    minQty: number;
-    unitCostCents: number;
-    nextColourCostCents: number | null;
-  }>,
-  areaCm2: number | undefined,
-) {
+function filterScalesByArea<
+  T extends { rangeId: string | null; areaFromCm2: number | null; areaToCm2: number | null },
+>(scales: T[], areaCm2: number | undefined): T[] {
   // Si no hay área especificada o la técnica no tiene rangos: devolver todos
   const hasRanges = scales.some((s) => s.rangeId != null && s.areaFromCm2 != null);
   if (!hasRanges) return scales;
@@ -154,13 +173,37 @@ function filterScalesByArea(
     });
   }
   // Filtrar por rango aplicable: areaFrom <= areaCm2 <= areaTo
-  return scales.filter(
+  let pool = scales.filter(
     (s) =>
       s.areaFromCm2 != null &&
       s.areaToCm2 != null &&
       areaCm2 >= s.areaFromCm2 &&
       (s.areaToCm2 === 0 || areaCm2 <= s.areaToCm2),
   );
+  // Área por ENCIMA de todos los rangos → clamp al rango superior (el más
+  // caro), NUNCA lista vacía. El tope del feed es un sentinel mal parseado
+  // ("999.999" ≈ 1.000 cm²) o la tarifa se queda corta (bordado 800 cm²):
+  // devolver [] cotizaba el marcaje a 0 € en 398 combinaciones reales
+  // (auditoría 2026-07-09, espaldas de sudadera 280×400 mm).
+  if (pool.length === 0) {
+    const tops = scales.filter((s) => s.areaToCm2 != null && s.areaToCm2 > 0);
+    if (tops.length > 0) {
+      const maxTo = Math.max(...tops.map((s) => s.areaToCm2!));
+      if (areaCm2 > maxTo) pool = scales.filter((s) => s.areaToCm2 === maxTo);
+    }
+  }
+  // Borde exacto compartido por dos rangos (from de uno == to del otro) →
+  // determinista: gana el rango más AJUSTADO (menor areaTo), no el orden de
+  // filas de la BD (auditoría 2026-07-09, 638 combinaciones en frontera).
+  if (pool.length > 0) {
+    const bounded = pool.filter((s) => s.areaToCm2 != null && s.areaToCm2 > 0);
+    if (bounded.length > 0) {
+      const minTo = Math.min(...bounded.map((s) => s.areaToCm2!));
+      const tight = pool.filter((s) => s.areaToCm2 === minTo);
+      if (tight.length > 0) return tight;
+    }
+  }
+  return pool;
 }
 
 function pickScaleByQty<T extends { minQty: number }>(scales: T[], qty: number): T | undefined {

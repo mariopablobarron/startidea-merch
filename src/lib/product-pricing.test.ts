@@ -134,16 +134,20 @@ describe("PERCENT promo — se hornea por unidad y escala con la cantidad", () =
 });
 
 describe("override de precio — descarta tiers de proveedor, sin doble margen", () => {
-  it("customFromPriceCents reconstruye tiers desde ese precio cliente (sin ×1,6 extra)", () => {
+  it("customFromPriceCents = tarifa PLANA exacta (sin curva sintética bajo coste)", () => {
     const cp = computeClientPricing({
       product: pen,
       override: { customFromPriceCents: 100, marginPct: null, marketingTags: [] },
       providerNetTiers: penNetTiers,
       activePromos: [],
     });
-    // El primer tramo (10 uds) usa el precio base 100 tal cual (no 160).
-    const t10 = cp.clientTiers?.find((t) => t.minQty === 10);
-    expect(t10?.unitPriceCents).toBe(100);
+    // El admin fijó el precio EXACTO → un único tramo desde 1 ud a ese precio.
+    // La curva sintética (hasta −68% a 250 uds) vendía BAJO COSTE los
+    // productos cuyo customFromPriceCents es un PVP (Adivin, auditoría
+    // 2026-07-09): a cualquier cantidad, el precio es el que fijó el admin.
+    expect(cp.clientTiers).toEqual([
+      { minQty: 1, unitPriceCents: 100, source: "PROVIDER" },
+    ]);
     expect(cp.fromPriceCents).toBe(100);
   });
 
@@ -156,6 +160,11 @@ describe("override de precio — descarta tiers de proveedor, sin doble margen",
     });
     // 30 neto × (1 + 50/100) = 45 (no 48).
     expect(cp.fromPriceCents).toBe(45);
+    // Y los tramos conservan la curva REAL del proveedor con ese margen,
+    // no una curva sintética: cada tramo neto × 1,5.
+    expect(cp.clientTiers?.map((t) => t.unitPriceCents)).toEqual(
+      penNetTiers.map((t) => Math.round(t.unitPriceCents * 1.5)),
+    );
   });
 });
 

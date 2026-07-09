@@ -637,10 +637,20 @@ async function upsertMarkingScales(t: MakitoMarkingTechniquePrice): Promise<numb
   let count = 0;
   // 10 tramos posibles, la mayoría sólo usa 5
   for (let i = 1; i <= 10; i++) {
-    const sec = (t as unknown as Record<string, number>)[`section_${i}`];
+    const rawSec = (t as unknown as Record<string, number>)[`section_${i}`];
     const price = (t as unknown as Record<string, number>)[`price_${i}`];
     const priceCol = (t as unknown as Record<string, number>)[`price_col_${i}`];
-    if (!sec || sec <= 0 || !price || price <= 0) continue;
+    const priceCm = (t as unknown as Record<string, number>)[`price_cm_${i}`];
+    // Primer tramo negativo = "hasta N" → minQty 1 (misma convención que los
+    // PriceTier de producto; antes se descartaba y se perdía el tramo pequeño).
+    const sec = rawSec && rawSec < 0 ? 1 : rawSec;
+    if (!sec || sec <= 0) continue;
+    // DTF y familia tarifan POR CM² (price_cm_i); el resto por unidad (price_i).
+    // Antes solo se leía price_i → las 3 técnicas DTF quedaban SIN tarifa y
+    // 894 productos cotizaban el marcaje a 0 € (auditoría 2026-07-09).
+    const perCm2 = (!price || price <= 0) && priceCm != null && priceCm > 0;
+    const unitCostCents = perCm2 ? Math.round(priceCm * 100) : Math.round((price ?? 0) * 100);
+    if (unitCostCents <= 0) continue;
     // Prisma 6 rechaza rangeId=null en compound unique. Mismo bug que ya
     // arreglamos en cifra-sync para Category. Usamos findFirst + create.
     const existing = await prisma.markingPriceScale.findFirst({
@@ -652,7 +662,8 @@ async function upsertMarkingScales(t: MakitoMarkingTechniquePrice): Promise<numb
         await prisma.markingPriceScale.update({
           where: { id: existing.id },
           data: {
-            unitCostCents: Math.round(price * 100),
+            unitCostCents,
+            perCm2,
             nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
           },
         });
@@ -664,7 +675,8 @@ async function upsertMarkingScales(t: MakitoMarkingTechniquePrice): Promise<numb
             areaFromCm2: null,
             areaToCm2: null,
             minQty: sec,
-            unitCostCents: Math.round(price * 100),
+            unitCostCents,
+            perCm2,
             nextColourCostCents: priceCol ? Math.round(priceCol * 100) : null,
           },
         });

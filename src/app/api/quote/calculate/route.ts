@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { calculateMarkingCost, applyMargin } from "@/lib/marking-cost";
+import { applyMargin } from "@/lib/marking-cost";
+import { quoteMarkingNet } from "@/lib/marking-quote";
 import { prisma } from "@/lib/prisma";
 import { defaultTiersFromBase, formatMoney, orderTotalCents, pickTier } from "@/lib/pricing";
 import { loadActivePromotions } from "@/lib/promotions";
@@ -145,25 +146,41 @@ export async function POST(req: Request) {
   };
   const markingResults: MarkingResult[] = [];
   let markingNetTotalCents = 0;
+  // Unitario NETO al tramo (para reglas markup % de la cascada Cifra).
+  const netTierForQty = variantWithTiers
+    ? pickTier(
+        variantWithTiers.priceTiers.map((t) => ({
+          minQty: t.minQty,
+          unitPriceCents: t.unitPriceCents,
+          source: "PROVIDER" as const,
+        })),
+        data.quantity,
+      )
+    : null;
+  const productNetUnitCents = netTierForQty?.unitPriceCents ?? product.fromPriceCents ?? 0;
   for (const m of markings) {
     try {
-      const br = await calculateMarkingCost({
+      // Cascada UNIFICADA (misma que checkout y cotizador): scales reales /
+      // tarifa por producto (Cifra PDF) / regla markup — nunca la escala dummy.
+      const q = await quoteMarkingNet({
+        productId: product.id,
+        supplier: product.supplier,
         techniqueCode: m.techniqueCode,
         quantity: data.quantity,
+        productNetUnitCents,
         positionCount: data.positionCount, // pasamos solo si viene en payload legacy
         printAreaCm2: m.printAreaCm2,
         numberOfColours: m.numberOfColours,
         manipulationCode: m.manipulationCode,
       });
-      const net = br.totalCostCents ?? 0;
-      markingNetTotalCents += net;
+      markingNetTotalCents += q.netTotalCents;
       markingResults.push({
         positionId: m.positionId,
-        techniqueCode: br.techniqueCode,
-        techniqueName: br.techniqueName,
-        netCostCents: net,
-        clientCostCents: applyMargin(net),
-        warning: br.warning,
+        techniqueCode: m.techniqueCode,
+        techniqueName: q.techniqueLabel,
+        netCostCents: q.netTotalCents,
+        clientCostCents: applyMargin(q.netTotalCents),
+        warning: q.warning,
       });
     } catch (e) {
       return NextResponse.json(

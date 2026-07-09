@@ -71,6 +71,20 @@ function intFromQty(s: string | undefined): number {
   return Number.isFinite(n) ? n : 1;
 }
 
+/**
+ * Área en cm² del feed — MISMO formato europeo que los precios: punto =
+ * millares, coma = decimal. El sentinel del rango superior llega como
+ * "999.999" (= 999999, infinito del feed); parseFloat lo leía como ~1.000 cm²
+ * → cualquier espalda de sudadera (1.120 cm²) quedaba FUERA de todos los
+ * rangos y el marcaje cotizaba 0 € (auditoría 2026-07-09).
+ */
+function parseAreaCm2(s: string | undefined | null): number | null {
+  if (s == null || s === "") return null;
+  const cleaned = String(s).replace(/\./g, "").replace(",", ".");
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
 export type MidoceanPrintSyncResult = {
   startedAt: string;
   finishedAt: string;
@@ -148,8 +162,8 @@ export async function syncMidoceanPrintPricelist(): Promise<MidoceanPrintSyncRes
             data: {
               techniqueCode: t.id,
               rangeId: v.range_id || null,
-              areaFromCm2: v.area_from != null ? parseFloat(v.area_from) : null,
-              areaToCm2: v.area_to != null ? parseFloat(v.area_to) : null,
+              areaFromCm2: parseAreaCm2(v.area_from),
+              areaToCm2: parseAreaCm2(v.area_to),
               minQty: intFromQty(s.minimum_quantity),
               unitCostCents: eurStringToCents(s.price),
               nextColourCostCents: s.next_price ? eurStringToCents(s.next_price) : null,

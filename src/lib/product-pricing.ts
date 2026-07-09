@@ -161,8 +161,25 @@ export function computeClientPricing(opts: {
 
   // 1) Tiers cliente SIN promo (margen + override aplicados).
   let clientListTiers: PriceTier[] | undefined;
-  if (adminOverridesPrice(override)) {
-    // El admin fija el precio → ignoramos tiers de proveedor y reconstruimos.
+  if (override?.customFromPriceCents != null) {
+    // Precio EXACTO fijado por el admin → tarifa PLANA. La curva sintética
+    // (hasta −68% a 250 uds) sobre un precio fijado a mano vendía BAJO COSTE:
+    // Adivin (PVP = coste×1,43) perdía hasta un 54% por unidad a 250 uds
+    // (auditoría 2026-07-09). Si el admin quiere descuentos por volumen, los
+    // fija él; el sistema no se los inventa.
+    clientListTiers = originalFromPriceCents
+      ? [{ minQty: 1, unitPriceCents: originalFromPriceCents, source: "PROVIDER" as const }]
+      : undefined;
+  } else if (override?.marginPct != null && providerNetTiers && providerNetTiers.length > 0) {
+    // Margen manual del admin sobre los tramos NETOS reales del proveedor —
+    // conserva la curva de volumen REAL en vez de inventar una sintética.
+    clientListTiers = providerNetTiers.map((t) => ({
+      minQty: t.minQty,
+      unitPriceCents: Math.round((t.unitPriceCents * (100 + override.marginPct!)) / 100),
+      source: "PROVIDER" as const,
+    }));
+  } else if (adminOverridesPrice(override)) {
+    // marginPct sin tramos de proveedor → curva sintética sobre el "desde".
     clientListTiers = originalFromPriceCents
       ? defaultTiersFromBase(originalFromPriceCents)
       : undefined;
