@@ -17,6 +17,10 @@ export type CartItemMarking = {
   techniqueName?: string | null;
   numberOfColors: number;
   manipulationCode?: string | null;
+  // Área de impresión de la posición (cm²). Imprescindible para técnicas con
+  // tarifa por área (AreaRange): sin ella, el recálculo server-side del
+  // checkout cogería el tramo más barato y cobraría MENOS que la ficha.
+  printAreaCm2?: number | null;
   notes?: string | null;
 };
 

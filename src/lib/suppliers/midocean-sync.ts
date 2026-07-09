@@ -12,7 +12,7 @@ import {
   type MidoceanRawPrintProduct,
 } from "./midocean";
 import { normalizeTechniqueName } from "@/lib/marking-techniques-es";
-import { extractSize } from "@/lib/variant-grouping";
+import { extractSize, canonicalColorGroup, colorGroupFromName } from "@/lib/variant-grouping";
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
 import { notifyTelegram } from "@/lib/telegram";
 
@@ -311,7 +311,10 @@ async function upsertProduct(
       sku: v.sku,
       variantId: v.variant_id,
       colorName: v.color_description,
-      colorGroup: v.color_group,
+      // Canonicalizamos el grupo del feed (MidOcean manda "Azul"/"Marrón"/
+      // "Purple"/"Oro" — mayúscula/inglés) al mismo vocabulario minúsculas-sin-
+      // acentos que Cifra/Makito, o el filtro de color parte el catálogo.
+      colorGroup: canonicalColorGroup(v.color_group) ?? colorGroupFromName(v.color_description),
       // El feed de MidOcean NO trae talla: en textil va embebida en el SKU
       // (S17000-BF-3XL → 3XL). extractSize solo acepta tallas ALFABÉTICAS
       // conocidas — los sufijos numéricos (MO9268-03 = color) devuelven null.

@@ -24,6 +24,10 @@ const MarkingSchema = z.object({
   techniqueName: z.string().max(120).optional().nullable(),
   numberOfColors: z.number().int().min(1).max(20).default(1),
   manipulationCode: z.string().max(2).optional().nullable(),
+  // Área de impresión (cm²) de la posición. El recálculo server-side la pasa a
+  // calculateMarkingCost para elegir el MISMO tramo AreaRange que vio la ficha
+  // (sin ella cogería el tramo más barato y cobraría de menos).
+  printAreaCm2: z.number().positive().optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
 });
 
@@ -83,6 +87,7 @@ type NormalizedMarking = {
   techniqueName: string | null;
   numberOfColors: number;
   manipulationCode: string | null;
+  printAreaCm2: number | null;
   notes: string | null;
 };
 
@@ -100,6 +105,7 @@ function normalizeMarkings(it: CartItem): NormalizedMarking[] {
       techniqueName: m.techniqueName ?? null,
       numberOfColors: m.numberOfColors,
       manipulationCode: m.manipulationCode ?? null,
+      printAreaCm2: m.printAreaCm2 ?? null,
       notes: m.notes ?? null,
     }));
   }
@@ -112,6 +118,7 @@ function normalizeMarkings(it: CartItem): NormalizedMarking[] {
         techniqueName: it.markingTechniqueName || null,
         numberOfColors: it.markingColours || 1,
         manipulationCode: it.markingComplexity || null,
+        printAreaCm2: null, // el shape plano legacy nunca trajo área
         notes: null,
       },
     ];
@@ -162,6 +169,9 @@ export async function POST(req: Request) {
           techniqueCode: m.techniqueCode,
           numberOfColours: m.numberOfColors,
           manipulationCode: m.manipulationCode,
+          // Sin el área, las técnicas AreaRange cogerían el tramo más barato
+          // y el checkout cobraría MENOS que la ficha (revisión 2026-07-08).
+          printAreaCm2: m.printAreaCm2,
         }));
         return computeServerLinePricing(
           { productSlug: it.productSlug, quantity: it.quantity, markings: serverMarkings },
@@ -300,6 +310,7 @@ export async function POST(req: Request) {
                 techniqueName: m.techniqueName ?? null,
                 numberOfColors: m.numberOfColors,
                 manipulationCode: m.manipulationCode ?? null,
+                printAreaCm2: m.printAreaCm2 ?? null,
                 notes: m.notes ?? null,
                 order: idx,
               })),

@@ -1439,6 +1439,7 @@ model CartQuoteItemMarking {
   techniqueName    String? // snapshot human-readable
   numberOfColors   Int     @default(1)
   manipulationCode String? // S/M/L/X (rango de cantidad MidOcean)
+  printAreaCm2     Float? // área de la posición (cm²) — para elegir el tramo AreaRange correcto en recálculos
 
   // Coste snapshot del momento (céntimos EUR)
   setupCostCents Int? // coste fijo de preparación de esta marca

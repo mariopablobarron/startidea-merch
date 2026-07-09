@@ -432,18 +432,21 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
         // lo guardamos como minQty=1 para que el tier cubra desde 1 unidad).
         const rawSec = (t as unknown as Record<string, number | string>)[`section${i}`];
         const price = (t as unknown as Record<string, number>)[`price${i}`];
+        // El primer tramo llega NEGATIVO ("-500" = "hasta 500") y lo guardamos
+        // como minQty=1 para que cubra desde 1 unidad. El parser XML puede
+        // entregarlo como number o string, con o sin espacios: normalizamos a
+        // string trimmeado antes de decidir (un `-500` con espacio inicial
+        // volvería a descartarse si solo miráramos startsWith sin trim). Antes,
+        // el caso number negativo caía en `sec > 0` y DESCARTABA el tramo:
+        // 4.452 productos cotizaban SIEMPRE al precio de 500+ uds (auditoría
+        // 2026-07-04).
+        const secStr = String(rawSec ?? "").trim();
         let sec: number;
-        // El primer tramo llega como "-500" ("hasta 500"). El parser XML puede
-        // entregarlo como STRING "-500" o como NUMBER -500 — ambos son el
-        // primer tramo (minQty=1). El caso number negativo caía en `sec > 0`
-        // y DESCARTABA el tramo: 4.452 productos cotizaban SIEMPRE al precio
-        // de 500+ uds (auditoría 2026-07-04).
-        if (typeof rawSec === "string" && rawSec.startsWith("-")) {
-          sec = 1; // primer tramo
-        } else if (typeof rawSec === "number" && rawSec < 0) {
-          sec = 1; // primer tramo (parser XML lo convirtió a número)
+        if (secStr.startsWith("-")) {
+          sec = 1; // primer tramo ("hasta N", cualquier negativo)
         } else {
-          sec = typeof rawSec === "number" ? rawSec : parseInt(String(rawSec || "0"), 10);
+          const n = parseInt(secStr, 10);
+          sec = Number.isFinite(n) ? n : 0;
         }
         if (sec > 0 && price > 0) {
           tiers.push({ minQty: sec, cents: priceToCents(price) });

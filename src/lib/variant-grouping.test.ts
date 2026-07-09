@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractSize, groupColorOptions, colorGroupFromName, type VariantInput } from "./variant-grouping";
+import { extractSize, groupColorOptions, colorGroupFromName, canonicalColorGroup, type VariantInput } from "./variant-grouping";
 
 function v(partial: Partial<VariantInput> & { sku: string }): VariantInput {
   return {
@@ -131,5 +131,38 @@ describe("colorGroupFromName", () => {
   it("es insensible a mayúsculas y acentos", () => {
     expect(colorGroupFromName("SALMON")).toBe("rosa");
     expect(colorGroupFromName("Púrpura")).toBe("morado");
+  });
+});
+
+describe("canonicalColorGroup — unifica el vocabulario de los 3 proveedores", () => {
+  it("MidOcean (mayúscula/inglés) → canónico minúsculas-sin-acento", () => {
+    const cases: [string, string][] = [
+      ["Azul", "azul"],
+      ["Marrón", "marron"],   // MidOcean con tilde y mayúscula
+      ["Purple", "morado"],   // inglés
+      ["Oro", "dorado"],
+      ["Plateado", "gris"],
+      ["Mix ES", "multicolor"],
+      ["Rosa", "rosa"],
+      ["Amarillo", "amarillo"],
+    ];
+    for (const [raw, group] of cases) expect(canonicalColorGroup(raw), raw).toBe(group);
+  });
+
+  it("Cifra (minúscula/tilde) converge al MISMO token que MidOcean/Makito", () => {
+    // El bug: "Marrón"(MidOcean) y "marrón"(Cifra) y "marron"(derivado Makito)
+    // eran 3 facetas distintas. Ahora los tres → "marron".
+    expect(canonicalColorGroup("Marrón")).toBe("marron");
+    expect(canonicalColorGroup("marrón")).toBe("marron");
+    expect(colorGroupFromName("Marrón")).toBe("marron");
+    expect(canonicalColorGroup("lila")).toBe("morado");
+  });
+
+  it("null/vacío → null; token desconocido → normalizado (no pierde agrupamiento)", () => {
+    expect(canonicalColorGroup(null)).toBeNull();
+    expect(canonicalColorGroup("")).toBeNull();
+    expect(canonicalColorGroup("   ")).toBeNull();
+    // Un grupo que no mapea a familia conocida se conserva normalizado.
+    expect(canonicalColorGroup("Fluorescente")).toBe("fluorescente");
   });
 });

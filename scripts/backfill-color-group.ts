@@ -1,48 +1,62 @@
 #!/usr/bin/env bun
 /**
- * Backfill de ProductVariant.colorGroup para las variantes que lo tienen NULL
- * pero SÍ tienen colorName (Makito lo dejaba a null; Cifra falla cuando el
- * sufijo no está en su diccionario). Sin grupo, el producto queda FUERA del
- * filtro de color del catálogo (excluía ~64% del catálogo — auditoría 07-2026).
+ * Backfill + CANONICALIZACIÓN de ProductVariant.colorGroup.
  *
- * Deriva el grupo con la MISMA función que ahora usan los syncs
- * (colorGroupFromName), así el backfill y las sincronizaciones futuras coinciden.
+ * Dos problemas que resuelve (auditoría 07-2026):
+ *   1. Makito dejaba colorGroup a null y Cifra fallaba con sufijos fuera del
+ *      dict → ~64% del catálogo fuera del filtro de color.
+ *   2. Cada proveedor escribía un vocabulario DISTINTO para el mismo color:
+ *      MidOcean "Azul"/"Marrón"/"Purple"/"Oro" (mayúscula/inglés), Cifra
+ *      "marrón"/"lila" (minúscula/tilde). El filtro agrupa con groupBy(colorGroup)
+ *      sobre el string exacto y Postgres no pliega acentos → facetas partidas.
  *
- * Ejecutar UNA vez tras desplegar el fix de los syncs:
+ * Recalcula el grupo canónico de CADA variante con las MISMAS funciones que los
+ * syncs (canonicalColorGroup del grupo existente, o colorGroupFromName del
+ * nombre si no hay grupo) y solo escribe donde difiere del valor actual. Nunca
+ * pone a null un grupo que ya existía.
+ *
+ * Ejecutar tras desplegar el fix de los syncs:
  *   bun scripts/backfill-color-group.ts          # aplica
  *   bun scripts/backfill-color-group.ts --dry     # solo cuenta
  */
 import { prisma } from "@/lib/prisma";
-import { colorGroupFromName } from "@/lib/variant-grouping";
+import { colorGroupFromName, canonicalColorGroup } from "@/lib/variant-grouping";
 
 const DRY = process.argv.includes("--dry");
 
 async function main() {
   const variants = await prisma.productVariant.findMany({
-    where: { colorGroup: null, colorName: { not: null } },
-    select: { id: true, colorName: true },
+    where: { OR: [{ colorGroup: { not: null } }, { colorName: { not: null } }] },
+    select: { id: true, colorName: true, colorGroup: true },
   });
-  console.log(`Variantes con colorGroup null y colorName presente: ${variants.length}`);
+  console.log(`Variantes con color (grupo o nombre): ${variants.length}`);
 
-  let resolved = 0;
-  let unresolved = 0;
   const byGroup = new Map<string, number>();
   const updates: { id: string; group: string }[] = [];
+  let unchanged = 0;
+  let stillNull = 0;
 
   for (const v of variants) {
-    const group = colorGroupFromName(v.colorName);
-    if (!group) {
-      unresolved++;
+    // Canoniza el grupo existente; si no había, deriva del nombre.
+    const target = canonicalColorGroup(v.colorGroup) ?? colorGroupFromName(v.colorName);
+    if (target === v.colorGroup) {
+      unchanged++;
       continue;
     }
-    resolved++;
-    byGroup.set(group, (byGroup.get(group) ?? 0) + 1);
-    updates.push({ id: v.id, group });
+    if (!target) {
+      // Solo puede pasar si colorGroup era null y el nombre es ruido → se queda null.
+      stillNull++;
+      continue;
+    }
+    byGroup.set(target, (byGroup.get(target) ?? 0) + 1);
+    updates.push({ id: v.id, group: target });
   }
 
-  console.log(`Resolubles: ${resolved} · sin familia (ruido/desconocido): ${unresolved}`);
   console.log(
-    "Por familia:",
+    `A cambiar: ${updates.length} · ya canónicas: ${unchanged} · sin familia (ruido): ${stillNull}`,
+  );
+  console.log(
+    "Grupos destino:",
     [...byGroup.entries()].sort((a, b) => b[1] - a[1]).map(([g, n]) => `${g}=${n}`).join(" · "),
   );
 
@@ -51,8 +65,7 @@ async function main() {
     return;
   }
 
-  // Update por familia (un updateMany por grupo) — muchísimo menos round-trips
-  // que uno por fila. Reagrupamos los ids por grupo destino.
+  // updateMany por grupo destino en trozos de 1000 ids (evita IN gigantes).
   const idsByGroup = new Map<string, string[]>();
   for (const u of updates) {
     const arr = idsByGroup.get(u.group) ?? [];
@@ -62,7 +75,6 @@ async function main() {
 
   let written = 0;
   for (const [group, ids] of idsByGroup) {
-    // Trozos de 1000 ids para no pasarse con el tamaño del IN.
     for (let i = 0; i < ids.length; i += 1000) {
       const chunk = ids.slice(i, i + 1000);
       const res = await prisma.productVariant.updateMany({
@@ -72,7 +84,7 @@ async function main() {
       written += res.count;
     }
   }
-  console.log(`✅ colorGroup escrito en ${written} variantes.`);
+  console.log(`✅ colorGroup canonicalizado en ${written} variantes.`);
 }
 
 main()

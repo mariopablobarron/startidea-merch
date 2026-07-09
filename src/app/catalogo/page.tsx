@@ -535,7 +535,9 @@ export default async function CatalogoPage({
                             stock: inStock ? "1" : undefined,
                           })}
                           active={colorGroup.toLowerCase() === c.colorGroup!.toLowerCase()}
-                          label={`${c.colorGroup}`}
+                          // colorGroup se almacena canónico en minúsculas (azul,
+                          // marron…) → capitalizamos solo para mostrar el chip.
+                          label={c.colorGroup!.charAt(0).toUpperCase() + c.colorGroup!.slice(1)}
                         />
                       ))}
                   </FilterBlock>

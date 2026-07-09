@@ -136,14 +136,14 @@ export function groupColorOptions(variants: VariantInput[]): ColorOption[] {
 const COLOR_GROUP_RULES: ReadonlyArray<readonly [RegExp, string]> = [
   // Combinaciones "blanco/rojo", "azul/blanco" → multicolor (antes que nada).
   [/^[a-z]+\/[a-z]/, "multicolor"],
-  [/\b(multicolor|rainbow|arco ?iris|surtido|varios)\b/, "multicolor"],
+  [/\b(multicolor|rainbow|arco ?iris|surtido|varios|mix)\b/, "multicolor"],
   // Familias. Orden: variantes que colisionarían (marino→azul) van con su base.
   [/\b(marino|azul|turquesa|celeste|cian|royal|denim|cobalto)\b/, "azul"],
   [/\b(verde|kaki|caqui|lima|menta|oliva|militar|botella|pistacho)\b/, "verde"],
   [/\b(rojo|roja|granate|burdeos|carmes[ií]|teja|bermell[oó]n)\b/, "rojo"],
   [/\b(rosa|fucsia|magenta|salm[oó]n|fresa|sand[ií]a|coral|frambuesa|chicle|palo de rosa)\b/, "rosa"],
   [/\b(naranja|mandarina|calabaza|teja)\b/, "naranja"],
-  [/\b(morado|violeta|lila|p[uú]rpura|malva|berenjena)\b/, "morado"],
+  [/\b(morado|violeta|lila|p[uú]rpura|purple|malva|berenjena)\b/, "morado"],
   [/\b(marr[oó]n|chocolate|caf[eé]|caramelo|tostado|camel|cobre|teja oscura)\b/, "marron"],
   [/\b(dorado|dorada|oro|gold)\b/, "dorado"],
   [/\b(amarillo|amarilla|lim[oó]n|mostaza|fluor amarillo)\b/, "amarillo"],
@@ -173,4 +173,30 @@ export function colorGroupFromName(name: string | null | undefined): string | nu
     if (re.test(norm)) return group;
   }
   return null;
+}
+
+/**
+ * Canonicaliza un grupo de color que YA viene del proveedor (MidOcean
+ * `color_group` = "Azul"/"Marr\u00f3n"/"Purple"/"Oro"; dict de Cifra = "marr\u00f3n"/
+ * "lila") al MISMO vocabulario que {@link colorGroupFromName}: min\u00fasculas y sin
+ * acentos. Imprescindible porque el filtro de color agrupa con
+ * `groupBy(colorGroup)` sobre el string EXACTO y Postgres no pliega acentos ni
+ * con `mode:"insensitive"` \u2192 sin esto conviven "Marr\u00f3n", "marr\u00f3n" y "marron"
+ * como TRES facetas del mismo color y el filtro parte el cat\u00e1logo.
+ *
+ * Primero intenta mapear a familia conocida (traduce "Purple"\u2192morado,
+ * "Oro"\u2192dorado, "Mix ES"\u2192multicolor\u2026). Si no la reconoce, devuelve el token
+ * normalizado (min\u00fasculas, sin acentos): nunca pierde el agrupamiento que ya
+ * tra\u00eda el proveedor, solo unifica caja y acentos.
+ */
+export function canonicalColorGroup(group: string | null | undefined): string | null {
+  if (!group) return null;
+  const known = colorGroupFromName(group);
+  if (known) return known;
+  const norm = group
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return norm || null;
 }

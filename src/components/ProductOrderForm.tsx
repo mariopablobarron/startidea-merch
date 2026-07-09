@@ -369,18 +369,25 @@ export function ProductOrderForm({
             techniqueName: technique.techniqueName,
             numberOfColors: Math.min(colours, maxColors),
             manipulationCode: manipulation,
+            // Área de la posición: el recálculo server-side del checkout la
+            // necesita para elegir el MISMO tramo de tarifa que vio la ficha.
+            printAreaCm2: printAreaCm2 ?? null,
           },
           ...extraMarkings
             .map<CartItemMarking | null>((em) => {
               const p = positionsAvailable[em.positionIdx];
               const t = p?.techniques[em.techIdx];
               if (!p || !t) return null;
+              const areaCm2 = p.maxWidthMm && p.maxHeightMm
+                ? (p.maxWidthMm / 10) * (p.maxHeightMm / 10)
+                : null;
               return {
                 positionId: p.positionId,
                 positionLabel: displayPositionId(p.positionId),
                 techniqueCode: t.techniqueCode,
                 techniqueName: t.techniqueName,
                 numberOfColors: Math.min(em.colours, t.maxColors ?? 1),
+                printAreaCm2: areaCm2,
               };
             })
             .filter((m): m is CartItemMarking => m !== null),
