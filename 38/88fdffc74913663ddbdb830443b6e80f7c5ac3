@@ -1,0 +1,48 @@
+src/lib/variant-grouping.ts
+  s_65877aa637ec34::t_0baf6eab0f9a83 146
+  s_65877aa637ec34::t_210984518f8b37 139
+  s_65877aa637ec34::t_e01ff3c197e82c 177-202
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_ad7d13ab87841c 538-540
+scripts/backfill-color-group.ts
+  s_65877aa637ec34::t_f8a55db7d758cc 3,5-11,13-18,23,29-30,32,36-37,40-48,51-52,56-59,68,87
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_20da680ae57f7a 297-301,312-316
+  s_65877aa637ec34::t_cc50cb301d864c 25
+src/lib/variant-grouping.test.ts
+  s_65877aa637ec34::t_e1e50ceb342a15 2
+  s_65877aa637ec34::t_6ddf87205824da 136-168
+prisma/schema.prisma
+  s_65877aa637ec34::t_afc6001a3a2ce7 1442
+src/lib/suppliers/makito-sync.ts
+  s_65877aa637ec34::t_158f7b72f74570 435-443,445-446,448-449
+src/lib/cart-storage.ts
+  s_65877aa637ec34::t_a69c406f2e0a88 20-23
+src/components/ProductOrderForm.tsx
+  s_65877aa637ec34::t_d5ac4b4b3190a1 372-374,381-383,390
+src/lib/suppliers/midocean-sync.ts
+  s_65877aa637ec34::t_f5f178800b23a7 314-317
+  s_65877aa637ec34::t_cc1cf50dfe9b45 15
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_3124b1bdb6c1d3 172-174
+  s_65877aa637ec34::t_3184cf29d7e08f 27-30
+  s_65877aa637ec34::t_622610890acb24 90
+  s_65877aa637ec34::t_0655eaf8620041 108,121
+  s_65877aa637ec34::t_d7d5e62dd90bd8 313
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3888fdffc74913663ddbdb830443b6e80f7c5ac3",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
