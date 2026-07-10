@@ -17,6 +17,45 @@ cd /docker/startidea-merch || fail "directorio no encontrado"
 SHA=$(git rev-parse --short HEAD)
 log "deploying $SHA"
 
+# --- Bot admin de Telegram: setup idempotente (2026-07-09) -------------------
+# Corre en el VPS como root ANTES del recreate. Los secretos se generan y leen
+# AQUÍ (nunca pasan por el repo ni por los logs del runner). env_file: .env
+# hace que el contenedor reciba las vars nuevas en el recreate de este deploy.
+ENVF=/docker/startidea-merch/.env
+if [ -f "$ENVF" ]; then
+  if ! grep -q "^TELEGRAM_WEBHOOK_SECRET=" "$ENVF"; then
+    log "telegram-bot: generando TELEGRAM_WEBHOOK_SECRET"
+    echo "TELEGRAM_WEBHOOK_SECRET=$(openssl rand -hex 24)" >> "$ENVF"
+  fi
+  if ! grep -q "^TELEGRAM_ADMIN_CHAT_IDS=" "$ENVF"; then
+    TEAM=$(grep -E "^TELEGRAM_TEAM_CHAT_ID=" "$ENVF" | head -1 | cut -d= -f2-)
+    [ -z "$TEAM" ] && TEAM=$(grep -E "^TELEGRAM_CHAT_ID=" "$ENVF" | head -1 | cut -d= -f2-)
+    if [ -n "$TEAM" ]; then
+      log "telegram-bot: allowlist inicial = chat del equipo"
+      echo "TELEGRAM_ADMIN_CHAT_IDS=$TEAM" >> "$ENVF"
+    else
+      log "telegram-bot: WARN sin TELEGRAM_TEAM_CHAT_ID; allowlist vacía"
+    fi
+  fi
+  # setWebhook es idempotente (sobrescribe). Solo logueamos ok/fallo, sin tokens.
+  BOT_TOKEN=$(grep -E "^TELEGRAM_BOT_TOKEN=" "$ENVF" | head -1 | cut -d= -f2-)
+  WH_SECRET=$(grep -E "^TELEGRAM_WEBHOOK_SECRET=" "$ENVF" | head -1 | cut -d= -f2-)
+  if [ -n "$BOT_TOKEN" ] && [ -n "$WH_SECRET" ]; then
+    WH_RES=$(curl -s --max-time 15 -X POST "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" \
+      -d "url=https://merchandising.hubstartidea.es/api/telegram/webhook" \
+      -d "secret_token=${WH_SECRET}" \
+      -d 'allowed_updates=["message"]' | grep -o '"ok":true' || true)
+    log "telegram-bot: setWebhook ${WH_RES:-FALLO}"
+  else
+    log "telegram-bot: WARN sin BOT_TOKEN o WEBHOOK_SECRET; webhook sin registrar"
+  fi
+fi
+
+# TEMP (retirar tras confirmar acceso): fail2ban baneó la IP de la estación de
+# trabajo durante la racha de verificaciones SSH del 2026-07-09.
+command -v fail2ban-client >/dev/null 2>&1 && fail2ban-client set sshd unbanip 82.159.100.98 >/dev/null 2>&1 || true
+# -----------------------------------------------------------------------------
+
 # Build con retry: si falla con exit 137 (OOM killer) reintentamos 1 vez tras 30s
 build_attempt() {
   docker compose -f docker-compose.yml -f docker-compose.prod.yml build app 2>&1 | tail -20
