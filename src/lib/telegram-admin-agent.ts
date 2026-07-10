@@ -241,6 +241,25 @@ const TOOLS = [
   {
     type: "function" as const,
     function: {
+      name: "margen_interno",
+      description:
+        "🔒 SOLO USO INTERNO: coste que NOS cobra el proveedor vs PVP del cliente → margen absoluto y % de una venta concreta. Usar únicamente si lo piden explícitamente (margen, coste, 'cuánto ganamos'). La respuesta NUNCA debe verse en una pantalla delante del cliente.",
+      parameters: {
+        type: "object",
+        properties: {
+          ref_o_slug: { type: "string" },
+          cantidad: { type: "number", description: "Unidades (default 100)" },
+          tecnica_code: { type: "string" },
+          personalizado: { type: "boolean", description: "true → técnica más común del producto" },
+          colores: { type: "number" },
+        },
+        required: ["ref_o_slug"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
       name: "estado_sistema",
       description:
         "🔒 Salud interna: última sincronización de cada catálogo de origen y tamaño del catálogo. Solo para uso interno, no enseñar al cliente.",
@@ -690,6 +709,56 @@ async function toolActivarProducto(args: { ref_o_slug: string; activo: boolean }
   };
 }
 
+async function toolMargenInterno(args: {
+  ref_o_slug: string;
+  cantidad?: number;
+  tecnica_code?: string;
+  personalizado?: boolean;
+  colores?: number;
+}) {
+  const p = await resolveProduct(args.ref_o_slug);
+  if (!p) return { error: "Producto no encontrado" };
+  const tecnica = resolveTechnique(p, args);
+  const qty = Math.trunc(args.cantidad ?? 100);
+
+  // Motor del cotizador admin: coste NETO real (tramo aplicable + tarifa de
+  // marcaje del proveedor) vs PVP con margen/override/promos.
+  const quote = await computeCotizacion({
+    ref: p.slug,
+    qty,
+    techniqueCode: tecnica?.code,
+    numberOfColours: args.colores ?? undefined,
+  });
+  if (!quote.ok) return { error: quote.error };
+
+  const margenAbs = quote.pvp.baseTotal - quote.coste.total;
+  return {
+    AVISO: "🔒 DATOS INTERNOS — no enseñar esta respuesta al cliente",
+    producto: quote.product.name,
+    ref: quote.product.publicRef,
+    proveedor: quote.product.supplier,
+    ref_proveedor: quote.product.supplierRef,
+    cantidad: qty,
+    tecnica_usada: tecnica
+      ? { code: tecnica.code, nombre: tecnica.nombre, elegida_automaticamente: tecnica.auto }
+      : null,
+    coste_nuestro: {
+      producto: fmt(quote.coste.productoTotal),
+      marcaje: fmt(quote.coste.marcajeTotal),
+      total: fmt(quote.coste.total),
+    },
+    pvp_cliente: {
+      total_sin_iva: fmt(quote.pvp.baseTotal),
+      unitario: fmt(quote.pvp.unit),
+    },
+    margen: {
+      absoluto: fmt(margenAbs),
+      porcentaje: `${quote.margenEfectivoPct.toFixed(1)}%`,
+    },
+    tarifa_cerrada: quote.product.hasRealPricing,
+  };
+}
+
 async function toolAnotarPedido(args: { busqueda: string; nota: string }) {
   const q = args.busqueda.trim();
   const cart = await prisma.cartQuote.findFirst({
@@ -772,6 +841,14 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
       return toolActivarProducto(args as { ref_o_slug: string; activo: boolean });
     case "anotar_pedido":
       return toolAnotarPedido(args as { busqueda: string; nota: string });
+    case "margen_interno":
+      return toolMargenInterno(args as {
+        ref_o_slug: string;
+        cantidad?: number;
+        tecnica_code?: string;
+        personalizado?: boolean;
+        colores?: number;
+      });
     case "estado_sistema":
       return toolEstadoSistema();
     default:
@@ -787,7 +864,7 @@ REGLAS:
 - Responde en español, CORTO y directo (es un móvil): lo esencial primero, sin relleno.
 - Usa las tools para TODO dato (precio, stock, estado): nunca inventes números.
 - Precios: siempre del motor real (tool cotizar). Indica si es sin IVA / con IVA.
-- La pantalla puede verla el cliente final: usa refs STM-XXXXXX y precios de venta. PROHIBIDO mencionar proveedores (MidOcean/Makito/Cifra/Adivin), costes netos o márgenes. Las tools marcadas 🔒 (pedidos, estadísticas, sistema) devuelven datos internos: respóndelas igual pero sin nombres de proveedor cuando sea posible, y sin añadir datos sensibles que no pidan.
+- La pantalla puede verla el cliente final: por defecto usa refs STM-XXXXXX y precios de venta, SIN proveedores ni costes ni márgenes. EXCEPCIÓN: si el usuario pide explícitamente margen/coste/"cuánto ganamos", usa margen_interno y responde empezando por "🔒" para recordar que esa respuesta no debe verse delante del cliente. Nunca mezcles costes o proveedor en respuestas de cotización normales. Las demás tools 🔒 (pedidos, estadísticas, sistema): respóndelas sin añadir datos sensibles que no pidan.
 - Si una cotización no sale automática (sin tarifa), dilo claro y ofrece "presupuesto manual en 24h".
 - PERSONALIZACIÓN sin técnica concreta: pasa personalizado=true y el sistema usa la técnica MÁS COMÚN del producto. Di siempre qué técnica se usó (ej: "con Tampografía, la habitual de este producto").
 - PRESUPUESTOS FORMALES: puedes crearlos (crear_presupuesto crea un BORRADOR con número y PDF; pide el email del cliente si falta) y enviarlos (enviar_presupuesto). REGLA DE ORO: enviar_presupuesto SOLO tras confirmación explícita del usuario en este chat ("envíalo", "sí, manda") — nunca en el mismo turno en que se crea, salvo que el usuario ya lo haya pedido literalmente ("crea Y envía"). Muestra número, total y link al PDF al crear.
