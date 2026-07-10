@@ -978,6 +978,19 @@ model CustomerUser {
   @@index([active])
 }
 
+// Historial del bot admin de Telegram (contexto multi-turno por chat).
+// Guarda los últimos mensajes de cada chat autorizado para que el agente
+// entienda seguimientos ("¿y en rojo?", "confirma"). Se poda a ~40 por chat.
+model TelegramAdminMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  role      String // "user" | "assistant"
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([chatId, createdAt])
+}
+
 // Favoritos del portal cliente (corazón en ficha + sección en /clientes).
 // Clave por email (no userId): enlaza con el histórico de CartQuote, que
 // también va por email, y sobrevive a recreaciones del usuario.
