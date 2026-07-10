@@ -1,0 +1,22 @@
+src/app/api/cron/competitor-watch/route.ts
+  s_65877aa637ec34::t_5e21f7a823ae61 34-65
+  s_65877aa637ec34::t_98b2f5200b6e25 2
+.github/workflows/merch-status.yml
+  s_65877aa637ec34::t_f3c6167f7620c3 1-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "4d122d1d882190189b41aca56acfc1f4d7b0feed",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
