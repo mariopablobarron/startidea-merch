@@ -1,0 +1,442 @@
+import { prisma } from "@/lib/prisma";
+import { computeCotizacion } from "@/lib/cotizar-core";
+import { notifyTelegram } from "@/lib/telegram";
+
+/**
+ * Inteligencia de competencia — 🔒 SOLO USO INTERNO.
+ *
+ * Para un producto nuestro: busca el producto equivalente en webs de
+ * competidores españoles (DuckDuckGo lite `site:dominio <ref|nombre>` — muchos
+ * revenden los mismos catálogos y exponen la ref del fabricante), extrae los
+ * precios de la página con un LLM barato, los compara con NUESTRO PVP y margen
+ * (computeCotizacion, la misma cascada del cotizador) y emite recomendación:
+ * SUBIR / BAJAR / OK con objetivo concreto que respeta un margen mínimo.
+ *
+ * Config en AdminSetting (todas opcionales):
+ *   competitor_sources   → ["dominio1.com", ...]      (default 3 nacionales)
+ *   competitor_watchlist → ["STM-XXXXXX" | slug, ...] (se suma al top ventas)
+ *
+ * El cron semanal (competitor-watch) manda a Telegram SOLO lo accionable.
+ */
+
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const EXTRACT_MODEL = process.env.OPENROUTER_MODEL_EXTRACT || "anthropic/claude-haiku-4.5";
+const UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36";
+
+const DEFAULT_COMPETITORS = ["regalopublicidad.com", "maxilia.es", "camalon.es"];
+const QTY_REF = 100; // cantidad de referencia para comparar
+const MIN_MARGIN_PCT = 25; // nunca recomendar bajar por debajo de coste +25%
+const BAND_PCT = 10; // banda de indiferencia ±10%
+
+const EUR = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
+const fmt = (cents: number) => EUR.format(cents / 100);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// ── Config ───────────────────────────────────────────────────────────────────
+
+async function settingJson<T>(key: string): Promise<T | null> {
+  const row = await prisma.adminSetting.findUnique({ where: { key } });
+  return (row?.value as T) ?? null;
+}
+
+export async function competitorSources(): Promise<string[]> {
+  const cfg = await settingJson<string[]>("competitor_sources");
+  return Array.isArray(cfg) && cfg.length > 0 ? cfg : DEFAULT_COMPETITORS;
+}
+
+// ── Búsqueda + extracción ────────────────────────────────────────────────────
+
+/** Busca en DDG lite y devuelve las primeras URLs del dominio (sin anuncios). */
+async function ddgSearch(domain: string, query: string): Promise<string[]> {
+  const q = encodeURIComponent(`site:${domain} ${query}`);
+  const res = await fetch(`https://lite.duckduckgo.com/lite/?q=${q}`, {
+    headers: { "User-Agent": UA },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  const urls: string[] = [];
+  for (const m of html.matchAll(/uddg=([^"&]{10,300})/g)) {
+    try {
+      const url = decodeURIComponent(m[1]);
+      // Filtrar anuncios (y.js) y quedarnos solo con el dominio objetivo.
+      if (url.includes("duckduckgo.com")) continue;
+      if (!url.includes(domain)) continue;
+      if (!urls.includes(url)) urls.push(url);
+    } catch {
+      /* URL malformada: ignorar */
+    }
+    if (urls.length >= 2) break;
+  }
+  return urls;
+}
+
+/** Descarga una página y la reduce a texto plano (~límite chars) para el LLM. */
+async function fetchPageText(url: string, maxChars = 24_000): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, "Accept-Language": "es-ES,es" },
+      signal: AbortSignal.timeout(15_000),
+      redirect: "follow",
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;|&amp;|&quot;|&#\d+;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return text.slice(0, maxChars);
+  } catch {
+    return null;
+  }
+}
+
+export type CompetitorHit = {
+  competitor: string;
+  url: string;
+  productName: string | null;
+  matches: boolean;
+  confidence: number;
+  prices: { qty: number; unitEur: number; conMarcaje: boolean; tecnica: string | null }[];
+};
+
+/** Extrae precios de la página del competidor con un LLM barato (JSON). */
+async function llmExtract(
+  pageText: string,
+  ourProductName: string,
+  url: string,
+  competitor: string,
+): Promise<CompetitorHit | null> {
+  if (!OPENROUTER_API_KEY) return null;
+  const prompt = `Página de una tienda de merchandising promocional (texto plano):
+---
+${pageText}
+---
+Nuestro producto: "${ourProductName}".
+
+Devuelve SOLO un JSON (sin markdown) con este shape:
+{"encontrado":bool,            // ¿la página muestra un producto concreto con precio?
+ "nombre_producto":string|null,
+ "coincide":bool,              // ¿es el MISMO producto o uno claramente equivalente al nuestro?
+ "confianza":number,           // 0-1
+ "precios":[{"qty":number,"unit_eur":number,"con_marcaje":bool,"tecnica":string|null}]}
+Reglas: precios UNITARIOS en euros; si hay tabla por cantidades incluye hasta 4 tramos; con_marcaje=true solo si el precio incluye impresión/marcaje; si es una página de categoría/listado usa el producto más parecido al nuestro y baja la confianza.`;
+
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: EXTRACT_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0,
+        max_tokens: 700,
+      }),
+      signal: AbortSignal.timeout(45_000),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const raw = json.choices?.[0]?.message?.content ?? "";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const parsed = JSON.parse(match[0]) as {
+      encontrado?: boolean;
+      nombre_producto?: string | null;
+      coincide?: boolean;
+      confianza?: number;
+      precios?: { qty?: number; unit_eur?: number; con_marcaje?: boolean; tecnica?: string | null }[];
+    };
+    if (!parsed.encontrado) return null;
+    const prices = (parsed.precios ?? [])
+      .filter((p) => typeof p.unit_eur === "number" && p.unit_eur! > 0)
+      .map((p) => ({
+        qty: Math.max(1, Math.trunc(p.qty ?? 1)),
+        unitEur: p.unit_eur!,
+        conMarcaje: Boolean(p.con_marcaje),
+        tecnica: p.tecnica ?? null,
+      }));
+    if (prices.length === 0) return null;
+    return {
+      competitor,
+      url,
+      productName: parsed.nombre_producto ?? null,
+      matches: Boolean(parsed.coincide),
+      confidence: Math.max(0, Math.min(1, parsed.confianza ?? 0)),
+      prices,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** El precio del competidor al tramo más cercano a `qty` (prefiere con marcaje). */
+function pickCompetitorUnit(hit: CompetitorHit, qty: number, conMarcaje: boolean) {
+  const pool = hit.prices.filter((p) => p.conMarcaje === conMarcaje);
+  const list = pool.length > 0 ? pool : hit.prices;
+  return list.reduce((best, p) =>
+    Math.abs(p.qty - qty) < Math.abs(best.qty - qty) ? p : best,
+  );
+}
+
+// ── Análisis por producto ────────────────────────────────────────────────────
+
+export type CompetitorAnalysis = {
+  producto: string;
+  ref: string;
+  qty: number;
+  nuestro: {
+    pvp_unit: string;
+    con_marcaje: boolean;
+    tecnica: string | null;
+    margen_pct: string;
+  };
+  competidores: {
+    dominio: string;
+    unit: string;
+    qty: number;
+    con_marcaje: boolean;
+    confianza: number;
+    url: string;
+  }[];
+  recomendacion: {
+    accion: "SUBIR" | "BAJAR" | "OK" | "SIN_DATOS";
+    detalle: string;
+    objetivo_unit?: string;
+  };
+};
+
+/** Resuelve la técnica más común (isDefault > más posiciones) para comparar con marcaje. */
+async function commonTechniqueCode(productId: string): Promise<string | null> {
+  const positions = await prisma.markingPosition.findMany({
+    where: { productId },
+    include: { techniques: { include: { technique: { select: { code: true } } } } },
+  });
+  const counts = new Map<string, { n: number; isDefault: boolean }>();
+  for (const pos of positions) {
+    for (const t of pos.techniques) {
+      const cur = counts.get(t.technique.code) ?? { n: 0, isDefault: false };
+      cur.n += 1;
+      cur.isDefault = cur.isDefault || t.isDefault;
+      counts.set(t.technique.code, cur);
+    }
+  }
+  const ranked = [...counts.entries()].sort(
+    (a, b) => Number(b[1].isDefault) - Number(a[1].isDefault) || b[1].n - a[1].n,
+  );
+  return ranked[0]?.[0] ?? null;
+}
+
+export async function analyzeCompetitorsForProduct(
+  refOrSlug: string,
+  qty: number = QTY_REF,
+): Promise<CompetitorAnalysis | { error: string }> {
+  const q = refOrSlug.trim();
+  const product = await prisma.product.findFirst({
+    where: {
+      active: true,
+      OR: [
+        { internalRef: { equals: q, mode: "insensitive" } },
+        { slug: q.toLowerCase() },
+        { name: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    select: { id: true, slug: true, name: true, internalRef: true, supplierRef: true },
+  });
+  if (!product) return { error: "Producto no encontrado" };
+
+  // NUESTRO lado: PVP con la técnica más común (o sin marcaje si no hay).
+  const techniqueCode = await commonTechniqueCode(product.id);
+  const quote = await computeCotizacion({
+    ref: product.slug,
+    qty,
+    techniqueCode: techniqueCode ?? undefined,
+  });
+  if (!quote.ok) return { error: `Nuestro producto no cotiza: ${quote.error}` };
+  const ourUnitCents = quote.pvp.unit;
+  const conMarcaje = Boolean(techniqueCode);
+
+  // Competidores: buscar por ref del fabricante (muchos la exponen) y si no,
+  // por nombre. La supplierRef SOLO se usa como término de búsqueda interna.
+  const sources = await competitorSources();
+  const hits: CompetitorHit[] = [];
+  for (const domain of sources) {
+    let urls = await ddgSearch(domain, product.supplierRef);
+    await sleep(2500);
+    if (urls.length === 0) {
+      urls = await ddgSearch(domain, product.name.toLowerCase().slice(0, 60));
+      await sleep(2500);
+    }
+    for (const url of urls.slice(0, 1)) {
+      const text = await fetchPageText(url);
+      if (!text) continue;
+      const hit = await llmExtract(text, product.name, url, domain);
+      if (hit && hit.confidence >= 0.4) {
+        hits.push(hit);
+        // Persistir histórico (mejor tramo cercano a qty).
+        const p = pickCompetitorUnit(hit, qty, conMarcaje);
+        await prisma.competitorPrice
+          .create({
+            data: {
+              productId: product.id,
+              competitor: domain,
+              url,
+              qty: p.qty,
+              unitPriceCents: Math.round(p.unitEur * 100),
+              includesMarking: p.conMarcaje,
+              technique: p.tecnica,
+              matchConfidence: hit.confidence,
+            },
+          })
+          .catch((e) =>
+            console.error("[competitor-intel] persistir falló:", e instanceof Error ? e.message : e),
+          );
+      }
+    }
+  }
+
+  // Recomendación sobre el MEJOR precio rival comparable.
+  const comparables = hits
+    .filter((h) => h.matches)
+    .map((h) => ({ h, p: pickCompetitorUnit(h, qty, conMarcaje) }));
+  let recomendacion: CompetitorAnalysis["recomendacion"];
+  if (comparables.length === 0) {
+    recomendacion = {
+      accion: "SIN_DATOS",
+      detalle: hits.length > 0
+        ? "Se encontraron páginas pero ninguna con coincidencia clara de producto."
+        : "Ningún competidor configurado muestra este producto (o la búsqueda no lo encontró).",
+    };
+  } else {
+    const best = comparables.reduce((a, b) => (a.p.unitEur < b.p.unitEur ? a : b));
+    const rivalCents = Math.round(best.p.unitEur * 100);
+    const costUnitCents = Math.round(quote.coste.total / Math.max(1, qty));
+    const floorCents = Math.round(costUnitCents * (1 + MIN_MARGIN_PCT / 100));
+    if (ourUnitCents > rivalCents * (1 + BAND_PCT / 100)) {
+      const target = Math.max(Math.round(rivalCents * 0.98), floorCents);
+      recomendacion =
+        target < ourUnitCents
+          ? {
+              accion: "BAJAR",
+              detalle: `${best.h.competitor} vende a ${fmt(rivalCents)}/ud (nosotros ${fmt(ourUnitCents)}). Bajando a ${fmt(target)} seguimos por encima de coste +${MIN_MARGIN_PCT}%.`,
+              objetivo_unit: fmt(target),
+            }
+          : {
+              accion: "OK",
+              detalle: `${best.h.competitor} vende más barato (${fmt(rivalCents)}), pero igualarlo rompería el margen mínimo — no bajar; competir por servicio/plazo.`,
+            };
+    } else if (ourUnitCents < rivalCents * (1 - BAND_PCT / 100)) {
+      const target = Math.round(rivalCents * 0.95);
+      recomendacion = {
+        accion: "SUBIR",
+        detalle: `Estamos ${fmt(rivalCents - ourUnitCents)}/ud por debajo del rival más barato (${best.h.competitor}, ${fmt(rivalCents)}). Subiendo a ${fmt(target)} seguimos ganando en precio y capturamos ~${fmt((target - ourUnitCents) * qty)} más por pedido de ${qty}.`,
+        objetivo_unit: fmt(target),
+      };
+    } else {
+      recomendacion = {
+        accion: "OK",
+        detalle: `En banda competitiva (±${BAND_PCT}%) frente a ${best.h.competitor} (${fmt(rivalCents)}/ud).`,
+      };
+    }
+  }
+
+  return {
+    producto: product.name,
+    ref: product.internalRef ?? product.slug,
+    qty,
+    nuestro: {
+      pvp_unit: fmt(ourUnitCents),
+      con_marcaje: conMarcaje,
+      tecnica: quote.marking?.techniqueLabel ?? null,
+      margen_pct: `${quote.margenEfectivoPct.toFixed(1)}%`,
+    },
+    competidores: comparables.map(({ h, p }) => ({
+      dominio: h.competitor,
+      unit: fmt(Math.round(p.unitEur * 100)),
+      qty: p.qty,
+      con_marcaje: p.conMarcaje,
+      confianza: Math.round(h.confidence * 100) / 100,
+      url: h.url,
+    })),
+    recomendacion,
+  };
+}
+
+// ── Cron semanal ─────────────────────────────────────────────────────────────
+
+/** Watchlist: refs forzadas en AdminSetting + top productos cotizados 120d. */
+async function buildWatchlist(limit: number): Promise<string[]> {
+  const forced = (await settingJson<string[]>("competitor_watchlist")) ?? [];
+  const since = new Date(Date.now() - 120 * 86400_000);
+  const top = await prisma.cartQuoteItem.groupBy({
+    by: ["productSlug"],
+    where: { cart: { createdAt: { gte: since } } },
+    _count: { productSlug: true },
+    orderBy: { _count: { productSlug: "desc" } },
+    take: limit,
+  });
+  const list = [...forced];
+  for (const t of top) {
+    if (list.length >= limit + forced.length) break;
+    if (!list.includes(t.productSlug)) list.push(t.productSlug);
+  }
+  return list.slice(0, Math.max(limit, forced.length));
+}
+
+export async function runCompetitorWatch(limit = 8): Promise<{
+  analizados: number;
+  accionables: number;
+  resumen: string[];
+}> {
+  const watchlist = await buildWatchlist(limit);
+  const lines: string[] = [];
+  let accionables = 0;
+  let analizados = 0;
+
+  for (const ref of watchlist) {
+    try {
+      const a = await analyzeCompetitorsForProduct(ref);
+      if ("error" in a) continue;
+      analizados++;
+      if (a.recomendacion.accion === "SUBIR" || a.recomendacion.accion === "BAJAR") {
+        accionables++;
+        lines.push(
+          `${a.recomendacion.accion === "SUBIR" ? "📈 SUBIR" : "📉 BAJAR"} <b>${a.producto}</b> (${a.ref})\n` +
+            `  nuestro ${a.nuestro.pvp_unit}/ud (margen ${a.nuestro.margen_pct}) · ${a.recomendacion.detalle}`,
+        );
+      }
+    } catch (e) {
+      console.error("[competitor-watch]", ref, e instanceof Error ? e.message : e);
+    }
+    await sleep(3000); // pacing entre productos (educado con DDG y competidores)
+  }
+
+  await prisma.adminSetting.upsert({
+    where: { key: "competitor_watch_last" },
+    create: {
+      key: "competitor_watch_last",
+      value: { at: new Date().toISOString(), analizados, accionables },
+    },
+    update: { value: { at: new Date().toISOString(), analizados, accionables } },
+  });
+
+  if (lines.length > 0) {
+    await notifyTelegram(
+      `🕵️ <b>Vigilancia de competencia</b> — ${accionables} recomendación${accionables === 1 ? "" : "es"} de precio:\n\n` +
+        lines.join("\n\n") +
+        `\n\n🔒 Interno. Cambiar precio: dime "pon <ref> a X €" o /admin.`,
+    );
+  } else {
+    await notifyTelegram(
+      `🕵️ Vigilancia de competencia: ${analizados} productos revisados, precios en banda competitiva. Sin acciones.`,
+    );
+  }
+
+  return { analizados, accionables, resumen: lines };
+}

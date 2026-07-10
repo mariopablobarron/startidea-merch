@@ -171,6 +171,7 @@ model Product {
   mockupRequests       MockupRequest[]
   productMarkingPrices ProductMarkingPrice[]
   customerFavorites    CustomerFavorite[]
+  competitorPrices     CompetitorPrice[]
   view                 ProductView?
 
   @@unique([supplier, supplierRef])
@@ -976,6 +977,26 @@ model CustomerUser {
   favorites CustomerFavorite[]
 
   @@index([active])
+}
+
+// Precio observado de un producto equivalente en un competidor (vigilancia de
+// competencia). Lo escribe el cron competitor-watch y la tool `competencia`
+// del bot; histórico para ver tendencias. SOLO uso interno.
+model CompetitorPrice {
+  id              String   @id @default(cuid())
+  productId       String
+  competitor      String // dominio, ej. "regalopublicidad.com"
+  url             String
+  qty             Int // cantidad a la que aplica el precio unitario
+  unitPriceCents  Int
+  includesMarking Boolean  @default(false)
+  technique       String? // texto libre del competidor ("serigrafía 1 color")
+  matchConfidence Float // 0-1: confianza de que es el MISMO producto
+  fetchedAt       DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, fetchedAt])
 }
 
 // Historial del bot admin de Telegram (contexto multi-turno por chat).

@@ -7,6 +7,7 @@ import { withIva } from "@/lib/iva";
 import { computeCotizacion } from "@/lib/cotizar-core";
 import { createProposalFromCotizacion } from "@/lib/proposal-from-cotizacion";
 import { deliverProposal } from "@/lib/proposal-deliver";
+import { analyzeCompetitorsForProduct } from "@/lib/competitor-intel";
 
 /**
  * Agente admin de Telegram — Mario (o quien esté en la allowlist) pregunta en
@@ -235,6 +236,22 @@ const TOOLS = [
           nota: { type: "string" },
         },
         required: ["busqueda", "nota"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "competencia",
+      description:
+        "🔒 SOLO USO INTERNO (tarda ~30-60s): busca el producto en webs de competidores, extrae sus precios (con/sin marcaje) y los compara con nuestro PVP y margen → recomendación SUBIR/BAJAR/OK con precio objetivo. Avisa al usuario de que tardas un poco antes de llamarla si puedes.",
+      parameters: {
+        type: "object",
+        properties: {
+          ref_o_slug: { type: "string" },
+          cantidad: { type: "number", description: "Cantidad de referencia (default 100)" },
+        },
+        required: ["ref_o_slug"],
       },
     },
   },
@@ -841,6 +858,11 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
       return toolActivarProducto(args as { ref_o_slug: string; activo: boolean });
     case "anotar_pedido":
       return toolAnotarPedido(args as { busqueda: string; nota: string });
+    case "competencia":
+      return analyzeCompetitorsForProduct(
+        (args as { ref_o_slug: string }).ref_o_slug,
+        (args as { cantidad?: number }).cantidad ?? undefined,
+      );
     case "margen_interno":
       return toolMargenInterno(args as {
         ref_o_slug: string;

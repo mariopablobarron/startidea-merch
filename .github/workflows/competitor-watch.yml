@@ -1,0 +1,42 @@
+name: Vigilancia de competencia semanal
+
+# Lunes 06:00 UTC (07:00/08:00 Madrid) — antes de que empiece la semana
+# comercial. Compara PVP+marcaje de la watchlist contra competidores y manda
+# a Telegram solo recomendaciones accionables (SUBIR/BAJAR precio).
+#
+# Fire-and-forget: el endpoint devuelve 202 y el análisis corre en background
+# (resultado en AdminSetting competitor_watch_last + digest Telegram).
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+concurrency:
+  group: competitor-watch
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar competitor-watch
+        env:
+          CRON_SECRET: ${{ secrets.MERCH_CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Falta secret MERCH_CRON_SECRET"
+            exit 1
+          fi
+          response=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://merchandising.hubstartidea.es/api/cron/competitor-watch" \
+            -H "x-cron-secret: $CRON_SECRET")
+          body=$(echo "$response" | sed '$d')
+          code=$(echo "$response" | tail -n1)
+          echo "HTTP $code"
+          echo "$body"
+          if [ "$code" != "202" ] && [ "$code" != "200" ]; then
+            echo "::error::competitor-watch devolvió $code (esperado 202)"
+            exit 1
+          fi
