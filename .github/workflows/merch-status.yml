@@ -1,0 +1,38 @@
+name: Consultar estado de un cron (ops)
+
+# Canal de observabilidad SIN SSH: consulta el GET de estado de cualquier
+# endpoint de cron (los que lo exponen: competitor-watch, cifra-sync,
+# makito-sync, midocean-sync…) usando el secret del repo, e imprime el JSON
+# en el log del workflow. Útil cuando el SSH estación→VPS está caído
+# (anti-abuso de Hostinger) — los runners de GH siempre llegan.
+
+on:
+  workflow_dispatch:
+    inputs:
+      endpoint:
+        description: "Nombre del cron (ej. competitor-watch, makito-sync)"
+        required: true
+        default: "competitor-watch"
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: GET estado
+        env:
+          CRON_SECRET: ${{ secrets.MERCH_CRON_SECRET }}
+          ENDPOINT: ${{ inputs.endpoint }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Falta secret MERCH_CRON_SECRET"
+            exit 1
+          fi
+          # Solo [a-z-] para impedir path traversal desde el input.
+          if ! echo "$ENDPOINT" | grep -qE '^[a-z-]+$'; then
+            echo "::error::endpoint inválido"
+            exit 1
+          fi
+          curl -sS --max-time 30 \
+            "https://merchandising.hubstartidea.es/api/cron/${ENDPOINT}" \
+            -H "x-cron-secret: $CRON_SECRET" | python3 -m json.tool

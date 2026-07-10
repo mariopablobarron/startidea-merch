@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { wrapCronHandler } from "@/lib/cron-tracking";
 import { runCompetitorWatch } from "@/lib/competitor-intel";
@@ -30,3 +31,35 @@ export const POST = wrapCronHandler("competitor-watch", async (req: Request) => 
     { status: 202 },
   );
 });
+
+/** GET — estado del último run + últimas observaciones (mismo secret). */
+export async function GET(req: Request) {
+  const auth = requireCronSecret(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
+
+  const [last, total, rows] = await Promise.all([
+    prisma.adminSetting.findUnique({ where: { key: "competitor_watch_last" } }),
+    prisma.competitorPrice.count(),
+    prisma.competitorPrice.findMany({
+      orderBy: { fetchedAt: "desc" },
+      take: 10,
+      include: { product: { select: { internalRef: true, name: true } } },
+    }),
+  ]);
+  return NextResponse.json({
+    ok: true,
+    lastRun: last?.value ?? null,
+    totalObservaciones: total,
+    ultimas: rows.map((r) => ({
+      producto: r.product.name,
+      ref: r.product.internalRef,
+      competidor: r.competitor,
+      qty: r.qty,
+      unit: (r.unitPriceCents / 100).toFixed(2),
+      conMarcaje: r.includesMarking,
+      confianza: r.matchConfidence,
+      url: r.url,
+      fecha: r.fetchedAt,
+    })),
+  });
+}
