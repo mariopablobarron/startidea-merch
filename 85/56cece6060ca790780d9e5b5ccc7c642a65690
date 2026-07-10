@@ -1,0 +1,23 @@
+src/lib/telegram-admin-agent.ts
+  s_65877aa637ec34::t_17202bb187aa70 937-938
+  s_65877aa637ec34::t_0895d1ea4af56e 796-856
+  s_65877aa637ec34::t_9144ebefad451c 229-242
+  s_65877aa637ec34::t_305058d7f3076f 973
+  s_65877aa637ec34::t_ee145451eb78a7 226-228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "8556cece6060ca790780d9e5b5ccc7c642a65690",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
