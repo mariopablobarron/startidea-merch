@@ -162,8 +162,80 @@ const TOOLS = [
     type: "function" as const,
     function: {
       name: "promociones_activas",
-      description: "Promociones y descuentos activos ahora mismo en la web.",
-      parameters: { type: "object", properties: {}, required: [] },
+      description:
+        "Promociones de la web. Por defecto solo las activas; incluir_pausadas=true lista también las pausadas (necesario antes de activar una).",
+      parameters: {
+        type: "object",
+        properties: {
+          incluir_pausadas: { type: "boolean" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "cambiar_promocion",
+      description:
+        "⚠️ ACCIÓN EN VIVO: pausa (activa=false) o activa (activa=true) una promoción por su nombre. Afecta a los precios de la web al instante. SOLO tras confirmación explícita del usuario.",
+      parameters: {
+        type: "object",
+        properties: {
+          nombre: { type: "string", description: "Nombre (o parte única del nombre) de la promoción" },
+          activa: { type: "boolean" },
+        },
+        required: ["nombre", "activa"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "cambiar_precio",
+      description:
+        "⚠️ ACCIÓN EN VIVO: fija el precio 'desde' de VENTA de un producto (override manual en euros, ej. 4.5) o lo quita (quitar=true → vuelve al precio automático con margen). Afecta a la web al instante. SOLO tras confirmación explícita.",
+      parameters: {
+        type: "object",
+        properties: {
+          ref_o_slug: { type: "string" },
+          precio_desde_eur: { type: "number", description: "Nuevo precio cliente en euros (ej. 4.5)" },
+          quitar: { type: "boolean", description: "true = eliminar el precio manual y volver al automático" },
+        },
+        required: ["ref_o_slug"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "activar_producto",
+      description:
+        "⚠️ ACCIÓN EN VIVO: oculta (activo=false) o publica (activo=true) un producto del catálogo. SOLO tras confirmación explícita.",
+      parameters: {
+        type: "object",
+        properties: {
+          ref_o_slug: { type: "string" },
+          activo: { type: "boolean" },
+        },
+        required: ["ref_o_slug", "activo"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "anotar_pedido",
+      description:
+        "Añade una nota interna a la cotización/pedido más reciente que case con la búsqueda (empresa, nombre o email). El cliente NO la ve. Útil en reunión: 'apunta que quieren entrega antes del 20'.",
+      parameters: {
+        type: "object",
+        properties: {
+          busqueda: { type: "string" },
+          nota: { type: "string" },
+        },
+        required: ["busqueda", "nota"],
+      },
     },
   },
   {
@@ -507,13 +579,143 @@ async function toolEstadisticas(args: { periodo?: string }) {
   };
 }
 
-async function toolPromocionesActivas() {
-  const promos = await loadActivePromotions();
+async function toolPromociones(args: { incluir_pausadas?: boolean }) {
+  const promos = args.incluir_pausadas
+    ? await prisma.promotion.findMany({
+        orderBy: [{ active: "desc" }, { startsAt: "desc" }],
+        take: 20,
+      })
+    : await loadActivePromotions();
   return promos.map((p) => ({
-    nombre: p.badgeText ?? p.name,
+    nombre: p.name,
+    badge: p.badgeText,
     tipo: p.kind,
     valor: p.kind === "PERCENT" ? `-${p.value}%` : `-${fmt(p.value)}`,
+    activa: p.active,
   }));
+}
+
+async function toolCambiarPromocion(args: { nombre: string; activa: boolean }) {
+  const matches = await prisma.promotion.findMany({
+    where: { name: { contains: args.nombre, mode: "insensitive" } },
+    select: { id: true, name: true, active: true },
+  });
+  if (matches.length === 0) return { error: `Ninguna promoción casa con "${args.nombre}"` };
+  if (matches.length > 1) {
+    return {
+      error: "El nombre coincide con varias — concreta cuál",
+      candidatas: matches.map((m) => `${m.name} (${m.active ? "activa" : "pausada"})`),
+    };
+  }
+  const p = matches[0];
+  if (p.active === args.activa) {
+    return { ok: true, sin_cambios: `"${p.name}" ya estaba ${args.activa ? "activa" : "pausada"}` };
+  }
+  await prisma.promotion.update({ where: { id: p.id }, data: { active: args.activa } });
+  console.log(`[telegram-agent] promoción "${p.name}" → ${args.activa ? "ACTIVA" : "PAUSADA"}`);
+  return {
+    ok: true,
+    promocion: p.name,
+    ahora: args.activa ? "ACTIVA (afecta a precios de la web YA)" : "PAUSADA",
+    reversible: "sí — pídemelo o desde /admin/promotions",
+  };
+}
+
+async function toolCambiarPrecio(args: {
+  ref_o_slug: string;
+  precio_desde_eur?: number;
+  quitar?: boolean;
+}) {
+  const p = await resolveProduct(args.ref_o_slug);
+  if (!p) return { error: "Producto no encontrado" };
+
+  if (args.quitar) {
+    await prisma.productOverride.updateMany({
+      where: { productId: p.id },
+      data: { customFromPriceCents: null, updatedBy: "telegram-bot" },
+    });
+    console.log(`[telegram-agent] precio manual QUITADO en ${p.slug}`);
+    return { ok: true, producto: p.name, ref: publicRef(p), precio: "automático (margen estándar)" };
+  }
+
+  if (!args.precio_desde_eur || args.precio_desde_eur <= 0) {
+    return { error: "Indica precio_desde_eur > 0, o quitar=true para volver al automático" };
+  }
+  const cents = Math.round(args.precio_desde_eur * 100);
+  await prisma.productOverride.upsert({
+    where: { productId: p.id },
+    create: { productId: p.id, customFromPriceCents: cents, updatedBy: "telegram-bot" },
+    update: { customFromPriceCents: cents, updatedBy: "telegram-bot" },
+  });
+  console.log(`[telegram-agent] precio manual ${fmt(cents)} en ${p.slug}`);
+  return {
+    ok: true,
+    producto: p.name,
+    ref: publicRef(p),
+    nuevo_precio_desde: fmt(cents),
+    // Guarda interna sin revelar cifras: el watchdog semanal también lo vigila.
+    advertencia:
+      p.fromPriceCents != null && cents < p.fromPriceCents
+        ? "OJO: ese precio queda POR DEBAJO del coste del producto"
+        : undefined,
+    reversible: "quitar=true vuelve al precio automático",
+  };
+}
+
+async function toolActivarProducto(args: { ref_o_slug: string; activo: boolean }) {
+  // Sin filtro de activo: hay que poder ENCONTRAR un producto oculto para republicarlo.
+  const q = args.ref_o_slug.trim();
+  const p = await prisma.product.findFirst({
+    where: {
+      OR: [
+        { internalRef: { equals: q, mode: "insensitive" } },
+        { slug: q.toLowerCase() },
+        { name: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    select: { id: true, name: true, slug: true, internalRef: true, active: true },
+  });
+  if (!p) return { error: "Producto no encontrado" };
+  if (p.active === args.activo) {
+    return { ok: true, sin_cambios: `"${p.name}" ya estaba ${args.activo ? "publicado" : "oculto"}` };
+  }
+  await prisma.product.update({ where: { id: p.id }, data: { active: args.activo } });
+  console.log(`[telegram-agent] producto ${p.slug} → ${args.activo ? "ACTIVO" : "OCULTO"}`);
+  return {
+    ok: true,
+    producto: p.name,
+    ref: publicRef(p),
+    ahora: args.activo ? "PUBLICADO en el catálogo" : "OCULTO del catálogo",
+    nota: args.activo ? undefined : "el sync del proveedor puede reactivarlo si vuelve con precio — para retirada definitiva, /admin",
+  };
+}
+
+async function toolAnotarPedido(args: { busqueda: string; nota: string }) {
+  const q = args.busqueda.trim();
+  const cart = await prisma.cartQuote.findFirst({
+    where: {
+      OR: [
+        { company: { contains: q, mode: "insensitive" } },
+        { name: { contains: q, mode: "insensitive" } },
+        { email: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, name: true, company: true, createdAt: true, internalNotes: true },
+  });
+  if (!cart) return { error: `Ningún pedido/cotización casa con "${q}"` };
+  const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+  const linea = `[${stamp} vía Telegram] ${args.nota.trim()}`;
+  await prisma.cartQuote.update({
+    where: { id: cart.id },
+    data: { internalNotes: cart.internalNotes ? `${cart.internalNotes}\n${linea}` : linea },
+  });
+  return {
+    ok: true,
+    pedido: `${cart.name}${cart.company ? ` (${cart.company})` : ""} · ${cart.createdAt.toISOString().slice(0, 10)}`,
+    nota_guardada: linea,
+    visibilidad: "solo interna (el cliente no la ve)",
+  };
 }
 
 async function toolEstadoSistema() {
@@ -561,7 +763,15 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
     case "estadisticas":
       return toolEstadisticas(args as { periodo?: string });
     case "promociones_activas":
-      return toolPromocionesActivas();
+      return toolPromociones(args as { incluir_pausadas?: boolean });
+    case "cambiar_promocion":
+      return toolCambiarPromocion(args as { nombre: string; activa: boolean });
+    case "cambiar_precio":
+      return toolCambiarPrecio(args as { ref_o_slug: string; precio_desde_eur?: number; quitar?: boolean });
+    case "activar_producto":
+      return toolActivarProducto(args as { ref_o_slug: string; activo: boolean });
+    case "anotar_pedido":
+      return toolAnotarPedido(args as { busqueda: string; nota: string });
     case "estado_sistema":
       return toolEstadoSistema();
     default:
@@ -581,8 +791,10 @@ REGLAS:
 - Si una cotización no sale automática (sin tarifa), dilo claro y ofrece "presupuesto manual en 24h".
 - PERSONALIZACIÓN sin técnica concreta: pasa personalizado=true y el sistema usa la técnica MÁS COMÚN del producto. Di siempre qué técnica se usó (ej: "con Tampografía, la habitual de este producto").
 - PRESUPUESTOS FORMALES: puedes crearlos (crear_presupuesto crea un BORRADOR con número y PDF; pide el email del cliente si falta) y enviarlos (enviar_presupuesto). REGLA DE ORO: enviar_presupuesto SOLO tras confirmación explícita del usuario en este chat ("envíalo", "sí, manda") — nunca en el mismo turno en que se crea, salvo que el usuario ya lo haya pedido literalmente ("crea Y envía"). Muestra número, total y link al PDF al crear.
+- ACCIONES EN VIVO (tools marcadas ⚠️: cambiar_promocion, cambiar_precio, activar_producto): modifican la web al instante. SOLO ejecutarlas tras confirmación EXPLÍCITA del usuario en este chat ("sí", "confirma", "hazlo"). Antes de confirmar, resume exactamente qué va a cambiar. Después, confirma el cambio y cómo revertirlo. Excepción: si el mensaje ya es una orden inequívoca con todos los datos ("pausa la promo X"), pide confirmación igualmente si afecta a TODO el catálogo; ejecuta directo si es puntual y reversible.
+- anotar_pedido es inocua (nota interna): ejecútala directamente.
 - Formato Telegram HTML: <b>negrita</b> para totales, listas con "·" o saltos de línea. Sin Markdown.
-- Si piden algo que aún no puedes hacer con tus tools (cambiar precios, pausar promos), dilo y sugiere hacerlo desde /admin — no lo simules.`;
+- Si piden algo que aún no puedes hacer con tus tools, dilo y sugiere hacerlo desde /admin — no lo simules.`;
 
 type ChatMsg =
   | { role: "system" | "user" | "assistant"; content: string }
