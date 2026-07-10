@@ -226,6 +226,23 @@ const TOOLS = [
   {
     type: "function" as const,
     function: {
+      name: "renombrar_producto",
+      description:
+        "⚠️ ACCIÓN EN VIVO: cambia el nombre COMERCIAL con el que se muestra un producto (ficha, catálogo, cotizaciones, presupuestos). No cambia URL ni ref STM, y sobrevive a los syncs del catálogo. quitar=true vuelve al nombre original del catálogo. SOLO tras confirmación explícita.",
+      parameters: {
+        type: "object",
+        properties: {
+          ref_o_slug: { type: "string" },
+          nuevo_nombre: { type: "string", description: "Nuevo nombre comercial (3-160 caracteres)" },
+          quitar: { type: "boolean", description: "true = volver al nombre original del catálogo" },
+        },
+        required: ["ref_o_slug"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
       name: "anotar_pedido",
       description:
         "Añade una nota interna a la cotización/pedido más reciente que case con la búsqueda (empresa, nombre o email). El cliente NO la ve. Útil en reunión: 'apunta que quieren entrega antes del 20'.",
@@ -776,6 +793,67 @@ async function toolMargenInterno(args: {
   };
 }
 
+async function toolRenombrarProducto(args: {
+  ref_o_slug: string;
+  nuevo_nombre?: string;
+  quitar?: boolean;
+}) {
+  // Sin filtro de activo: también se renombra un producto oculto antes de publicarlo.
+  const q = args.ref_o_slug.trim();
+  const p = await prisma.product.findFirst({
+    where: {
+      OR: [
+        { internalRef: { equals: q, mode: "insensitive" } },
+        { slug: q.toLowerCase() },
+        { name: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      internalRef: true,
+      override: { select: { customName: true } },
+    },
+  });
+  if (!p) return { error: "Producto no encontrado" };
+  const nombreActual = p.override?.customName || p.name;
+
+  if (args.quitar) {
+    await prisma.productOverride.updateMany({
+      where: { productId: p.id },
+      data: { customName: null, updatedBy: "telegram-bot" },
+    });
+    console.log(`[telegram-agent] customName QUITADO en ${p.slug}`);
+    return {
+      ok: true,
+      ref: publicRef(p),
+      antes: nombreActual,
+      ahora: p.name,
+      nota: "vuelve al nombre original del catálogo",
+    };
+  }
+
+  const nuevo = (args.nuevo_nombre ?? "").trim();
+  if (nuevo.length < 3 || nuevo.length > 160) {
+    return { error: "nuevo_nombre debe tener entre 3 y 160 caracteres (o usa quitar=true)" };
+  }
+  await prisma.productOverride.upsert({
+    where: { productId: p.id },
+    create: { productId: p.id, customName: nuevo, updatedBy: "telegram-bot" },
+    update: { customName: nuevo, updatedBy: "telegram-bot" },
+  });
+  console.log(`[telegram-agent] renombrado ${p.slug}: "${nombreActual}" → "${nuevo}"`);
+  return {
+    ok: true,
+    ref: publicRef(p),
+    antes: nombreActual,
+    ahora: nuevo,
+    url: `${SITE_URL}/catalogo/${p.slug}`,
+    nota: "visible en ficha/catálogo/cotizaciones al instante; URL y ref no cambian; reversible con quitar=true",
+  };
+}
+
 async function toolAnotarPedido(args: { busqueda: string; nota: string }) {
   const q = args.busqueda.trim();
   const cart = await prisma.cartQuote.findFirst({
@@ -856,6 +934,8 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
       return toolCambiarPrecio(args as { ref_o_slug: string; precio_desde_eur?: number; quitar?: boolean });
     case "activar_producto":
       return toolActivarProducto(args as { ref_o_slug: string; activo: boolean });
+    case "renombrar_producto":
+      return toolRenombrarProducto(args as { ref_o_slug: string; nuevo_nombre?: string; quitar?: boolean });
     case "anotar_pedido":
       return toolAnotarPedido(args as { busqueda: string; nota: string });
     case "competencia":
@@ -890,7 +970,7 @@ REGLAS:
 - Si una cotización no sale automática (sin tarifa), dilo claro y ofrece "presupuesto manual en 24h".
 - PERSONALIZACIÓN sin técnica concreta: pasa personalizado=true y el sistema usa la técnica MÁS COMÚN del producto. Di siempre qué técnica se usó (ej: "con Tampografía, la habitual de este producto").
 - PRESUPUESTOS FORMALES: puedes crearlos (crear_presupuesto crea un BORRADOR con número y PDF; pide el email del cliente si falta) y enviarlos (enviar_presupuesto). REGLA DE ORO: enviar_presupuesto SOLO tras confirmación explícita del usuario en este chat ("envíalo", "sí, manda") — nunca en el mismo turno en que se crea, salvo que el usuario ya lo haya pedido literalmente ("crea Y envía"). Muestra número, total y link al PDF al crear.
-- ACCIONES EN VIVO (tools marcadas ⚠️: cambiar_promocion, cambiar_precio, activar_producto): modifican la web al instante. SOLO ejecutarlas tras confirmación EXPLÍCITA del usuario en este chat ("sí", "confirma", "hazlo"). Antes de confirmar, resume exactamente qué va a cambiar. Después, confirma el cambio y cómo revertirlo. Excepción: si el mensaje ya es una orden inequívoca con todos los datos ("pausa la promo X"), pide confirmación igualmente si afecta a TODO el catálogo; ejecuta directo si es puntual y reversible.
+- ACCIONES EN VIVO (tools marcadas ⚠️: cambiar_promocion, cambiar_precio, activar_producto, renombrar_producto): modifican la web al instante. SOLO ejecutarlas tras confirmación EXPLÍCITA del usuario en este chat ("sí", "confirma", "hazlo"). Antes de confirmar, resume exactamente qué va a cambiar. Después, confirma el cambio y cómo revertirlo. Excepción: si el mensaje ya es una orden inequívoca con todos los datos ("pausa la promo X"), pide confirmación igualmente si afecta a TODO el catálogo; ejecuta directo si es puntual y reversible.
 - anotar_pedido es inocua (nota interna): ejecútala directamente.
 - Formato Telegram HTML: <b>negrita</b> para totales, listas con "·" o saltos de línea. Sin Markdown.
 - Si piden algo que aún no puedes hacer con tus tools, dilo y sugiere hacerlo desde /admin — no lo simules.`;
