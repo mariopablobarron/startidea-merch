@@ -1,0 +1,23 @@
+src/lib/competitor-intel.ts
+  s_65877aa637ec34::t_31cbbd550e158c 416
+  s_65877aa637ec34::t_aba58b985b475e 306,308,310-311,314-319,321-324,326-327
+  s_65877aa637ec34::t_af52d79e5f57e8 248-249
+  s_65877aa637ec34::t_3026e0f42afa6e 448,451,456-459,461-462,472,474,481-484,494-497,500
+  s_65877aa637ec34::t_30d5ec7e64a2f1 75-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "8c5b475e6ebde8db7666618bad113efa8516d7f3",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
