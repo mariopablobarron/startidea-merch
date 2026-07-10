@@ -72,6 +72,41 @@ async function ddgSearch(domain: string, query: string): Promise<string[]> {
   return urls;
 }
 
+/** Fallback: búsqueda en Bing HTML (suele funcionar desde IPs de datacenter). */
+async function bingSearch(domain: string, query: string): Promise<string[]> {
+  const q = encodeURIComponent(`site:${domain} ${query}`);
+  try {
+    const res = await fetch(`https://www.bing.com/search?q=${q}&setlang=es`, {
+      headers: { "User-Agent": UA, "Accept-Language": "es-ES,es" },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const urls: string[] = [];
+    for (const m of html.matchAll(/<a[^>]+href="(https?:\/\/[^"]+)"/g)) {
+      const url = m[1];
+      if (!url.includes(domain) || url.includes("bing.com")) continue;
+      if (!urls.includes(url)) urls.push(url);
+      if (urls.length >= 2) break;
+    }
+    return urls;
+  } catch {
+    return [];
+  }
+}
+
+/** DDG lite y, si no da nada (captcha/bloqueo a IPs de datacenter), Bing. */
+async function searchCompetitor(
+  domain: string,
+  query: string,
+): Promise<{ urls: string[]; engine: "ddg" | "bing" | "none" }> {
+  let urls = await ddgSearch(domain, query);
+  if (urls.length > 0) return { urls, engine: "ddg" };
+  await sleep(1500);
+  urls = await bingSearch(domain, query);
+  return { urls, engine: urls.length > 0 ? "bing" : "none" };
+}
+
 /** Descarga una página y la reduce a texto plano (~límite chars) para el LLM. */
 async function fetchPageText(url: string, maxChars = 24_000): Promise<string | null> {
   try {
@@ -210,6 +245,8 @@ export type CompetitorAnalysis = {
     detalle: string;
     objetivo_unit?: string;
   };
+  /** Diagnóstico por competidor (via_ddg/via_bing/busqueda_sin_resultados/…). */
+  debug: Record<string, string>;
 };
 
 /** Resuelve la técnica más común (isDefault > más posiciones) para comparar con marcaje. */
@@ -266,17 +303,28 @@ export async function analyzeCompetitorsForProduct(
   // por nombre. La supplierRef SOLO se usa como término de búsqueda interna.
   const sources = await competitorSources();
   const hits: CompetitorHit[] = [];
+  const debug: Record<string, string> = {};
   for (const domain of sources) {
-    let urls = await ddgSearch(domain, product.supplierRef);
+    let found = await searchCompetitor(domain, product.supplierRef);
     await sleep(2500);
-    if (urls.length === 0) {
-      urls = await ddgSearch(domain, product.name.toLowerCase().slice(0, 60));
+    if (found.urls.length === 0) {
+      found = await searchCompetitor(domain, product.name.toLowerCase().slice(0, 60));
       await sleep(2500);
     }
-    for (const url of urls.slice(0, 1)) {
+    if (found.urls.length === 0) {
+      debug[domain] = "busqueda_sin_resultados";
+      continue;
+    }
+    debug[domain] = `via_${found.engine}`;
+    for (const url of found.urls.slice(0, 1)) {
       const text = await fetchPageText(url);
-      if (!text) continue;
+      if (!text) {
+        debug[domain] = "pagina_no_descarga";
+        continue;
+      }
       const hit = await llmExtract(text, product.name, url, domain);
+      if (!hit) debug[domain] = "sin_precios_extraibles";
+      else if (hit.confidence < 0.4) debug[domain] = "confianza_baja";
       if (hit && hit.confidence >= 0.4) {
         hits.push(hit);
         // Persistir histórico (mejor tramo cercano a qty).
@@ -365,6 +413,7 @@ export async function analyzeCompetitorsForProduct(
       url: h.url,
     })),
     recomendacion,
+    debug,
   };
 }
 
@@ -396,14 +445,21 @@ export async function runCompetitorWatch(limit = 8): Promise<{
 }> {
   const watchlist = await buildWatchlist(limit);
   const lines: string[] = [];
+  const detalle: { ref: string; accion: string; debug: Record<string, string> }[] = [];
   let accionables = 0;
   let analizados = 0;
+  let conDatos = 0;
 
   for (const ref of watchlist) {
     try {
       const a = await analyzeCompetitorsForProduct(ref);
-      if ("error" in a) continue;
+      if ("error" in a) {
+        detalle.push({ ref, accion: "ERROR", debug: { error: a.error } });
+        continue;
+      }
       analizados++;
+      if (a.competidores.length > 0) conDatos++;
+      detalle.push({ ref: a.ref, accion: a.recomendacion.accion, debug: a.debug });
       if (a.recomendacion.accion === "SUBIR" || a.recomendacion.accion === "BAJAR") {
         accionables++;
         lines.push(
@@ -413,17 +469,20 @@ export async function runCompetitorWatch(limit = 8): Promise<{
       }
     } catch (e) {
       console.error("[competitor-watch]", ref, e instanceof Error ? e.message : e);
+      detalle.push({ ref, accion: "EXCEPTION", debug: { error: e instanceof Error ? e.message : String(e) } });
     }
-    await sleep(3000); // pacing entre productos (educado con DDG y competidores)
+    await sleep(3000); // pacing entre productos (educado con buscadores y rivales)
   }
 
   await prisma.adminSetting.upsert({
     where: { key: "competitor_watch_last" },
     create: {
       key: "competitor_watch_last",
-      value: { at: new Date().toISOString(), analizados, accionables },
+      value: { at: new Date().toISOString(), analizados, accionables, conDatos, detalle },
     },
-    update: { value: { at: new Date().toISOString(), analizados, accionables } },
+    update: {
+      value: { at: new Date().toISOString(), analizados, accionables, conDatos, detalle },
+    },
   });
 
   if (lines.length > 0) {
@@ -432,9 +491,13 @@ export async function runCompetitorWatch(limit = 8): Promise<{
         lines.join("\n\n") +
         `\n\n🔒 Interno. Cambiar precio: dime "pon <ref> a X €" o /admin.`,
     );
+  } else if (conDatos > 0) {
+    await notifyTelegram(
+      `🕵️ Vigilancia de competencia: ${analizados} productos revisados (${conDatos} con datos de rivales), precios en banda competitiva. Sin acciones.`,
+    );
   } else {
     await notifyTelegram(
-      `🕵️ Vigilancia de competencia: ${analizados} productos revisados, precios en banda competitiva. Sin acciones.`,
+      `🕵️ Vigilancia de competencia: ${analizados} productos revisados pero SIN datos de rivales (búsqueda bloqueada o productos no encontrados en los competidores configurados). Revisar diagnóstico interno.`,
     );
   }
 
