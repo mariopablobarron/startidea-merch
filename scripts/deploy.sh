@@ -51,9 +51,6 @@ if [ -f "$ENVF" ]; then
   fi
 fi
 
-# TEMP (retirar tras confirmar acceso): fail2ban baneó la IP de la estación de
-# trabajo durante la racha de verificaciones SSH del 2026-07-09.
-command -v fail2ban-client >/dev/null 2>&1 && fail2ban-client set sshd unbanip 82.159.100.98 >/dev/null 2>&1 || true
 # -----------------------------------------------------------------------------
 
 # Build con retry: si falla con exit 137 (OOM killer) reintentamos 1 vez tras 30s
