@@ -1,0 +1,39 @@
+src/lib/telegram-admin-agent.ts
+  s_65877aa637ec34::t_54825884865b13 10
+  s_65877aa637ec34::t_4de9589e6552fb 245-257
+  s_65877aa637ec34::t_a753534d98e760 861-865
+  s_6bdc27e9be5e65::t_cfbe30312c8c03 242-244
+prisma/schema.prisma
+  s_65877aa637ec34::t_fe3b3958e2aadb 174
+  s_65877aa637ec34::t_67654fcf0111f0 982-1001
+src/lib/competitor-intel.ts
+  s_65877aa637ec34::t_ac917a9abb72fd 1-442
+src/app/api/cron/competitor-watch/route.ts
+  s_65877aa637ec34::t_bb43c8a47d7148 1-32
+.github/workflows/competitor-watch.yml
+  s_65877aa637ec34::t_cd5e8641f87eb7 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "19fa5db91a14bbeaa821a8f28438294b0d8a07b8",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_6bdc27e9be5e65": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "31b651f4-49ed-4963-8d6c-da8a0939c2fe",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
