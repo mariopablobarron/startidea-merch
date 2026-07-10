@@ -1,0 +1,26 @@
+prisma/schema.prisma
+  s_65877aa637ec34::t_256e1eabc5edf0 981-993
+src/lib/telegram-admin-agent.ts
+  s_65877aa637ec34::t_d55772c9c858c4 345,347
+  s_65877aa637ec34::t_239fe36ba2323d 1-344,346,348-511
+src/app/api/telegram/webhook/route.ts
+  s_65877aa637ec34::t_156e4d2e0f3f39 1-113
+src/lib/telegram.ts
+  s_65877aa637ec34::t_0f9d5a476f560e 35-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "860f6d69a42873276dc6353c14081abee382b899",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
