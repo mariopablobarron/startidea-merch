@@ -1,0 +1,28 @@
+name: Sonda de buscadores (ops)
+
+# Diagnóstico: ¿DDG lite y Bing responden búsquedas site: desde los runners
+# de GH (IPs rotativas)? Si sí, la vigilancia de competencia puede hacer la
+# BÚSQUEDA desde el runner y dejar el análisis pesado en el servidor.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probar motores
+        run: |
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126 Safari/537.36"
+          Q="site%3Aregalopublicidad.com+boligrafo+aluminio"
+          echo "=== DDG lite ==="
+          curl -s -m 15 -A "$UA" "https://lite.duckduckgo.com/lite/?q=$Q" -o /tmp/ddg.html || true
+          echo "bytes: $(wc -c < /tmp/ddg.html)"
+          echo "links regalopublicidad: $(grep -o 'uddg=[^\"&]*regalopublicidad[^\"&]*' /tmp/ddg.html | wc -l)"
+          grep -o 'uddg=[^"&]\{10,120\}' /tmp/ddg.html | grep -v y.js | head -3 || true
+          echo "=== Bing ==="
+          curl -s -m 15 -A "$UA" "https://www.bing.com/search?q=$Q&setlang=es" -o /tmp/bing.html || true
+          echo "bytes: $(wc -c < /tmp/bing.html)"
+          echo "links regalopublicidad: $(grep -oE 'href="https?://[^"]*regalopublicidad[^"]*"' /tmp/bing.html | wc -l)"
+          grep -oE 'href="https?://[^"]*regalopublicidad[^"]*"' /tmp/bing.html | head -3 || true
