@@ -1,0 +1,29 @@
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_24a9b8e9ea0e0c 333-348
+src/lib/cart-item-schema.ts
+  s_65877aa637ec34::t_d8cdefee0e6f3e 1-105
+src/app/api/cart-quote/save-for-later/route.ts
+  s_65877aa637ec34::t_2d01b1b7f53f6b 1-117
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_349cd3af14b6a4 76-84
+  s_65877aa637ec34::t_07b81c40279eea 379-400,402-408
+  s_65877aa637ec34::t_ed6c62daccdb90 574-615
+  s_65877aa637ec34::t_6ab8d02361db1d 49-53
+  s_65877aa637ec34::t_5ce196fe049c70 401
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "f97bb57c79e97cddf37e178a16241882ec56b929",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
