@@ -103,8 +103,11 @@ async function bingSearch(domain: string, query: string): Promise<string[]> {
  *  datacenter (DDG y Bing scrapeados capan tanto el VPS como los runners de
  *  GH, verificado 2026-07-11). Sin TAVILY_API_KEY devuelve vacío y se cae a
  *  los motores scrapeados (que funcionan solo desde IP residencial). */
-async function tavilySearch(domain: string, query: string): Promise<string[]> {
-  if (!TAVILY_API_KEY) return [];
+async function tavilySearch(
+  domain: string,
+  query: string,
+): Promise<{ urls: string[]; error?: string }> {
+  if (!TAVILY_API_KEY) return { urls: [] };
   try {
     const res = await fetch("https://api.tavily.com/search", {
       method: "POST",
@@ -121,17 +124,21 @@ async function tavilySearch(domain: string, query: string): Promise<string[]> {
       signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
+      // 432 = límite de uso del plan; 401 = key mala. Que se VEA en el debug
+      // (antes se confundía con "busqueda_sin_resultados").
       console.error("[competitor-intel] tavily", res.status);
-      return [];
+      return { urls: [], error: `tavily_http_${res.status}` };
     }
     const json = (await res.json()) as { results?: { url?: string }[] };
-    return (json.results ?? [])
-      .map((r) => r.url)
-      .filter((u): u is string => typeof u === "string" && u.includes(domain))
-      .slice(0, 2);
+    return {
+      urls: (json.results ?? [])
+        .map((r) => r.url)
+        .filter((u): u is string => typeof u === "string" && u.includes(domain))
+        .slice(0, 2),
+    };
   } catch (e) {
     console.error("[competitor-intel] tavily", e instanceof Error ? e.message : e);
-    return [];
+    return { urls: [], error: "tavily_timeout" };
   }
 }
 
@@ -139,14 +146,16 @@ async function tavilySearch(domain: string, query: string): Promise<string[]> {
 async function searchCompetitor(
   domain: string,
   query: string,
-): Promise<{ urls: string[]; engine: "tavily" | "ddg" | "bing" | "none" }> {
-  let urls = await tavilySearch(domain, query);
-  if (urls.length > 0) return { urls, engine: "tavily" };
-  urls = await ddgSearch(domain, query);
+): Promise<{ urls: string[]; engine: string }> {
+  const tav = await tavilySearch(domain, query);
+  if (tav.urls.length > 0) return { urls: tav.urls, engine: "tavily" };
+  let urls = await ddgSearch(domain, query);
   if (urls.length > 0) return { urls, engine: "ddg" };
   await sleep(1500);
   urls = await bingSearch(domain, query);
-  return { urls, engine: urls.length > 0 ? "bing" : "none" };
+  if (urls.length > 0) return { urls, engine: "bing" };
+  // Sin resultados: si Tavily falló por API (límite/key), propagar la causa.
+  return { urls: [], engine: tav.error ?? "none" };
 }
 
 /** Descarga una página; devuelve texto plano para el LLM y el HTML crudo
@@ -388,7 +397,8 @@ export async function analyzeCompetitorsForProduct(
       await sleep(2500);
     }
     if (found.urls.length === 0) {
-      debug[domain] = "busqueda_sin_resultados";
+      // Si la causa fue un error de la API de Tavily (límite/key), que se vea.
+      debug[domain] = found.engine.startsWith("tavily_") ? found.engine : "busqueda_sin_resultados";
       continue;
     }
     debug[domain] = `via_${found.engine}`;
