@@ -107,8 +107,12 @@ async function searchCompetitor(
   return { urls, engine: urls.length > 0 ? "bing" : "none" };
 }
 
-/** Descarga una página y la reduce a texto plano (~límite chars) para el LLM. */
-async function fetchPageText(url: string, maxChars = 24_000): Promise<string | null> {
+/** Descarga una página; devuelve texto plano para el LLM y el HTML crudo
+ *  (para poder extraer enlaces si resulta ser una categoría/listado). */
+async function fetchPage(
+  url: string,
+  maxChars = 24_000,
+): Promise<{ text: string; html: string } | null> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": UA, "Accept-Language": "es-ES,es" },
@@ -124,10 +128,40 @@ async function fetchPageText(url: string, maxChars = 24_000): Promise<string | n
       .replace(/&nbsp;|&amp;|&quot;|&#\d+;/g, " ")
       .replace(/\s+/g, " ")
       .trim();
-    return text.slice(0, maxChars);
+    return { text: text.slice(0, maxChars), html };
   } catch {
     return null;
   }
+}
+
+/** Del HTML de una categoría/listado, el enlace interno que MÁS se parece al
+ *  producto (solape de tokens del nombre/ref en href+anchor). Segundo salto
+ *  cuando la búsqueda aterriza en un listado sin precios extraíbles. */
+function bestProductLink(
+  html: string,
+  domain: string,
+  productName: string,
+  supplierRef: string,
+): string | null {
+  const tokens = productName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 4);
+  const refLower = supplierRef.toLowerCase();
+  let best: { url: string; score: number } | null = null;
+  for (const m of html.matchAll(/<a[^>]+href="([^"#?]+)[^"]*"[^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
+    let href = m[1];
+    if (href.startsWith("/")) href = `https://${domain.replace(/^www\./, "www.")}${href}`;
+    if (!href.includes(domain.replace(/^www\./, ""))) continue;
+    const hay = (href + " " + m[2].replace(/<[^>]+>/g, " ")).toLowerCase();
+    let score = 0;
+    if (refLower.length >= 4 && hay.includes(refLower)) score += 10;
+    for (const t of tokens) if (hay.includes(t)) score += 1;
+    if (score >= 2 && (!best || score > best.score)) best = { url: href, score };
+  }
+  return best?.url ?? null;
 }
 
 export type CompetitorHit = {
@@ -317,12 +351,30 @@ export async function analyzeCompetitorsForProduct(
     }
     debug[domain] = `via_${found.engine}`;
     for (const url of found.urls.slice(0, 1)) {
-      const text = await fetchPageText(url);
-      if (!text) {
+      const page = await fetchPage(url);
+      if (!page) {
         debug[domain] = "pagina_no_descarga";
         continue;
       }
-      const hit = await llmExtract(text, product.name, url, domain);
+      let finalUrl = url;
+      let hit = await llmExtract(page.text, product.name, finalUrl, domain);
+      // 2º salto: la búsqueda suele aterrizar en un LISTADO/categoría sin
+      // precios claros → seguimos el enlace interno más parecido al producto.
+      if (!hit || hit.confidence < 0.4) {
+        const link = bestProductLink(page.html, domain, product.name, product.supplierRef);
+        if (link && link !== url) {
+          await sleep(1500);
+          const page2 = await fetchPage(link);
+          if (page2) {
+            const hit2 = await llmExtract(page2.text, product.name, link, domain);
+            if (hit2 && (!hit || hit2.confidence > hit.confidence)) {
+              hit = hit2;
+              finalUrl = link;
+              debug[domain] = `via_${found.engine}+2salto`;
+            }
+          }
+        }
+      }
       if (!hit) debug[domain] = "sin_precios_extraibles";
       else if (hit.confidence < 0.4) debug[domain] = "confianza_baja";
       if (hit && hit.confidence >= 0.4) {
@@ -334,7 +386,7 @@ export async function analyzeCompetitorsForProduct(
             data: {
               productId: product.id,
               competitor: domain,
-              url,
+              url: finalUrl,
               qty: p.qty,
               unitPriceCents: Math.round(p.unitEur * 100),
               includesMarking: p.conMarcaje,
@@ -419,7 +471,9 @@ export async function analyzeCompetitorsForProduct(
 
 // ── Cron semanal ─────────────────────────────────────────────────────────────
 
-/** Watchlist: refs forzadas en AdminSetting + top productos cotizados 120d. */
+/** Watchlist: refs forzadas en AdminSetting + top productos cotizados 120d.
+ *  Solo slugs que sigan siendo productos ACTIVOS (los carritos de prueba y
+ *  productos retirados contaminaban la lista — visto en el primer run real). */
 async function buildWatchlist(limit: number): Promise<string[]> {
   const forced = (await settingJson<string[]>("competitor_watchlist")) ?? [];
   const since = new Date(Date.now() - 120 * 86400_000);
@@ -428,12 +482,17 @@ async function buildWatchlist(limit: number): Promise<string[]> {
     where: { cart: { createdAt: { gte: since } } },
     _count: { productSlug: true },
     orderBy: { _count: { productSlug: "desc" } },
-    take: limit,
+    take: limit * 4, // margen: parte serán tests/retirados
   });
+  const existing = await prisma.product.findMany({
+    where: { slug: { in: top.map((t) => t.productSlug) }, active: true },
+    select: { slug: true },
+  });
+  const activeSlugs = new Set(existing.map((p) => p.slug));
   const list = [...forced];
   for (const t of top) {
     if (list.length >= limit + forced.length) break;
-    if (!list.includes(t.productSlug)) list.push(t.productSlug);
+    if (activeSlugs.has(t.productSlug) && !list.includes(t.productSlug)) list.push(t.productSlug);
   }
   return list.slice(0, Math.max(limit, forced.length));
 }
