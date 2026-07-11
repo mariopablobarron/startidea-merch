@@ -1,0 +1,35 @@
+src/components/AskDiego.tsx
+  s_65877aa637ec34::t_bf7170d2a207a4 1-46
+src/components/Hero.tsx
+  s_65877aa637ec34::t_7938fcb164bb88 4
+  s_65877aa637ec34::t_b988d1d81f1d03 113-123
+src/components/CartPage.tsx
+  s_65877aa637ec34::t_c1cd935e59e427 820-829
+  s_65877aa637ec34::t_3806123a946e98 11
+  s_65877aa637ec34::t_1cfa7c79b80837 795-804
+src/app/catalogo/[slug]/page.tsx
+  s_65877aa637ec34::t_53f7d76497cbb9 359-363
+  s_65877aa637ec34::t_7c134adb8738f2 25
+src/components/VoiceAgentWidget.tsx
+  s_65877aa637ec34::t_252a20584ec82e 39-40
+  s_65877aa637ec34::t_e6bab98582c2d1 184-216
+src/app/ayuda/page.tsx
+  s_65877aa637ec34::t_d7f8deb17cc5c0 6
+  s_65877aa637ec34::t_234dec0efb3f48 157-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "03a87f1a10a0baa1a1d77dc22158ba7662fe9e4d",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
