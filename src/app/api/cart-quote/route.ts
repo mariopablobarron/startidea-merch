@@ -330,6 +330,22 @@ export async function POST(req: Request) {
     include: { items: { include: { markings: { orderBy: { order: "asc" } } } } },
   });
 
+  // Si este email tenía un "carrito guardado" (captura temprana), archivarlo:
+  // la cotización real lo sustituye y evita que el drip persiga dos veces.
+  void prisma.cartQuote
+    .updateMany({
+      where: {
+        email: data.email,
+        source: "carrito-guardado",
+        status: "IN_PROGRESS",
+        id: { not: cart.id },
+      },
+      data: { status: "ARCHIVED" },
+    })
+    .catch((e) =>
+      console.error("[cart-quote] archivar carrito-guardado falló:", e instanceof Error ? e.message : e),
+    );
+
   // Notificar por email (best-effort, no bloquea respuesta).
   // sendEmail dispara alerta Telegram automática si Resend falla
   // (cobertura del bug 2026-05-16 donde el silencio dejó emails sin enviar).

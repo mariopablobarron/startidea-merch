@@ -46,6 +46,11 @@ export function CartPage() {
     taxId: string | null;
     shippingAddress: string | null;
   } | null>(null);
+  // Guardar carrito con email (captura temprana → entra al drip de recordatorios)
+  const [saveEmail, setSaveEmail] = useState("");
+  const [savingCart, setSavingCart] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedCart, setSavedCart] = useState<{ email: string; cartId: string } | null>(null);
 
   // form
   const [name, setName] = useState("");
@@ -67,6 +72,15 @@ export function CartPage() {
     }
     refresh();
     window.addEventListener("merch:cart-change", refresh);
+
+    // Restaurar el estado "carrito ya guardado" (no volver a pedir email).
+    try {
+      const rawSaved = localStorage.getItem("merch:cart-saved");
+      if (rawSaved) {
+        const s = JSON.parse(rawSaved) as { email?: string; cartId?: string };
+        if (s.email && s.cartId) setSavedCart({ email: s.email, cartId: s.cartId });
+      }
+    } catch {}
 
     // Aviso de "Repetir pedido" (portal cliente): productos que ya no están.
     try {
@@ -362,6 +376,36 @@ export function CartPage() {
     );
   }
 
+  async function saveForLater(e: React.FormEvent) {
+    e.preventDefault();
+    const mail = saveEmail.trim();
+    if (!mail || items.length === 0) return;
+    setSavingCart(true);
+    setSaveError(null);
+    try {
+      const res = await fetch("/api/cart-quote/save-for-later", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: mail, items }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { ok?: boolean; cartId?: string; error?: string };
+      if (!res.ok || !j.ok || !j.cartId) {
+        setSaveError(j.error || "No se pudo guardar — inténtalo de nuevo");
+        return;
+      }
+      const saved = { email: mail, cartId: j.cartId };
+      setSavedCart(saved);
+      try {
+        localStorage.setItem("merch:cart-saved", JSON.stringify(saved));
+      } catch {}
+      trackLead({ method: "save-cart" });
+    } catch {
+      setSaveError("Error de conexión");
+    } finally {
+      setSavingCart(false);
+    }
+  }
+
   async function applyCouponCode() {
     setCouponError(null);
     if (!couponCode.trim()) return;
@@ -526,6 +570,48 @@ export function CartPage() {
             </div>
           </article>
         ))}
+
+        {/* Guardar carrito con email (captura temprana). Cubre el agujero de
+            los recordatorios: sin esto, quien se va sin cotizar es invisible.
+            Se oculta si ya escribió su email en el formulario (va a cotizar). */}
+        {!savedCart && !email.trim() && (
+          <form
+            onSubmit={saveForLater}
+            className="rounded-2xl border border-dashed border-line bg-bone p-4"
+          >
+            <p className="text-sm font-medium text-ink/80">
+              ¿Te guardamos el carrito? Te lo enviamos por email para retomarlo donde quieras.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                type="email"
+                value={saveEmail}
+                onChange={(e) => setSaveEmail(e.target.value)}
+                placeholder="tu@empresa.com"
+                required
+                aria-label="Email para guardar el carrito"
+                className="min-w-0 flex-1 rounded-xl border border-line bg-bone-soft px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+              <button
+                type="submit"
+                disabled={savingCart || !saveEmail.trim()}
+                className="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-bone hover:bg-accent disabled:opacity-40"
+              >
+                {savingCart ? "Guardando…" : "Guardar carrito"}
+              </button>
+            </div>
+            {saveError && <p className="mt-2 text-xs text-accent-deep">⚠ {saveError}</p>}
+            <p className="mt-2 text-[10px] text-ink/45">
+              Solo para enviarte tu carrito y recordártelo — nada de listas de marketing.
+            </p>
+          </form>
+        )}
+        {savedCart && (
+          <p className="rounded-2xl bg-social/10 px-4 py-3 text-sm text-social">
+            ✓ Carrito guardado — te lo hemos enviado a <strong>{savedCart.email}</strong>. Puedes
+            retomarlo desde ese email en cualquier dispositivo.
+          </p>
+        )}
 
         {/* Cupón */}
         <div className="rounded-2xl border border-line bg-bone p-4">
