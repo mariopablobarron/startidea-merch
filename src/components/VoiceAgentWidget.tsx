@@ -32,6 +32,10 @@ function VoiceAgentInner() {
   // del env (ver /api/voice-agent/signed-url). "Diego" = voz masculina ES.
   const [agentName, setAgentName] = useState("Diego");
   const [messages, setMessages] = useState<Message[]>([]);
+  // Entrada por TEXTO (misma sesión: Diego responde con voz + transcripción).
+  const [draft, setDraft] = useState("");
+  // true = sesión sin micro (el usuario denegó permiso → chat escrito).
+  const [textOnlyMode, setTextOnlyMode] = useState(false);
   const [productSlugsDiscussed, setProductSlugsDiscussed] = useState<Set<string>>(new Set());
   const startedAtRef = useRef<number | null>(null);
   const toolsCalledRef = useRef<Array<{ tool: string; ok: boolean; at: string }>>([]);
@@ -42,10 +46,20 @@ function VoiceAgentInner() {
     },
     onMessage: ({ message, source }: { message: string; source: "user" | "ai" }) => {
       if (!message) return;
-      setMessages((m) => [
-        ...m,
-        { role: source === "user" ? "user" : "agent", text: message, at: Date.now() },
-      ]);
+      setMessages((m) => {
+        // Anti-eco: si el usuario acaba de teclear este mismo texto (sendText
+        // ya lo pintó), no lo dupliques cuando el SDK lo devuelva.
+        const last = m[m.length - 1];
+        if (
+          source === "user" &&
+          last?.role === "user" &&
+          last.text === message &&
+          Date.now() - last.at < 5000
+        ) {
+          return m;
+        }
+        return [...m, { role: source === "user" ? "user" : "agent", text: message, at: Date.now() }];
+      });
       // Detección heurística de slugs discutidos (los tools pasan por el server,
       // no nos llegan aquí — esta heurística es solo para tracking aproximado)
       const slugMatch = message.match(/\b\/catalogo\/([a-z0-9-]+)/g);
@@ -74,25 +88,62 @@ function VoiceAgentInner() {
   const isConnecting = c.status === "connecting";
 
   // ── Start session ───────────────────────────────────────────────
+  // Voz por defecto; si el usuario DENIEGA el micrófono, reintentamos la
+  // sesión en modo solo-texto (chat escrito) en vez de fallar — nadie se
+  // queda fuera por no querer dar el micro.
+  const fetchSignedUrl = useCallback(async () => {
+    const r = await fetch("/api/voice-agent/signed-url");
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      throw new Error(j.error || `signed-url HTTP ${r.status}`);
+    }
+    const j = await r.json();
+    setVoiceSessionId(j.voiceSessionId);
+    if (j.agentName) setAgentName(j.agentName);
+    return j.signedUrl as string;
+  }, []);
+
   const start = useCallback(async () => {
     setBootingError(null);
     setMessages([]);
+    setTextOnlyMode(false);
     try {
-      const r = await fetch("/api/voice-agent/signed-url");
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error(j.error || `signed-url HTTP ${r.status}`);
-      }
-      const j = await r.json();
-      setVoiceSessionId(j.voiceSessionId);
-      if (j.agentName) setAgentName(j.agentName);
+      const signedUrl = await fetchSignedUrl();
       // signedUrl SOLO soporta websocket (la API de ElevenLabs lo exige).
       // WebRTC sería con conversationToken, no aplica aquí.
-      c.startSession({ signedUrl: j.signedUrl, connectionType: "websocket" });
+      await c.startSession({ signedUrl, connectionType: "websocket" });
     } catch (err) {
-      setBootingError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      // Permiso de micro denegado/no disponible → sesión de chat escrito.
+      if (/permission|denied|notallowed|notfound|mic/i.test(msg)) {
+        try {
+          const signedUrl = await fetchSignedUrl(); // URL nueva (single-use)
+          await c.startSession({ signedUrl, connectionType: "websocket", textOnly: true });
+          setTextOnlyMode(true);
+          return;
+        } catch (err2) {
+          setBootingError(err2 instanceof Error ? err2.message : String(err2));
+          return;
+        }
+      }
+      setBootingError(msg);
     }
-  }, [c]);
+  }, [c, fetchSignedUrl]);
+
+  // ── Enviar mensaje ESCRITO (misma sesión; Diego contesta con voz+texto) ──
+  const sendText = useCallback(() => {
+    const text = draft.trim();
+    if (!text || c.status !== "connected") return;
+    // El transcript del usuario tecleado no siempre llega por onMessage:
+    // lo pintamos localmente (el guard de duplicados está en onMessage).
+    setMessages((m) => [...m, { role: "user", text, at: Date.now() }]);
+    try {
+      c.sendUserMessage(text);
+    } catch {
+      /* sesión caída: el status lo reflejará */
+    }
+    setDraft("");
+  }, [c, draft]);
 
   // ── End session ─────────────────────────────────────────────────
   const stop = useCallback(async () => {
@@ -234,11 +285,11 @@ function VoiceAgentInner() {
             setOpen(true);
             start();
           }}
-          aria-label="Hablar con Carmen, asistente de voz"
+          aria-label={`Hablar o escribir con ${agentName}, asesor comercial`}
           className="fixed bottom-24 right-6 z-40 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-semibold text-bone shadow-lg hover:bg-accent"
         >
           <MicIcon className="h-4 w-4" />
-          Hablar con {agentName}
+          Habla o escribe a {agentName}
         </button>
       )}
 
@@ -264,10 +315,12 @@ function VoiceAgentInner() {
                   {isConnecting
                     ? "conectando…"
                     : isActive
-                      ? c.isSpeaking
-                        ? "hablando"
-                        : "escuchando"
-                      : "asistente"}
+                      ? textOnlyMode
+                        ? "chat"
+                        : c.isSpeaking
+                          ? "hablando"
+                          : "escuchando"
+                      : "asesor"}
                 </span>
               </p>
             </div>
@@ -283,8 +336,8 @@ function VoiceAgentInner() {
             </button>
           </header>
 
-          {/* Onda */}
-          {(isActive || isConnecting) && (
+          {/* Onda (solo con audio; en modo chat no hay streams) */}
+          {(isActive || isConnecting) && !textOnlyMode && (
             <div className="bg-bone-soft px-4 py-3">
               <canvas
                 ref={canvasRef}
@@ -305,8 +358,9 @@ function VoiceAgentInner() {
             )}
             {!isActive && !isConnecting && messages.length === 0 && !bootingError && (
               <p className="text-xs text-ink/55">
-                Pulsa &quot;Hablar con {agentName}&quot; y permite el micro. {agentName} te ayuda con
-                catálogo, precio orientativo y a pedir cotización por voz.
+                {agentName} te ayuda a elegir producto, te da precio al momento y te prepara el
+                presupuesto. Puedes hablarle o escribirle — si no das permiso de micro, seguirá
+                por chat.
               </p>
             )}
             {messages.map((m, i) => (
@@ -321,20 +375,55 @@ function VoiceAgentInner() {
             ))}
           </div>
 
-          {/* Controles */}
+          {/* Controles: entrada de TEXTO (siempre) + micro (si hay voz) */}
           {isActive && (
-            <footer className="flex items-center justify-between gap-2 border-t border-line px-4 py-3">
-              <button
-                type="button"
-                onClick={() => c.setMuted(!c.isMuted)}
-                className={`rounded-full px-3 py-1.5 text-xs ${
-                  c.isMuted ? "bg-accent text-white" : "bg-bone-soft text-ink/70"
-                }`}
+            <footer className="border-t border-line px-4 py-3">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  sendText();
+                }}
+                className="flex items-center gap-2"
               >
-                {c.isMuted ? "Micro silenciado" : "Silenciar"}
-              </button>
-              <p className="text-[10px] text-ink/45">
-                Conversaciones se anonimizan. Tu voz no se guarda.
+                <input
+                  type="text"
+                  value={draft}
+                  onChange={(e) => {
+                    setDraft(e.target.value);
+                    // Señal de actividad: evita que Diego interrumpa mientras escribes.
+                    try {
+                      c.sendUserActivity();
+                    } catch {}
+                  }}
+                  placeholder={textOnlyMode ? "Escribe tu mensaje…" : "…o escríbelo aquí"}
+                  aria-label={`Escribir a ${agentName}`}
+                  className="min-w-0 flex-1 rounded-full border border-line bg-bone-soft px-3.5 py-2 text-sm outline-none focus:border-accent"
+                />
+                <button
+                  type="submit"
+                  disabled={!draft.trim()}
+                  aria-label="Enviar mensaje"
+                  className="rounded-full bg-ink px-3.5 py-2 text-xs font-semibold text-bone hover:bg-accent disabled:opacity-40"
+                >
+                  Enviar
+                </button>
+                {!textOnlyMode && (
+                  <button
+                    type="button"
+                    onClick={() => c.setMuted(!c.isMuted)}
+                    aria-label={c.isMuted ? "Activar micrófono" : "Silenciar micrófono"}
+                    className={`rounded-full px-3 py-2 text-xs ${
+                      c.isMuted ? "bg-accent text-white" : "bg-bone-soft text-ink/70"
+                    }`}
+                  >
+                    <MicIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </form>
+              <p className="mt-2 text-[10px] text-ink/45">
+                {textOnlyMode
+                  ? "Modo chat (sin micrófono). Conversaciones anonimizadas."
+                  : "Habla o escribe — como prefieras. Tu voz no se guarda."}
               </p>
             </footer>
           )}
