@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { wrapCronHandler } from "@/lib/cron-tracking";
-import { runCompetitorWatch } from "@/lib/competitor-intel";
+import {
+  runCompetitorWatch,
+  buildWatchlist,
+  competitorSources,
+  INTEL_VERSION,
+} from "@/lib/competitor-intel";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +42,7 @@ export async function GET(req: Request) {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
-  const [last, total, rows] = await Promise.all([
+  const [last, total, rows, watchlistPreview, sources] = await Promise.all([
     prisma.adminSetting.findUnique({ where: { key: "competitor_watch_last" } }),
     prisma.competitorPrice.count(),
     prisma.competitorPrice.findMany({
@@ -45,9 +50,15 @@ export async function GET(req: Request) {
       take: 10,
       include: { product: { select: { internalRef: true, name: true } } },
     }),
+    buildWatchlist(8),
+    competitorSources(),
   ]);
   return NextResponse.json({
     ok: true,
+    version: INTEL_VERSION,
+    tavily: Boolean(process.env.TAVILY_API_KEY),
+    sources,
+    watchlistPreview,
     lastRun: last?.value ?? null,
     totalObservaciones: total,
     ultimas: rows.map((r) => ({

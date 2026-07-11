@@ -20,7 +20,11 @@ import { notifyTelegram } from "@/lib/telegram";
  */
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 const EXTRACT_MODEL = process.env.OPENROUTER_MODEL_EXTRACT || "anthropic/claude-haiku-4.5";
+
+/** Versión del motor — para saber desde el GET de estado qué código corre. */
+export const INTEL_VERSION = "v4-tavily";
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36";
 
@@ -95,12 +99,50 @@ async function bingSearch(domain: string, query: string): Promise<string[]> {
   }
 }
 
-/** DDG lite y, si no da nada (captcha/bloqueo a IPs de datacenter), Bing. */
+/** Búsqueda vía API de Tavily — el ÚNICO camino fiable desde IPs de
+ *  datacenter (DDG y Bing scrapeados capan tanto el VPS como los runners de
+ *  GH, verificado 2026-07-11). Sin TAVILY_API_KEY devuelve vacío y se cae a
+ *  los motores scrapeados (que funcionan solo desde IP residencial). */
+async function tavilySearch(domain: string, query: string): Promise<string[]> {
+  if (!TAVILY_API_KEY) return [];
+  try {
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${TAVILY_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query,
+        include_domains: [domain],
+        max_results: 3,
+        search_depth: "basic",
+      }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) {
+      console.error("[competitor-intel] tavily", res.status);
+      return [];
+    }
+    const json = (await res.json()) as { results?: { url?: string }[] };
+    return (json.results ?? [])
+      .map((r) => r.url)
+      .filter((u): u is string => typeof u === "string" && u.includes(domain))
+      .slice(0, 2);
+  } catch (e) {
+    console.error("[competitor-intel] tavily", e instanceof Error ? e.message : e);
+    return [];
+  }
+}
+
+/** Orden: Tavily (API, fiable) → DDG lite → Bing (scrapeados, solo IP residencial). */
 async function searchCompetitor(
   domain: string,
   query: string,
-): Promise<{ urls: string[]; engine: "ddg" | "bing" | "none" }> {
-  let urls = await ddgSearch(domain, query);
+): Promise<{ urls: string[]; engine: "tavily" | "ddg" | "bing" | "none" }> {
+  let urls = await tavilySearch(domain, query);
+  if (urls.length > 0) return { urls, engine: "tavily" };
+  urls = await ddgSearch(domain, query);
   if (urls.length > 0) return { urls, engine: "ddg" };
   await sleep(1500);
   urls = await bingSearch(domain, query);
@@ -474,7 +516,7 @@ export async function analyzeCompetitorsForProduct(
 /** Watchlist: refs forzadas en AdminSetting + top productos cotizados 120d.
  *  Solo slugs que sigan siendo productos ACTIVOS (los carritos de prueba y
  *  productos retirados contaminaban la lista — visto en el primer run real). */
-async function buildWatchlist(limit: number): Promise<string[]> {
+export async function buildWatchlist(limit: number): Promise<string[]> {
   const forced = (await settingJson<string[]>("competitor_watchlist")) ?? [];
   const since = new Date(Date.now() - 120 * 86400_000);
   const top = await prisma.cartQuoteItem.groupBy({
