@@ -1,0 +1,24 @@
+src/lib/competitor-intel.ts
+  s_65877aa637ec34::t_36d1976f5f9d14 23,25-27
+  s_65877aa637ec34::t_627cb447768f74 102-138,142-145
+  s_65877aa637ec34::t_2a380faf5facc9 519
+src/app/api/cron/competitor-watch/route.ts
+  s_65877aa637ec34::t_8c65243c5188fa 45,53-54,58-61
+  s_65877aa637ec34::t_aebcb0aad4a1b8 5-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "5bace66fe997fe5f0004342fc3393fc639ea93b3",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
