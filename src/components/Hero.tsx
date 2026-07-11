@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AskDiego } from "./AskDiego";
 import { motion, fadeUp, stagger, viewportOnce } from "./motion";
 import { Counter } from "./Counter";
 import { NavSearch } from "./NavSearch";
@@ -108,6 +109,17 @@ export function Hero({
             {ctaSecondary.label} →
           </Link>
         </motion.div>
+
+        {/* Entrada directa a Diego — terciaria a propósito: el CTA primario
+            sigue siendo único (regla de la casa). */}
+        <motion.p variants={fadeUp} className="mt-4 text-sm text-ink/60">
+          ¿Con prisa?{" "}
+          <AskDiego
+            label="Habla o escribe a Diego"
+            context="El cliente acaba de llegar a la portada de TodoMerchandising y quiere ir rápido."
+          />{" "}
+          y ten precio en 2 minutos.
+        </motion.p>
 
         {/* Stats — patrón "15 / 90+ / 320+" de startidea.es. 3 columnas
             con números enormes en grafito y eyebrow breve debajo. */}

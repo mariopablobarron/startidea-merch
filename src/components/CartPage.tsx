@@ -8,6 +8,7 @@ import { DeliveryEstimate } from "@/components/DeliveryEstimate";
 import { trackLead, trackInitiateCheckout } from "@/lib/ads-events";
 import { waLink, waCartQuoteMessage, trackWaClick } from "@/lib/whatsapp";
 import { withIva, ivaPart } from "@/lib/iva";
+import { AskDiego } from "@/components/AskDiego";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -791,6 +792,16 @@ export function CartPage() {
                     plazo de pago, te enviamos presupuesto cerrado por email
                     en menos de 24 h laborables.
                   </p>
+                  <p className="mt-3 text-xs text-ink/60">
+                    ¿Alguna duda antes de pedir?{" "}
+                    <AskDiego
+                      label="Diego te la resuelve al momento"
+                      context={`El cliente está en el carrito, a punto de pedir cotización, con: ${items
+                        .slice(0, 5)
+                        .map((it) => `${it.quantity}× ${it.productName}`)
+                        .join(", ")}${items.length > 5 ? ` y ${items.length - 5} líneas más` : ""}. Resuélvele dudas para que complete el pedido; no le hagas repetir lo que ya tiene en el carrito.`}
+                    />
+                  </p>
                 </>
               ) : (
                 <>
@@ -805,6 +816,16 @@ export function CartPage() {
                     Algunos productos requieren configuración personalizada.
                     Te enviamos cotización cerrada con precio, mockup y plazo
                     en menos de 24 h. Sin compromiso.
+                  </p>
+                  <p className="mt-3 text-xs text-ink/60">
+                    ¿Alguna duda antes de pedir?{" "}
+                    <AskDiego
+                      label="Diego te la resuelve al momento"
+                      context={`El cliente está en el carrito, a punto de pedir cotización, con: ${items
+                        .slice(0, 5)
+                        .map((it) => `${it.quantity}× ${it.productName}`)
+                        .join(", ")}${items.length > 5 ? ` y ${items.length - 5} líneas más` : ""}. Resuélvele dudas para que complete el pedido; no le hagas repetir lo que ya tiene en el carrito.`}
+                    />
                   </p>
                 </>
               )}

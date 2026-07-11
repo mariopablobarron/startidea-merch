@@ -22,6 +22,7 @@ import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
 import { computeClientPricing } from "@/lib/product-pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { FavoriteHeart } from "@/components/portal/FavoriteHeart";
+import { AskDiego } from "@/components/AskDiego";
 import { publicBrand } from "@/lib/brand-filter";
 import { displayPositionId } from "@/lib/marking-position-display";
 import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
@@ -355,7 +356,11 @@ export default async function ProductDetailPage({
                     Áreas de marcaje
                   </h2>
                   <p className="mt-2 text-sm text-ink/60">
-                    {product.positions.length} {product.positions.length === 1 ? "zona disponible" : "zonas disponibles"} para personalizar tu logo.
+                    {product.positions.length} {product.positions.length === 1 ? "zona disponible" : "zonas disponibles"} para personalizar tu logo.{" "}
+                    <AskDiego
+                      label="¿Dudas? Pregunta a Diego"
+                      context={`El cliente está viendo la ficha del producto "${displayName}" (ref ${displayRef}) y puede tener dudas sobre personalización, técnicas o cantidades. Ayúdale sobre ESTE producto.`}
+                    />
                   </p>
                   <ul className="mt-5 grid gap-4 sm:grid-cols-2">
                     {product.positions.map((pos) => (

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { AskDiego } from "@/components/AskDiego";
 import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 
@@ -153,7 +154,13 @@ export default function AyudaPage() {
               Resolvemos tus dudas en 5 minutos.
             </h1>
             <p className="mt-4 max-w-3xl text-lg text-ink/70">
-              Si no encuentras lo que buscas, escríbenos a{" "}
+              Si no encuentras lo que buscas,{" "}
+              <AskDiego
+                label="pregunta a Diego"
+                context="El cliente está en el centro de ayuda buscando resolver una duda. Ayúdale directo."
+                className="inline-flex items-center gap-1 text-lg font-medium text-accent underline-offset-4 hover:underline"
+              />{" "}
+              (responde al momento, por voz o por escrito), escríbenos a{" "}
               <a href="mailto:pedidos@startidea.es" className="font-medium text-accent underline-offset-4 hover:underline">
                 pedidos@startidea.es
               </a>{" "}

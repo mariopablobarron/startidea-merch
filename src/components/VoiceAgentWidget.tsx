@@ -36,6 +36,8 @@ function VoiceAgentInner() {
   const [draft, setDraft] = useState("");
   // true = sesión sin micro (el usuario denegó permiso → chat escrito).
   const [textOnlyMode, setTextOnlyMode] = useState(false);
+  // Contexto pendiente de enviar a Diego cuando conecte (viene de AskDiego).
+  const pendingContextRef = useRef<string | null>(null);
   const [productSlugsDiscussed, setProductSlugsDiscussed] = useState<Set<string>>(new Set());
   const startedAtRef = useRef<number | null>(null);
   const toolsCalledRef = useRef<Array<{ tool: string; ok: boolean; at: string }>>([]);
@@ -178,6 +180,39 @@ function VoiceAgentInner() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [isActive, stop]);
+
+  // ── Apertura desde cualquier punto de la web (componente AskDiego) ──
+  // El evento trae opcionalmente contexto ("el cliente está viendo X"): se
+  // envía a Diego como actualización contextual, no como mensaje del usuario.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const context = (e as CustomEvent<{ context?: string }>).detail?.context ?? null;
+      setOpen(true);
+      if (c.status === "connected") {
+        if (context) {
+          try {
+            c.sendContextualUpdate(context);
+          } catch {}
+        }
+      } else {
+        pendingContextRef.current = context;
+        void start();
+      }
+    };
+    window.addEventListener("diego:open", onOpen);
+    return () => window.removeEventListener("diego:open", onOpen);
+  }, [c, start]);
+
+  // Al conectar, volcar el contexto pendiente (si lo había).
+  useEffect(() => {
+    if (c.status !== "connected") return;
+    const ctx = pendingContextRef.current;
+    if (!ctx) return;
+    pendingContextRef.current = null;
+    try {
+      c.sendContextualUpdate(ctx);
+    } catch {}
+  }, [c.status, c]);
 
   // Visualización de onda — Carmen viva.
   //
