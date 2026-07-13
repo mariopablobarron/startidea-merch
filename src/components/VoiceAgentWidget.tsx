@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { trackLead } from "@/lib/ads-events";
+import { addItem } from "@/lib/cart-storage";
 
 /**
  * Widget flotante del agente de voz Diego (ElevenLabs Conversational AI).
@@ -53,7 +54,8 @@ type ProductCard = {
 
 type Message =
   | { role: "user" | "agent"; text: string; at: number }
-  | { role: "products"; items: ProductCard[]; at: number };
+  | { role: "products"; items: ProductCard[]; at: number }
+  | { role: "cart"; text: string; at: number };
 
 type HoldMusic = { ctx: AudioContext; master: GainNode; timer: number };
 
@@ -217,6 +219,74 @@ function VoiceAgentInner() {
     // Tools que se ejecutan EN el navegador. Diego llama a mostrar_productos
     // cuando recomienda productos concretos → tarjetas con foto en el panel.
     clientTools: {
+      // Compra directa por conversación: Diego añade la línea al carrito REAL
+      // de la web (localStorage compartido con la ficha y /carrito), con el
+      // precio del MISMO cálculo server-side que usa el configurador.
+      anadir_al_carrito: async (params: unknown) => {
+        const p = (params ?? {}) as {
+          slug?: string;
+          quantity?: number | string;
+          color?: string;
+          size?: string;
+          notes?: string;
+        };
+        const slug = String(p.slug || "").trim().toLowerCase().replace(/^\/?catalogo\//, "");
+        const qty = Math.max(0, Math.round(Number(p.quantity) || 0));
+        if (!/^[a-z0-9-]{1,160}$/.test(slug) || qty < 1) {
+          return "Error: faltan slug válido o cantidad (entero ≥1).";
+        }
+        try {
+          const [cardR, calcR] = await Promise.all([
+            fetch(`/api/products/cards?slugs=${encodeURIComponent(slug)}`),
+            fetch("/api/quote/calculate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ productSlug: slug, quantity: qty }),
+            }),
+          ]);
+          const card = cardR.ok
+            ? ((await cardR.json()) as { items?: ProductCard[] }).items?.[0]
+            : undefined;
+          const calc = calcR.ok
+            ? ((await calcR.json()) as {
+                ok?: boolean;
+                unitClientCents?: number;
+                totalClientCents?: number;
+              })
+            : undefined;
+          if (!card) return "Error: producto no encontrado o no disponible.";
+          addItem({
+            productSlug: card.slug,
+            productRef: card.ref,
+            productName: card.name,
+            primaryImageUrl: card.image,
+            quantity: qty,
+            colorName: p.color?.trim() || null,
+            size: p.size?.trim() || null,
+            notes: p.notes?.trim() || null,
+            unitPriceClientCents: calc?.unitClientCents ?? null,
+            totalClientCents: calc?.totalClientCents ?? null,
+          });
+          const totalTxt =
+            calc?.totalClientCents != null
+              ? (calc.totalClientCents / 100).toLocaleString("es-ES", {
+                  style: "currency",
+                  currency: "EUR",
+                })
+              : null;
+          setMessages((m) => [
+            ...m,
+            {
+              role: "cart",
+              text: `${qty} × ${card.name}${p.color ? ` (${p.color})` : ""}${totalTxt ? ` — ${totalTxt} sin IVA` : ""}`,
+              at: Date.now(),
+            },
+          ]);
+          return `Añadido al carrito: ${qty} × ${card.name}${totalTxt ? `, total ${totalTxt} sin IVA` : ""}. El cliente puede finalizar la compra en el carrito de la web o seguir añadiendo productos.`;
+        } catch {
+          return "Error técnico al añadir al carrito. Ofrece el presupuesto por email como alternativa.";
+        }
+      },
       mostrar_productos: async (params: unknown) => {
         const p = (params ?? {}) as { slugs?: string[] | string };
         const arr = Array.isArray(p.slugs)
@@ -775,7 +845,22 @@ function VoiceAgentInner() {
               </p>
             )}
             {messages.map((m, i) =>
-              m.role === "products" ? (
+              m.role === "cart" ? (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-social/40 bg-social/10 px-3 py-2"
+                >
+                  <p className="text-xs font-medium text-ink/85">🛒 Añadido: {m.text}</p>
+                  <a
+                    href="/carrito"
+                    target="_blank"
+                    rel="noopener"
+                    className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-[11px] font-semibold text-bone hover:bg-accent"
+                  >
+                    Ver carrito
+                  </a>
+                </div>
+              ) : m.role === "products" ? (
                 <div key={i} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
                   {m.items.map((it) => (
                     <a

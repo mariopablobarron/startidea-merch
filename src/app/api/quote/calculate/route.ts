@@ -235,6 +235,10 @@ export async function POST(req: Request) {
       unitClient: formatMoney(clientUnitCents),
       totalClient: formatMoney(totalClientCents),
     },
+    // Céntimos en crudo: los consume el widget de Diego (anadir_al_carrito)
+    // para crear la línea de carrito con los MISMOS números que la ficha.
+    unitClientCents: clientUnitCents,
+    totalClientCents,
     // Campo legacy (un poco diferente de markingClient pero compatible):
     clientMarkingPerUnit:
       markingNetTotalCents > 0 && data.quantity > 0
