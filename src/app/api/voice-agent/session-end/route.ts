@@ -50,7 +50,9 @@ export async function POST(req: Request) {
     select: { id: true, endedAt: true, sourceUrl: true },
   });
   if (!existing) return NextResponse.json({ ok: true });
-  const firstClose = !existing.endedAt;
+  // Una sesión ya cerrada es inmutable: ni re-notifica ni sobrescribe la
+  // transcripción/duración guardadas (el endpoint es público).
+  if (existing.endedAt) return NextResponse.json({ ok: true });
 
   // Coste estimado ElevenLabs Conversational AI: ~$0.08/min ≈ 0,074€ ≈ 7,4 cents/min
   const costCents = Math.round((d.duration_sec / 60) * 7.4);
@@ -70,12 +72,10 @@ export async function POST(req: Request) {
     })
     .catch(() => {}); // p. ej. conversationId duplicado: no bloquea la notificación
 
-  if (firstClose) {
-    // Fire-and-forget: el widget suele cerrar la pestaña justo después.
-    void notifyTranscript(d, existing.sourceUrl).catch((e) =>
-      console.error("[session-end] telegram:", e instanceof Error ? e.message : e),
-    );
-  }
+  // Fire-and-forget: el widget suele cerrar la pestaña justo después.
+  void notifyTranscript(d, existing.sourceUrl).catch((e) =>
+    console.error("[session-end] telegram:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({ ok: true });
 }
