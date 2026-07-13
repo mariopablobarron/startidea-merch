@@ -138,6 +138,11 @@ function VoiceAgentInner() {
   // ofrecer "Reconectar" en ese caso.
   const userEndedRef = useRef(false);
   const musicRef = useRef<HoldMusic | null>(null);
+  // Espejo del transcript para leerlo en stop() sin re-crear el callback.
+  const messagesRef = useRef<Message[]>([]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Si ya dejó sus datos en una visita anterior, no volver a pedirlos.
   useEffect(() => {
@@ -368,12 +373,19 @@ function VoiceAgentInner() {
       fetch("/api/voice-agent/session-end", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // keepalive: que el POST sobreviva si el usuario cierra la pestaña.
+        keepalive: true,
         body: JSON.stringify({
           voice_session_id: voiceSessionId,
           elevenlabs_conversation_id: c.getId?.() || null,
           duration_sec: durationSec,
           tools_called: toolsCalledRef.current,
           product_slugs_discussed: Array.from(productSlugsDiscussed),
+          // Fallback para la notificación Telegram (la fuente canónica es la
+          // API de ElevenLabs). Acotado: keepalive limita el body a 64 KB.
+          transcript: messagesRef.current
+            .slice(-200)
+            .map((m) => ({ role: m.role, text: m.text.slice(0, 1000) })),
         }),
       }).catch(() => {});
     }

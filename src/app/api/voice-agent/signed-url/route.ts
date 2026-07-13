@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
+import { notifyTelegram } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,6 +73,22 @@ export async function GET(req: Request) {
   const session = await prisma.voiceSession.create({
     data: { userAgent: ua, sourceUrl: referer },
   });
+
+  // Aviso en vivo al equipo: alguien acaba de empezar a hablar con Diego.
+  // La transcripción llega al cerrar la sesión (session-end). Fire-and-forget.
+  const page = (() => {
+    if (!referer) return null;
+    try {
+      return new URL(referer).pathname;
+    } catch {
+      return null;
+    }
+  })();
+  void notifyTelegram(
+    `🎙️ <b>Diego</b> — conversación iniciada${page ? `\n📍 ${page.replace(/&/g, "&amp;").replace(/</g, "&lt;")}` : ""}\n<i>La transcripción llegará al terminar.</i>`,
+  ).catch((e) =>
+    console.error("[voice-agent] telegram inicio:", e instanceof Error ? e.message : e),
+  );
 
   return NextResponse.json({
     signedUrl,

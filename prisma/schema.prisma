@@ -499,6 +499,7 @@ model VoiceSession {
   durationSec              Int?
   estimatedCostCents       Int? // estimated cost in EUR cents
   toolsCalled              Json? // [{tool, args, ok, at}]
+  transcript               Json? // [{role: user|agent, text}] — ElevenLabs API o fallback del widget
   productSlugsDiscussed    String[]   @default([])
   resultingCart            CartQuote? @relation(fields: [resultingCartId], references: [id], onDelete: SetNull)
   resultingCartId          String?
