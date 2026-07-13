@@ -1,0 +1,26 @@
+src/app/api/products/cards/route.ts
+  s_65877aa637ec34::t_e6938d807429ad 1-84
+src/components/VoiceAgentWidget.tsx
+  s_65877aa637ec34::t_618e0c44817b61 198-213
+  s_65877aa637ec34::t_407df8d45d76e5 448,450-453
+  s_65877aa637ec34::t_89c521eac18544 246-248
+  s_65877aa637ec34::t_b8e0c1b9f684eb 44-56
+  s_65877aa637ec34::t_a0d19f26008d05 712-756
+  s_65877aa637ec34::t_b622769ccca7ae 158-188
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "5eecbed8a1f9dcd7632c6b1d4f568278c3e9e8b8",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
