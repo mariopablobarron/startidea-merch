@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
  *
  * Histórico: varios sitios enlazan a /cotizar (CTA de la calculadora RSC, páginas
  * pillar, plantilla de broadcast "recordatorio") y, sobre todo, los emails de
- * carrito abandonado (crons abandoned-cart-drip / abandoned-reminders / remind)
+ * carrito abandonado (cron abandoned-cart-drip y el remind manual del admin)
  * generan /cotizar?recover={cartId} como enlace "Retomar mi cotización". Pero la
  * ruta /cotizar NUNCA existió → todos esos enlaces daban 404 (fuga de conversión
  * en la recuperación de carritos).

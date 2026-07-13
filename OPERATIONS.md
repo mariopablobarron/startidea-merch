@@ -216,8 +216,8 @@ Integrados hasta ahora (6/8 activos en GH Actions):
 - `insights-digest` (weekly)
 - `insights-digest-monthly`
 
-Pendientes de integrar (otros 16 crons sin tracking aún):
-abandoned-cart-drip, abandoned-reminders, backup-db, cifra-sync,
+Pendientes de integrar (otros 15 crons sin tracking aún):
+abandoned-cart-drip, backup-db, cifra-sync,
 embeddings-sync, improve-descriptions, makito-marking-enrich, makito-sync,
 midocean-print-pricelist-sync, midocean-sync, post-order-drip,
 publish-scheduled, refresh-tracking, review-invite, stock-alert,

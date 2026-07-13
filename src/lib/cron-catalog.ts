@@ -136,15 +136,6 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Drip D1/D3/D7 + auto-archivo D30 carritos abandonados",
   },
   {
-    name: "abandoned-reminders",
-    endpointPath: "/api/cron/abandoned-reminders",
-    method: "POST",
-    schedule: "cada 12h (00:00 y 12:00 UTC)",
-    scheduleCron: "0 0,12 * * *",
-    frequencyHours: 12,
-    description: "Recordatorios de carritos abandonados",
-  },
-  {
     name: "review-invite",
     endpointPath: "/api/cron/review-invite",
     method: "POST",

@@ -259,43 +259,7 @@ async function buildReport(): Promise<CronReport[]> {
     });
   }
 
-  // 10. abandoned-reminders — evidencia: CartQuote.reminderSentAt max
-  {
-    const r = await prisma.cartQuote.findFirst({
-      where: { reminderSentAt: { not: null } },
-      orderBy: { reminderSentAt: "desc" },
-      select: { reminderSentAt: true },
-    });
-    // Candidatos elegibles: NEW/IN_PROGRESS >24h sin reminder reciente
-    const eligible = await prisma.cartQuote.count({
-      where: {
-        status: { in: ["NEW", "IN_PROGRESS"] },
-        createdAt: { lt: new Date(Date.now() - 24 * 3_600_000) },
-        OR: [
-          { reminderSentAt: null },
-          { reminderSentAt: { lt: new Date(Date.now() - 48 * 3_600_000) } },
-        ],
-      },
-    });
-    const c = classify(r?.reminderSentAt ?? null, 12, { eligibleCandidates: eligible });
-    reports.push({
-      name: "abandoned-reminders",
-      endpoint: "/api/cron/abandoned-reminders",
-      frequencyHours: 12,
-      evidenceSource: "CartQuote.reminderSentAt (max)",
-      lastEvidenceAt: r?.reminderSentAt?.toISOString() ?? null,
-      hoursSince: c.hoursSince,
-      status: c.status,
-      note:
-        eligible === 0
-          ? "Sin candidatos elegibles ahora"
-          : c.status === "STALE"
-            ? `${eligible} candidatos elegibles sin atender`
-            : undefined,
-    });
-  }
-
-  // 11. review-invite — evidencia: Review.invitedAt max
+  // 10. review-invite — evidencia: Review.invitedAt max
   {
     const r = await prisma.review.findFirst({
       orderBy: { invitedAt: "desc" },
@@ -314,7 +278,7 @@ async function buildReport(): Promise<CronReport[]> {
     });
   }
 
-  // 12. backup-db — sin huella BD (sólo Telegram)
+  // 11. backup-db — sin huella BD (sólo Telegram)
   reports.push({
     name: "backup-db",
     endpoint: "/api/cron/backup-db",
@@ -326,7 +290,7 @@ async function buildReport(): Promise<CronReport[]> {
     note: "Verificar manualmente en chat Telegram (debe llegar diario)",
   });
 
-  // 13. post-order-drip — evidencia: EmailDripSent step ∈ {0,14,45}
+  // 12. post-order-drip — evidencia: EmailDripSent step ∈ {0,14,45}
   {
     const r = await prisma.emailDripSent.findFirst({
       where: { step: { in: [0, 14, 45] } },

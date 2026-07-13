@@ -33,8 +33,10 @@ const EUR = new Intl.NumberFormat("es-ES", {
  *   - tiene al menos 1 item
  *   - no tiene ningún Payment.PAID asociado
  *
- * Llamar 1x/día desde cron-job.org:
+ * Llamar 1x/día desde el crontab del VPS (05:30, vía merch-cron-runner.sh):
  *   POST /api/cron/abandoned-cart-drip  con header X-Cron-Secret
+ * Es el ÚNICO sistema de recordatorio de carritos (el antiguo abandoned-reminders
+ * se consolidó aquí en 2026-07: este drip cubre todo lo que hacía y más).
  */
 
 type DripStep = 1 | 3 | 7 | 30;

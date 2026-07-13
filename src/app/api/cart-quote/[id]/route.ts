@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 /**
  * Recuperación de carritos abandonados — endpoint público por id de CartQuote.
  *
- * Lo usan los emails de recordatorio (crons abandoned-cart-drip /
- * abandoned-reminders y /api/admin/cart-quotes/[id]/remind), cuyo CTA "Retomar
+ * Lo usan los emails de recordatorio (cron abandoned-cart-drip y
+ * /api/admin/cart-quotes/[id]/remind), cuyo CTA "Retomar
  * mi cotización" apunta a /cotizar?recover={cartId} → /carrito?recover={cartId}.
  * Cuando el cliente abre ese enlace en OTRO dispositivo, su localStorage está
  * vacío; la CartPage hace GET aquí para rehidratar la cesta.
