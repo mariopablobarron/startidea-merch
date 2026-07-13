@@ -1,18 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
+import { trackLead } from "@/lib/ads-events";
 
 /**
- * Widget flotante del agente de voz Carmen (ElevenLabs Conversational AI).
+ * Widget flotante del agente de voz Diego (ElevenLabs Conversational AI).
  * Estados visuales:
  *   - idle: pildora compacta con micro
  *   - connecting: spinner + "Conectando…"
  *   - active (listening/speaking): panel grande con transcript + onda + cerrar
- *   - ended: chip "¿Te ayudó? ¿Quieres llamada humana?"
  *
- * El envuelve <ConversationProvider> el hook useConversation. Sin proveedor
- * dentro del árbol, el hook tira error. Por eso exportamos el wrapper.
+ * Robustez de arranque (2026-07-12, "se queda pillado"):
+ *   - El permiso de micro se pide ANTES de la signed URL: la URL es de un solo
+ *     uso y caduca; si el usuario tarda en responder al prompt del micro, la
+ *     conexión moría colgada en "Conectando…".
+ *   - Webviews sin getUserMedia (Instagram/LinkedIn…) → directo a modo chat.
+ *   - Watchdog: si tras 20s sigue "connecting", se aborta y sale "Reintentar".
+ *   - "Cerrar" aborta también durante la conexión; una desconexión inesperada
+ *     ofrece "Reconectar" conservando la conversación.
+ *
+ * Música de espera: mientras conecta o mientras Diego "piensa" (el cliente ya
+ * habló/escribió y aún no hay respuesta) suena un arpegio suave generado con
+ * WebAudio — sin ficheros de audio ni licencias, volumen bajo para no ensuciar
+ * el micrófono.
+ *
+ * Formulario silencioso: durante la conversación se muestra (sin que Diego lo
+ * anuncie) un mini-formulario nombre/email/teléfono → POST /api/quote-request
+ * (source diego-widget). Al enviarse se le pasa a Diego como contexto para que
+ * no vuelva a pedir los datos.
+ *
+ * El wrapper <ConversationProvider> envuelve el hook useConversation. Sin
+ * proveedor dentro del árbol, el hook tira error. Por eso exportamos el wrapper.
  */
 export function VoiceAgentWidget() {
   return (
@@ -23,6 +42,70 @@ export function VoiceAgentWidget() {
 }
 
 type Message = { role: "user" | "agent"; text: string; at: number };
+
+type HoldMusic = { ctx: AudioContext; master: GainNode; timer: number };
+
+const LEAD_STORAGE_KEY = "merch:diego-lead";
+
+function startHoldMusic(ref: MutableRefObject<HoldMusic | null>) {
+  if (ref.current) return;
+  try {
+    const Ctx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, ctx.currentTime);
+    // Volumen bajo: es hilo musical de espera, no debe pisar la voz ni el micro.
+    master.gain.exponentialRampToValueAtTime(0.045, ctx.currentTime + 1.2);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 2200;
+    master.connect(filter);
+    filter.connect(ctx.destination);
+
+    // Pentatónica de Do — cualquier orden suena amable (sin disonancias).
+    const scale = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+    const pattern = [0, 2, 4, 3, 5, 4, 2, 1];
+    let step = 0;
+    const timer = window.setInterval(() => {
+      const note = scale[pattern[step % pattern.length]]!;
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.value = note * (1 + (Math.random() - 0.5) * 0.003);
+      const g = ctx.createGain();
+      const t = ctx.currentTime;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(1, t + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+      osc.connect(g);
+      g.connect(master);
+      osc.start(t);
+      osc.stop(t + 1.5);
+      step++;
+    }, 420);
+    ref.current = { ctx, master, timer };
+  } catch {
+    /* sin WebAudio: la espera es silenciosa, nada más */
+  }
+}
+
+function stopHoldMusic(ref: MutableRefObject<HoldMusic | null>) {
+  const m = ref.current;
+  if (!m) return;
+  ref.current = null;
+  try {
+    clearInterval(m.timer);
+    const t = m.ctx.currentTime;
+    m.master.gain.cancelScheduledValues(t);
+    m.master.gain.setValueAtTime(Math.max(m.master.gain.value, 0.0001), t);
+    m.master.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    setTimeout(() => {
+      m.ctx.close().catch(() => {});
+    }, 450);
+  } catch {}
+}
 
 function VoiceAgentInner() {
   const [open, setOpen] = useState(false);
@@ -36,18 +119,43 @@ function VoiceAgentInner() {
   const [draft, setDraft] = useState("");
   // true = sesión sin micro (el usuario denegó permiso → chat escrito).
   const [textOnlyMode, setTextOnlyMode] = useState(false);
+  // El cliente ya habló/escribió y Diego aún no ha contestado → música de espera.
+  const [awaitingReply, setAwaitingReply] = useState(false);
+  // La sesión se cayó sin que el usuario la terminara → ofrecer "Reconectar".
+  const [dropped, setDropped] = useState(false);
+  // Mini-formulario de contacto silencioso.
+  const [leadName, setLeadName] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
+  const [leadPhone, setLeadPhone] = useState("");
+  const [leadState, setLeadState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [leadHidden, setLeadHidden] = useState(false);
   // Contexto pendiente de enviar a Diego cuando conecte (viene de AskDiego).
   const pendingContextRef = useRef<string | null>(null);
   const [productSlugsDiscussed, setProductSlugsDiscussed] = useState<Set<string>>(new Set());
   const startedAtRef = useRef<number | null>(null);
   const toolsCalledRef = useRef<Array<{ tool: string; ok: boolean; at: string }>>([]);
+  // true mientras la desconexión es intencionada (Terminar/watchdog): no
+  // ofrecer "Reconectar" en ese caso.
+  const userEndedRef = useRef(false);
+  const musicRef = useRef<HoldMusic | null>(null);
+
+  // Si ya dejó sus datos en una visita anterior, no volver a pedirlos.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(LEAD_STORAGE_KEY)) setLeadHidden(true);
+    } catch {}
+  }, []);
 
   const c = useConversation({
     onConnect: () => {
       startedAtRef.current = Date.now();
     },
+    onDisconnect: () => {
+      if (!userEndedRef.current && startedAtRef.current) setDropped(true);
+    },
     onMessage: ({ message, source }: { message: string; source: "user" | "ai" }) => {
       if (!message) return;
+      setAwaitingReply(source === "user");
       setMessages((m) => {
         // Anti-eco: si el usuario acaba de teclear este mismo texto (sendText
         // ya lo pintó), no lo dupliques cuando el SDK lo devuelva.
@@ -78,6 +186,8 @@ function VoiceAgentInner() {
       setBootingError(msg.slice(0, 200));
     },
     onAgentToolRequest: (info: { tool_name: string }) => {
+      // Los tools (cotizar, presupuesto…) tardan segundos: cuenta como espera.
+      setAwaitingReply(true);
       toolsCalledRef.current.push({
         tool: info.tool_name,
         ok: true,
@@ -89,10 +199,28 @@ function VoiceAgentInner() {
   const isActive = c.status === "connected";
   const isConnecting = c.status === "connecting";
 
+  // En cuanto Diego habla, ya no hay espera.
+  useEffect(() => {
+    if (c.isSpeaking) setAwaitingReply(false);
+  }, [c.isSpeaking]);
+
+  // ── Música de espera ────────────────────────────────────────────
+  // Suena mientras conecta o mientras Diego piensa (tras hablar/escribir el
+  // cliente). Arranca con ~1s de gracia para no sonar en respuestas rápidas.
+  const musicOn = isConnecting || (isActive && awaitingReply && !c.isSpeaking);
+  useEffect(() => {
+    if (!musicOn) {
+      stopHoldMusic(musicRef);
+      return;
+    }
+    const t = setTimeout(() => startHoldMusic(musicRef), 1000);
+    return () => {
+      clearTimeout(t);
+      stopHoldMusic(musicRef);
+    };
+  }, [musicOn]);
+
   // ── Start session ───────────────────────────────────────────────
-  // Voz por defecto; si el usuario DENIEGA el micrófono, reintentamos la
-  // sesión en modo solo-texto (chat escrito) en vez de fallar — nadie se
-  // queda fuera por no querer dar el micro.
   const fetchSignedUrl = useCallback(async () => {
     const r = await fetch("/api/voice-agent/signed-url");
     if (!r.ok) {
@@ -105,32 +233,72 @@ function VoiceAgentInner() {
     return j.signedUrl as string;
   }, []);
 
-  const start = useCallback(async () => {
-    setBootingError(null);
-    setMessages([]);
-    setTextOnlyMode(false);
-    try {
-      const signedUrl = await fetchSignedUrl();
-      // signedUrl SOLO soporta websocket (la API de ElevenLabs lo exige).
-      // WebRTC sería con conversationToken, no aplica aquí.
-      await c.startSession({ signedUrl, connectionType: "websocket" });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      // Permiso de micro denegado/no disponible → sesión de chat escrito.
-      if (/permission|denied|notallowed|notfound|mic/i.test(msg)) {
+  // Voz por defecto; sin micro (denegado o webview sin getUserMedia) → chat
+  // escrito en la misma sesión. El permiso se resuelve ANTES de pedir la
+  // signed URL (es de un solo uso y caduca mientras el usuario decide).
+  const start = useCallback(
+    async (opts?: { keepMessages?: boolean }) => {
+      setBootingError(null);
+      setDropped(false);
+      setAwaitingReply(false);
+      userEndedRef.current = false;
+      if (!opts?.keepMessages) setMessages([]);
+      setTextOnlyMode(false);
+
+      let micGranted = false;
+      if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
         try {
-          const signedUrl = await fetchSignedUrl(); // URL nueva (single-use)
-          await c.startSession({ signedUrl, connectionType: "websocket", textOnly: true });
-          setTextOnlyMode(true);
-          return;
-        } catch (err2) {
-          setBootingError(err2 instanceof Error ? err2.message : String(err2));
-          return;
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach((t) => t.stop());
+          micGranted = true;
+        } catch {
+          micGranted = false;
         }
       }
-      setBootingError(msg);
-    }
-  }, [c, fetchSignedUrl]);
+
+      try {
+        const signedUrl = await fetchSignedUrl();
+        // signedUrl SOLO soporta websocket (la API de ElevenLabs lo exige).
+        // WebRTC sería con conversationToken, no aplica aquí.
+        if (micGranted) {
+          await c.startSession({ signedUrl, connectionType: "websocket" });
+        } else {
+          await c.startSession({ signedUrl, connectionType: "websocket", textOnly: true });
+          setTextOnlyMode(true);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        // Red de seguridad: si el arranque con voz aún tropieza con el micro,
+        // reintento en chat escrito con URL nueva (single-use).
+        if (micGranted && /permission|denied|not allowed|notallowed|notfound|dismissed|mic/i.test(msg)) {
+          try {
+            const signedUrl = await fetchSignedUrl();
+            await c.startSession({ signedUrl, connectionType: "websocket", textOnly: true });
+            setTextOnlyMode(true);
+            return;
+          } catch (err2) {
+            setBootingError(err2 instanceof Error ? err2.message : String(err2));
+            return;
+          }
+        }
+        setBootingError(msg);
+      }
+    },
+    [c, fetchSignedUrl],
+  );
+
+  // Watchdog: conexión que no cuaja en 20s → abortar y ofrecer reintento.
+  useEffect(() => {
+    if (!isConnecting) return;
+    const t = setTimeout(() => {
+      userEndedRef.current = true;
+      try {
+        c.endSession();
+      } catch {}
+      setBootingError("No se pudo conectar. Vuelve a intentarlo.");
+    }, 20_000);
+    return () => clearTimeout(t);
+  }, [isConnecting, c]);
 
   // ── Enviar mensaje ESCRITO (misma sesión; Diego contesta con voz+texto) ──
   const sendText = useCallback(() => {
@@ -139,6 +307,7 @@ function VoiceAgentInner() {
     // El transcript del usuario tecleado no siempre llega por onMessage:
     // lo pintamos localmente (el guard de duplicados está en onMessage).
     setMessages((m) => [...m, { role: "user", text, at: Date.now() }]);
+    setAwaitingReply(true);
     try {
       c.sendUserMessage(text);
     } catch {
@@ -147,8 +316,48 @@ function VoiceAgentInner() {
     setDraft("");
   }, [c, draft]);
 
+  // ── Formulario silencioso de contacto ───────────────────────────
+  const leadValid = leadName.trim().length >= 2 && /\S+@\S+\.\S+/.test(leadEmail.trim());
+  const submitLead = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!leadValid || leadState === "sending") return;
+      setLeadState("sending");
+      try {
+        const r = await fetch("/api/quote-request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: leadName.trim(),
+            email: leadEmail.trim(),
+            phone: leadPhone.trim(),
+            message: `Lead del widget de ${agentName}: el cliente dejó sus datos en el formulario durante la conversación. Contactar cuanto antes.`,
+            source: "diego-widget",
+            productHint: Array.from(productSlugsDiscussed)[0] || "",
+          }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        setLeadState("sent");
+        try {
+          localStorage.setItem(LEAD_STORAGE_KEY, "1");
+        } catch {}
+        trackLead({ method: "diego-form" });
+        // Diego se entera en silencio: que no vuelva a pedir los datos.
+        try {
+          c.sendContextualUpdate(
+            `El cliente acaba de dejar sus datos de contacto en el formulario del widget (nombre: ${leadName.trim()}${leadPhone.trim() ? `, teléfono: ${leadPhone.trim()}` : ""}, email: ${leadEmail.trim()}). NO le pidas de nuevo el email ni el teléfono; si viene al caso, agradéceselo en una frase y confirma que le contactaremos.`,
+          );
+        } catch {}
+      } catch {
+        setLeadState("error");
+      }
+    },
+    [leadValid, leadState, leadName, leadEmail, leadPhone, agentName, productSlugsDiscussed, c],
+  );
+
   // ── End session ─────────────────────────────────────────────────
   const stop = useCallback(async () => {
+    userEndedRef.current = true;
     try {
       c.endSession();
     } catch {}
@@ -214,11 +423,11 @@ function VoiceAgentInner() {
     } catch {}
   }, [c.status, c]);
 
-  // Visualización de onda — Carmen viva.
+  // Visualización de onda — Diego vivo.
   //
   // Mejoras 2026-05-24 (Design Spell B1):
   // - Color y amplitud TRANSICIONAN suavemente entre hablar↔escuchar (no salto
-  //   brusco). Cuando Carmen habla → magenta vibrante con amplitud alta. Cuando
+  //   brusco). Cuando habla → magenta vibrante con amplitud alta. Cuando
   //   escucha → gris suave con amplitud baja.
   // - Gradiente vertical por barra (más oscuro al centro, más claro arriba/abajo)
   //   para sensación orgánica.
@@ -318,7 +527,7 @@ function VoiceAgentInner() {
           type="button"
           onClick={() => {
             setOpen(true);
-            start();
+            void start();
           }}
           aria-label={`Hablar o escribir con ${agentName}, asesor comercial`}
           className="fixed bottom-24 right-6 z-40 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-semibold text-bone shadow-lg hover:bg-accent"
@@ -354,7 +563,9 @@ function VoiceAgentInner() {
                         ? "chat"
                         : c.isSpeaking
                           ? "hablando"
-                          : "escuchando"
+                          : awaitingReply
+                            ? "pensando…"
+                            : "escuchando"
                       : "asesor"}
                 </span>
               </p>
@@ -362,7 +573,7 @@ function VoiceAgentInner() {
             <button
               type="button"
               onClick={() => {
-                if (isActive) stop();
+                if (isActive || isConnecting) stop();
                 setOpen(false);
               }}
               className="text-xs text-ink/55 hover:text-ink"
@@ -385,11 +596,32 @@ function VoiceAgentInner() {
           )}
 
           {/* Transcripción */}
-          <div className="max-h-72 overflow-y-auto px-4 py-3 space-y-2">
+          <div className="max-h-64 overflow-y-auto px-4 py-3 space-y-2">
             {bootingError && (
-              <p className="rounded-lg bg-accent/10 px-3 py-2 text-xs text-accent-deep">
-                ⚠ {bootingError}
-              </p>
+              <div className="rounded-lg bg-accent/10 px-3 py-2 text-xs text-accent-deep">
+                <p>⚠ {bootingError}</p>
+                {!isActive && !isConnecting && (
+                  <button
+                    type="button"
+                    onClick={() => void start({ keepMessages: true })}
+                    className="mt-1.5 rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-bone hover:bg-accent"
+                  >
+                    Reintentar
+                  </button>
+                )}
+              </div>
+            )}
+            {dropped && !bootingError && !isActive && !isConnecting && (
+              <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-ink/75">
+                <p>Se cortó la conexión.</p>
+                <button
+                  type="button"
+                  onClick={() => void start({ keepMessages: true })}
+                  className="mt-1.5 rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-bone hover:bg-accent"
+                >
+                  Reconectar
+                </button>
+              </div>
             )}
             {!isActive && !isConnecting && messages.length === 0 && !bootingError && (
               <p className="text-xs text-ink/55">
@@ -409,6 +641,67 @@ function VoiceAgentInner() {
               </div>
             ))}
           </div>
+
+          {/* Formulario silencioso: por si prefiere que le contactemos.
+              Diego NO lo anuncia; simplemente está ahí. */}
+          {isActive && !leadHidden && (
+            <div className="border-t border-line bg-bone-soft/70 px-4 py-2.5">
+              {leadState === "sent" ? (
+                <p className="text-xs font-medium text-social">
+                  ✓ Datos recibidos — te contactamos muy pronto.
+                </p>
+              ) : (
+                <form onSubmit={submitLead} className="space-y-1.5">
+                  <p className="text-[11px] text-ink/55">
+                    ¿Prefieres que te llamemos? Deja tus datos (opcional):
+                  </p>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={leadName}
+                      onChange={(e) => setLeadName(e.target.value)}
+                      placeholder="Nombre"
+                      aria-label="Tu nombre"
+                      autoComplete="name"
+                      className="min-w-0 flex-1 rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                    />
+                    <input
+                      type="tel"
+                      value={leadPhone}
+                      onChange={(e) => setLeadPhone(e.target.value)}
+                      placeholder="Teléfono"
+                      aria-label="Tu teléfono"
+                      autoComplete="tel"
+                      className="min-w-0 w-32 rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="email"
+                      value={leadEmail}
+                      onChange={(e) => setLeadEmail(e.target.value)}
+                      placeholder="Email"
+                      aria-label="Tu email"
+                      autoComplete="email"
+                      className="min-w-0 flex-1 rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!leadValid || leadState === "sending"}
+                      className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-deep disabled:opacity-40"
+                    >
+                      {leadState === "sending" ? "Enviando…" : "Enviar"}
+                    </button>
+                  </div>
+                  {leadState === "error" && (
+                    <p className="text-[11px] text-accent-deep">
+                      No se pudo enviar — inténtalo de nuevo.
+                    </p>
+                  )}
+                </form>
+              )}
+            </div>
+          )}
 
           {/* Controles: entrada de TEXTO (siempre) + micro (si hay voz) */}
           {isActive && (
