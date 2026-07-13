@@ -1,0 +1,24 @@
+src/app/api/quote/calculate/route.ts
+  s_65877aa637ec34::t_e949f912c4968e 238-241
+src/components/VoiceAgentWidget.tsx
+  s_65877aa637ec34::t_648eadd614cc78 57-58
+  s_65877aa637ec34::t_a19549bb6785b8 848-863
+  s_65877aa637ec34::t_02d3cc9fc509eb 222-289
+  s_65877aa637ec34::t_fe50693a874f0f 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "98c12775f6909572ed31379495d7cdb0ee90e434",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
