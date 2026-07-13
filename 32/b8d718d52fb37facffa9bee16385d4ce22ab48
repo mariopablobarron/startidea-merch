@@ -1,0 +1,20 @@
+src/app/api/voice-agent/session-end/route.ts
+  s_65877aa637ec34::t_26bf7863304680 75-78
+  s_65877aa637ec34::t_b32b27a9bc9236 53-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "32b8d718d52fb37facffa9bee16385d4ce22ab48",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
