@@ -135,6 +135,9 @@ function VoiceAgentInner() {
   const [awaitingReply, setAwaitingReply] = useState(false);
   // La sesión se cayó sin que el usuario la terminara → ofrecer "Reconectar".
   const [dropped, setDropped] = useState(false);
+  // Burbuja de invitación junto al botón flotante (nudge). Sale a los 5s si
+  // no está snoozeada; abrir el widget la snooza 7 días, cerrarla con ✕, 24h.
+  const [nudge, setNudge] = useState(false);
   // Mini-formulario de contacto silencioso.
   const [leadName, setLeadName] = useState("");
   const [leadEmail, setLeadEmail] = useState("");
@@ -191,6 +194,22 @@ function VoiceAgentInner() {
   useEffect(() => {
     try {
       if (localStorage.getItem(LEAD_STORAGE_KEY)) setLeadHidden(true);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      const until = Number(localStorage.getItem("merch:diego-nudge-until") || 0);
+      if (Date.now() < until) return;
+    } catch {}
+    const t = setTimeout(() => setNudge(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const snoozeNudge = useCallback((hours: number) => {
+    setNudge(false);
+    try {
+      localStorage.setItem("merch:diego-nudge-until", String(Date.now() + hours * 3600_000));
     } catch {}
   }, []);
 
@@ -305,6 +324,7 @@ function VoiceAgentInner() {
   // signed URL (es de un solo uso y caduca mientras el usuario decide).
   const start = useCallback(
     async (opts?: { keepMessages?: boolean }) => {
+      snoozeNudge(24 * 7); // ya ha entrado: la invitación sobra una temporada
       setBootingError(null);
       setDropped(false);
       setAwaitingReply(false);
@@ -351,7 +371,7 @@ function VoiceAgentInner() {
         setBootingError(msg);
       }
     },
-    [c, fetchSignedUrl],
+    [c, fetchSignedUrl, snoozeNudge],
   );
 
   // Watchdog: conexión que no cuaja en 20s → abortar y ofrecer reintento.
@@ -600,6 +620,47 @@ function VoiceAgentInner() {
 
   return (
     <>
+      {/* Burbuja de invitación (nudge) — explica qué es Diego e incita a abrir.
+          Transparencia IA (AI Act art. 50): se presenta como asistente de IA. */}
+      {nudge && !open && !isActive && !isConnecting && (
+        <div
+          className="fixed bottom-40 right-6 z-40 w-64 rounded-2xl border border-line bg-white p-3.5 shadow-xl"
+          style={{ animation: "diego-nudge-in 0.35s ease-out" }}
+        >
+          <style>{`@keyframes diego-nudge-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+          <button
+            type="button"
+            onClick={() => snoozeNudge(24)}
+            aria-label="Cerrar invitación"
+            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-ink/40 hover:bg-bone-soft hover:text-ink"
+          >
+            ✕
+          </button>
+          <p className="pr-5 text-sm leading-snug text-ink">
+            👋 ¿Precio al momento? Soy <b>{agentName}</b>, el asistente <b>IA</b> de la tienda.
+          </p>
+          <p className="mt-1 text-xs leading-snug text-ink/60">
+            Pregúntame hablando o por escrito — te enseño opciones con foto y te preparo el
+            presupuesto.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true);
+              void start();
+            }}
+            className="mt-2.5 rounded-full bg-accent px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-accent-deep"
+          >
+            Probar ahora
+          </button>
+          {/* Flecha hacia el botón flotante */}
+          <span
+            aria-hidden
+            className="absolute -bottom-1.5 right-10 h-3 w-3 rotate-45 border-b border-r border-line bg-white"
+          />
+        </div>
+      )}
+
       {/* Botón flotante */}
       {!isActive && !isConnecting && (
         <button
@@ -608,11 +669,14 @@ function VoiceAgentInner() {
             setOpen(true);
             void start();
           }}
-          aria-label={`Hablar o escribir con ${agentName}, asesor comercial`}
+          aria-label={`Hablar o escribir con ${agentName}, asistente virtual con IA`}
           className="fixed bottom-24 right-6 z-40 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-semibold text-bone shadow-lg hover:bg-accent"
         >
           <MicIcon className="h-4 w-4" />
           Habla o escribe a {agentName}
+          <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-wider">
+            IA
+          </span>
         </button>
       )}
 
@@ -704,9 +768,10 @@ function VoiceAgentInner() {
             )}
             {!isActive && !isConnecting && messages.length === 0 && !bootingError && (
               <p className="text-xs text-ink/55">
-                {agentName} te ayuda a elegir producto, te da precio al momento y te prepara el
-                presupuesto. Puedes hablarle o escribirle — si no das permiso de micro, seguirá
-                por chat.
+                {agentName} es nuestro asistente virtual con IA: te ayuda a elegir producto, te da
+                precio al momento y te prepara el presupuesto. Puedes hablarle o escribirle — si
+                no das permiso de micro, seguirá por chat. Y si prefieres una persona, pídeselo y
+                te llamamos.
               </p>
             )}
             {messages.map((m, i) =>
@@ -863,6 +928,7 @@ function VoiceAgentInner() {
                 )}
               </form>
               <p className="mt-2 text-[10px] text-ink/45">
+                Asistente con IA ·{" "}
                 {textOnlyMode
                   ? "Modo chat (sin micrófono). Conversaciones anonimizadas."
                   : "Habla o escribe — como prefieras. Tu voz no se guarda."}
