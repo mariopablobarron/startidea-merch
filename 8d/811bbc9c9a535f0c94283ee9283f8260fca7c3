@@ -1,0 +1,29 @@
+src/app/api/admin/cron-health/route.ts
+  s_65877aa637ec34::t_8bdef7b5dbd564 293
+  s_65877aa637ec34::t_60f6571eabadf7 262
+  s_65877aa637ec34::t_c1bdca10b010fa 281
+src/app/cotizar/page.tsx
+  s_65877aa637ec34::t_36810bef55eccd 8
+src/app/api/cart-quote/[id]/route.ts
+  s_65877aa637ec34::t_da5d015eba957f 12-13
+OPERATIONS.md
+  s_65877aa637ec34::t_13ce1c725dc9b4 219-220
+src/app/api/cron/abandoned-cart-drip/route.ts
+  s_65877aa637ec34::t_1ce0ddab8df4bc 36,38-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "8d811bbc9c9a535f0c94283ee9283f8260fca7c3",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
