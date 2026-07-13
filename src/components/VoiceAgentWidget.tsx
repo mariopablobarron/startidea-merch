@@ -41,7 +41,19 @@ export function VoiceAgentWidget() {
   );
 }
 
-type Message = { role: "user" | "agent"; text: string; at: number };
+type ProductCard = {
+  slug: string;
+  name: string;
+  ref: string;
+  image: string | null;
+  priceFromCents: number | null;
+  originalFromCents: number | null;
+  url: string;
+};
+
+type Message =
+  | { role: "user" | "agent"; text: string; at: number }
+  | { role: "products"; items: ProductCard[]; at: number };
 
 type HoldMusic = { ctx: AudioContext; master: GainNode; timer: number };
 
@@ -143,6 +155,37 @@ function VoiceAgentInner() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+  // Slugs ya mostrados como tarjeta: no repetir la misma foto en la sesión.
+  const shownSlugsRef = useRef<Set<string>>(new Set());
+
+  // ── Tarjetas de producto en la conversación ─────────────────────
+  // Las dispara la tool de cliente `mostrar_productos` (Diego) o, como red,
+  // cualquier mención de /catalogo/<slug> en sus mensajes.
+  const showProducts = useCallback(async (rawSlugs: string[]): Promise<number> => {
+    const slugs = rawSlugs
+      .map((s) => s.trim().toLowerCase().replace(/^\/?catalogo\//, ""))
+      .filter((s) => /^[a-z0-9-]{1,160}$/.test(s))
+      .filter((s) => !shownSlugsRef.current.has(s))
+      .slice(0, 6);
+    if (slugs.length === 0) return 0;
+    for (const s of slugs) shownSlugsRef.current.add(s);
+    try {
+      const r = await fetch(`/api/products/cards?slugs=${encodeURIComponent(slugs.join(","))}`);
+      if (!r.ok) return 0;
+      const j = (await r.json()) as { items?: ProductCard[] };
+      const items = j.items || [];
+      if (items.length === 0) return 0;
+      setMessages((m) => [...m, { role: "products", items, at: Date.now() }]);
+      setProductSlugsDiscussed((prev) => {
+        const next = new Set(prev);
+        for (const it of items) next.add(it.slug);
+        return next;
+      });
+      return items.length;
+    } catch {
+      return 0;
+    }
+  }, []);
 
   // Si ya dejó sus datos en una visita anterior, no volver a pedirlos.
   useEffect(() => {
@@ -152,6 +195,22 @@ function VoiceAgentInner() {
   }, []);
 
   const c = useConversation({
+    // Tools que se ejecutan EN el navegador. Diego llama a mostrar_productos
+    // cuando recomienda productos concretos → tarjetas con foto en el panel.
+    clientTools: {
+      mostrar_productos: async (params: unknown) => {
+        const p = (params ?? {}) as { slugs?: string[] | string };
+        const arr = Array.isArray(p.slugs)
+          ? p.slugs
+          : typeof p.slugs === "string"
+            ? p.slugs.split(",")
+            : [];
+        const shown = await showProducts(arr);
+        return shown > 0
+          ? `Mostradas ${shown} tarjetas de producto en pantalla.`
+          : "No se mostraron tarjetas (slugs desconocidos o ya en pantalla).";
+      },
+    },
     onConnect: () => {
       startedAtRef.current = Date.now();
     },
@@ -184,6 +243,9 @@ function VoiceAgentInner() {
           for (const m of slugMatch) next.add(m.replace("/catalogo/", ""));
           return next;
         });
+        // Red de seguridad visual: si Diego cita enlaces sin llamar a la tool,
+        // mostramos las tarjetas igualmente.
+        if (source === "ai") void showProducts(slugMatch);
       }
     },
     onError: (err: unknown) => {
@@ -383,7 +445,12 @@ function VoiceAgentInner() {
           product_slugs_discussed: Array.from(productSlugsDiscussed),
           // Fallback para la notificación Telegram (la fuente canónica es la
           // API de ElevenLabs). Acotado: keepalive limita el body a 64 KB.
+          // Las tarjetas de producto no son texto → fuera del transcript.
           transcript: messagesRef.current
+            .filter(
+              (m): m is Extract<Message, { role: "user" | "agent" }> =>
+                m.role === "user" || m.role === "agent",
+            )
             .slice(-200)
             .map((m) => ({ role: m.role, text: m.text.slice(0, 1000) })),
         }),
@@ -642,16 +709,51 @@ function VoiceAgentInner() {
                 por chat.
               </p>
             )}
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`rounded-xl px-3 py-2 text-sm leading-relaxed ${
-                  m.role === "agent" ? "bg-bone-soft text-ink/85" : "bg-accent/10 text-ink/85 ml-6"
-                }`}
-              >
-                {m.text}
-              </div>
-            ))}
+            {messages.map((m, i) =>
+              m.role === "products" ? (
+                <div key={i} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                  {m.items.map((it) => (
+                    <a
+                      key={it.slug}
+                      href={it.url}
+                      target="_blank"
+                      rel="noopener"
+                      className="w-32 shrink-0 overflow-hidden rounded-xl border border-line bg-white hover:border-accent"
+                    >
+                      {it.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- tarjeta efímera del chat; el proxy ya sirve tamaño razonable
+                        <img
+                          src={it.image}
+                          alt={it.name}
+                          loading="lazy"
+                          className="h-24 w-full bg-bone-soft object-contain"
+                        />
+                      ) : (
+                        <div className="h-24 w-full bg-bone-soft" />
+                      )}
+                      <div className="px-2 py-1.5">
+                        <p className="truncate text-[11px] font-medium text-ink">{it.name}</p>
+                        <p className="text-[10px] text-ink/50">{it.ref}</p>
+                        {it.priceFromCents != null && (
+                          <p className="text-[11px] font-semibold text-accent-deep">
+                            desde {(it.priceFromCents / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                          </p>
+                        )}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  key={i}
+                  className={`rounded-xl px-3 py-2 text-sm leading-relaxed ${
+                    m.role === "agent" ? "bg-bone-soft text-ink/85" : "bg-accent/10 text-ink/85 ml-6"
+                  }`}
+                >
+                  {m.text}
+                </div>
+              ),
+            )}
           </div>
 
           {/* Formulario silencioso: por si prefiere que le contactemos.
