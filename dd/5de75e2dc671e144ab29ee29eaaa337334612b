@@ -1,0 +1,23 @@
+src/lib/embeddings.ts
+  s_65877aa637ec34::t_d1aa179b3522f1 94-117,121-133,135,141-146
+  s_65877aa637ec34::t_f624ee92913e45 147
+src/app/api/health/route.ts
+  s_65877aa637ec34::t_5864ce3a562fd7 3
+  s_65877aa637ec34::t_5a2d41381e31e6 24-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "dd5de75e2dc671e144ab29ee29eaaa337334612b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
