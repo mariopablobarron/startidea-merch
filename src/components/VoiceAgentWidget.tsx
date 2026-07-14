@@ -850,8 +850,12 @@ function VoiceAgentInner() {
             </div>
           )}
 
-          {/* Transcripción */}
-          <div ref={transcriptRef} className="max-h-64 overflow-y-auto px-4 py-3 space-y-2">
+          {/* Transcripción. column-reverse = el navegador ancla el scroll al
+              FONDO de forma nativa (patrón chat): el último mensaje y las
+              tarjetas siempre visibles sin JS. El wrapper interior mantiene
+              el orden normal de lectura. */}
+          <div ref={transcriptRef} className="flex max-h-64 flex-col-reverse overflow-y-auto px-4 py-3">
+            <div className="space-y-2">
             {bootingError && (
               <div className="rounded-lg bg-accent/10 px-3 py-2 text-xs text-accent-deep">
                 <p>⚠ {bootingError}</p>
@@ -946,6 +950,7 @@ function VoiceAgentInner() {
                 </div>
               ),
             )}
+            </div>
           </div>
 
           {/* Formulario silencioso: por si prefiere que le contactemos.
