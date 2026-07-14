@@ -146,6 +146,14 @@ function VoiceAgentInner() {
   const [leadPhone, setLeadPhone] = useState("");
   const [leadState, setLeadState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [leadHidden, setLeadHidden] = useState(false);
+  // En pantallas pequeñas el formulario arranca plegado a una línea: la
+  // conversación necesita el espacio. En escritorio, desplegado.
+  const [leadCollapsed, setLeadCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      setLeadCollapsed(window.matchMedia("(max-width: 639px)").matches);
+    } catch {}
+  }, []);
   // Contexto pendiente de enviar a Diego cuando conecte (viene de AskDiego).
   const pendingContextRef = useRef<string | null>(null);
   const [productSlugsDiscussed, setProductSlugsDiscussed] = useState<Set<string>>(new Set());
@@ -159,6 +167,13 @@ function VoiceAgentInner() {
   const messagesRef = useRef<Message[]>([]);
   useEffect(() => {
     messagesRef.current = messages;
+  }, [messages]);
+  // Auto-scroll: sin esto el cliente no ve la respuesta nueva ni las tarjetas
+  // (el div se quedaba arriba y parecía que Diego no contestaba).
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = transcriptRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages]);
   // Slugs ya mostrados como tarjeta: no repetir la misma foto en la sesión.
   const shownSlugsRef = useRef<Set<string>>(new Set());
@@ -204,8 +219,23 @@ function VoiceAgentInner() {
       const until = Number(localStorage.getItem("merch:diego-nudge-until") || 0);
       if (Date.now() < until) return;
     } catch {}
-    const t = setTimeout(() => setNudge(true), 5000);
-    return () => clearTimeout(t);
+    // No competir con el banner de cookies (en móvil se solapaban): esperamos
+    // a que el visitante decida y entonces la burbuja sale con 2,5s de calma.
+    let show: ReturnType<typeof setTimeout> | null = null;
+    const poll = setInterval(() => {
+      let cookiesDecided = true;
+      try {
+        cookiesDecided = !!localStorage.getItem("merch:cookie-consent:v1");
+      } catch {}
+      if (cookiesDecided && !show) {
+        clearInterval(poll);
+        show = setTimeout(() => setNudge(true), 2500);
+      }
+    }, 1000);
+    return () => {
+      clearInterval(poll);
+      if (show) clearTimeout(show);
+    };
   }, []);
 
   const snoozeNudge = useCallback((hours: number) => {
@@ -310,18 +340,23 @@ function VoiceAgentInner() {
       if (!message) return;
       setAwaitingReply(source === "user");
       setMessages((m) => {
-        // Anti-eco: si el usuario acaba de teclear este mismo texto (sendText
-        // ya lo pintó), no lo dupliques cuando el SDK lo devuelva.
-        const last = m[m.length - 1];
+        // Anti-eco: el SDK puede repetir un mensaje (el texto tecleado que ya
+        // pintamos, o la respuesta del agente duplicada tras un tool call).
+        // Comparamos contra el último mensaje DE TEXTO aunque haya tarjetas
+        // de producto en medio.
+        const role = source === "user" ? ("user" as const) : ("agent" as const);
+        const lastText = [...m]
+          .reverse()
+          .find((x): x is Extract<Message, { role: "user" | "agent" }> => x.role === "user" || x.role === "agent");
         if (
-          source === "user" &&
-          last?.role === "user" &&
-          last.text === message &&
-          Date.now() - last.at < 5000
+          lastText &&
+          lastText.role === role &&
+          lastText.text === message &&
+          Date.now() - lastText.at < 8000
         ) {
           return m;
         }
-        return [...m, { role: source === "user" ? "user" : "agent", text: message, at: Date.now() }];
+        return [...m, { role, text: message, at: Date.now() }];
       });
       // Detección heurística de slugs discutidos (los tools pasan por el server,
       // no nos llegan aquí — esta heurística es solo para tracking aproximado)
@@ -809,7 +844,7 @@ function VoiceAgentInner() {
           )}
 
           {/* Transcripción */}
-          <div className="max-h-64 overflow-y-auto px-4 py-3 space-y-2">
+          <div ref={transcriptRef} className="max-h-64 overflow-y-auto px-4 py-3 space-y-2">
             {bootingError && (
               <div className="rounded-lg bg-accent/10 px-3 py-2 text-xs text-accent-deep">
                 <p>⚠ {bootingError}</p>
@@ -914,6 +949,14 @@ function VoiceAgentInner() {
                 <p className="text-xs font-medium text-social">
                   ✓ Datos recibidos — te contactamos muy pronto.
                 </p>
+              ) : leadCollapsed ? (
+                <button
+                  type="button"
+                  onClick={() => setLeadCollapsed(false)}
+                  className="text-[11px] text-ink/60 underline decoration-dotted underline-offset-2 hover:text-ink"
+                >
+                  📞 ¿Prefieres que te llamemos? Deja tus datos
+                </button>
               ) : (
                 <form onSubmit={submitLead} className="space-y-1.5">
                   <p className="text-[11px] text-ink/55">

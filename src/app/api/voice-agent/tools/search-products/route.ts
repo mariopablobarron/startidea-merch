@@ -5,6 +5,8 @@ import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
 import { semanticSearch } from "@/lib/embeddings";
+import { displayFromPrice } from "@/lib/product-pricing";
+import { loadActivePromotions } from "@/lib/promotions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -87,12 +89,25 @@ export async function POST(req: Request) {
       internalRef: true,
       name: true,
       brand: true,
+      categoryId: true,
       shortDescription: true,
       enhancedShortDescription: true,
       fromPriceCents: true,
       category: { select: { name: true } },
+      override: {
+        select: {
+          customName: true,
+          customFromPriceCents: true,
+          marginPct: true,
+          marketingTags: true,
+        },
+      },
     },
   });
+
+  // Precio CLIENTE (override admin > promo PERCENT > margen global) — el mismo
+  // que la web. NUNCA el neto de proveedor: Diego se lo canta al cliente.
+  const activePromos = await loadActivePromotions();
 
   // Si fue semantic, preservar el orden devuelto por similitud
   const productsOrdered = semanticIds
@@ -104,16 +119,23 @@ export async function POST(req: Request) {
   return NextResponse.json({
     count: productsOrdered.length,
     search_mode: semanticIds ? "semantic" : "keyword",
-    products: productsOrdered.map((p) => ({
-      ref: publicRef(p),
-      slug: p.slug,
-      name: p.name,
-      brand: publicBrand(p.brand),
-      short_description: p.enhancedShortDescription?.slice(0, 200) || p.shortDescription?.slice(0, 200) || null,
-      category: p.category?.name || null,
-      from_price_eur: p.fromPriceCents ? p.fromPriceCents / 100 : null,
-      product_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es"}/catalogo/${p.slug}`,
-    })),
+    products: productsOrdered.map((p) => {
+      const price = displayFromPrice(
+        { id: p.id, name: p.name, brand: p.brand, categoryId: p.categoryId, fromPriceCents: p.fromPriceCents },
+        p.override,
+        activePromos,
+      );
+      return {
+        ref: publicRef(p),
+        slug: p.slug,
+        name: p.override?.customName || p.name,
+        brand: publicBrand(p.brand),
+        short_description: p.enhancedShortDescription?.slice(0, 200) || p.shortDescription?.slice(0, 200) || null,
+        category: p.category?.name || null,
+        from_price_eur: price.finalCents != null ? price.finalCents / 100 : null,
+        product_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es"}/catalogo/${p.slug}`,
+      };
+    }),
     note:
       products.length === 0
         ? `No encontré productos para "${query}". Pide al usuario que reformule (ej: 'termos', 'tote bag', 'libreta')`

@@ -5,6 +5,8 @@ import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
 import { displayPositionId } from "@/lib/marking-position-display";
+import { displayFromPrice } from "@/lib/product-pricing";
+import { loadActivePromotions } from "@/lib/promotions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +39,15 @@ export async function POST(req: Request) {
           techniques: { include: { technique: true } },
         },
       },
-      override: { select: { hidden: true, customName: true } },
+      override: {
+        select: {
+          hidden: true,
+          customName: true,
+          customFromPriceCents: true,
+          marginPct: true,
+          marketingTags: true,
+        },
+      },
     },
   });
 
@@ -45,6 +55,12 @@ export async function POST(req: Request) {
   if (p.override?.hidden) return NextResponse.json({ error: "Producto no disponible" }, { status: 404 });
 
   const totalStock = p.variants.reduce((s, v) => s + (v.stockQty || 0), 0);
+  // Precio CLIENTE (override > promo > margen) — nunca el neto de proveedor.
+  const price = displayFromPrice(
+    { id: p.id, name: p.name, brand: p.brand, categoryId: p.categoryId, fromPriceCents: p.fromPriceCents },
+    p.override,
+    await loadActivePromotions(),
+  );
 
   return NextResponse.json({
     ref: publicRef(p),
@@ -60,7 +76,7 @@ export async function POST(req: Request) {
       height: p.heightMm,
       weight_g: p.weightG,
     },
-    from_price_eur: p.fromPriceCents ? p.fromPriceCents / 100 : null,
+    from_price_eur: price.finalCents != null ? price.finalCents / 100 : null,
     in_stock: totalStock > 0,
     total_stock: totalStock,
     marking_positions: p.positions.map((pos) => ({

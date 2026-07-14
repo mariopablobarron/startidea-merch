@@ -14,6 +14,8 @@ import { NextResponse } from "next/server";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { getTopViewedProducts } from "@/lib/insights";
 import { prisma } from "@/lib/prisma";
+import { displayFromPrice } from "@/lib/product-pricing";
+import { loadActivePromotions } from "@/lib/promotions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,35 +36,63 @@ export async function POST(req: Request) {
     });
   }
 
-  // Enrich con precio desde el primer tier
+  // Enrich con precio CLIENTE (override > promo > margen) — antes salía el
+  // tier NETO del proveedor y Diego lo cantaba al cliente.
   const slugs = top.map((p) => p.slug);
-  const products = await prisma.product.findMany({
-    where: { slug: { in: slugs } },
-    select: {
-      slug: true,
-      name: true,
-      variants: {
-        select: {
-          priceTiers: {
-            orderBy: { minQty: "asc" },
-            take: 1,
-            select: { unitPriceCents: true, minQty: true },
+  const [products, activePromos] = await Promise.all([
+    prisma.product.findMany({
+      where: { slug: { in: slugs } },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        brand: true,
+        categoryId: true,
+        fromPriceCents: true,
+        override: {
+          select: {
+            customName: true,
+            customFromPriceCents: true,
+            marginPct: true,
+            marketingTags: true,
           },
         },
-        take: 1,
+        variants: {
+          select: {
+            priceTiers: {
+              orderBy: { minQty: "asc" },
+              take: 1,
+              select: { minQty: true },
+            },
+          },
+          take: 1,
+        },
       },
-    },
-  });
+    }),
+    loadActivePromotions(),
+  ]);
 
   const productList = top.map((p) => {
     const found = products.find((x) => x.slug === p.slug);
-    const tier = found?.variants[0]?.priceTiers[0];
+    const price = found
+      ? displayFromPrice(
+          {
+            id: found.id,
+            name: found.name,
+            brand: found.brand,
+            categoryId: found.categoryId,
+            fromPriceCents: found.fromPriceCents,
+          },
+          found.override,
+          activePromos,
+        )
+      : null;
     return {
-      name: p.name,
+      name: found?.override?.customName || p.name,
       slug: p.slug,
       views_30d: p.view30d,
-      from_price_eur: tier ? Math.round(tier.unitPriceCents / 100) : null,
-      from_qty: tier?.minQty ?? null,
+      from_price_eur: price?.finalCents != null ? price.finalCents / 100 : null,
+      from_qty: found?.variants[0]?.priceTiers[0]?.minQty ?? null,
     };
   });
 
