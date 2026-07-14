@@ -170,10 +170,17 @@ function VoiceAgentInner() {
   }, [messages]);
   // Auto-scroll: sin esto el cliente no ve la respuesta nueva ni las tarjetas
   // (el div se quedaba arriba y parecía que Diego no contestaba).
+  // Asignación DIRECTA tras el layout (rAF): el scroll suave se cancelaba con
+  // cada mutación del DOM (mensajes encadenados + tarjetas) y se quedaba en 0
+  // — verificado en prod con viewport móvil.
   const transcriptRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = transcriptRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    if (!el) return;
+    const raf = requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+    return () => cancelAnimationFrame(raf);
   }, [messages]);
   // Slugs ya mostrados como tarjeta: no repetir la misma foto en la sesión.
   const shownSlugsRef = useRef<Set<string>>(new Set());
