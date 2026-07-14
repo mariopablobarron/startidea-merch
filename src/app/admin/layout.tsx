@@ -46,6 +46,7 @@ function buildNav(role: string): MobileNavEntry[] {
       { href: "/admin/cart-quotes/abandoned", label: "Abandonados ⏳", title: "Carritos abandonados — enviar recordatorios" },
       { href: "/admin/orders", label: "Pedidos confirmados" },
       { href: "/admin/mockup-requests", label: "Mockups 🎨", title: "Peticiones de mockup técnico (Capa D · respuesta en 4h)" },
+      { href: "/admin/voice-sessions", label: "Diego 🎙️", title: "Conversaciones del asistente IA — transcripciones y métricas" },
       { href: "/admin/stock", label: "Stock", title: "Alertas de stock + reposición" },
     ] satisfies NavItem[],
   });
