@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { warmEmbeddingCache } from "@/lib/embeddings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,10 @@ export async function GET() {
   } catch (e) {
     dbError = e instanceof Error ? e.message.slice(0, 120) : "db error";
   }
+  // Fire-and-forget: el ping (horario + healthcheck Docker cada pocos s)
+  // mantiene caliente la caché de embeddings — ninguna búsqueda de Diego
+  // paga la carga inicial. No afecta a la latencia ni al 200 del health.
+  if (dbOk) warmEmbeddingCache(prisma);
   const elapsedMs = Date.now() - startedAt;
   return NextResponse.json(
     {

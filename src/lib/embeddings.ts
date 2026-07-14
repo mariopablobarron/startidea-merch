@@ -91,36 +91,58 @@ let embCache: EmbeddingCache | null = null;
 let embCacheLoading: Promise<EmbeddingCache> | null = null;
 const EMB_CACHE_TTL_MS = 15 * 60_000;
 
+async function fetchEmbeddingMatrix(
+  prismaClient: typeof import("@/lib/prisma").prisma,
+): Promise<EmbeddingCache> {
+  const rows = await prismaClient.productEmbedding.findMany({
+    where: { product: { active: true, NOT: { override: { hidden: true } } } },
+    select: { productId: true, vector: true },
+  });
+  const dims = rows[0]?.vector.length ?? 0;
+  const vectors = new Float32Array(rows.length * dims);
+  const norms = new Float32Array(rows.length);
+  for (let i = 0; i < rows.length; i++) {
+    const v = rows[i].vector;
+    let n = 0;
+    for (let j = 0; j < dims; j++) {
+      const x = v[j] ?? 0;
+      vectors[i * dims + j] = x;
+      n += x * x;
+    }
+    norms[i] = Math.sqrt(n);
+  }
+  embCache = { at: Date.now(), ids: rows.map((r) => r.productId), vectors, norms, dims };
+  return embCache;
+}
+
 async function loadEmbeddingMatrix(
   prismaClient: typeof import("@/lib/prisma").prisma,
 ): Promise<EmbeddingCache> {
-  if (embCache && Date.now() - embCache.at < EMB_CACHE_TTL_MS) return embCache;
-  // Single-flight: si dos búsquedas llegan a la vez, una sola carga.
+  const fresh = embCache && Date.now() - embCache.at < EMB_CACHE_TTL_MS;
+  // Stale-while-revalidate: si hay caché (aunque caduque), se sirve al
+  // instante y el refresco corre en segundo plano — la carga (~15s con 9.4k
+  // productos) solo la sufre la PRIMERA búsqueda tras arrancar el contenedor,
+  // y ni esa si /api/health (ping horario) ya calentó la caché.
+  if (embCache && !fresh && !embCacheLoading) {
+    embCacheLoading = fetchEmbeddingMatrix(prismaClient)
+      .catch(() => embCache as EmbeddingCache)
+      .finally(() => {
+        embCacheLoading = null;
+      });
+  }
+  if (embCache) return embCache;
   if (embCacheLoading) return embCacheLoading;
-  embCacheLoading = (async () => {
-    const rows = await prismaClient.productEmbedding.findMany({
-      where: { product: { active: true, NOT: { override: { hidden: true } } } },
-      select: { productId: true, vector: true },
-    });
-    const dims = rows[0]?.vector.length ?? 0;
-    const vectors = new Float32Array(rows.length * dims);
-    const norms = new Float32Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      const v = rows[i].vector;
-      let n = 0;
-      for (let j = 0; j < dims; j++) {
-        const x = v[j] ?? 0;
-        vectors[i * dims + j] = x;
-        n += x * x;
-      }
-      norms[i] = Math.sqrt(n);
-    }
-    embCache = { at: Date.now(), ids: rows.map((r) => r.productId), vectors, norms, dims };
-    return embCache;
-  })().finally(() => {
+  embCacheLoading = fetchEmbeddingMatrix(prismaClient).finally(() => {
     embCacheLoading = null;
   });
   return embCacheLoading;
+}
+
+/** Calienta la caché sin bloquear (para /api/health y tras el deploy). */
+export function warmEmbeddingCache(
+  prismaClient: typeof import("@/lib/prisma").prisma,
+): void {
+  void loadEmbeddingMatrix(prismaClient).catch(() => {});
 }
 
 /**
