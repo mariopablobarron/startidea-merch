@@ -1,0 +1,44 @@
+src/app/api/voice-agent/tools/popular-products/route.ts
+  s_65877aa637ec34::t_79d2b63191487c 39-40,42-57,60-69,71-73,77-89,91,94-95
+  s_65877aa637ec34::t_79f18a4b7bf084 17-18
+src/app/api/voice-agent/tools/search-products/route.ts
+  s_65877aa637ec34::t_7f145cb40bd436 92,97-104,108-110
+  s_65877aa637ec34::t_8a220abc318556 122-138
+  s_65877aa637ec34::t_ef21cb8ecf31d7 8-9
+  s_2b591ede3bc25c::t_97499e7330e75a 111
+src/components/VoiceAgentWidget.tsx
+  s_65877aa637ec34::t_9fe76ba4d68fc4 171-177
+  s_65877aa637ec34::t_df7a4f78d1713e 343-350,352-355,359
+  s_65877aa637ec34::t_3d6e222723c26e 847
+  s_65877aa637ec34::t_a44064c35003ef 952-959
+  s_65877aa637ec34::t_ef74ca853d0a7a 149-156
+  s_65877aa637ec34::t_3466c45e5a4a85 222-238
+src/app/api/voice-agent/tools/product-details/route.ts
+  s_65877aa637ec34::t_baf04991b28104 79
+  s_65877aa637ec34::t_3d441347559301 8-9
+  s_65877aa637ec34::t_0c95a55eb02b38 42-50,58-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "b43bc221587f2915f51b1e5067b7800d13432c3f",
+  "prompts": {},
+  "sessions": {
+    "s_2b591ede3bc25c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a49da186-966e-4054-982e-1d23b70b8449",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
