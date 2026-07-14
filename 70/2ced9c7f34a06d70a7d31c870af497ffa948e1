@@ -1,0 +1,24 @@
+src/app/api/voice-agent/tools/search-products/route.ts
+  s_65877aa637ec34::t_5b6088bf6d9e4e 110-111
+  s_65877aa637ec34::t_23bfceff05865d 60
+  s_65877aa637ec34::t_d353a31a4db8b1 17
+src/lib/embeddings.ts
+  s_65877aa637ec34::t_87dce2abaeeafa 74-125,135-140,142-146,148,150-158,160-169
+  s_65877aa637ec34::t_d1bcf18d2de317 73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "702ced9c7f34a06d70a7d31c870af497ffa948e1",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
