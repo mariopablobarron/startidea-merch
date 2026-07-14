@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 const Schema = z.object({
   query: z.string().min(2).max(120),
   category: z.string().max(80).optional().nullable(),
-  max_results: z.number().int().min(1).max(10).optional().default(5),
+  max_results: z.number().int().min(1).max(10).optional().default(6),
 });
 
 /**
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
   const tokenConditions = tokens.length > 0 ? tokens : [query.trim()];
 
-  const products = await prisma.product.findMany({
+  const productsPromise = prisma.product.findMany({
     where: semanticIds
       ? {
           id: { in: semanticIds },
@@ -107,7 +107,8 @@ export async function POST(req: Request) {
 
   // Precio CLIENTE (override admin > promo PERCENT > margen global) — el mismo
   // que la web. NUNCA el neto de proveedor: Diego se lo canta al cliente.
-  const activePromos = await loadActivePromotions();
+  // En paralelo con la búsqueda: no suma latencia.
+  const [products, activePromos] = await Promise.all([productsPromise, loadActivePromotions()]);
 
   // Si fue semantic, preservar el orden devuelto por similitud
   const productsOrdered = semanticIds

@@ -71,6 +71,59 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
 }
 
 /**
+ * Caché en memoria de la matriz de embeddings (productos activos, no hidden).
+ *
+ * Por qué: traer ~9.4k vectores de 1536 floats desde Postgres son >100 MB
+ * de transferencia+parseo POR BÚSQUEDA — segundos de latencia que el cliente
+ * sufría hablando con Diego. Cacheado como Float32Array plana (~58 MB una
+ * vez, normas precalculadas), la búsqueda queda en ~50 ms + el embedding de
+ * la query. TTL 15 min: los embeddings los renueva el cron diario, y un
+ * producto nuevo tarda como mucho 15 min en entrar a la búsqueda semántica.
+ */
+type EmbeddingCache = {
+  at: number;
+  ids: string[];
+  vectors: Float32Array; // filas concatenadas (ids.length × dims)
+  norms: Float32Array;
+  dims: number;
+};
+let embCache: EmbeddingCache | null = null;
+let embCacheLoading: Promise<EmbeddingCache> | null = null;
+const EMB_CACHE_TTL_MS = 15 * 60_000;
+
+async function loadEmbeddingMatrix(
+  prismaClient: typeof import("@/lib/prisma").prisma,
+): Promise<EmbeddingCache> {
+  if (embCache && Date.now() - embCache.at < EMB_CACHE_TTL_MS) return embCache;
+  // Single-flight: si dos búsquedas llegan a la vez, una sola carga.
+  if (embCacheLoading) return embCacheLoading;
+  embCacheLoading = (async () => {
+    const rows = await prismaClient.productEmbedding.findMany({
+      where: { product: { active: true, NOT: { override: { hidden: true } } } },
+      select: { productId: true, vector: true },
+    });
+    const dims = rows[0]?.vector.length ?? 0;
+    const vectors = new Float32Array(rows.length * dims);
+    const norms = new Float32Array(rows.length);
+    for (let i = 0; i < rows.length; i++) {
+      const v = rows[i].vector;
+      let n = 0;
+      for (let j = 0; j < dims; j++) {
+        const x = v[j] ?? 0;
+        vectors[i * dims + j] = x;
+        n += x * x;
+      }
+      norms[i] = Math.sqrt(n);
+    }
+    embCache = { at: Date.now(), ids: rows.map((r) => r.productId), vectors, norms, dims };
+    return embCache;
+  })().finally(() => {
+    embCacheLoading = null;
+  });
+  return embCacheLoading;
+}
+
+/**
  * Búsqueda semántica con filtros opcionales (hybrid).
  * Devuelve top N productos ordenados por similitud cosine descendente.
  */
@@ -79,26 +132,41 @@ export async function semanticSearch(
   query: string,
   opts: { topK?: number; category?: string | null } = {},
 ): Promise<Array<{ productId: string; score: number }>> {
-  const queryVec = await generateEmbedding(query);
-  if (!queryVec) return [];
+  // El embedding de la query (API externa) y la matriz (BD/caché) en paralelo.
+  const [queryVec, cache] = await Promise.all([
+    generateEmbedding(query),
+    loadEmbeddingMatrix(prismaClient),
+  ]);
+  if (!queryVec || cache.ids.length === 0 || cache.dims !== queryVec.length) return [];
 
-  // Cargar TODOS los embeddings (productos activos, no hidden).
-  // Para 2.4k productos esto es ~30 MB en memoria, OK.
-  const rows = await prismaClient.productEmbedding.findMany({
-    where: {
-      product: {
+  // Con filtro de categoría: resolver qué ids pertenecen (consulta ligera).
+  let allowed: Set<string> | null = null;
+  if (opts.category) {
+    const inCat = await prismaClient.product.findMany({
+      where: {
         active: true,
-        NOT: { override: { hidden: true } },
-        ...(opts.category ? { category: { name: { contains: opts.category, mode: "insensitive" } } } : {}),
+        category: { name: { contains: opts.category, mode: "insensitive" } },
       },
-    },
-    select: { productId: true, vector: true },
-  });
+      select: { id: true },
+    });
+    allowed = new Set(inCat.map((p) => p.id));
+  }
 
-  const scored = rows.map((r) => ({
-    productId: r.productId,
-    score: cosineSimilarity(queryVec, r.vector),
-  }));
+  let qn = 0;
+  for (let j = 0; j < queryVec.length; j++) qn += queryVec[j] * queryVec[j];
+  qn = Math.sqrt(qn);
+  if (qn === 0) return [];
+
+  const { ids, vectors, norms, dims } = cache;
+  const scored: Array<{ productId: string; score: number }> = [];
+  for (let i = 0; i < ids.length; i++) {
+    if (allowed && !allowed.has(ids[i])) continue;
+    if (norms[i] === 0) continue;
+    let dot = 0;
+    const base = i * dims;
+    for (let j = 0; j < dims; j++) dot += vectors[base + j] * queryVec[j];
+    scored.push({ productId: ids[i], score: dot / (norms[i] * qn) });
+  }
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, opts.topK ?? 5);
 }
