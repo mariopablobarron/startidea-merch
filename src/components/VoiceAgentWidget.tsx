@@ -266,19 +266,34 @@ function VoiceAgentInner() {
           color?: string;
           size?: string;
           notes?: string;
+          technique_code?: string;
+          number_of_colors?: number | string;
+          marking_position_id?: string;
         };
         const slug = String(p.slug || "").trim().toLowerCase().replace(/^\/?catalogo\//, "");
         const qty = Math.max(0, Math.round(Number(p.quantity) || 0));
         if (!/^[a-z0-9-]{1,160}$/.test(slug) || qty < 1) {
           return "Error: faltan slug válido o cantidad (entero ≥1).";
         }
+        // MARCAJE (P0 auditoría 2026-07-15): si Diego cotizó CON impresión, la
+        // línea del carrito debe llevar markings[] — el checkout recalcula el
+        // precio autoritativo a partir de ellos (computeServerLinePricing) y
+        // sin esto cobraba el producto SIN marcaje aunque se prometió con él.
+        const tech = String(p.technique_code || "").trim().slice(0, 40) || null;
+        const cols = Math.min(10, Math.max(1, Math.round(Number(p.number_of_colors) || 1)));
         try {
           const [cardR, calcR] = await Promise.all([
             fetch(`/api/products/cards?slugs=${encodeURIComponent(slug)}`),
             fetch("/api/quote/calculate", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ productSlug: slug, quantity: qty }),
+              body: JSON.stringify({
+                productSlug: slug,
+                quantity: qty,
+                ...(tech
+                  ? { techniqueCode: tech, numberOfColours: cols, positionCount: 1 }
+                  : {}),
+              }),
             }),
           ]);
           const card = cardR.ok
@@ -289,9 +304,38 @@ function VoiceAgentInner() {
                 ok?: boolean;
                 unitClientCents?: number;
                 totalClientCents?: number;
+                markings?: Array<{
+                  positionId?: string | null;
+                  techniqueCode?: string | null;
+                  techniqueName?: string | null;
+                  warning?: string | null;
+                }>;
               })
             : undefined;
           if (!card) return "Error: producto no encontrado o no disponible.";
+          // Posición: la resuelta por el servidor si viene; si no, la que diga
+          // Diego; y como último recurso "AUTO" — el checkout tolera posición
+          // inexacta (recae en cualquier posición del producto que soporte la
+          // técnica), y lo importante es que markings[] NUNCA falte si hay
+          // técnica: de eso depende que el cobro incluya la impresión.
+          const calcMarking = tech ? calc?.markings?.[0] : undefined;
+          const positionId =
+            (calcMarking?.positionId || p.marking_position_id || "AUTO").trim().slice(0, 60) || "AUTO";
+          const markings =
+            tech
+              ? [
+                  {
+                    positionId,
+                    positionLabel: null,
+                    techniqueCode: tech,
+                    techniqueName: calcMarking?.techniqueName ?? null,
+                    numberOfColors: cols,
+                    manipulationCode: null,
+                    printAreaCm2: null,
+                    notes: null,
+                  },
+                ]
+              : undefined;
           addItem({
             productSlug: card.slug,
             productRef: card.ref,
@@ -301,6 +345,11 @@ function VoiceAgentInner() {
             colorName: p.color?.trim() || null,
             size: p.size?.trim() || null,
             notes: p.notes?.trim() || null,
+            markingTechniqueCode: markings ? tech : null,
+            markingTechniqueName: markings ? (calcMarking?.techniqueName ?? null) : null,
+            markingPositionId: markings ? positionId : null,
+            markingColours: markings ? cols : null,
+            markings,
             unitPriceClientCents: calc?.unitClientCents ?? null,
             totalClientCents: calc?.totalClientCents ?? null,
           });
@@ -311,15 +360,18 @@ function VoiceAgentInner() {
                   currency: "EUR",
                 })
               : null;
+          const markTxt = markings
+            ? ` con ${calcMarking?.techniqueName || "marcaje"} (${cols} ${cols === 1 ? "color" : "colores"})`
+            : "";
           setMessages((m) => [
             ...m,
             {
               role: "cart",
-              text: `${qty} × ${card.name}${p.color ? ` (${p.color})` : ""}${totalTxt ? ` — ${totalTxt} sin IVA` : ""}`,
+              text: `${qty} × ${card.name}${p.color ? ` (${p.color})` : ""}${markTxt}${totalTxt ? ` — ${totalTxt} sin IVA` : ""}`,
               at: Date.now(),
             },
           ]);
-          return `Añadido al carrito: ${qty} × ${card.name}${totalTxt ? `, total ${totalTxt} sin IVA` : ""}. El cliente puede finalizar la compra en el carrito de la web o seguir añadiendo productos.`;
+          return `Añadido al carrito: ${qty} × ${card.name}${markTxt || (tech ? " (ATENCIÓN: el marcaje no pudo aplicarse, precio SIN personalización)" : " (sin personalización)")}${totalTxt ? `, total ${totalTxt} sin IVA` : ""}. El cliente puede finalizar la compra en el carrito de la web o seguir añadiendo productos.`;
         } catch {
           return "Error técnico al añadir al carrito. Ofrece el presupuesto por email como alternativa.";
         }
