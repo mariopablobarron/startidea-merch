@@ -1,0 +1,57 @@
+src/lib/telegram.ts
+  s_65877aa637ec34::t_f89a5380d90f4f 12-20
+src/app/robots.ts
+  s_65877aa637ec34::t_c90b123647be9e 23-25
+src/app/api/admin/cart-quotes/[id]/place-order/route.ts
+  s_65877aa637ec34::t_ab97956f633090 4
+  s_65877aa637ec34::t_5ba6112dc2034b 24-26
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_e02eaad41a0529 363-365,368-388,391-400,406-410
+src/app/api/voice-agent/tools/order-status/route.ts
+  s_65877aa637ec34::t_6fabf2d5cd5197 32-38
+  s_65877aa637ec34::t_664cb210f6205d 5
+src/app/api/cron/proposal-followup/route.ts
+  s_65877aa637ec34::t_104bde3ee8551e 6
+  s_65877aa637ec34::t_b8fa7f78b8e055 43-46,48
+  s_65877aa637ec34::t_cfb6f0ea5225b7 92-95,98-99
+src/app/api/admin/suppliers/cifra/sync-now/route.ts
+  s_65877aa637ec34::t_1611b748c0ca93 15,28-30,32,38-43
+src/app/api/admin/suppliers/midocean/sync-now/route.ts
+  s_65877aa637ec34::t_44196af9364384 12,25-27,29,35-40
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_809f4b7e3435fd 8,392
+src/app/api/cron/cifra-sync/route.ts
+  s_65877aa637ec34::t_22f53ac062fe4a 7,26-29,37-42
+src/app/api/cron/makito-sync/route.ts
+  s_65877aa637ec34::t_8fd35fce99250f 7,24-27,34-39
+src/app/api/cron/midocean-print-pricelist-sync/route.ts
+  s_65877aa637ec34::t_184fc597daa18f 8,30-36,50-51
+src/app/api/cron/midocean-sync/route.ts
+  s_65877aa637ec34::t_d9f08a12a40020 7,27-32,35-36,38-43
+src/app/api/mockup-request/route.ts
+  s_65877aa637ec34::t_77ff0af4c99050 5,133-136
+src/app/api/partners/apply/route.ts
+  s_65877aa637ec34::t_66c0e465615d5d 5,81-85
+src/app/api/quote-request-product/route.ts
+  s_65877aa637ec34::t_c9d1e93b1c6cab 8,94-95
+src/lib/resend.ts
+  s_65877aa637ec34::t_7e1d9f71944e25 2,97-100
+src/lib/suppliers/midocean-pricelist-sync.ts
+  s_65877aa637ec34::t_badb994a1e4314 157-175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "22e01c7d5dc833bd416c02f2b3ccdf70637c8b7b",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
