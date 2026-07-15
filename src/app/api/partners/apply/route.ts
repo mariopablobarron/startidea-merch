@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -78,11 +78,11 @@ export async function POST(req: Request) {
   // Alerta interna Telegram
   await notifyTelegram(
     `<b>🤝 Nueva solicitud partner</b>\n` +
-      `${data.name}${data.company ? ` · ${data.company}` : ""}\n` +
-      `${data.email}\n` +
-      `Rol: ${data.role || "—"}\n` +
-      `Audiencia: ${data.audience || "—"}\n` +
-      (data.message ? `Mensaje: ${data.message.slice(0, 300)}\n` : "") +
+      `${escapeTgHtml(data.name)}${data.company ? ` · ${escapeTgHtml(data.company)}` : ""}\n` +
+      `${escapeTgHtml(data.email)}\n` +
+      `Rol: ${escapeTgHtml(data.role) || "—"}\n` +
+      `Audiencia: ${escapeTgHtml(data.audience) || "—"}\n` +
+      (data.message ? `Mensaje: ${escapeTgHtml(data.message.slice(0, 300))}\n` : "") +
       `Admin: ${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es"}/admin/marketing/partners`,
     { parseMode: "HTML" },
   ).catch((e) =>

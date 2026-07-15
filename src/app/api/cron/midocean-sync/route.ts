@@ -4,6 +4,7 @@ import { runMidoceanSync } from "@/lib/suppliers/midocean-sync";
 import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,26 +24,23 @@ export const POST = wrapCronHandler("midocean-sync", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
-  // Detectar concurrencia: si hay un sync iniciado en últimos 10 min sin finalizar
-  const last = await prisma.supplierSync.findUnique({ where: { supplier: "midocean" } });
-  const inProgress =
-    last &&
-    !last.finishedAt &&
-    Date.now() - last.startedAt.getTime() < 10 * 60 * 1000;
-  if (inProgress) {
-    return NextResponse.json(
-      { ok: false, status: "in_progress", startedAt: last.startedAt },
-      { status: 409 },
-    );
+  // Lock ATÓMICO (clave compartida con el "Sync ahora" del admin): el
+  // check-then-act anterior sobre SupplierSync tenía carrera — cron nocturno
+  // y botón admin solapados arrancaban dos syncs contra la misma BD.
+  // TTL 45 min: si el contenedor muere a mitad, el lock caduca solo.
+  if (!(await acquireCronLock("supplier-sync:midocean", 45 * 60 * 1000))) {
+    return NextResponse.json({ ok: false, status: "in_progress" }, { status: 409 });
   }
 
-  // Fire-and-forget. El handler retorna inmediatamente.
-  // Captura errores para log; no propagamos para no afectar el ciclo de Node.
-  // Tras el sync, sweep: oculta productos sin precio (descatalogados por supplier).
-  // El upsert los reactiva automáticamente cuando el supplier vuelva a enviar precio.
+  // Fire-and-forget. El handler retorna inmediatamente; el lock se libera al
+  // TERMINAR el trabajo de fondo (no al responder).
   void (async () => {
-    await runMidoceanSync();
-    await deactivateUnpricedProducts("midocean");
+    try {
+      await runMidoceanSync();
+      await deactivateUnpricedProducts("midocean");
+    } finally {
+      await releaseCronLock("supplier-sync:midocean");
+    }
   })().catch((e) => {
     console.error("[midocean-sync] async failure", e);
   });

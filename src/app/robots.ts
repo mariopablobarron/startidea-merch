@@ -20,9 +20,9 @@ export default function robots(): MetadataRoute.Robots {
           "/review",
           "/afiliado",
           "/share",
-          "/aviso-legal",
-          "/privacidad",
-          "/cookies",
+          // Las páginas legales (aviso-legal/privacidad/cookies) NO se
+          // bloquean: van en el sitemap y tenerlas también en disallow
+          // provocaba "Enviada, bloqueada por robots.txt" en Search Console.
         ],
       },
       // Permitimos AI crawlers — usamos /llms.txt como índice curado.

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,13 @@ const Schema = z.object({
 export async function POST(req: Request) {
   const auth = requireVoiceAgentToolSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
+
+  // Freno de enumeración (defensa en profundidad, auditoría 2026-07-15):
+  // el llamante legítimo es solo el backend de ElevenLabs y su volumen real
+  // es bajo — 20 consultas/10min cubren de sobra el uso normal y cortan a
+  // quien induzca a Diego a sondear muchos emails.
+  const rl = rateLimit(req, { key: "voice-order-status", max: 20, windowMs: 10 * 60_000 });
+  if (!rl.ok) return rl.response;
 
   const body = await req.json().catch(() => ({}));
   const parsed = Schema.safeParse(body);

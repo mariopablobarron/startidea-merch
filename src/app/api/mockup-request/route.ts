@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { displayPositionId } from "@/lib/marking-position-display";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -130,10 +130,10 @@ export async function POST(req: Request) {
   // 2) Alerta Telegram interna
   await notifyTelegram(
     `<b>🎨 Nueva petición de mockup</b>\n` +
-      `${data.name}${data.company ? ` · ${data.company}` : ""}\n` +
-      `${data.email}${data.phone ? ` · ${data.phone}` : ""}\n` +
-      `Producto: <code>${productName}</code>${positionLabel ? ` · ${positionLabel}` : ""}\n` +
-      (data.brief ? `Brief: ${data.brief.slice(0, 300)}\n` : "") +
+      `${escapeTgHtml(data.name)}${data.company ? ` · ${escapeTgHtml(data.company)}` : ""}\n` +
+      `${escapeTgHtml(data.email)}${data.phone ? ` · ${escapeTgHtml(data.phone)}` : ""}\n` +
+      `Producto: <code>${escapeTgHtml(productName)}</code>${positionLabel ? ` · ${escapeTgHtml(positionLabel)}` : ""}\n` +
+      (data.brief ? `Brief: ${escapeTgHtml(data.brief.slice(0, 300))}\n` : "") +
       `Admin: ${SITE_URL}/admin/mockup-requests/${created.id}`,
     { parseMode: "HTML" },
   ).catch((e) =>

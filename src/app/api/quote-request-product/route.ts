@@ -5,7 +5,7 @@ import { computeCotizacion } from "@/lib/cotizar-core";
 import { createProposalFromCotizacion } from "@/lib/proposal-from-cotizacion";
 import { sendEmail } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -91,8 +91,8 @@ export async function POST(req: Request) {
   // Aviso al admin con el borrador (o para gestión manual si no se pudo tarificar)
   void notifyTelegram(
     `🧾 <b>Solicitud de presupuesto web</b>\n` +
-      `Producto: ${productName} ×${d.qty}\n` +
-      `Cliente: ${d.name || d.email}${d.company ? ` (${d.company})` : ""}\n` +
+      `Producto: ${escapeTgHtml(productName)} ×${d.qty}\n` +
+      `Cliente: ${escapeTgHtml(d.name || d.email)}${d.company ? ` (${escapeTgHtml(d.company)})` : ""}\n` +
       (proposalNumber
         ? `📄 Borrador ${proposalNumber} listo — revisa y envía en /admin/propuestas`
         : `⚠️ Sin precio automático — gestionar manualmente`),

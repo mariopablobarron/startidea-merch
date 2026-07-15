@@ -154,24 +154,25 @@ export async function syncMidoceanPrintPricelist(): Promise<MidoceanPrintSyncRes
       });
       techniquesUpdated++;
 
-      // Reset scales y recrear
-      await prisma.markingPriceScale.deleteMany({ where: { techniqueCode: t.id } });
-      for (const v of t.var_costs) {
-        for (const s of v.scales) {
-          await prisma.markingPriceScale.create({
-            data: {
-              techniqueCode: t.id,
-              rangeId: v.range_id || null,
-              areaFromCm2: parseAreaCm2(v.area_from),
-              areaToCm2: parseAreaCm2(v.area_to),
-              minQty: intFromQty(s.minimum_quantity),
-              unitCostCents: eurStringToCents(s.price),
-              nextColourCostCents: s.next_price ? eurStringToCents(s.next_price) : null,
-            },
-          });
-          scalesUpserted++;
-        }
-      }
+      // Reset scales y recrear — en UNA transacción: entre el deleteMany y el
+      // último create la técnica quedaba SIN tramos (ventana de "marcaje a
+      // 0€", patrón de incidente ya sufrido). Atómico = o tarifa vieja o nueva.
+      const scaleRows = t.var_costs.flatMap((v) =>
+        v.scales.map((s) => ({
+          techniqueCode: t.id,
+          rangeId: v.range_id || null,
+          areaFromCm2: parseAreaCm2(v.area_from),
+          areaToCm2: parseAreaCm2(v.area_to),
+          minQty: intFromQty(s.minimum_quantity),
+          unitCostCents: eurStringToCents(s.price),
+          nextColourCostCents: s.next_price ? eurStringToCents(s.next_price) : null,
+        })),
+      );
+      await prisma.$transaction([
+        prisma.markingPriceScale.deleteMany({ where: { techniqueCode: t.id } }),
+        prisma.markingPriceScale.createMany({ data: scaleRows }),
+      ]);
+      scalesUpserted += scaleRows.length;
     } catch (e) {
       errors.push(`technique ${t.id}: ${e instanceof Error ? e.message : String(e)}`);
     }

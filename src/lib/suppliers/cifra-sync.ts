@@ -360,30 +360,54 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
     for (const pt of priceTiers) {
       const variantId = variantsBySku.get(pt.model);
       if (!variantId || !pt.p_disc?.length) continue;
-      // Upsert cada tier
+      // Upsert cada tier — try/catch POR TIER (patrón makito-sync): un
+      // registro defectuoso no debe abortar el pricelist de los modelos
+      // restantes, que quedarían con precios stale ciclo tras ciclo.
       for (const tier of pt.p_disc) {
         if (!Number.isFinite(tier.quantity) || tier.quantity < 1) continue;
-        await prisma.priceTier.upsert({
-          where: { variantId_minQty: { variantId, minQty: tier.quantity } },
-          create: {
-            variantId,
-            minQty: tier.quantity,
-            unitPriceCents: priceStringToCents(tier.price),
-            source: "CIFRA_PRICELIST",
-          },
-          update: {
-            unitPriceCents: priceStringToCents(tier.price),
-            source: "CIFRA_PRICELIST",
-          },
-        });
-        tiersUpserted++;
+        try {
+          await prisma.priceTier.upsert({
+            where: { variantId_minQty: { variantId, minQty: tier.quantity } },
+            create: {
+              variantId,
+              minQty: tier.quantity,
+              unitPriceCents: priceStringToCents(tier.price),
+              source: "CIFRA_PRICELIST",
+            },
+            update: {
+              unitPriceCents: priceStringToCents(tier.price),
+              source: "CIFRA_PRICELIST",
+            },
+          });
+          tiersUpserted++;
+        } catch (e) {
+          errors.push({
+            ref: `pricelist:${pt.model}@${tier.quantity}`,
+            message: e instanceof Error ? e.message : String(e),
+          });
+        }
       }
+    }
+    // A diferencia del circuit-breaker del paso 4, los fallos de pricing no
+    // avisaban a nadie: quedaban solo en BD. Precios stale = dinero.
+    const pricelistErrors = errors.filter((er) => er.ref.startsWith("pricelist:"));
+    if (pricelistErrors.length > 0) {
+      void notifyTelegram(
+        `⚠️ cifra-sync: ${pricelistErrors.length} tramos de precio fallaron (ej. ${pricelistErrors[0].ref}) — revisa /admin/suppliers`,
+      ).catch((err) =>
+        console.error("[cifra-sync] notifyTelegram falló:", err instanceof Error ? err.message : err),
+      );
     }
   } catch (e) {
     errors.push({
       ref: "pricelist",
       message: e instanceof Error ? e.message : String(e),
     });
+    void notifyTelegram(
+      `⚠️ cifra-sync: pricelist completo falló: ${(e instanceof Error ? e.message : String(e)).slice(0, 150)}`,
+    ).catch((err) =>
+      console.error("[cifra-sync] notifyTelegram falló:", err instanceof Error ? err.message : err),
+    );
   }
 
   // 6. Refresh Product.fromPriceCents desde MIN(unitPriceCents) — mismo

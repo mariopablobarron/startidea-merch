@@ -4,6 +4,7 @@ import { runCifraSync } from "@/lib/suppliers/cifra-sync";
 import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,15 +23,10 @@ export const POST = wrapCronHandler("cifra-sync", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
-  // Concurrencia: si hay sync iniciado en últimos 10 min sin finalizar → 409
-  const last = await prisma.supplierSync.findUnique({ where: { supplier: "cifra" } });
-  const inProgress =
-    last && !last.finishedAt && Date.now() - last.startedAt.getTime() < 10 * 60 * 1000;
-  if (inProgress) {
-    return NextResponse.json(
-      { ok: false, status: "in_progress", startedAt: last.startedAt },
-      { status: 409 },
-    );
+  // Lock ATÓMICO compartido con el "Sync ahora" del admin (el check-then-act
+  // anterior tenía carrera). Se libera al TERMINAR el trabajo de fondo.
+  if (!(await acquireCronLock("supplier-sync:cifra", 45 * 60 * 1000))) {
+    return NextResponse.json({ ok: false, status: "in_progress" }, { status: 409 });
   }
 
   // Fire-and-forget — el handler retorna inmediato. El sync corre en background
@@ -38,8 +34,12 @@ export const POST = wrapCronHandler("cifra-sync", async (req: Request) => {
   // Tras el sync, sweep: oculta productos cuyo PDF de Cifra trae precio 0
   // (descatalogados o "consultar"). El upsert los reactiva cuando vuelvan.
   void (async () => {
-    await runCifraSync();
-    await deactivateUnpricedProducts("cifra");
+    try {
+      await runCifraSync();
+      await deactivateUnpricedProducts("cifra");
+    } finally {
+      await releaseCronLock("supplier-sync:cifra");
+    }
   })().catch((e) => {
     console.error("[cifra-sync] async failure", e);
   });

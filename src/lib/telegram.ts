@@ -9,6 +9,15 @@
 const BOT = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT = process.env.TELEGRAM_TEAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
 
+/**
+ * Escapa datos de USUARIO antes de interpolarlos en mensajes parse_mode=HTML.
+ * Sin esto, un nombre/empresa con `<`, `>` o `&` (p. ej. "Fernández & Cía")
+ * hace que Telegram devuelva 400 y la alerta del lead se pierda en silencio.
+ */
+export function escapeTgHtml(s: string | null | undefined): string {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 export async function notifyTelegram(text: string, opts?: { parseMode?: "HTML" | "MarkdownV2" }): Promise<boolean> {
   if (!BOT || !CHAT) return false;
   try {

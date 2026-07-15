@@ -4,6 +4,7 @@ import { runMakitoSync } from "@/lib/suppliers/makito-sync";
 import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,23 +21,22 @@ export const POST = wrapCronHandler("makito-sync", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
-  // Concurrencia: skip si hay sync iniciado en últimos 15 min sin finalizar
-  const last = await prisma.supplierSync.findUnique({ where: { supplier: "makito" } });
-  const inProgress =
-    last && !last.finishedAt && Date.now() - last.startedAt.getTime() < 15 * 60 * 1000;
-  if (inProgress) {
-    return NextResponse.json(
-      { ok: false, status: "in_progress", startedAt: last.startedAt },
-      { status: 409 },
-    );
+  // Lock ATÓMICO (el check-then-act anterior tenía carrera). Se libera al
+  // TERMINAR el trabajo de fondo; TTL 45 min por si el contenedor muere.
+  if (!(await acquireCronLock("supplier-sync:makito", 45 * 60 * 1000))) {
+    return NextResponse.json({ ok: false, status: "in_progress" }, { status: 409 });
   }
 
   // Tras el sync, sweep: oculta productos cuyo feed Makito envía con
   // <variants> vacío (textiles en transición). El upsert los reactiva
   // automáticamente cuando Makito vuelva a enviar variants completas.
   void (async () => {
-    await runMakitoSync();
-    await deactivateUnpricedProducts("makito");
+    try {
+      await runMakitoSync();
+      await deactivateUnpricedProducts("makito");
+    } finally {
+      await releaseCronLock("supplier-sync:makito");
+    }
   })().catch((e) => {
     console.error("[makito-sync] async failure", e);
   });

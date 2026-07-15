@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { notifyTelegram } from "./telegram";
+import { notifyTelegram, escapeTgHtml } from "./telegram";
 
 const apiKey = process.env.RESEND_API_KEY;
 
@@ -94,10 +94,10 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     const toLabel = Array.isArray(params.to) ? params.to.join(", ") : params.to;
     void notifyTelegram(
       `⚠️ <b>Resend FALLÓ</b>\n` +
-        (params.context ? `Contexto: ${params.context}\n` : "") +
-        `To: ${toLabel}\n` +
-        `Subject: ${params.subject.slice(0, 100)}\n` +
-        `Error: ${message.slice(0, 300)}\n\n` +
+        (params.context ? `Contexto: ${escapeTgHtml(params.context)}\n` : "") +
+        `To: ${escapeTgHtml(toLabel)}\n` +
+        `Subject: ${escapeTgHtml(params.subject.slice(0, 100))}\n` +
+        `Error: ${escapeTgHtml(message.slice(0, 300))}\n\n` +
         `Revisa /admin/cart-quotes o /admin/marketing/broadcasts si toca.`,
     ).catch(() => {});
     return { ok: false, error: message };

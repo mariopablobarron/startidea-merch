@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-session";
 import { runMidoceanSync } from "@/lib/suppliers/midocean-sync";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 
@@ -21,24 +22,22 @@ export async function POST() {
     return NextResponse.json({ error: "UNAUTH" }, { status: 401 });
   }
 
-  const last = await prisma.supplierSync.findUnique({ where: { supplier: "midocean" } });
-  const inProgress =
-    last && !last.finishedAt && Date.now() - last.startedAt.getTime() < 10 * 60 * 1000;
-  if (inProgress) {
+  // Lock ATÓMICO con la MISMA clave que el cron nocturno: botón admin y cron
+  // solapados ya no pueden arrancar dos syncs a la vez (doble carga en la VPS).
+  if (!(await acquireCronLock("supplier-sync:midocean", 45 * 60 * 1000))) {
     return NextResponse.json(
-      {
-        ok: false,
-        status: "in_progress",
-        startedAt: last.startedAt,
-        message: "Ya hay un sync en curso. Espera unos minutos.",
-      },
+      { ok: false, status: "in_progress", message: "Ya hay un sync en curso. Espera unos minutos." },
       { status: 409 },
     );
   }
 
   void (async () => {
-    await runMidoceanSync();
-    await deactivateUnpricedProducts("midocean");
+    try {
+      await runMidoceanSync();
+      await deactivateUnpricedProducts("midocean");
+    } finally {
+      await releaseCronLock("supplier-sync:midocean");
+    }
   })().catch((e) => {
     console.error("[midocean-sync-admin] async failure", e);
   });

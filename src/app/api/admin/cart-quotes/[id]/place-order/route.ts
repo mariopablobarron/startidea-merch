@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdminSecret } from "@/lib/auth";
+import { requireRole } from "@/lib/admin-auth";
 import { midoceanOrders, type MidoceanCreateOrderPayload, type MidoceanOrderItem } from "@/lib/suppliers/midocean-orders";
 
 const SITE_URL =
@@ -21,7 +21,9 @@ export const dynamic = "force-dynamic";
  * respuesta en el CartQuote y cambia status a ORDERED.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = requireAdminSecret(req);
+  // Pedido REAL al proveedor (con MIDOCEAN_LIVE_ORDERS=true): solo CEO u
+  // OPERACIONES — el rol COMERCIAL no debe poder comprometer compras.
+  const auth = await requireRole(req, "OPERACIONES");
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
   const { id } = await params;

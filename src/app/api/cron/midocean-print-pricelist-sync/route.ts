@@ -5,6 +5,7 @@ import {
   syncMidoceanProductPricelist,
 } from "@/lib/suppliers/midocean-pricelist-sync";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,13 @@ export const POST = wrapCronHandler(
     const url = new URL(req.url);
     const only = url.searchParams.get("only");
 
+    // Lock: dos ejecuciones solapadas (retry + cron) hacían deleteMany sobre
+    // los MarkingPriceScale que la otra acababa de insertar → técnica sin
+    // tramos = "marcaje a 0€" (patrón de incidente ya sufrido).
+    if (!(await acquireCronLock("supplier-sync:midocean-pricelist", 20 * 60 * 1000))) {
+      return NextResponse.json({ ok: false, status: "in_progress" }, { status: 409 });
+    }
+
     // Async: dispara y responde 202 — puede tardar 1-3 min
     void (async () => {
       try {
@@ -39,6 +47,8 @@ export const POST = wrapCronHandler(
         }
       } catch (e) {
         console.error("[midocean-print-pricelist-sync] failure:", e);
+      } finally {
+        await releaseCronLock("supplier-sync:midocean-pricelist").catch(() => {});
       }
     })();
 

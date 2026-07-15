@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { validateCoupon, applyCoupon } from "@/lib/coupons";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { readPartnerSlug, attachReferral } from "@/lib/referral";
 import { readAttribution } from "@/lib/attribution";
 import { rateLimit } from "@/lib/rate-limit";
@@ -389,7 +389,7 @@ export async function POST(req: Request) {
   }).catch((err) => console.error("[cart-quote push]", err));
 
   void notifyTelegram(
-    `🛒 <b>Nuevo carrito</b>\n${data.name}${data.company ? ` · ${data.company}` : ""}\n${cart.items.length} productos · <b>${EUR.format(payableTotal / 100)}</b>\n📧 ${data.email}`,
+    `🛒 <b>Nuevo carrito</b>\n${escapeTgHtml(data.name)}${data.company ? ` · ${escapeTgHtml(data.company)}` : ""}\n${cart.items.length} productos · <b>${EUR.format(payableTotal / 100)}</b>\n📧 ${escapeTgHtml(data.email)}`,
   ).catch((e) =>
     console.error("[cart-quote] notifyTelegram falló:", e instanceof Error ? e.message : e),
   );

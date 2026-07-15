@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
 import { signProposalToken } from "@/lib/proposal-token";
+import { withCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,7 +40,12 @@ const RESOLVED_CART = ["CONFIRMED", "ORDERED", "LOST", "ARCHIVED"];
 export async function POST(req: Request) {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
+  // Lock como sus crons hermanos (quote-followup/review-invite): dos
+  // invocaciones solapadas duplicaban el email de seguimiento al cliente.
+  return withCronLock("proposal-followup", () => run());
+}
 
+async function run(): Promise<Response> {
   const now = Date.now();
   const sent = { d3: 0, d7: 0 };
   const errors: string[] = [];
@@ -83,11 +89,14 @@ export async function POST(req: Request) {
     }
 
     try {
-      await sendReminder(p, step);
-      await prisma.proposal.update({
-        where: { id: p.id },
+      // Claim atómico ANTES de enviar (cinturón además del lock): si otra
+      // ejecución ya subió followupCount, count=0 y no se duplica el email.
+      const claim = await prisma.proposal.updateMany({
+        where: { id: p.id, followupCount: p.followupCount },
         data: { followupCount: step, lastFollowupAt: new Date() },
       });
+      if (claim.count === 0) continue;
+      await sendReminder(p, step);
       if (step === 1) sent.d3++;
       else sent.d7++;
     } catch (e) {
