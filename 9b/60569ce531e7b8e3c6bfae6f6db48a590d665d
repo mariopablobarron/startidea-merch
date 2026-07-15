@@ -1,0 +1,20 @@
+src/components/VoiceAgentWidget.tsx
+  s_65877aa637ec34::t_e756de32eade1e 316-320,322-323,325
+  s_65877aa637ec34::t_828921668ab003 269-271,278-283,290-296,307-312,321,324,326-338,348-352,363-365,370,374
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9b60569ce531e7b8e3c6bfae6f6db48a590d665d",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
