@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
 import { withCronLock } from "@/lib/cron-lock";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,7 +42,7 @@ const STEPS: Step[] = [
   { code: 110, days: 10 },
 ];
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("quote-followup", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
   return withCronLock("quote-followup", async () => {
@@ -102,8 +103,8 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, sent, errors });
-  });
-}
+  }) as Promise<NextResponse>;
+});
 
 async function sendFollowup(
   cart: {

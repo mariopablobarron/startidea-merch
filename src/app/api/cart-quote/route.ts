@@ -375,8 +375,17 @@ export async function POST(req: Request) {
 
   // Aplicar cupón validado server-side. Esto consume uso y guarda el descuento
   // exacto que ya se restó de estimatedTotalCents/acceptedTotalCents.
+  // Si el cupo se agotó entre validación y aquí (carrera), el carrito sigue
+  // adelante SIN descuento: mejor eso que un 500 con el carrito ya creado.
   if (coupon) {
-    await applyCoupon(cart.id, coupon.id, coupon.discountCents);
+    try {
+      await applyCoupon(cart.id, coupon.id, coupon.discountCents);
+    } catch (e) {
+      console.error("[cart-quote] applyCoupon falló (cupo agotado en carrera):", e instanceof Error ? e.message : e);
+      void notifyTelegram(
+        `⚠️ Cupón agotado en carrera: carrito ${cart.id} se creó SIN el descuento ${escapeTgHtml(coupon.code ?? coupon.id)} — revisar si procede compensar al cliente`,
+      ).catch(() => {});
+    }
   }
 
   // Notificación push al equipo (fire-and-forget)

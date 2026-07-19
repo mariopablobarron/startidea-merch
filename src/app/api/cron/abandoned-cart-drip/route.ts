@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
 import { withCronLock } from "@/lib/cron-lock";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ type DripStep = 1 | 3 | 7 | 30;
 
 const STEPS: DripStep[] = [1, 3, 7, 30];
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("abandoned-cart-drip", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
   return withCronLock("abandoned-cart-drip", async () => {
@@ -128,8 +129,8 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, sent, errors });
-  });
-}
+  }) as Promise<NextResponse>;
+});
 
 async function sendStep(
   cart: {

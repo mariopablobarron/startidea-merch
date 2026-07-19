@@ -7,6 +7,7 @@ import {
   contentChannelToMetricool,
 } from "@/lib/metricool";
 import { notifyTelegram } from "@/lib/telegram";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubs
  * Idempotente: marca PUBLISHED tras enviar (no se reintenta). Si falla,
  * marca FAILED con channelResponse.error y avisa por Telegram.
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("publish-scheduled", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -139,4 +140,4 @@ export async function POST(req: Request) {
     failed,
     errors,
   });
-}
+});

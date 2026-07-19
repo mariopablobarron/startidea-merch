@@ -22,6 +22,7 @@ import {
   getCronHistory,
   wrapCronHandler,
 } from "@/lib/cron-tracking";
+import { CRON_CATALOG } from "@/lib/cron-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,8 +45,15 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
   const names = await listCronNames();
+  // Red de seguridad: un cron del catálogo (CRON_CATALOG) que nunca ha
+  // ejecutado ni una sola vez no tiene key `cron_runs_*` en AdminSetting, así
+  // que listCronNames() no lo ve — sería invisible para este watchdog. Unimos
+  // con los nombres del catálogo para que también cuente como candidato.
+  const trackedSet = new Set(names);
+  const catalogNames = CRON_CATALOG.map((c) => c.name);
+  const allNames = Array.from(new Set([...names, ...catalogNames]));
   // Excluir self del check para no notificarnos a nosotros mismos
-  const others = names.filter((n) => n !== "cron-watchdog");
+  const others = allNames.filter((n) => n !== "cron-watchdog");
 
   type Status = {
     name: string;
@@ -63,13 +71,19 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
       const last = runs[0];
       const expectedHours = EXPECTED_HOURS[name] ?? DEFAULT_HOURS;
       if (!last) {
+        // Sin historia: si venía de listCronNames (tiene key cron_runs_* pero
+        // por lo que sea la lista está vacía) es un caso "nuevo", no
+        // silencioso. Si SOLO está en el catálogo (nunca ha registrado ni una
+        // ejecución) es la red de seguridad: lo tratamos como candidato a
+        // silencioso en vez de dejarlo invisible.
+        const isCatalogOnly = !trackedSet.has(name);
         return {
           name,
           expectedHours,
           lastRunAt: null,
           hoursSinceLastRun: null,
           lastOk: null,
-          silent: false, // sin historia no es "silencioso", es "nuevo"
+          silent: isCatalogOnly,
           failingLast: false,
         };
       }
@@ -114,7 +128,9 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
     const lines = issues.map((i) => {
       const tag = i.silent ? "💤 silencioso" : "❌ fallo";
       const detail = i.silent
-        ? `lleva ${i.hoursSinceLastRun}h sin ejecutar (umbral ${i.expectedHours}h)`
+        ? i.hoursSinceLastRun === null
+          ? "nunca ha registrado una ejecución (cron del catálogo sin runs)"
+          : `lleva ${i.hoursSinceLastRun}h sin ejecutar (umbral ${i.expectedHours}h)`
         : "última run terminó con error";
       return `· ${i.name}: ${tag} — ${detail}`;
     });

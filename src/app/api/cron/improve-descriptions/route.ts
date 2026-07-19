@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.OPENROUTER_MODEL_FAST || "anthropic/claude-haiku-4.5";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("improve-descriptions", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -96,7 +97,7 @@ export async function POST(req: Request) {
     errors: errors.slice(0, 20),
     model: MODEL,
   });
-}
+});
 
 export async function GET(req: Request) {
   const auth = requireCronSecret(req);

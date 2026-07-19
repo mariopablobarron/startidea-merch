@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { sendEmail } from "@/lib/resend";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubs
 
 const STEPS = [0, 14, 45];
 
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("post-order-drip", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -67,7 +68,7 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, sent, errors });
-}
+});
 
 async function sendStep(
   step: number,

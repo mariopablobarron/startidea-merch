@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { midoceanOrders } from "@/lib/suppliers/midocean-orders";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export const maxDuration = 300;
  * Salta los que ya están en estado terminal (DELIVERED) y los que
  * tienen tracking actualizado en las últimas 6h para no machacar la API.
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("refresh-tracking", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
     skipped,
     failed,
   });
-}
+});
 
 function pickString(obj: Record<string, unknown> | undefined, keys: string[]): string | undefined {
   if (!obj) return undefined;

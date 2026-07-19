@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { sendBroadcast } from "@/lib/broadcast-send";
 import { notifyTelegram } from "@/lib/telegram";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export const maxDuration = 300;
  * mucho 3 por ejecución (el envío es síncrono y con throttle); el resto
  * espera al siguiente tick.
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("send-scheduled-broadcasts", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -60,4 +61,4 @@ export async function POST(req: Request) {
   );
 
   return NextResponse.json({ ok: true, processed: due.length, sentTotal, results });
-}
+});

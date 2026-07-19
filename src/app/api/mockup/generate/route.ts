@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { getMarkingBase } from "@/lib/marking-base-cache";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +25,11 @@ export const maxDuration = 30;
  * para validar visualmente, no para producción final.
  */
 export async function POST(req: Request) {
+  // Endpoint público CPU-intensivo (sharp decode/compose, uploads 5MB):
+  // mismo guard que quote/calculate y search/semantic (auditoría 2026-07-15).
+  const rl = rateLimit(req, { key: "mockup-generate", max: 15, windowMs: 60_000 });
+  if (!rl.ok) return rl.response;
+
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: "multipart/form-data esperado" }, { status: 400 });
 

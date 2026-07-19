@@ -4,6 +4,7 @@ import { requireCronSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
 import { signProposalToken } from "@/lib/proposal-token";
 import { withCronLock } from "@/lib/cron-lock";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,13 +38,13 @@ const RESOLVED_CART = ["CONFIRMED", "ORDERED", "LOST", "ARCHIVED"];
  *
  * Llamar 1x/día:  POST /api/cron/proposal-followup  (Header X-Cron-Secret)
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("proposal-followup", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
   // Lock como sus crons hermanos (quote-followup/review-invite): dos
   // invocaciones solapadas duplicaban el email de seguimiento al cliente.
-  return withCronLock("proposal-followup", () => run());
-}
+  return withCronLock("proposal-followup", () => run()) as Promise<NextResponse>;
+});
 
 async function run(): Promise<Response> {
   const now = Date.now();

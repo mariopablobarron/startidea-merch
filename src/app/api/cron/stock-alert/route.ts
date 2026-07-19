@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { notifyTelegram } from "@/lib/telegram";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export const maxDuration = 60;
  *
  * Solo dispara mensaje si hay >0 productos críticos. No spam si todo bien.
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("stock-alert", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -104,4 +105,4 @@ export async function POST(req: Request) {
     critical: critical.length,
     stale,
   });
-}
+});

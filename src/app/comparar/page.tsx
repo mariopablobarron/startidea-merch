@@ -5,7 +5,9 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { prisma } from "@/lib/prisma";
-import { estimateBaseCentsFromName, defaultTiersFromBase, formatMoney, pickTier } from "@/lib/pricing";
+import { defaultTiersFromBase, formatMoney, pickTier } from "@/lib/pricing";
+import { computeClientPricing } from "@/lib/product-pricing";
+import { loadActivePromotions } from "@/lib/promotions";
 import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { JsonLd } from "@/components/JsonLd";
@@ -36,9 +38,17 @@ export default async function CompararPage({
 
   const products = slugs.length
     ? await prisma.product.findMany({
-        where: { slug: { in: slugs }, active: true },
+        where: { slug: { in: slugs }, active: true, NOT: { override: { is: { hidden: true } } } },
         include: {
           category: { select: { name: true } },
+          override: {
+            select: {
+              customName: true,
+              customFromPriceCents: true,
+              marginPct: true,
+              marketingTags: true,
+            },
+          },
           variants: {
             select: { stockQty: true, colorName: true, size: true },
           },
@@ -51,6 +61,44 @@ export default async function CompararPage({
 
   // Mantener el orden que el usuario indicó en el query string
   const ordered = slugs.map((s) => products.find((p) => p.slug === s)).filter(Boolean);
+
+  // Precio /100 uds con la cascada REAL (override > promo > margen sobre los
+  // tramos netos del proveedor) — la única página pública que usaba el
+  // heurístico por nombre podía contradecir a la ficha (auditoría 2026-07-15).
+  const activePromos = ordered.length ? await loadActivePromotions() : [];
+  const price100: Record<string, number | null> = {};
+  for (const p of ordered) {
+    if (!p) continue;
+    const variantWithTiers = await prisma.productVariant.findFirst({
+      where: { productId: p.id, priceTiers: { some: {} } },
+      select: {
+        priceTiers: {
+          orderBy: { minQty: "asc" },
+          select: { minQty: true, unitPriceCents: true },
+        },
+      },
+    });
+    const pricing = computeClientPricing({
+      product: {
+        id: p.id,
+        name: p.name,
+        brand: p.brand,
+        categoryId: p.categoryId,
+        fromPriceCents: p.fromPriceCents,
+        category: p.category,
+      },
+      override: p.override ?? null,
+      providerNetTiers: variantWithTiers?.priceTiers,
+      activePromos,
+    });
+    const tiers =
+      pricing.clientTiers ??
+      (pricing.baseCentsForEstimate != null
+        ? defaultTiersFromBase(pricing.baseCentsForEstimate)
+        : undefined);
+    const tier = tiers ? pickTier(tiers, REF_QTY) : null;
+    price100[p.slug] = tier?.unitPriceCents ?? null;
+  }
 
   return (
     <>
@@ -77,7 +125,7 @@ export default async function CompararPage({
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
             {ordered.length === 0 && <EmptyState />}
             {ordered.length > 0 && (
-              <ComparatorTable products={ordered as ComparatorProduct[]} />
+              <ComparatorTable products={ordered as ComparatorProduct[]} price100={price100} />
             )}
           </div>
         </section>
@@ -93,13 +141,27 @@ type ComparatorProduct = NonNullable<
     where: { slug: { in: string[] }; active: true };
     include: {
       category: { select: { name: true } };
+      override: {
+        select: {
+          customName: true;
+          customFromPriceCents: true;
+          marginPct: true;
+          marketingTags: true;
+        };
+      };
       variants: { select: { stockQty: true; colorName: true; size: true } };
       positions: { include: { techniques: { include: { technique: true } } } };
     };
   }>>>[number]
 >;
 
-function ComparatorTable({ products }: { products: ComparatorProduct[] }) {
+function ComparatorTable({
+  products,
+  price100,
+}: {
+  products: ComparatorProduct[];
+  price100: Record<string, number | null>;
+}) {
   const cols = products.length;
   const labels: { key: string; label: string; render: (p: ComparatorProduct) => React.ReactNode }[] =
     [
@@ -183,12 +245,11 @@ function ComparatorTable({ products }: { products: ComparatorProduct[] }) {
         key: "price100",
         label: "Precio orientativo / 100 uds",
         render: (p) => {
-          const baseCents = estimateBaseCentsFromName(p.name, p.category?.name);
-          const tier = pickTier(defaultTiersFromBase(baseCents), REF_QTY);
-          if (!tier) return "—";
+          const cents = price100[p.slug];
+          if (cents == null) return <span className="text-sm text-ink/55">Consultar</span>;
           return (
             <span className="font-display text-lg font-semibold tabular-nums text-ink">
-              {formatMoney(tier.unitPriceCents).formatted}
+              {formatMoney(cents).formatted}
               <span className="ml-1 text-xs font-normal text-ink/50">/ud</span>
             </span>
           );

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { spawn } from "node:child_process";
 import { gzipSync } from "node:zlib";
 import { requireCronSecret } from "@/lib/auth";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
  * POST https://merchandising.startidea.es/api/cron/backup-db
  *   Header X-Cron-Secret: <CRON_SECRET>
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("backup-db", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
@@ -99,4 +100,4 @@ export async function POST(req: Request) {
     sizeBytes: gz.length,
     durationMs: finishedAt.getTime() - startedAt.getTime(),
   });
-}
+});

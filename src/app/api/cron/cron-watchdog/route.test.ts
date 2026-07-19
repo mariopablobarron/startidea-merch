@@ -11,6 +11,21 @@ const findMany = vi.fn();
 const notifyAdmins = vi.fn();
 const requireCronSecret = vi.fn();
 
+// Catálogo mockeado como array mutable: por defecto vacío (preserva el
+// comportamiento de los tests existentes, que solo conocían listCronNames).
+// Los tests de la "red de seguridad" empujan entradas aquí.
+const catalogEntries: { name: string }[] = [];
+vi.mock("@/lib/cron-catalog", () => ({
+  // Getter en vez de asignación directa: el factory de vi.mock se ejecuta
+  // hoisted (antes de que corra `const catalogEntries = []`), así que una
+  // referencia directa dispara TDZ. El getter difiere la lectura hasta el
+  // primer acceso real (dentro del handler, ya con todo inicializado).
+  get CRON_CATALOG() {
+    return catalogEntries;
+  },
+  findCron: (name: string) => catalogEntries.find((c) => c.name === name) ?? null,
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     adminSetting: {
@@ -64,6 +79,7 @@ beforeEach(() => {
   requireCronSecret.mockReturnValue({ ok: true });
   vi.mocked(listCronNames).mockReset();
   vi.mocked(getCronHistory).mockReset();
+  catalogEntries.length = 0;
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
 });
@@ -238,5 +254,35 @@ describe("POST /api/cron/cron-watchdog", () => {
     const res = await POST(makeReq());
     const data = await res.json();
     expect(data.silent).toContain("metric-snapshot");
+  });
+
+  it("red de seguridad: cron del catálogo sin NINGUNA run cuenta como candidato a silencioso (no invisible)", async () => {
+    // "never-ran-cron" está en el catálogo pero listCronNames() no lo devuelve
+    // porque jamás ha registrado una ejecución (no existe key cron_runs_*).
+    catalogEntries.push({ name: "never-ran-cron" });
+    vi.mocked(listCronNames).mockResolvedValueOnce([]);
+    vi.mocked(getCronHistory).mockResolvedValueOnce([]); // sin historia
+    findUnique.mockResolvedValueOnce(null);
+    upsert.mockResolvedValueOnce({});
+    const res = await POST(makeReq());
+    const data = await res.json();
+    expect(data.totalTracked).toBe(1);
+    expect(data.silent).toContain("never-ran-cron");
+    const status = data.statuses.find((s: { name: string }) => s.name === "never-ran-cron");
+    expect(status.lastRunAt).toBeNull();
+    expect(status.silent).toBe(true);
+    expect(data.notified).toBe(true);
+  });
+
+  it("cron trackeado (con historia vacía por edge case) sigue tratándose como 'nuevo', no silencioso, aunque esté también en el catálogo", async () => {
+    catalogEntries.push({ name: "ai-usage-alert" });
+    vi.mocked(listCronNames).mockResolvedValueOnce(["ai-usage-alert"]);
+    vi.mocked(getCronHistory).mockResolvedValueOnce([]); // historia vacía (race/edge)
+    findUnique.mockResolvedValueOnce(null);
+    const res = await POST(makeReq());
+    const data = await res.json();
+    expect(data.totalTracked).toBe(1); // union no duplica
+    expect(data.silent).toEqual([]);
+    expect(data.notified).toBe(false);
   });
 });

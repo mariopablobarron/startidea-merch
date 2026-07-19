@@ -66,9 +66,18 @@ export async function applyCoupon(
     await tx.couponRedemption.create({
       data: { cartId, couponId, discountCents },
     });
-    await tx.coupon.update({
-      where: { id: couponId },
+    // Incremento CONDICIONAL atómico: dos requests concurrentes podían pasar
+    // ambas validateCoupon (lectura aislada) y superar maxUses. Si el cupo se
+    // agotó entre la validación y aquí, count=0 → abortamos la transacción.
+    const claimed = await tx.coupon.updateMany({
+      where: {
+        id: couponId,
+        OR: [{ maxUses: null }, { usedCount: { lt: tx.coupon.fields.maxUses } }],
+      },
       data: { usedCount: { increment: 1 } },
     });
+    if (claimed.count === 0) {
+      throw new Error("Código sin usos disponibles");
+    }
   });
 }

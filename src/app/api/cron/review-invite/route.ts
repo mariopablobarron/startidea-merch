@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { sendEmail } from "@/lib/resend";
 import { withCronLock } from "@/lib/cron-lock";
+import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubs
  *
  * Llamar diariamente desde cron-job.org.
  */
-export async function POST(req: Request) {
+export const POST = wrapCronHandler("review-invite", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
   return withCronLock("review-invite", async () => {
@@ -102,5 +103,5 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, invited, candidates: carts.length });
-  });
-}
+  }) as Promise<NextResponse>;
+});
