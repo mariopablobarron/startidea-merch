@@ -138,7 +138,7 @@ export function QuantityConfigurator({
               placeholder="ej. 175"
               value={customQty}
               onChange={(e) => setCustomQty(e.target.value)}
-              className="w-28 rounded-xl border border-line bg-bone px-3 py-1.5 text-right tabular-nums outline-none focus:border-accent"
+              className="w-28 rounded-xl border border-line bg-bone px-3 py-1.5 text-right text-base tabular-nums outline-none focus:border-accent"
             />
           </label>
         </li>

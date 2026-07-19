@@ -70,9 +70,12 @@ function verifyJwtCookie(token: string): boolean {
  */
 export function requireAdminSecret(req: Request): { ok: true } | { ok: false; status: number; reason: string } {
   const secret = process.env.ADMIN_SECRET;
-  // 1. X-Admin-Secret legacy (compat APIs externas y curl)
+  // 1. X-Admin-Secret legacy (compat APIs externas y curl). Solo por HEADER:
+  // el fallback ?secret= en la URL filtraba la credencial a logs de acceso,
+  // historial del navegador y cabecera Referer (CWE-598). Verificado que
+  // nada legítimo lo usaba por query (auditoría 2026-07-15).
   if (secret) {
-    const provided = req.headers.get("x-admin-secret") ?? new URL(req.url).searchParams.get("secret") ?? "";
+    const provided = req.headers.get("x-admin-secret") ?? "";
     if (provided && safeEqual(provided, secret)) return { ok: true };
   }
   // 2. Cookie de sesión admin verificada (JWT actual o HMAC legacy).
