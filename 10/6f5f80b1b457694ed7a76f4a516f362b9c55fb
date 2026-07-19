@@ -1,0 +1,21 @@
+src/components/QuantityConfigurator.tsx
+  s_65877aa637ec34::t_094155ce7a2f9d 141
+src/lib/auth.ts
+  s_65877aa637ec34::t_1f3c72dd0a6d21 73-76,78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "106f5f80b1b457694ed7a76f4a516f362b9c55fb",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
