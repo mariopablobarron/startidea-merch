@@ -1,0 +1,84 @@
+src/app/api/cron/post-order-drip/route.ts
+  s_65877aa637ec34::t_50bbc8fdc6d4f9 71
+  s_65877aa637ec34::t_9ab5f9357ee030 25
+  s_65877aa637ec34::t_f79e9843776bbe 5
+src/lib/marking-cost.test.ts
+  s_65877aa637ec34::t_eac2175fcfa504 1-405
+src/app/api/cron/review-invite/route.ts
+  s_65877aa637ec34::t_d49548b9270bf9 6
+  s_65877aa637ec34::t_efca18dd8cf477 21
+  s_65877aa637ec34::t_4c1a8d683109b9 106-107
+src/app/api/cron/cron-watchdog/route.test.ts
+  s_65877aa637ec34::t_0eaeb6ec608582 19-25
+  s_65877aa637ec34::t_3e74505b48c02c 14-18,26-28
+  s_65877aa637ec34::t_b77a4d5ed533bf 82
+  s_65877aa637ec34::t_6daf36f76ed0e2 258-287
+src/app/api/cron/proposal-followup/route.ts
+  s_65877aa637ec34::t_89b9f43e33be9f 7
+  s_65877aa637ec34::t_c5d238c270fc18 41,46-47
+src/app/api/cron/quote-followup/route.ts
+  s_65877aa637ec34::t_dfcdc2fbcaea66 45
+  s_65877aa637ec34::t_0e38918a267261 6
+  s_65877aa637ec34::t_5c5f3a6106cf3e 106-107
+src/app/api/cron/refresh-tracking/route.ts
+  s_65877aa637ec34::t_c72147b7d79d4f 19
+  s_65877aa637ec34::t_e60be19232fb3c 105
+  s_65877aa637ec34::t_92aaf17103860b 6
+src/app/api/cron/cron-watchdog/route.ts
+  s_65877aa637ec34::t_84e152f961d9c9 48-54,56
+  s_65877aa637ec34::t_260810d9b8a0aa 131-133
+  s_65877aa637ec34::t_b424c70534e117 25
+  s_65877aa637ec34::t_125eb0cdb9e45c 74-79,86
+src/app/api/cron/backup-db/route.ts
+  s_65877aa637ec34::t_484437a68a54c5 25
+  s_65877aa637ec34::t_bf6187fccc4344 5
+  s_65877aa637ec34::t_2adaa24fb3f076 103
+src/app/api/cron/improve-descriptions/route.ts
+  s_65877aa637ec34::t_94ef1a909b66be 28
+  s_65877aa637ec34::t_6eef7767e1e2c0 4
+  s_65877aa637ec34::t_d6e1d1c0bdbf6a 100
+src/app/api/cron/stock-alert/route.ts
+  s_65877aa637ec34::t_51340db147dcc8 108
+  s_65877aa637ec34::t_9c9c5a4d4cadaf 5
+  s_65877aa637ec34::t_e0484931aee216 21
+src/app/api/cron/abandoned-cart-drip/route.ts
+  s_65877aa637ec34::t_b93efa087aa51a 6
+  s_65877aa637ec34::t_c8d75b92c97e9f 47
+  s_65877aa637ec34::t_d073f5970c9efc 132-133
+src/lib/marking-quote.test.ts
+  s_65877aa637ec34::t_bbfe78f2a0f613 1-266
+src/app/api/cart-quote/route.ts
+  s_65877aa637ec34::t_3accb6c7379def 378-379,381-388
+src/app/api/cron/send-scheduled-broadcasts/route.ts
+  s_65877aa637ec34::t_a4b4e02711b2f9 6
+  s_65877aa637ec34::t_3ab8663658d6ff 25
+  s_65877aa637ec34::t_43fb6a96339997 64
+src/app/api/cron/webhook-retry/route.ts
+  s_65877aa637ec34::t_90095d937fd50b 5
+  s_65877aa637ec34::t_cac9acf0a9d143 14,20-21
+src/app/api/cron/publish-scheduled/route.ts
+  s_65877aa637ec34::t_efe022737bfd38 10
+  s_65877aa637ec34::t_4ef6585f8a1027 30,143
+src/app/api/mockup/generate/route.ts
+  s_65877aa637ec34::t_8b40c0c4d09b47 5,28-32
+src/app/comparar/page.tsx
+  s_65877aa637ec34::t_5b727deb88570a 8-10,41,44-51,65-102,128,144-151,158-164,248-249,252
+src/lib/coupons.ts
+  s_65877aa637ec34::t_1756528cdd3204 69-76,79-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "84343e058c3acffb2581b3da8bc7a3c5a2691fa5",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
