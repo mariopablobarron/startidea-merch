@@ -1,0 +1,29 @@
+src/components/VoiceAgentWidget.tsx
+  s_65877aa637ec34::t_483ccc4cb4da6e 589-619
+  s_65877aa637ec34::t_143490543be38a 1143,1166-1183
+  s_c391d4e04ab457::t_f033d0bfc34a21 1184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "fa9ad2d123842bc2aff87e9e0bb675bafcb82ed0",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_c391d4e04ab457": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d76ae446-3de2-4485-850c-5c7cc27c21da",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
