@@ -6,7 +6,7 @@ import { trackLead } from "@/lib/ads-events";
 import { addItem } from "@/lib/cart-storage";
 
 /**
- * Widget flotante del agente de voz Diego (ElevenLabs Conversational AI).
+ * Widget flotante del agente de voz David (ElevenLabs Conversational AI).
  * Estados visuales:
  *   - idle: pildora compacta con micro
  *   - connecting: spinner + "Conectando…"
@@ -21,14 +21,14 @@ import { addItem } from "@/lib/cart-storage";
  *   - "Cerrar" aborta también durante la conexión; una desconexión inesperada
  *     ofrece "Reconectar" conservando la conversación.
  *
- * Música de espera: mientras conecta o mientras Diego "piensa" (el cliente ya
+ * Música de espera: mientras conecta o mientras David "piensa" (el cliente ya
  * habló/escribió y aún no hay respuesta) suena un arpegio suave generado con
  * WebAudio — sin ficheros de audio ni licencias, volumen bajo para no ensuciar
  * el micrófono.
  *
- * Formulario silencioso: durante la conversación se muestra (sin que Diego lo
+ * Formulario silencioso: durante la conversación se muestra (sin que David lo
  * anuncie) un mini-formulario nombre/email/teléfono → POST /api/quote-request
- * (source diego-widget). Al enviarse se le pasa a Diego como contexto para que
+ * (source diego-widget). Al enviarse se le pasa a David como contexto para que
  * no vuelva a pedir los datos.
  *
  * El wrapper <ConversationProvider> envuelve el hook useConversation. Sin
@@ -126,14 +126,14 @@ function VoiceAgentInner() {
   const [bootingError, setBootingError] = useState<string | null>(null);
   const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
   // Nombre por defecto del asesor. Se sobrescribe con ELEVENLABS_AGENT_NAME
-  // del env (ver /api/voice-agent/signed-url). "Diego" = voz masculina ES.
-  const [agentName, setAgentName] = useState("Diego");
+  // del env (ver /api/voice-agent/signed-url). "David" = voz masculina ES.
+  const [agentName, setAgentName] = useState("David");
   const [messages, setMessages] = useState<Message[]>([]);
-  // Entrada por TEXTO (misma sesión: Diego responde con voz + transcripción).
+  // Entrada por TEXTO (misma sesión: David responde con voz + transcripción).
   const [draft, setDraft] = useState("");
   // true = sesión sin micro (el usuario denegó permiso → chat escrito).
   const [textOnlyMode, setTextOnlyMode] = useState(false);
-  // El cliente ya habló/escribió y Diego aún no ha contestado → música de espera.
+  // El cliente ya habló/escribió y David aún no ha contestado → música de espera.
   const [awaitingReply, setAwaitingReply] = useState(false);
   // La sesión se cayó sin que el usuario la terminara → ofrecer "Reconectar".
   const [dropped, setDropped] = useState(false);
@@ -154,7 +154,7 @@ function VoiceAgentInner() {
       setLeadCollapsed(window.matchMedia("(max-width: 639px)").matches);
     } catch {}
   }, []);
-  // Contexto pendiente de enviar a Diego cuando conecte (viene de AskDiego).
+  // Contexto pendiente de enviar a David cuando conecte (viene de AskDiego).
   const pendingContextRef = useRef<string | null>(null);
   const [productSlugsDiscussed, setProductSlugsDiscussed] = useState<Set<string>>(new Set());
   const startedAtRef = useRef<number | null>(null);
@@ -169,7 +169,7 @@ function VoiceAgentInner() {
     messagesRef.current = messages;
   }, [messages]);
   // Auto-scroll: sin esto el cliente no ve la respuesta nueva ni las tarjetas
-  // (el div se quedaba arriba y parecía que Diego no contestaba).
+  // (el div se quedaba arriba y parecía que David no contestaba).
   // Asignación DIRECTA tras el layout (rAF): el scroll suave se cancelaba con
   // cada mutación del DOM (mensajes encadenados + tarjetas) y se quedaba en 0
   // — verificado en prod con viewport móvil.
@@ -186,7 +186,7 @@ function VoiceAgentInner() {
   const shownSlugsRef = useRef<Set<string>>(new Set());
 
   // ── Tarjetas de producto en la conversación ─────────────────────
-  // Las dispara la tool de cliente `mostrar_productos` (Diego) o, como red,
+  // Las dispara la tool de cliente `mostrar_productos` (David) o, como red,
   // cualquier mención de /catalogo/<slug> en sus mensajes.
   const showProducts = useCallback(async (rawSlugs: string[]): Promise<number> => {
     const slugs = rawSlugs
@@ -253,10 +253,10 @@ function VoiceAgentInner() {
   }, []);
 
   const c = useConversation({
-    // Tools que se ejecutan EN el navegador. Diego llama a mostrar_productos
+    // Tools que se ejecutan EN el navegador. David llama a mostrar_productos
     // cuando recomienda productos concretos → tarjetas con foto en el panel.
     clientTools: {
-      // Compra directa por conversación: Diego añade la línea al carrito REAL
+      // Compra directa por conversación: David añade la línea al carrito REAL
       // de la web (localStorage compartido con la ficha y /carrito), con el
       // precio del MISMO cálculo server-side que usa el configurador.
       anadir_al_carrito: async (params: unknown) => {
@@ -275,7 +275,7 @@ function VoiceAgentInner() {
         if (!/^[a-z0-9-]{1,160}$/.test(slug) || qty < 1) {
           return "Error: faltan slug válido o cantidad (entero ≥1).";
         }
-        // MARCAJE (P0 auditoría 2026-07-15): si Diego cotizó CON impresión, la
+        // MARCAJE (P0 auditoría 2026-07-15): si David cotizó CON impresión, la
         // línea del carrito debe llevar markings[] — el checkout recalcula el
         // precio autoritativo a partir de ellos (computeServerLinePricing) y
         // sin esto cobraba el producto SIN marcaje aunque se prometió con él.
@@ -314,7 +314,7 @@ function VoiceAgentInner() {
             : undefined;
           if (!card) return "Error: producto no encontrado o no disponible.";
           // Posición: la resuelta por el servidor si viene; si no, la que diga
-          // Diego; y como último recurso "AUTO" — el checkout tolera posición
+          // David; y como último recurso "AUTO" — el checkout tolera posición
           // inexacta (recae en cualquier posición del producto que soporte la
           // técnica), y lo importante es que markings[] NUNCA falte si hay
           // técnica: de eso depende que el cobro incluya la impresión.
@@ -426,7 +426,7 @@ function VoiceAgentInner() {
           for (const m of slugMatch) next.add(m.replace("/catalogo/", ""));
           return next;
         });
-        // Red de seguridad visual: si Diego cita enlaces sin llamar a la tool,
+        // Red de seguridad visual: si David cita enlaces sin llamar a la tool,
         // mostramos las tarjetas igualmente.
         if (source === "ai") void showProducts(slugMatch);
       }
@@ -449,13 +449,13 @@ function VoiceAgentInner() {
   const isActive = c.status === "connected";
   const isConnecting = c.status === "connecting";
 
-  // En cuanto Diego habla, ya no hay espera.
+  // En cuanto David habla, ya no hay espera.
   useEffect(() => {
     if (c.isSpeaking) setAwaitingReply(false);
   }, [c.isSpeaking]);
 
   // ── Música de espera ────────────────────────────────────────────
-  // Suena mientras conecta o mientras Diego piensa (tras hablar/escribir el
+  // Suena mientras conecta o mientras David piensa (tras hablar/escribir el
   // cliente). Arranca con ~1s de gracia para no sonar en respuestas rápidas.
   const musicOn = isConnecting || (isActive && awaitingReply && !c.isSpeaking);
   useEffect(() => {
@@ -551,7 +551,7 @@ function VoiceAgentInner() {
     return () => clearTimeout(t);
   }, [isConnecting, c]);
 
-  // ── Enviar mensaje ESCRITO (misma sesión; Diego contesta con voz+texto) ──
+  // ── Enviar mensaje ESCRITO (misma sesión; David contesta con voz+texto) ──
   const sendText = useCallback(() => {
     const text = draft.trim();
     if (!text || c.status !== "connected") return;
@@ -593,7 +593,7 @@ function VoiceAgentInner() {
           localStorage.setItem(LEAD_STORAGE_KEY, "1");
         } catch {}
         trackLead({ method: "diego-form" });
-        // Diego se entera en silencio: que no vuelva a pedir los datos.
+        // David se entera en silencio: que no vuelva a pedir los datos.
         try {
           c.sendContextualUpdate(
             `El cliente acaba de dejar sus datos de contacto en el formulario del widget (nombre: ${leadName.trim()}${leadPhone.trim() ? `, teléfono: ${leadPhone.trim()}` : ""}, email: ${leadEmail.trim()}). NO le pidas de nuevo el email ni el teléfono; si viene al caso, agradéceselo en una frase y confirma que le contactaremos.`,
@@ -655,7 +655,7 @@ function VoiceAgentInner() {
 
   // ── Apertura desde cualquier punto de la web (componente AskDiego) ──
   // El evento trae opcionalmente contexto ("el cliente está viendo X"): se
-  // envía a Diego como actualización contextual, no como mensaje del usuario.
+  // envía a David como actualización contextual, no como mensaje del usuario.
   useEffect(() => {
     const onOpen = (e: Event) => {
       const context = (e as CustomEvent<{ context?: string }>).detail?.context ?? null;
@@ -686,7 +686,7 @@ function VoiceAgentInner() {
     } catch {}
   }, [c.status, c]);
 
-  // Visualización de onda — Diego vivo.
+  // Visualización de onda — David vivo.
   //
   // Mejoras 2026-05-24 (Design Spell B1):
   // - Color y amplitud TRANSICIONAN suavemente entre hablar↔escuchar (no salto
@@ -784,7 +784,7 @@ function VoiceAgentInner() {
 
   return (
     <>
-      {/* Burbuja de invitación (nudge) — explica qué es Diego e incita a abrir.
+      {/* Burbuja de invitación (nudge) — explica qué es David e incita a abrir.
           Transparencia IA (AI Act art. 50): se presenta como asistente de IA. */}
       {nudge && !open && !isActive && !isConnecting && (
         <div
@@ -1006,7 +1006,7 @@ function VoiceAgentInner() {
           </div>
 
           {/* Formulario silencioso: por si prefiere que le contactemos.
-              Diego NO lo anuncia; simplemente está ahí. */}
+              David NO lo anuncia; simplemente está ahí. */}
           {isActive && !leadHidden && (
             <div className="border-t border-line bg-bone-soft/70 px-4 py-2.5">
               {leadState === "sent" ? (
@@ -1089,7 +1089,7 @@ function VoiceAgentInner() {
                   value={draft}
                   onChange={(e) => {
                     setDraft(e.target.value);
-                    // Señal de actividad: evita que Diego interrumpa mientras escribes.
+                    // Señal de actividad: evita que David interrumpa mientras escribes.
                     try {
                       c.sendUserActivity();
                     } catch {}

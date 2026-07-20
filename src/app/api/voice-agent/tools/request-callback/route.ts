@@ -21,7 +21,7 @@ const Schema = z.object({
 /**
  * Tool: request_callback
  *
- * Diego la llama cuando el cliente prefiere hablar con humano antes de
+ * David la llama cuando el cliente prefiere hablar con humano antes de
  * cerrar cotización. Útil cuando:
  *   - Pedido grande (>2 000€) que el cliente quiere validar con persona
  *   - Cliente confundido con técnicas/plazos
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
     to: RESEND_TO_INTERNAL,
     subject: `📞 Callback solicitado: ${d.name}${d.company ? " · " + d.company : ""}`,
     html: `
-      <h2>Callback solicitado vía voice agent Diego</h2>
+      <h2>Callback solicitado vía voice agent David</h2>
       <p><strong>Cliente:</strong> ${escapeHtml(d.name)}${d.company ? ` · ${escapeHtml(d.company)}` : ""}</p>
       <p><strong>Teléfono:</strong> <a href="tel:${encodeURIComponent(d.phone)}">${escapeHtml(d.phone)}</a></p>
       ${d.email ? `<p><strong>Email:</strong> ${escapeHtml(d.email)}</p>` : ""}

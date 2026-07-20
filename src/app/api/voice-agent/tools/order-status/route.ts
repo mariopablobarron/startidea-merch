@@ -16,11 +16,11 @@ const Schema = z.object({
 /**
  * Tool: estado_pedido
  *
- * Diego la usa cuando un cliente EXISTENTE pregunta "¿cómo va mi pedido?".
+ * David la usa cuando un cliente EXISTENTE pregunta "¿cómo va mi pedido?".
  * Identificación mínima: el email con el que hizo el pedido. Devuelve estado
  * humano + seguimiento del transportista si lo hay.
  *
- * PRIVACIDAD (endpoint alcanzable por cualquiera que hable con Diego):
+ * PRIVACIDAD (endpoint alcanzable por cualquiera que hable con David):
  *  - NUNCA direcciones, importes ni datos de facturación
  *  - Solo pedidos del email EXACTO; sin búsqueda difusa
  *  - Items resumidos (2 nombres) para que el cliente reconozca el pedido
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   // Freno de enumeración (defensa en profundidad, auditoría 2026-07-15):
   // el llamante legítimo es solo el backend de ElevenLabs y su volumen real
   // es bajo — 20 consultas/10min cubren de sobra el uso normal y cortan a
-  // quien induzca a Diego a sondear muchos emails.
+  // quien induzca a David a sondear muchos emails.
   const rl = rateLimit(req, { key: "voice-order-status", max: 20, windowMs: 10 * 60_000 });
   if (!rl.ok) return rl.response;
 

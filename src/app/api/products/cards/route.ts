@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Tarjetas ligeras de producto para el widget de Diego (tool mostrar_productos):
+ * Tarjetas ligeras de producto para el widget de David (tool mostrar_productos):
  * foto (vía proxy /api/m/), nombre, ref pública y precio "desde" con la MISMA
  * lógica que el catálogo (override admin > promo PERCENT > margen global).
  * Solo productos activos y no ocultos; jamás datos de proveedor.
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
     loadActivePromotions(),
   ]);
 
-  // Conservamos el orden pedido (Diego los cita en un orden concreto).
+  // Conservamos el orden pedido (David los cita en un orden concreto).
   const items = slugs
     .map((s) => products.find((p) => p.slug === s))
     .filter((p): p is NonNullable<typeof p> => Boolean(p))

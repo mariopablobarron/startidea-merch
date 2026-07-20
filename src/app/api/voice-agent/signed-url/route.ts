@@ -74,7 +74,7 @@ export async function GET(req: Request) {
     data: { userAgent: ua, sourceUrl: referer },
   });
 
-  // Aviso en vivo al equipo: alguien acaba de empezar a hablar con Diego.
+  // Aviso en vivo al equipo: alguien acaba de empezar a hablar con David.
   // La transcripción llega al cerrar la sesión (session-end). Fire-and-forget.
   const page = (() => {
     if (!referer) return null;
@@ -85,7 +85,7 @@ export async function GET(req: Request) {
     }
   })();
   void notifyTelegram(
-    `🎙️ <b>Diego</b> — conversación iniciada${page ? `\n📍 ${page.replace(/&/g, "&amp;").replace(/</g, "&lt;")}` : ""}\n<i>La transcripción llegará al terminar.</i>`,
+    `🎙️ <b>David</b> — conversación iniciada${page ? `\n📍 ${page.replace(/&/g, "&amp;").replace(/</g, "&lt;")}` : ""}\n<i>La transcripción llegará al terminar.</i>`,
   ).catch((e) =>
     console.error("[voice-agent] telegram inicio:", e instanceof Error ? e.message : e),
   );
@@ -93,6 +93,6 @@ export async function GET(req: Request) {
   return NextResponse.json({
     signedUrl,
     voiceSessionId: session.id,
-    agentName: process.env.ELEVENLABS_AGENT_NAME || "Diego",
+    agentName: process.env.ELEVENLABS_AGENT_NAME || "David",
   });
 }

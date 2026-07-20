@@ -22,7 +22,7 @@ export async function GET() {
     dbError = e instanceof Error ? e.message.slice(0, 120) : "db error";
   }
   // Fire-and-forget: el ping (horario + healthcheck Docker cada pocos s)
-  // mantiene caliente la caché de embeddings — ninguna búsqueda de Diego
+  // mantiene caliente la caché de embeddings — ninguna búsqueda de David
   // paga la carga inicial. No afecta a la latencia ni al 200 del health.
   if (dbOk) warmEmbeddingCache(prisma);
   const elapsedMs = Date.now() - startedAt;

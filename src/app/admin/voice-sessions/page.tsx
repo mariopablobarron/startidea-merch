@@ -1,9 +1,9 @@
 /**
- * /admin/voice-sessions — Conversaciones de Diego (asistente IA de la web).
+ * /admin/voice-sessions — Conversaciones de David (asistente IA de la web).
  *
  * Para qué: repasar conversaciones REALES (transcripción completa persistida
  * en VoiceSession.transcript desde 2026-07-13) y decidir mejoras con datos:
- * qué piden los clientes, dónde se atasca Diego, qué tools usa, cuánto cuesta.
+ * qué piden los clientes, dónde se atasca David, qué tools usa, cuánto cuesta.
  *
  * Server component puro: transcripciones desplegables con <details> (sin JS).
  */
@@ -14,7 +14,7 @@ import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
-  title: "Diego · Conversaciones",
+  title: "David · Conversaciones",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";
@@ -86,10 +86,10 @@ export default async function VoiceSessionsPage() {
       <nav className="mb-2 flex items-center gap-2 text-xs text-ink/50">
         <Link href="/admin" className="hover:text-accent">Panel</Link>
         <span>/</span>
-        <span>Diego · Conversaciones</span>
+        <span>David · Conversaciones</span>
       </nav>
       <h1 className="font-display text-2xl font-bold text-ink">
-        Conversaciones de Diego 🎙️
+        Conversaciones de David 🎙️
       </h1>
       <p className="mt-1 text-sm text-ink/60">
         Transcripciones reales del asistente IA de la web. Léelas para decidir la siguiente
@@ -131,7 +131,7 @@ export default async function VoiceSessionsPage() {
         </p>
         {sessions.length === 0 && (
           <div className="rounded-xl border border-dashed border-line bg-bone-soft/50 p-8 text-center text-sm text-ink/55">
-            Aún no hay sesiones. En cuanto alguien hable con Diego aparecerán aquí.
+            Aún no hay sesiones. En cuanto alguien hable con David aparecerán aquí.
           </div>
         )}
         {sessions.map((s) => {

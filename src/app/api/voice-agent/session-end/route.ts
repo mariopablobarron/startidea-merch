@@ -128,7 +128,7 @@ async function notifyTranscript(d: z.infer<typeof Schema>, sourceUrl: string | n
   const mins = Math.floor(d.duration_sec / 60);
   const tools = (d.tools_called || []).map((t) => t.tool);
   const header =
-    `🎙️ <b>Conversación con Diego terminada</b> — ${mins}m ${d.duration_sec % 60}s` +
+    `🎙️ <b>Conversación con David terminada</b> — ${mins}m ${d.duration_sec % 60}s` +
     (page ? `\n📍 ${esc(page)}` : "") +
     (tools.length ? `\n🔧 ${esc([...new Set(tools)].join(", "))}` : "") +
     (d.product_slugs_discussed?.length ? `\n📦 ${esc(d.product_slugs_discussed.join(", "))}` : "") +

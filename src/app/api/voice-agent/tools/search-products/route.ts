@@ -106,7 +106,7 @@ export async function POST(req: Request) {
   });
 
   // Precio CLIENTE (override admin > promo PERCENT > margen global) — el mismo
-  // que la web. NUNCA el neto de proveedor: Diego se lo canta al cliente.
+  // que la web. NUNCA el neto de proveedor: David se lo canta al cliente.
   // En paralelo con la búsqueda: no suma latencia.
   const [products, activePromos] = await Promise.all([productsPromise, loadActivePromotions()]);
 

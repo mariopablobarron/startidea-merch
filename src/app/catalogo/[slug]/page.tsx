@@ -358,7 +358,7 @@ export default async function ProductDetailPage({
                   <p className="mt-2 text-sm text-ink/60">
                     {product.positions.length} {product.positions.length === 1 ? "zona disponible" : "zonas disponibles"} para personalizar tu logo.{" "}
                     <AskDiego
-                      label="¿Dudas? Pregunta a Diego"
+                      label="¿Dudas? Pregunta a David"
                       context={`El cliente está viendo la ficha del producto "${displayName}" (ref ${displayRef}) y puede tener dudas sobre personalización, técnicas o cantidades. Ayúdale sobre ESTE producto.`}
                     />
                   </p>

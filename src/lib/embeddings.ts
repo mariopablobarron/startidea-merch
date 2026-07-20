@@ -75,7 +75,7 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
  *
  * Por qué: traer ~9.4k vectores de 1536 floats desde Postgres son >100 MB
  * de transferencia+parseo POR BÚSQUEDA — segundos de latencia que el cliente
- * sufría hablando con Diego. Cacheado como Float32Array plana (~58 MB una
+ * sufría hablando con David. Cacheado como Float32Array plana (~58 MB una
  * vez, normas precalculadas), la búsqueda queda en ~50 ms + el embedding de
  * la query. TTL 15 min: los embeddings los renueva el cron diario, y un
  * producto nuevo tarda como mucho 15 min en entrar a la búsqueda semántica.

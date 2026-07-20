@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * Punto de entrada a Diego desde cualquier parte de la web. Dispara el evento
+ * Punto de entrada a David desde cualquier parte de la web. Dispara el evento
  * global `diego:open` que escucha VoiceAgentWidget (montado en el layout):
- * abre el panel, arranca la sesión si no estaba activa y le pasa a Diego el
+ * abre el panel, arranca la sesión si no estaba activa y le pasa a David el
  * CONTEXTO de dónde estaba el cliente (producto que miraba, carrito…) para
  * que no empiece de cero.
  */
 export function AskDiego({
   context,
-  label = "Pregunta a Diego",
+  label = "Pregunta a David",
   className,
 }: {
-  /** Contexto para Diego, ej: 'El cliente está viendo "Botella X" (STM-…)'. */
+  /** Contexto para David, ej: 'El cliente está viendo "Botella X" (STM-…)'. */
   context?: string;
   label?: string;
   className?: string;

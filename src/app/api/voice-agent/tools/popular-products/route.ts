@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 
   // Enrich con precio CLIENTE (override > promo > margen) — antes salía el
-  // tier NETO del proveedor y Diego lo cantaba al cliente.
+  // tier NETO del proveedor y David lo cantaba al cliente.
   const slugs = top.map((p) => p.slug);
   const [products, activePromos] = await Promise.all([
     prisma.product.findMany({

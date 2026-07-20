@@ -156,7 +156,7 @@ export default function AyudaPage() {
             <p className="mt-4 max-w-3xl text-lg text-ink/70">
               Si no encuentras lo que buscas,{" "}
               <AskDiego
-                label="pregunta a Diego"
+                label="pregunta a David"
                 context="El cliente está en el centro de ayuda buscando resolver una duda. Ayúdale directo."
                 className="inline-flex items-center gap-1 text-lg font-medium text-accent underline-offset-4 hover:underline"
               />{" "}

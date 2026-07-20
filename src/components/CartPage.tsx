@@ -881,7 +881,7 @@ export function CartPage() {
                   <p className="mt-3 text-xs text-ink/60">
                     ¿Alguna duda antes de pedir?{" "}
                     <AskDiego
-                      label="Diego te la resuelve al momento"
+                      label="David te la resuelve al momento"
                       context={`El cliente está en el carrito, a punto de pedir cotización, con: ${items
                         .slice(0, 5)
                         .map((it) => `${it.quantity}× ${it.productName}`)
@@ -906,7 +906,7 @@ export function CartPage() {
                   <p className="mt-3 text-xs text-ink/60">
                     ¿Alguna duda antes de pedir?{" "}
                     <AskDiego
-                      label="Diego te la resuelve al momento"
+                      label="David te la resuelve al momento"
                       context={`El cliente está en el carrito, a punto de pedir cotización, con: ${items
                         .slice(0, 5)
                         .map((it) => `${it.quantity}× ${it.productName}`)

@@ -110,12 +110,12 @@ export function Hero({
           </Link>
         </motion.div>
 
-        {/* Entrada directa a Diego — terciaria a propósito: el CTA primario
+        {/* Entrada directa a David — terciaria a propósito: el CTA primario
             sigue siendo único (regla de la casa). */}
         <motion.p variants={fadeUp} className="mt-4 text-sm text-ink/60">
           ¿Con prisa?{" "}
           <AskDiego
-            label="Habla o escribe a Diego"
+            label="Habla o escribe a David"
             context="El cliente acaba de llegar a la portada de TodoMerchandising y quiere ir rápido."
           />{" "}
           y ten precio en 2 minutos.
