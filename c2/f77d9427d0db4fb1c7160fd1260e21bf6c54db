@@ -1,0 +1,53 @@
+src/app/admin/layout.tsx
+  s_4ccdcf455112ce::t_84b2b6ef45c997 49
+src/app/admin/voice-sessions/page.tsx
+  s_4ccdcf455112ce::t_58a70b03ee8a85 2,6,17,89,92,134
+src/app/api/health/route.ts
+  s_4ccdcf455112ce::t_07dd4b822e0823 25
+src/app/api/products/cards/route.ts
+  s_4ccdcf455112ce::t_55e610e69d0fc3 13,55
+src/app/api/quote/calculate/route.ts
+  s_4ccdcf455112ce::t_129836e01c4045 238
+src/app/api/voice-agent/session-end/route.ts
+  s_4ccdcf455112ce::t_197de41293aa53 131
+src/app/api/voice-agent/signed-url/route.ts
+  s_4ccdcf455112ce::t_935b417c4e2f5b 77,88,96
+src/app/api/voice-agent/tools/order-status/route.ts
+  s_4ccdcf455112ce::t_4921f4d0b9c5cb 19,23,35
+src/app/api/voice-agent/tools/popular-products/route.ts
+  s_4ccdcf455112ce::t_6e1eab1e7d6b7e 40
+src/app/api/voice-agent/tools/request-callback/route.ts
+  s_4ccdcf455112ce::t_5e70c27f7e8184 24,109
+src/app/api/voice-agent/tools/search-products/route.ts
+  s_4ccdcf455112ce::t_b160807a0ec6b1 109
+src/app/ayuda/page.tsx
+  s_4ccdcf455112ce::t_4093772e4e1b83 159
+src/app/catalogo/[slug]/page.tsx
+  s_4ccdcf455112ce::t_0d5b5b7ea4bcb0 361
+src/components/AskDiego.tsx
+  s_4ccdcf455112ce::t_e487e48a7bb2ae 4,6,12,15
+src/components/CartPage.tsx
+  s_4ccdcf455112ce::t_6386c26285c5e6 884,909
+src/components/Hero.tsx
+  s_4ccdcf455112ce::t_37e2187f091782 113,118
+src/components/VoiceAgentWidget.tsx
+  s_4ccdcf455112ce::t_1e316708f7d8d1 9,24,29,31,129-130,132,136,157,172,189,256,259,278,317,429,452,458,554,596,658,689,787,1009,1092
+src/lib/embeddings.ts
+  s_4ccdcf455112ce::t_fb38b0e55bc848 78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "c2f77d9427d0db4fb1c7160fd1260e21bf6c54db",
+  "prompts": {},
+  "sessions": {
+    "s_4ccdcf455112ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "019f556a-6ea9-75a0-bbcb-381a6660f9b0",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
