@@ -22,6 +22,16 @@ const BASE = process.env.BASE || "https://merchandising.hubstartidea.es";
 const SLUG = process.env.SLUG || "taza";
 const TECH = process.env.TECH || "P5"; // técnica de marcaje válida para SLUG
 const SUPPLIER_LEAKS = ["midocean", "makito", "cifra", "adivin", "supplierref", "supplier_ref"];
+// Hosts de CDN de proveedor. Van APARTE porque varios NO contienen el nombre
+// del proveedor y la lista de arriba no los atrapaba: así es como la fuga del
+// 2026-07-20 en /api/recommend pasó el guard. Ver incident_midocean_image_leak.
+const SUPPLIER_HOSTS = [
+  "cdn1.midocean.com",
+  "publicatalogue.com",
+  "imgresources.makito.es",
+  "adivin.com",
+];
+const ALL_LEAKS = [...SUPPLIER_LEAKS, ...SUPPLIER_HOSTS];
 
 const fails = [];
 const oks = [];
@@ -64,16 +74,44 @@ async function main() {
   );
 
   // ── 2. Sin fuga de proveedor en respuestas públicas ──────────────
+  // Se barren TODAS las superficies públicas que devuelven productos, GET y
+  // POST. Antes solo había 3 GET, y por eso /api/recommend (POST) filtró el
+  // CDN del proveedor durante meses sin que el guard se enterase.
   const publicSurfaces = [
-    `/api/products/cards?slugs=${encodeURIComponent(SLUG)}`,
-    `/catalogo/${encodeURIComponent(SLUG)}`,
-    `/comparar?slugs=${encodeURIComponent(SLUG)}`,
+    { path: `/api/products/cards?slugs=${encodeURIComponent(SLUG)}` },
+    { path: `/catalogo/${encodeURIComponent(SLUG)}` },
+    { path: `/comparar?slugs=${encodeURIComponent(SLUG)}` },
+    {
+      path: "/api/recommend",
+      method: "POST",
+      body: {
+        brief:
+          "Necesito regalos corporativos para un congreso de 200 personas, algo util y de calidad",
+        quantity: 200,
+      },
+    },
+    // NO se barren aquí (dan 401 sin credenciales, y este guard corre sin
+    // secretos): /api/v1/products (API key con scope) y las tools del agente
+    // de voz (secreto compartido). Su limpieza está verificada por código
+    // —usan `select` explícito sin `images`/`supplierRef`— no por este smoke.
+    {
+      path: "/api/quote/calculate",
+      method: "POST",
+      body: { productSlug: SLUG, quantity: 100, techniqueCode: TECH, numberOfColours: 1, positionCount: 1 },
+    },
   ];
-  for (const path of publicSurfaces) {
-    const r = await fetch(BASE + path);
-    const body = (await r.text()).toLowerCase();
-    const leak = SUPPLIER_LEAKS.find((s) => body.includes(s));
-    check(`sin proveedor en ${path}`, !leak, leak ? `contiene "${leak}"` : "");
+  for (const surface of publicSurfaces) {
+    const { path, method = "GET", body } = surface;
+    const r = await fetch(BASE + path, {
+      method,
+      ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
+    });
+    const text = (await r.text()).toLowerCase();
+    // Un 4xx/5xx deja el barrido ciego: si la superficie no responde, el guard
+    // no puede afirmar que esté limpia — se marca como fallo, no como OK.
+    check(`${method} ${path} responde`, r.status === 200, `status ${r.status}`);
+    const leak = ALL_LEAKS.find((s) => text.includes(s));
+    check(`sin proveedor en ${method} ${path}`, !leak, leak ? `contiene "${leak}"` : "");
   }
 
   // ── 3. Tarjetas Diego: precio cliente + ref pública ──────────────

@@ -77,7 +77,9 @@ export async function POST(req: Request) {
         where: { priceTiers: { some: {} } },
         orderBy: { sku: "asc" },
         take: 1,
-        include: { priceTiers: { orderBy: { minQty: "asc" } } },
+        // Ruta pública: solo los tramos de precio. `include` traía además
+        // `images[]`/`variantId` (datos crudos de proveedor) sin necesidad.
+        select: { id: true, priceTiers: { orderBy: { minQty: "asc" } } },
       },
       category: { select: { name: true } },
       override: true,

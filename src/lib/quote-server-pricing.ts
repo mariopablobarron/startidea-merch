@@ -61,7 +61,9 @@ export async function computeServerLinePricing(
         where: { priceTiers: { some: {} } },
         orderBy: { sku: "asc" },
         take: 1,
-        include: { priceTiers: { orderBy: { minQty: "asc" } } },
+        // Solo tramos de precio: este recálculo alimenta el checkout del
+        // cliente y no debe arrastrar `images[]`/`variantId` del proveedor.
+        select: { id: true, priceTiers: { orderBy: { minQty: "asc" } } },
       },
       category: { select: { name: true } },
       override: true,

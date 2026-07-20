@@ -92,7 +92,22 @@ export default async function ProductDetailPage({
       category: { include: { parent: { include: { parent: true } } } },
       variants: {
         orderBy: { sku: "asc" },
-        include: { priceTiers: { orderBy: { minQty: "asc" } } },
+        // `select` explícito, NO `include`: la ficha es pública y `include`
+        // arrastraba `images[]` y `variantId`, que siguen conteniendo datos
+        // crudos del proveedor (55k URLs de su CDN). Hoy no se serializan,
+        // pero un futuro spread los expondría de golpe. Ver la fuga del
+        // 2026-07-20 en /api/recommend.
+        select: {
+          id: true,
+          sku: true,
+          colorName: true,
+          colorGroup: true,
+          colorHex: true,
+          size: true,
+          stockQty: true,
+          imageUrl: true,
+          priceTiers: { orderBy: { minQty: "asc" } },
+        },
       },
       positions: {
         include: { techniques: { include: { technique: true } } },
