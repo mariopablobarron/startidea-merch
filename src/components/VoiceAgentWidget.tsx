@@ -121,6 +121,57 @@ function stopHoldMusic(ref: MutableRefObject<HoldMusic | null>) {
   } catch {}
 }
 
+/**
+ * Instrucción para desbloquear el micrófono, adaptada al navegador/dispositivo
+ * que entra: en móvil no hay 🔒 en la barra, y Safari/Firefox usan otro sitio.
+ * Devuelve un texto corto y aproximado (la UI exacta cambia entre versiones),
+ * suficiente para que la persona sepa dónde mirar.
+ */
+function micUnblockHint(): string {
+  const tail = " Después vuelve a tocar el botón. Mientras, puedes escribirle abajo.";
+  if (typeof navigator === "undefined") {
+    return "Permite el micrófono en los ajustes del sitio de tu navegador (Micrófono → Permitir)." + tail;
+  }
+  const ua = navigator.userAgent || "";
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1);
+  const isAndroid = /Android/.test(ua);
+  const isChromeIOS = /CriOS/.test(ua);
+  const isFirefoxIOS = /FxiOS/.test(ua);
+  const isFirefox = /Firefox/.test(ua) || isFirefoxIOS;
+  const isEdge = /Edg\//.test(ua);
+  const isChromium = /Chrome|Chromium|CriOS/.test(ua);
+  const isSafariDesktop = /Safari/.test(ua) && !isChromium && !isFirefox && !isIOS;
+
+  // iOS: Safari usa el botón "aA"; Chrome/Firefox de iOS piden el permiso a nivel de sistema.
+  if (isIOS) {
+    if (isChromeIOS || isFirefoxIOS) {
+      const app = isChromeIOS ? "Chrome" : "Firefox";
+      return `En iPhone/iPad ve a Ajustes → ${app} → Micrófono y actívalo.` + tail;
+    }
+    return 'Toca "aA" a la izquierda de la barra de direcciones → Ajustes del sitio web → Micrófono → Permitir. Si no aparece, ve a Ajustes → Safari → Micrófono.' + tail;
+  }
+  // Android (Chrome y derivados): candado/icono de ajustes a la izquierda de la dirección.
+  if (isAndroid) {
+    return "Toca el icono a la izquierda de la dirección (🔒 o ⚙️) → Permisos → Micrófono → Permitir." + tail;
+  }
+  // Escritorio Safari.
+  if (isSafariDesktop) {
+    return "En el menú Safari → Ajustes para este sitio web → Micrófono → Permitir." + tail;
+  }
+  // Escritorio Firefox.
+  if (isFirefox) {
+    return "Pulsa el 🔒 a la izquierda de la dirección y quita el bloqueo de Micrófono (o Permisos → Micrófono → Permitir)." + tail;
+  }
+  // Escritorio Chrome / Edge / Chromium.
+  if (isChromium || isEdge) {
+    return "Pulsa el 🔒 (o el icono de controles del sitio) a la izquierda de la dirección → Micrófono → Permitir, y recarga." + tail;
+  }
+  // Fallback genérico.
+  return "Permite el micrófono en los ajustes del sitio de tu navegador (Micrófono → Permitir)." + tail;
+}
+
 function VoiceAgentInner() {
   const [open, setOpen] = useState(false);
   const [bootingError, setBootingError] = useState<string | null>(null);
@@ -1175,9 +1226,7 @@ function VoiceAgentInner() {
                   </button>
                   {voiceRetryFailed && (
                     <p className="mb-2 rounded-lg bg-accent/10 px-3 py-2 text-[11px] leading-snug text-accent-deep">
-                      El micrófono está bloqueado en tu navegador. Pulsa el 🔒 de la barra de
-                      direcciones → Micrófono → Permitir, y vuelve a tocar el botón. Mientras, puedes
-                      escribirle abajo.
+                      El micrófono está bloqueado. {micUnblockHint()}
                     </p>
                   )}
                 </>
