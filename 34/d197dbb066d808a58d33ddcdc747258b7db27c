@@ -1,0 +1,23 @@
+src/lib/suppliers/midocean-sync.ts
+  s_65877aa637ec34::t_43240c3eaec24d 348-349,356
+  s_65877aa637ec34::t_35fc7f96ff21e7 308
+  s_65877aa637ec34::t_5ea62ef3b5aabe 18
+  s_65877aa637ec34::t_8efb6f029ce98c 266-273
+  s_65877aa637ec34::t_a8016dd44d55ac 326-332
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "34d197dbb066d808a58d33ddcdc747258b7db27c",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
