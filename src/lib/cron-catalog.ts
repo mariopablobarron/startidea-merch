@@ -127,6 +127,15 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Alerta Telegram productos sin stock / críticos",
   },
   {
+    name: "voice-agent-health",
+    endpointPath: "/api/cron/voice-agent-health",
+    method: "POST",
+    schedule: "cada 6h",
+    scheduleCron: "40 */6 * * *",
+    frequencyHours: 6,
+    description: "Vigía de David (ElevenLabs): impago/cuota/fallos → alerta Telegram",
+  },
+  {
     name: "abandoned-cart-drip",
     endpointPath: "/api/cron/abandoned-cart-drip",
     method: "POST",
