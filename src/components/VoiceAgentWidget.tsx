@@ -133,6 +133,9 @@ function VoiceAgentInner() {
   const [draft, setDraft] = useState("");
   // true = sesión sin micro (el usuario denegó permiso → chat escrito).
   const [textOnlyMode, setTextOnlyMode] = useState(false);
+  // true = el cliente silenció a David para escribir con calma: su VOZ no
+  // suena (setVolume 0) y su micro no escucha (setMuted) → chat de texto puro.
+  const [voiceMuted, setVoiceMuted] = useState(false);
   // El cliente ya habló/escribió y David aún no ha contestado → música de espera.
   const [awaitingReply, setAwaitingReply] = useState(false);
   // La sesión se cayó sin que el usuario la terminara → ofrecer "Reconectar".
@@ -567,6 +570,22 @@ function VoiceAgentInner() {
     setDraft("");
   }, [c, draft]);
 
+  // ── Silenciar a David (para escribir con calma) ─────────────────
+  // Mutea su VOZ (setVolume 0) y su ESCUCHA (setMuted) → chat de texto puro.
+  // Reversible: reactiva ambos. No cierra la sesión.
+  const toggleVoiceMute = useCallback(() => {
+    setVoiceMuted((prev) => {
+      const next = !prev;
+      try {
+        c.setVolume({ volume: next ? 0 : 1 });
+      } catch {}
+      try {
+        c.setMuted?.(next);
+      } catch {}
+      return next;
+    });
+  }, [c]);
+
   // ── Formulario silencioso de contacto ───────────────────────────
   const leadValid = leadName.trim().length >= 2 && /\S+@\S+\.\S+/.test(leadEmail.trim());
   const submitLead = useCallback(
@@ -685,6 +704,19 @@ function VoiceAgentInner() {
       c.sendContextualUpdate(ctx);
     } catch {}
   }, [c.status, c]);
+
+  // Reaplicar el silencio de David tras una (re)conexión: la sesión nueva
+  // arranca con volumen 1, así que si el cliente lo había silenciado hay que
+  // volver a mutear para no romper la promesa "no hablará mientras escribo".
+  useEffect(() => {
+    if (c.status !== "connected" || !voiceMuted) return;
+    try {
+      c.setVolume({ volume: 0 });
+    } catch {}
+    try {
+      c.setMuted?.(true);
+    } catch {}
+  }, [c.status, voiceMuted, c]);
 
   // Visualización de onda — David vivo.
   //
@@ -1077,6 +1109,30 @@ function VoiceAgentInner() {
           {/* Controles: entrada de TEXTO (siempre) + micro (si hay voz) */}
           {isActive && (
             <footer className="border-t border-line px-4 py-3">
+              {/* Tecla CLARA para silenciar a David y escribir con calma.
+                  Solo en modo voz (en chat puro David ya no habla). */}
+              {!textOnlyMode && (
+                <button
+                  type="button"
+                  onClick={toggleVoiceMute}
+                  aria-pressed={voiceMuted}
+                  className={`mb-2 flex w-full items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition ${
+                    voiceMuted
+                      ? "bg-accent text-white hover:bg-accent-deep"
+                      : "bg-bone-soft text-ink/75 hover:bg-line"
+                  }`}
+                >
+                  {voiceMuted ? (
+                    <>
+                      <SpeakerOffIcon className="h-4 w-4" /> Voz silenciada — toca para reactivarla
+                    </>
+                  ) : (
+                    <>
+                      <SpeakerOffIcon className="h-4 w-4" /> Silenciar a {agentName} y escribir
+                    </>
+                  )}
+                </button>
+              )}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1096,7 +1152,7 @@ function VoiceAgentInner() {
                   }}
                   placeholder={textOnlyMode ? "Escribe tu mensaje…" : "…o escríbelo aquí"}
                   aria-label={`Escribir a ${agentName}`}
-                  className="min-w-0 flex-1 rounded-full border border-line bg-bone-soft px-3.5 py-2 text-sm outline-none focus:border-accent"
+                  className="min-w-0 flex-1 rounded-full border border-line bg-bone-soft px-3.5 py-2 text-base sm:text-sm outline-none focus:border-accent"
                 />
                 <button
                   type="submit"
@@ -1106,24 +1162,14 @@ function VoiceAgentInner() {
                 >
                   Enviar
                 </button>
-                {!textOnlyMode && (
-                  <button
-                    type="button"
-                    onClick={() => c.setMuted(!c.isMuted)}
-                    aria-label={c.isMuted ? "Activar micrófono" : "Silenciar micrófono"}
-                    className={`rounded-full px-3 py-2 text-xs ${
-                      c.isMuted ? "bg-accent text-white" : "bg-bone-soft text-ink/70"
-                    }`}
-                  >
-                    <MicIcon className="h-3.5 w-3.5" />
-                  </button>
-                )}
               </form>
               <p className="mt-2 text-[10px] text-ink/45">
                 Asistente con IA ·{" "}
                 {textOnlyMode
                   ? "Modo chat (sin micrófono). Conversaciones anonimizadas."
-                  : "Habla o escribe — como prefieras. Tu voz no se guarda."}
+                  : voiceMuted
+                    ? `${agentName} no hablará ni te escuchará — escríbele con calma.`
+                    : "Habla o escribe — como prefieras. Tu voz no se guarda."}
               </p>
             </footer>
           )}
@@ -1148,6 +1194,24 @@ function MicIcon({ className }: { className?: string }) {
       <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
       <line x1="12" y1="19" x2="12" y2="23" />
       <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  );
+}
+
+function SpeakerOffIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M11 5 6 9H2v6h4l5 4V5z" />
+      <line x1="23" y1="9" x2="17" y2="15" />
+      <line x1="17" y1="9" x2="23" y2="15" />
     </svg>
   );
 }
