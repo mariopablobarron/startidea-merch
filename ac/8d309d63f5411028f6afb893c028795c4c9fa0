@@ -1,0 +1,27 @@
+src/app/api/quote/calculate/route.ts
+  s_852f9d0ffe8253::t_f3b0aaf38dd968 80-82
+src/app/catalogo/[slug]/page.tsx
+  s_852f9d0ffe8253::t_a9f2989baabe58 95-110
+src/lib/quote-server-pricing.ts
+  s_852f9d0ffe8253::t_7434a1ae4d3008 64-66
+scripts/money-smoke-test.mjs
+  s_852f9d0ffe8253::t_7383e4193b6095 93-96
+  s_852f9d0ffe8253::t_92d430ed213cc1 25-34
+  s_852f9d0ffe8253::t_a8ac8f44c956a7 77-79,81-92,97-101,103-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ac8d309d63f5411028f6afb893c028795c4c9fa0",
+  "prompts": {},
+  "sessions": {
+    "s_852f9d0ffe8253": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a37e5394-e8d5-463e-8ed6-6d3df6c3c047",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
