@@ -1,0 +1,25 @@
+.github/workflows/midocean-print-pricelist-sync.yml
+  s_65877aa637ec34::t_c77df6438e1047 6-9
+.github/workflows/midocean-sync.yml
+  s_65877aa637ec34::t_00751afa0845b6 6-10
+.github/workflows/cifra-sync.yml
+  s_65877aa637ec34::t_cd8f88c333ab64 13-17
+.github/workflows/makito-sync.yml
+  s_65877aa637ec34::t_e0d125a4a68b38 6-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d1370e5dbe70f5605a9482d128f72ed7767dd0a5",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
