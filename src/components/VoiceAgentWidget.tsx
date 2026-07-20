@@ -586,6 +586,37 @@ function VoiceAgentInner() {
     });
   }, [c]);
 
+  // ── Activar la VOZ desde modo texto ─────────────────────────────
+  // Si el micro se denegó (o el navegador no lo pidió), David cae a chat
+  // escrito y antes no había vuelta atrás. Este botón cierra la sesión de
+  // texto y reintenta con micro; si el navegador lo tiene bloqueado, el
+  // reintento fallará y se queda en chat + mostramos una pista.
+  const [voiceRetryFailed, setVoiceRetryFailed] = useState(false);
+  const enableVoice = useCallback(async () => {
+    setVoiceRetryFailed(false);
+    // ¿Hay micro concedible? Sondeamos permiso antes de cerrar la sesión buena.
+    let ok = false;
+    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        s.getTracks().forEach((t) => t.stop());
+        ok = true;
+      } catch {
+        ok = false;
+      }
+    }
+    if (!ok) {
+      // Sin permiso: no rompemos la sesión de texto; guiamos al usuario.
+      setVoiceRetryFailed(true);
+      return;
+    }
+    userEndedRef.current = true;
+    try {
+      c.endSession();
+    } catch {}
+    setTimeout(() => void start({ keepMessages: true }), 300);
+  }, [c, start]);
+
   // ── Formulario silencioso de contacto ───────────────────────────
   const leadValid = leadName.trim().length >= 2 && /\S+@\S+\.\S+/.test(leadEmail.trim());
   const submitLead = useCallback(
@@ -1109,8 +1140,7 @@ function VoiceAgentInner() {
           {/* Controles: entrada de TEXTO (siempre) + micro (si hay voz) */}
           {isActive && (
             <footer className="border-t border-line px-4 py-3">
-              {/* Tecla CLARA para silenciar a David y escribir con calma.
-                  Solo en modo voz (en chat puro David ya no habla). */}
+              {/* Modo VOZ: tecla clara para silenciar a David y escribir. */}
               {!textOnlyMode && (
                 <button
                   type="button"
@@ -1132,6 +1162,25 @@ function VoiceAgentInner() {
                     </>
                   )}
                 </button>
+              )}
+              {/* Modo TEXTO (micro no concedido): tecla clara para pasar a voz. */}
+              {textOnlyMode && (
+                <>
+                  <button
+                    type="button"
+                    onClick={enableVoice}
+                    className="mb-2 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-3 py-2 text-xs font-semibold text-bone transition hover:bg-accent"
+                  >
+                    <MicIcon className="h-4 w-4" /> Activar micrófono y hablar con {agentName}
+                  </button>
+                  {voiceRetryFailed && (
+                    <p className="mb-2 rounded-lg bg-accent/10 px-3 py-2 text-[11px] leading-snug text-accent-deep">
+                      El micrófono está bloqueado en tu navegador. Pulsa el 🔒 de la barra de
+                      direcciones → Micrófono → Permitir, y vuelve a tocar el botón. Mientras, puedes
+                      escribirle abajo.
+                    </p>
+                  )}
+                </>
               )}
               <form
                 onSubmit={(e) => {
