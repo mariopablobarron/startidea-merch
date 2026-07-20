@@ -15,6 +15,7 @@ import { normalizeTechniqueName } from "@/lib/marking-techniques-es";
 import { extractSize, canonicalColorGroup, colorGroupFromName } from "@/lib/variant-grouping";
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
 import { notifyTelegram } from "@/lib/telegram";
+import { ensureMediaAsset } from "@/lib/proxy-image";
 
 export type MidoceanSyncResult = {
   startedAt: string;
@@ -262,7 +263,14 @@ async function upsertProduct(
     lengthMm: parseUnitToMm(raw.length, raw.length_unit),
     widthMm: parseUnitToMm(raw.width, raw.width_unit),
     heightMm: parseUnitToMm(raw.height, raw.height_unit),
-    primaryImageUrl: pickPrimaryImage(raw.digital_assets) || pickPrimaryImage(v0?.digital_assets),
+    // Guardamos ya el /api/m/<hash> opaco (igual que Cifra/Makito/Adivin), no
+    // la URL cruda del CDN: cualquier API JSON que devuelva este campo tal cual
+    // delataría al proveedor. ensureMediaAsset registra el mapeo y devuelve el
+    // proxy; es idempotente.
+    primaryImageUrl: await ensureMediaAsset(
+      pickPrimaryImage(raw.digital_assets) || pickPrimaryImage(v0?.digital_assets),
+      "product-primary",
+    ),
     countryOfOrigin: raw.country_of_origin,
     active: true,
     syncedAt: new Date(),
@@ -297,12 +305,7 @@ async function upsertProduct(
     });
   }
 
-  // Proxy de imágenes: registrar primaryImageUrl en MediaAsset para que
-  // el endpoint /api/m/[hash] pueda resolverla sin exponer el CDN proveedor.
-  const { ensureMediaAsset } = await import("@/lib/proxy-image");
-  if (productData.primaryImageUrl) {
-    await ensureMediaAsset(productData.primaryImageUrl, "product-primary").catch(() => {});
-  }
+  // (primaryImageUrl ya se guardó proxyficada al construir productData)
 
   // variantes
   for (const v of raw.variants ?? []) {
@@ -320,17 +323,19 @@ async function upsertProduct(
       // conocidas — los sufijos numéricos (MO9268-03 = color) devuelven null.
       size: extractSize({ size: null, sku: v.sku }),
       gtin: v.gtin,
-      imageUrl: pickPrimaryImage(v.digital_assets),
-      images: variantImages(v.digital_assets),
+      // Proxy antes de guardar (ver nota en primaryImageUrl).
+      imageUrl: await ensureMediaAsset(pickPrimaryImage(v.digital_assets), "product-variant"),
+      images: (
+        await Promise.all(
+          variantImages(v.digital_assets).map((img) => ensureMediaAsset(img, "product-variant")),
+        )
+      ).filter((x): x is string => Boolean(x)),
     };
     await prisma.productVariant.upsert({
       where: { sku: v.sku },
       create: data,
       update: data,
     });
-    if (data.imageUrl) {
-      await ensureMediaAsset(data.imageUrl, "product-variant").catch(() => {});
-    }
   }
 
   // marcaje
@@ -340,18 +345,17 @@ async function upsertProduct(
     for (const pos of printProduct.printing_positions) {
       const sample = pos.images?.[0];
       const posImage = sample?.print_position_image_with_area || sample?.print_position_image_blank || null;
+      // Proxy antes de guardar (ver nota en primaryImageUrl).
+      const posImageProxied = await ensureMediaAsset(posImage, "marking-position");
       const created = await prisma.markingPosition.create({
         data: {
           productId: product.id,
           positionId: pos.position_id,
           maxWidthMm: pos.max_print_size_width ?? null,
           maxHeightMm: pos.max_print_size_height ?? null,
-          imageUrl: posImage,
+          imageUrl: posImageProxied,
         },
       });
-      if (posImage) {
-        await ensureMediaAsset(posImage, "marking-position").catch(() => {});
-      }
       // técnicas asignadas a esta posición
       for (const t of pos.printing_techniques ?? []) {
         const tech = ctx.techniqueByCode.get(t.id);
