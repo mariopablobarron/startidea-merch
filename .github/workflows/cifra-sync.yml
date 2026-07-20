@@ -10,9 +10,12 @@ name: Cifra sync diario
 # Si vuelve a fallar de forma silenciosa, el cron-watchdog avisa
 # (porque cifra-sync ya pasa por wrapCronHandler).
 
+# El disparo diario lo hace el crontab del VPS (merch-cron-runner.sh, 05:00
+# hora Madrid = 03:00 UTC), más robusto (guardas de arranque/carga/docker +
+# Telegram solo en fallo real). Se retiró el schedule de GitHub Actions para no
+# duplicar el sync ni chocar con el crontab (409 del cron-lock). Queda
+# workflow_dispatch para lanzarlo a mano.
 on:
-  schedule:
-    - cron: "30 2 * * *"
   workflow_dispatch: {}
 
 concurrency:

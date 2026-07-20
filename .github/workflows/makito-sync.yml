@@ -3,9 +3,13 @@ name: Makito sync diario
 # Diario 01:00 UTC. Sync catálogo legacy (XML feeds) Makito → BD.
 # Sync masivo: ~5-10 min en background.
 
+# El disparo diario lo hace el crontab del VPS (merch-cron-runner.sh, 06:00
+# hora Madrid = 04:00 UTC), que es más robusto: guardas de arranque/carga/docker
+# + aviso Telegram solo en fallo real. Se retiró el schedule de GitHub Actions
+# porque duplicaba el sync y, por el retraso de GH, chocaba con el crontab → el
+# cron-lock devolvía 409 (falsos "fallos"). Queda workflow_dispatch para lanzarlo
+# a mano desde la pestaña Actions.
 on:
-  schedule:
-    - cron: "0 1 * * *"
   workflow_dispatch: {}
 
 concurrency:

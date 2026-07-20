@@ -3,9 +3,12 @@ name: MidOcean sync diario
 # Diario 01:30 UTC. Sync productos + stock + precios MidOcean → BD.
 # Fire-and-forget en el endpoint (200ms response), corre 5-15 min en background.
 
+# El disparo diario lo hace el crontab del VPS (merch-cron-runner.sh, 04:00
+# hora Madrid = 02:00 UTC), más robusto (guardas de arranque/carga/docker +
+# Telegram solo en fallo real). Se retiró el schedule de GitHub Actions para no
+# duplicar el sync ni chocar con el crontab (409 del cron-lock). Queda
+# workflow_dispatch para lanzarlo a mano.
 on:
-  schedule:
-    - cron: "30 1 * * *"
   workflow_dispatch: {}
 
 concurrency:

@@ -3,9 +3,11 @@ name: MidOcean print pricelist sync
 # Semanal lunes 02:00 UTC. Sincroniza tarifas de marcaje MidOcean.
 # Cambian poco — semanal es suficiente.
 
+# El disparo lo hace el crontab del VPS (merch-cron-runner.sh, 30 4 hora Madrid
+# = 02:30 UTC, diario), más robusto (guardas de arranque/carga/docker + Telegram
+# solo en fallo real). Se retiró el schedule de GitHub Actions para no duplicar
+# ni chocar con el crontab (409 del cron-lock). Queda workflow_dispatch a mano.
 on:
-  schedule:
-    - cron: "0 2 * * 1"
   workflow_dispatch: {}
 
 concurrency:
