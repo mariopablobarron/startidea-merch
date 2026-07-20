@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { captureError } from "@/lib/insights/capture-error";
 import { rateLimit } from "@/lib/rate-limit";
 import { publicRef } from "@/lib/internal-ref";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { defaultTiersFromBase, pickTier } from "@/lib/pricing";
 import { computeClientPricing } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
@@ -318,7 +319,9 @@ Devuelve SOLO el JSON descrito.`;
         name: p.name,
         ref: publicRef(p), // NUNCA supplierRef en endpoint público
         category: p.category?.name,
-        primaryImageUrl: p.primaryImageUrl,
+        // NUNCA la URL cruda del CDN: delata al proveedor (MidOcean guarda la
+        // original en BD, a diferencia de Cifra/Makito/Adivin). Idempotente.
+        primaryImageUrl: proxyImageUrl(p.primaryImageUrl),
         url: `/catalogo/${p.slug}`,
         rationale: r.rationale || "",
       };
@@ -427,7 +430,7 @@ Devuelve SOLO el JSON descrito.`;
         name: p.name,
         ref: publicRef(p), // NUNCA supplierRef en endpoint público
         url: `/catalogo/${p.slug}`,
-        primaryImageUrl: p.primaryImageUrl,
+        primaryImageUrl: proxyImageUrl(p.primaryImageUrl), // ver nota arriba
       };
 
       // Precio cliente por el pipeline CANÓNICO (override + promos), el mismo
