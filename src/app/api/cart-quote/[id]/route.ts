@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import type { CartItem } from "@/lib/cart-storage";
 
 export const runtime = "nodejs";
@@ -79,7 +80,7 @@ export async function GET(
     productSlug: it.productSlug,
     productRef: it.productRef,
     productName: it.productName,
-    primaryImageUrl: it.primaryImageUrl,
+    primaryImageUrl: proxyImageUrl(it.primaryImageUrl), // nunca URL cruda de proveedor
     quantity: it.quantity,
     variantSku: it.variantSku,
     colorName: it.colorName,

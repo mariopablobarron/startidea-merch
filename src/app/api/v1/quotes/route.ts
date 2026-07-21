@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { authenticateApiKey, requireScope } from "@/lib/api-auth";
 import { notifyAdmins } from "@/lib/notify-admin";
 
@@ -104,7 +105,7 @@ export async function POST(req: Request) {
             productSlug: p.slug,
             productRef: it.ref,
             productName: p.name,
-            primaryImageUrl: p.primaryImageUrl,
+            primaryImageUrl: proxyImageUrl(p.primaryImageUrl), // guardar proxy, nunca crudo
             quantity: it.quantity,
             variantSku: it.variantSku,
             markingPositionId: it.marking?.position,

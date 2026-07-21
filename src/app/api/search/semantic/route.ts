@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { generateEmbedding, cosineSimilarity } from "@/lib/embeddings";
 import { publicRef } from "@/lib/internal-ref";
 import { rateLimit } from "@/lib/rate-limit";
@@ -74,7 +75,7 @@ export async function GET(req: Request) {
       ref: publicRef(r.product!),
       name: r.product!.name,
       category: r.product!.category?.name,
-      image: r.product!.primaryImageUrl,
+      image: proxyImageUrl(r.product!.primaryImageUrl), // nunca URL cruda de proveedor
       description: r.product!.enhancedShortDescription || r.product!.shortDescription,
       score: Math.round(r.score * 1000) / 1000,
     })),

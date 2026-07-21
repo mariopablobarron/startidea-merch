@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { getNotificationRules } from "@/lib/notification-rules";
 import { publicRef } from "@/lib/internal-ref";
@@ -163,7 +164,7 @@ export async function GET(req: Request) {
         slug: p.slug,
         name: p.name,
         ref: publicRef(p), // NUNCA supplierRef en endpoint público
-        imageUrl: p.primaryImageUrl,
+        imageUrl: proxyImageUrl(p.primaryImageUrl), // nunca URL cruda de proveedor
         category: p.category?.name,
       })),
       categories: categories.map((c) => ({

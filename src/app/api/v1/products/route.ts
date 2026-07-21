@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateApiKey, requireScope } from "@/lib/api-auth";
 import { publicRef } from "@/lib/internal-ref";
+import { proxyImageUrl } from "@/lib/proxy-image";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,7 +78,11 @@ export async function GET(req: Request) {
       material: p.material,
       countryOfOrigin: p.countryOfOrigin,
       dimensions: { length_mm: p.lengthMm, width_mm: p.widthMm, height_mm: p.heightMm, weight_g: p.weightG },
-      image: p.primaryImageUrl,
+      // Defensa en profundidad: NUNCA emitir la URL cruda del CDN (delata al
+      // proveedor). Hoy la BD ya guarda el proxy, pero proxyImageUrl() es
+      // idempotente y cierra el hueco si algún día entra una URL cruda —
+      // mismo patrón que /api/recommend tras la fuga del 2026-07-20.
+      image: proxyImageUrl(p.primaryImageUrl),
       category: p.category,
       variants: p.variants,
       marking: p.positions.map((pos) => ({

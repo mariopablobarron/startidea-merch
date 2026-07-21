@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 
 export const runtime = "nodejs";
@@ -95,7 +96,7 @@ export async function POST(req: Request) {
         productSlug: p.slug,
         productRef: p.internalRef || p.slug,
         productName: p.name,
-        primaryImageUrl: p.primaryImageUrl,
+        primaryImageUrl: proxyImageUrl(p.primaryImageUrl), // guardar proxy, nunca crudo
         quantity: it.quantity,
         // shape plano (primer marcaje, compat) + array completo
         markingPositionId: markings[0]?.positionId || null,

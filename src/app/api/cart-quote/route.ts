@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { validateCoupon, applyCoupon } from "@/lib/coupons";
@@ -293,7 +294,7 @@ export async function POST(req: Request) {
             productSlug: it.productSlug,
             productRef: it.productRef,
             productName: it.productName,
-            primaryImageUrl: it.primaryImageUrl ?? null,
+            primaryImageUrl: proxyImageUrl(it.primaryImageUrl), // nunca URL cruda de proveedor
             quantity: it.quantity,
             variantSku: it.variantSku ?? null,
             colorName: it.colorName ?? null,
