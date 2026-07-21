@@ -1,0 +1,19 @@
+src/lib/pricing.test.ts
+  s_65877aa637ec34::t_b131d3d3b103b2 3-5,8-10,14-17,19-20,22,24-27,30-33,36-39,43-47,50-54,56,58-63,65-66,68-69,75-77,80-81,83-84,86-90,92-94,100-101,103-104,106-107,111-114,116-118,121-122,124-143,147-150,152-159
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "8671cdf3f173d6be165c1c069af49d45b7939038",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
