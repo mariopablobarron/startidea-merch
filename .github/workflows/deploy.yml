@@ -1,8 +1,15 @@
-name: Deploy a producción (merchandising.hubstartidea.es)
+name: Deploy — nota (el deploy real es por PULL desde el VPS)
 
-# Cada push a main dispara un deploy. La SSH key dedicada que vive en el
-# secret `VPS_SSH_KEY` solo puede ejecutar /root/deploy-startidea-merch.sh
-# del VPS — está restringida con command="..." en authorized_keys.
+# Este workflow NO despliega. El deploy de merch se hace por PULL desde el VPS
+# (migrado en fe69867): /root/startidea-merch-autodeploy.sh corre cada minuto,
+# detecta el commit nuevo vía la API de GitHub y ejecuta scripts/deploy.sh
+# (build con cache-bust por GIT_SHA + verificación de que el contenedor corre la
+# imagen recién construida). El SSH ENTRANTE desde los runners de GitHub está
+# baneado por fail2ban, así que el antiguo deploy por SSH ya no es viable — daba
+# ROJO en cada push (ruido que llegó a confundir un diagnóstico el 2026-07-21).
+#
+# Verificar un deploy concreto (no fiarse del marcador ni de "container Up"):
+#   ssh root@VPS 'docker exec merch-app printenv GIT_SHA'   # == commit desplegado
 
 on:
   push:
@@ -14,55 +21,14 @@ on:
       - '.github/**'
   workflow_dispatch: {}
 
-concurrency:
-  group: deploy-startidea-merch
-  cancel-in-progress: false
-
 jobs:
-  deploy:
-    name: SSH + build + recreate
+  nota:
+    name: El deploy real es por pull desde el VPS (no por este workflow)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
-      - name: Deploy via OpenSSH directo
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+      - name: Explicación
         run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-
-          # La red GitHub→Hostinger falla de forma intermitente (keyscan con
-          # timeout de 5s devolvía exit 1 y tumbaba el job). Reintentos con
-          # backoff antes de rendirse.
-          for i in 1 2 3 4; do
-            ssh-keyscan -T 10 -t ed25519,rsa,ecdsa 72.61.195.108 2>/dev/null > ~/.ssh/known_hosts
-            [ -s ~/.ssh/known_hosts ] && break
-            echo "keyscan intento $i fallido; reintento en $((i*15))s"
-            sleep $((i*15))
-          done
-          [ -s ~/.ssh/known_hosts ] || { echo "::error::keyscan agotado: VPS inalcanzable"; exit 1; }
-
-          # exit 255 = fallo de conexión ssh (reintentable). Cualquier otro
-          # código viene del script de deploy del VPS (no reintentar builds).
-          for i in 1 2 3; do
-            set +e
-            ssh -i ~/.ssh/id_ed25519 \
-                -o ConnectTimeout=30 \
-                -o ServerAliveInterval=30 \
-                -o ServerAliveCountMax=10 \
-                -o BatchMode=yes \
-                root@72.61.195.108 \
-                ":"
-            code=$?
-            set -e
-            [ "$code" -eq 0 ] && exit 0
-            if [ "$code" -ne 255 ]; then
-              echo "::error::el script de deploy del VPS devolvió $code"
-              exit "$code"
-            fi
-            echo "conexión ssh fallida (255), intento $i; reintento en $((i*20))s"
-            sleep $((i*20))
-          done
-          echo "::error::ssh agotado tras 3 intentos"
-          exit 1
+          echo "Este workflow NO despliega merch."
+          echo "Deploy real = PULL desde el VPS: /root/startidea-merch-autodeploy.sh (cada minuto)."
+          echo "El SSH entrante desde runners está baneado por fail2ban (por eso se migró al pull)."
+          echo "Verificar: docker exec merch-app printenv GIT_SHA  debe == el commit desplegado."
