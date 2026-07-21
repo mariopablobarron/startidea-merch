@@ -1,0 +1,25 @@
+src/lib/cron-staleness.ts
+  s_65877aa637ec34::t_c4feff9e2066b7 1-41
+src/app/api/cron/cron-watchdog/route.ts
+  s_65877aa637ec34::t_de9cfb1a5335a4 65
+  s_65877aa637ec34::t_33863c61eef026 26
+  s_65877aa637ec34::t_72637385dc0a9b 31-33
+src/lib/cron-staleness.test.ts
+  s_65877aa637ec34::t_3fb01ad0d8862d 1-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "3146c3802098c1a5af5adcd8867a46e0c06c182f",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
