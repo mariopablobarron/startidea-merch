@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { recordSupplierSyncRun } from "./sync-history";
 import {
   midoceanClient,
   pickPrimaryImage,
@@ -204,6 +205,16 @@ export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
       productsUpserted,
       errorsJson: errors.length ? errors.slice(0, 100) : Prisma.DbNull,
     },
+  });
+  // Histórico (telemetría, no rompe el sync si falla).
+  await recordSupplierSyncRun({
+    supplier: "midocean",
+    startedAt,
+    finishedAt,
+    ok: result.ok,
+    productsFetched: products.length,
+    productsUpserted,
+    errorsJson: errors.length ? errors.slice(0, 100) : null,
   });
 
   return result;

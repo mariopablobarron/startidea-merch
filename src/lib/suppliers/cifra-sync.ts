@@ -21,6 +21,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { recordSupplierSyncRun } from "./sync-history";
 import { Prisma } from "@prisma/client";
 import { extractSize, colorGroupFromName, canonicalColorGroup } from "@/lib/variant-grouping";
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
@@ -451,6 +452,16 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
       productsUpserted,
       errorsJson: errors.length ? errors.slice(0, 100) : Prisma.DbNull,
     },
+  });
+  // Histórico (telemetría, no rompe el sync si falla).
+  await recordSupplierSyncRun({
+    supplier: SUPPLIER,
+    startedAt,
+    finishedAt,
+    ok: result.ok,
+    productsFetched: products.length,
+    productsUpserted,
+    errorsJson: errors.length ? errors.slice(0, 100) : null,
   });
 
   return result;

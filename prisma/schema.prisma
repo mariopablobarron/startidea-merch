@@ -2321,6 +2321,25 @@ model SupplierSync {
   notes            String?
 }
 
+// Histórico append-only de cada ejecución de sync (SupplierSync solo guarda la
+// ÚLTIMA por proveedor, por su `supplier @unique`). Sirve para detectar
+// degradación: makito ya tarda ~15 min, y una caída en productsUpserted o una
+// subida de durationMs son señales tempranas de que un feed se está rompiendo.
+model SupplierSyncRun {
+  id               String       @id @default(cuid())
+  supplier         SupplierCode
+  startedAt        DateTime
+  finishedAt       DateTime
+  durationMs       Int
+  ok               Boolean      @default(false)
+  productsFetched  Int          @default(0)
+  productsUpserted Int          @default(0)
+  errorsJson       Json?
+  createdAt        DateTime     @default(now())
+
+  @@index([supplier, startedAt])
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Promociones — descuentos programables sobre el catálogo.
 //

@@ -21,6 +21,7 @@ import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
 import { notifyTelegram } from "@/lib/telegram";
 import { XMLParser } from "fast-xml-parser";
 import { prisma } from "@/lib/prisma";
+import { recordSupplierSyncRun } from "./sync-history";
 import { Prisma } from "@prisma/client";
 import {
   fetchProductsXml,
@@ -571,6 +572,16 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
       productsUpserted,
       errorsJson: errors.length ? errors.slice(0, 100) : Prisma.DbNull,
     },
+  });
+  // Histórico (telemetría, no rompe el sync si falla).
+  await recordSupplierSyncRun({
+    supplier: SUPPLIER,
+    startedAt,
+    finishedAt,
+    ok: result.ok,
+    productsFetched: products.length,
+    productsUpserted,
+    errorsJson: errors.length ? errors.slice(0, 100) : null,
   });
   return result;
 }

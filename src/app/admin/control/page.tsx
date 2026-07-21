@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { summarizeSupplierRuns } from "@/lib/suppliers/sync-history";
 
 export const metadata: Metadata = {
   title: "Centro de control",
@@ -45,6 +46,7 @@ export default async function ControlCenterPage() {
     lastBroadcast,
     suppliers,
     recentCarts,
+    supplierRuns,
   ] = await Promise.all([
     prisma.cartQuote.count({ where: { createdAt: { gte: startToday } } }),
     prisma.cartQuote.count({ where: { status: "NEW" } }),
@@ -73,7 +75,14 @@ export default async function ControlCenterPage() {
       take: 6,
       select: { id: true, name: true, company: true, estimatedTotalCents: true, status: true, createdAt: true },
     }),
+    prisma.supplierSyncRun.findMany({
+      orderBy: { startedAt: "desc" },
+      take: 40,
+      select: { supplier: true, durationMs: true },
+    }),
   ]);
+
+  const supplierTrends = summarizeSupplierRuns(supplierRuns);
 
   const lastBroadcastOpens = lastBroadcast
     ? await prisma.broadcastDelivery.count({ where: { broadcastId: lastBroadcast.id, openedAt: { not: null } } })
@@ -161,14 +170,27 @@ export default async function ControlCenterPage() {
             <div>
               <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/50">— Proveedores</h2>
               <div className="mt-3 rounded-2xl border border-line bg-bone-soft p-4 text-sm">
-                {suppliers.map((s) => (
-                  <div key={s.supplier} className="flex items-center justify-between py-1">
-                    <span className="capitalize text-ink/80">{s.supplier}</span>
-                    <span className={s.ok ? "text-social" : "text-accent-deep"}>
-                      {s.ok ? "✓" : "✕"} {fmtDate(s.finishedAt)}
-                    </span>
-                  </div>
-                ))}
+                {suppliers.map((s) => {
+                  const t = supplierTrends[s.supplier];
+                  return (
+                    <div key={s.supplier} className="flex items-center justify-between py-1">
+                      <span className="capitalize text-ink/80">
+                        {s.supplier}
+                        {t ? (
+                          <span
+                            className={`ml-2 text-[11px] ${t.degraded ? "text-accent-deep" : "text-ink/45"}`}
+                            title={`última ${Math.round(t.lastMs / 1000)}s · mediana ${Math.round(t.medianMs / 1000)}s (${t.samples} runs)`}
+                          >
+                            {Math.round(t.lastMs / 1000)}s{t.degraded ? " ⚠️ lento" : ""}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className={s.ok ? "text-social" : "text-accent-deep"}>
+                        {s.ok ? "✓" : "✕"} {fmtDate(s.finishedAt)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
