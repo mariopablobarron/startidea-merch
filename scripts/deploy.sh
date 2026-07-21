@@ -55,7 +55,9 @@ fi
 
 # Build con retry: si falla con exit 137 (OOM killer) reintentamos 1 vez tras 30s
 build_attempt() {
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml build app 2>&1 | tail -20
+  # --build-arg GIT_SHA invalida la caché del código (COPY/build) en cada commit
+  # y hornea el SHA en la imagen para verificarlo después. Ver Dockerfile.
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml build --build-arg GIT_SHA="$SHA" app 2>&1 | tail -20
   return ${PIPESTATUS[0]}
 }
 
@@ -171,6 +173,26 @@ if [ "$SUCCESS" != "1" ]; then
   fail "container nuevo no responde 200 en / y /catalogo"
 fi
 log "deploy verificado: home 200 + /catalogo 200 (compose RC fue $CRC, irrelevante)"
+
+# --- Verificación de que el contenedor VIVO corre la imagen recién construida ---
+# El healthcheck 200 NO basta: la carrera del recreate puede dejar el contenedor
+# VIEJO Up (sirve 200) y el marcador avanzaría con código viejo (incidente
+# 2026-07-21). El SHA está horneado en la imagen (ENV GIT_SHA). Si el contenedor
+# vivo no corre $SHA, forzamos un recreate LIMPIO (rm + up parte de cero, sin la
+# carrera del rename) y reverificamos; si aún no coincide, FALLAMOS para que el
+# wrapper NO avance el marcador con código viejo.
+running_sha() { docker exec merch-app printenv GIT_SHA 2>/dev/null | tr -d '\r\n'; }
+RUN_SHA=$(running_sha)
+if [ "$RUN_SHA" != "$SHA" ]; then
+  log "contenedor vivo corre '$RUN_SHA' pero se desplegó '$SHA' — recreate LIMPIO"
+  docker rm -f merch-app >/dev/null 2>&1 || true
+  recreate_once
+  sleep 12
+  RUN_SHA=$(running_sha)
+  [ "$RUN_SHA" != "$SHA" ] && fail "deploy NO aplicado: contenedor corre '$RUN_SHA', esperado '$SHA'"
+  log "recreate limpio OK: contenedor ahora corre $RUN_SHA"
+fi
+log "imagen viva verificada: corre $SHA"
 
 # Verifica rutas críticas adicionales (sin retry — ya sabemos que el / responde).
 # Aceptamos 200 (público), 302 (redirect login), 401 (necesita auth) como OK.
