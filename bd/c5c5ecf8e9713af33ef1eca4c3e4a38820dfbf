@@ -1,0 +1,46 @@
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_1282093851b261 456-465
+  s_65877aa637ec34::t_d7957836c69814 24
+src/app/admin/control/page.tsx
+  s_65877aa637ec34::t_e0cee74d85264c 173-193
+  s_65877aa637ec34::t_1c18bf56a5a9be 7
+  s_65877aa637ec34::t_4eb245f13e9f72 78-82,85
+  s_65877aa637ec34::t_cee3c21cc38520 49
+  s_7bd71a1613b95a::t_b33e394750bdb0 86
+src/lib/suppliers/sync-history.test.ts
+  s_65877aa637ec34::t_33728e02999fda 1-105
+src/lib/suppliers/makito-sync.ts
+  s_65877aa637ec34::t_39e77e84dd57aa 24
+  s_65877aa637ec34::t_b8c1c16c361293 576-585
+src/lib/suppliers/sync-history.ts
+  s_65877aa637ec34::t_b42b755e94ae23 1-86
+prisma/schema.prisma
+  s_65877aa637ec34::t_673d4a794b08b0 2324-2342
+src/lib/suppliers/midocean-sync.ts
+  s_65877aa637ec34::t_f34fcb7a106521 3
+  s_65877aa637ec34::t_124a5fc25b5895 209-218
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "bdc5c5ecf8e9713af33ef1eca4c3e4a38820dfbf",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_7bd71a1613b95a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7d81928c-1fd8-460e-8d85-7e20bf06ab87",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
