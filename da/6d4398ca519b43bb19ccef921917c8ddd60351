@@ -1,0 +1,23 @@
+scripts/deploy.sh
+  s_65877aa637ec34::t_a32f376dc5b642 58-60
+  s_65877aa637ec34::t_884a6325adcbdb 177-196
+Dockerfile
+  s_65877aa637ec34::t_8f6891e2e8a14e 50-54
+  s_65877aa637ec34::t_8a35b395466c05 19-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "da6d4398ca519b43bb19ccef921917c8ddd60351",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
