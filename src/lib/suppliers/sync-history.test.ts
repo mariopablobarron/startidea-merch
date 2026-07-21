@@ -1,11 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const create = vi.fn();
+const findMany = vi.fn();
+const settingFind = vi.fn();
+const settingUpsert = vi.fn();
+const notifyTelegram = vi.fn();
 vi.mock("@/lib/prisma", () => ({
-  prisma: { supplierSyncRun: { create: (...a: unknown[]) => create(...a) } },
+  prisma: {
+    supplierSyncRun: {
+      create: (...a: unknown[]) => create(...a),
+      findMany: (...a: unknown[]) => findMany(...a),
+    },
+    adminSetting: {
+      findUnique: (...a: unknown[]) => settingFind(...a),
+      upsert: (...a: unknown[]) => settingUpsert(...a),
+    },
+  },
+}));
+vi.mock("@/lib/telegram", () => ({
+  notifyTelegram: (...a: unknown[]) => notifyTelegram(...a),
 }));
 
-import { recordSupplierSyncRun, summarizeSupplierRuns } from "./sync-history";
+import {
+  recordSupplierSyncRun,
+  summarizeSupplierRuns,
+  decideDegradationAlert,
+  checkAndAlertSupplierDegradation,
+} from "./sync-history";
 
 describe("summarizeSupplierRuns", () => {
   it("agrupa por proveedor y toma la última como la primera (más nueva)", () => {
@@ -101,5 +122,82 @@ describe("recordSupplierSyncRun", () => {
         productsUpserted: 0,
       }),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("decideDegradationAlert (transiciones)", () => {
+  it("sano→degradado: avisa", () => {
+    expect(decideDegradationAlert(false, true)).toBe("degraded");
+  });
+  it("degradado→sano: avisa recuperación", () => {
+    expect(decideDegradationAlert(true, false)).toBe("recovered");
+  });
+  it("degradado→degradado: NO repite (dedup)", () => {
+    expect(decideDegradationAlert(true, true)).toBe("none");
+  });
+  it("sano→sano: nada", () => {
+    expect(decideDegradationAlert(false, false)).toBe("none");
+  });
+});
+
+describe("checkAndAlertSupplierDegradation", () => {
+  beforeEach(() => {
+    findMany.mockReset();
+    settingFind.mockReset();
+    settingUpsert.mockReset();
+    notifyTelegram.mockReset();
+    settingUpsert.mockResolvedValue({});
+    notifyTelegram.mockResolvedValue(true);
+  });
+
+  const degradedRuns = [
+    { supplier: "makito", durationMs: 900_000 }, // última, muy lenta
+    { supplier: "makito", durationMs: 300_000 },
+    { supplier: "makito", durationMs: 300_000 },
+  ];
+  const healthyRuns = [
+    { supplier: "makito", durationMs: 300_000 },
+    { supplier: "makito", durationMs: 300_000 },
+    { supplier: "makito", durationMs: 300_000 },
+  ];
+
+  it("degradación nueva (no avisada antes) → avisa Y persiste el estado", async () => {
+    findMany.mockResolvedValueOnce(degradedRuns);
+    settingFind.mockResolvedValueOnce(null); // nunca avisado
+    await checkAndAlertSupplierDegradation("makito");
+    expect(notifyTelegram).toHaveBeenCalledTimes(1);
+    expect(notifyTelegram.mock.calls[0][0]).toContain("Sync degradado: makito");
+    expect(settingUpsert.mock.calls[0][0].create.value).toBe(true);
+  });
+
+  it("ya avisada y sigue degradada → NO repite el aviso", async () => {
+    findMany.mockResolvedValueOnce(degradedRuns);
+    settingFind.mockResolvedValueOnce({ value: true });
+    await checkAndAlertSupplierDegradation("makito");
+    expect(notifyTelegram).not.toHaveBeenCalled();
+    expect(settingUpsert).not.toHaveBeenCalled();
+  });
+
+  it("estaba degradada y se recupera → avisa recuperación y persiste false", async () => {
+    findMany.mockResolvedValueOnce(healthyRuns);
+    settingFind.mockResolvedValueOnce({ value: true });
+    await checkAndAlertSupplierDegradation("makito");
+    expect(notifyTelegram.mock.calls[0][0]).toContain("Sync recuperado: makito");
+    expect(settingUpsert.mock.calls[0][0].create.value).toBe(false);
+  });
+
+  it("<3 muestras → nunca avisa (evita ruido)", async () => {
+    findMany.mockResolvedValueOnce([
+      { supplier: "makito", durationMs: 900_000 },
+      { supplier: "makito", durationMs: 10_000 },
+    ]);
+    settingFind.mockResolvedValueOnce(null);
+    await checkAndAlertSupplierDegradation("makito");
+    expect(notifyTelegram).not.toHaveBeenCalled();
+  });
+
+  it("TELEMETRÍA: si la BD falla, NO propaga (no rompe el sync)", async () => {
+    findMany.mockRejectedValueOnce(new Error("db down"));
+    await expect(checkAndAlertSupplierDegradation("makito")).resolves.toBeUndefined();
   });
 });

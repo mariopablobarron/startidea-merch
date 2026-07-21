@@ -21,7 +21,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { recordSupplierSyncRun } from "./sync-history";
+import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
 import { Prisma } from "@prisma/client";
 import { extractSize, colorGroupFromName, canonicalColorGroup } from "@/lib/variant-grouping";
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
@@ -463,6 +463,8 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
     productsUpserted,
     errorsJson: errors.length ? errors.slice(0, 100) : null,
   });
+  // Aviso interno si la duración se degrada (solo en la transición).
+  await checkAndAlertSupplierDegradation(SUPPLIER);
 
   return result;
 }

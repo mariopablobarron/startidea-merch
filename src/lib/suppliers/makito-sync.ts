@@ -21,7 +21,7 @@ import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
 import { notifyTelegram } from "@/lib/telegram";
 import { XMLParser } from "fast-xml-parser";
 import { prisma } from "@/lib/prisma";
-import { recordSupplierSyncRun } from "./sync-history";
+import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
 import { Prisma } from "@prisma/client";
 import {
   fetchProductsXml,
@@ -583,6 +583,8 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
     productsUpserted,
     errorsJson: errors.length ? errors.slice(0, 100) : null,
   });
+  // Aviso interno si la duración se degrada (solo en la transición).
+  await checkAndAlertSupplierDegradation(SUPPLIER);
   return result;
 }
 
