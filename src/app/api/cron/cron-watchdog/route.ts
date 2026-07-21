@@ -23,21 +23,14 @@ import {
   wrapCronHandler,
 } from "@/lib/cron-tracking";
 import { CRON_CATALOG } from "@/lib/cron-catalog";
+import { expectedHoursFor } from "@/lib/cron-staleness";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Umbral en horas por cron. Si no aparece → default 30h.
-const EXPECTED_HOURS: Record<string, number> = {
-  "metric-snapshot": 2, // cada hora
-  "ai-usage-alert": 30, // diario
-  "auto-resolve-errors": 30, // diario
-  "product-view-rollup": 30, // diario
-  "insights-digest": 8 * 24, // semanal
-  "insights-digest-monthly": 35 * 24, // mensual
-};
-
-const DEFAULT_HOURS = 30;
+// El umbral de silencio por cron vive en @/lib/cron-staleness (expectedHoursFor),
+// para poder testearlo aislado (un route.ts no puede exportar helpers: Next.js
+// rechaza cualquier export que no sea un handler HTTP o config de ruta).
 
 export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
   const auth = requireCronSecret(req);
@@ -69,7 +62,7 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
     others.map(async (name) => {
       const runs = await getCronHistory(name);
       const last = runs[0];
-      const expectedHours = EXPECTED_HOURS[name] ?? DEFAULT_HOURS;
+      const expectedHours = expectedHoursFor(name);
       if (!last) {
         // Sin historia: si venía de listCronNames (tiene key cron_runs_* pero
         // por lo que sea la lista está vacía) es un caso "nuevo", no
