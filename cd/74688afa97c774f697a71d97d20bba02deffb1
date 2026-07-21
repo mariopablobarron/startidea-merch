@@ -1,0 +1,23 @@
+package.json
+  s_f562496b3cc62d::t_b4f1c26cdfc43b 75-78
+.github/workflows/money-smoke.yml
+  s_f562496b3cc62d::t_c126b09099d61a 22-23
+pnpm-lock.yaml
+  s_f562496b3cc62d::t_2657b5e137d2da 9-11,1141-1142,1144-1145,1147-1148,4166,4171,4175,5436,5440,5444
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "cd74688afa97c774f697a71d97d20bba02deffb1",
+  "prompts": {},
+  "sessions": {
+    "s_f562496b3cc62d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af43c4bf-bcc4-44a5-b9f9-201df66cabb6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
