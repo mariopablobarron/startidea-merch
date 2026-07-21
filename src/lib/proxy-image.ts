@@ -101,6 +101,23 @@ export async function ensureMediaAsset(
 }
 
 /**
+ * Versión ARRAY de ensureMediaAsset — proxifica una lista de URLs (p.ej. el
+ * campo `ProductVariant.images[]`) en paralelo, registrando cada asset, y
+ * descarta las entradas nulas/vacías. Devuelve solo strings.
+ *
+ * Las URLs que no son de proveedor se devuelven tal cual (ver ensureMediaAsset);
+ * las de proveedor se sustituyen por `/api/m/<hash>`. Idempotente: pasar un
+ * array ya proxificado lo devuelve intacto.
+ */
+export async function ensureMediaAssets(
+  originalUrls: (string | null | undefined)[],
+  kind?: string,
+): Promise<string[]> {
+  const out = await Promise.all(originalUrls.map((u) => ensureMediaAsset(u, kind)));
+  return out.filter((x): x is string => Boolean(x));
+}
+
+/**
  * Versión absoluta del proxy URL (con dominio) — para OG image en metadata.
  */
 export function absoluteProxyImageUrl(
