@@ -1,0 +1,24 @@
+src/lib/cart-item-schema.test.ts
+  s_9191eda49d5176::t_53317070727e9c 1-275
+src/lib/cart-storage.test.ts
+  s_9191eda49d5176::t_a922756f466bcc 1-43
+src/lib/product-pricing.test.ts
+  s_9191eda49d5176::t_e797b257d5bcf6 176-246
+  s_9191eda49d5176::t_424e7cfba5d001 3-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "99f2151b41a9cdc7a7f0099a1bac27e7b2281ecc",
+  "prompts": {},
+  "sessions": {
+    "s_9191eda49d5176": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8fd971d2-a0fb-48f9-af65-98915abf80a6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
