@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import type { Promotion } from "@prisma/client";
-import { orderTotalCents, pickTier } from "./pricing";
-import { computeClientPricing, displayFromPrice } from "./product-pricing";
+import { applyMargin, orderTotalCents, pickTier } from "./pricing";
+import {
+  adminOverridesPrice,
+  clientFromPriceCents,
+  computeClientPricing,
+  displayFromPrice,
+} from "./product-pricing";
 
 // Margen determinista para los tests (1,6× = +60%).
 beforeAll(() => {
@@ -165,6 +170,77 @@ describe("override de precio — descarta tiers de proveedor, sin doble margen",
     expect(cp.clientTiers?.map((t) => t.unitPriceCents)).toEqual(
       penNetTiers.map((t) => Math.round(t.unitPriceCents * 1.5)),
     );
+  });
+});
+
+describe("adminOverridesPrice — ¿el admin fijó el precio?", () => {
+  it("null → false (usa tiers de proveedor)", () => {
+    expect(adminOverridesPrice(null)).toBe(false);
+  });
+  it("override vacío (ambos null) → false", () => {
+    expect(
+      adminOverridesPrice({ customFromPriceCents: null, marginPct: null, marketingTags: [] }),
+    ).toBe(false);
+  });
+  it("customFromPriceCents fijado → true", () => {
+    expect(
+      adminOverridesPrice({ customFromPriceCents: 100, marginPct: null, marketingTags: [] }),
+    ).toBe(true);
+  });
+  it("marginPct fijado → true", () => {
+    expect(
+      adminOverridesPrice({ customFromPriceCents: null, marginPct: 40, marketingTags: [] }),
+    ).toBe(true);
+  });
+  it("caso borde: customFromPriceCents = 0 cuenta como fijado (0 ≠ null)", () => {
+    expect(
+      adminOverridesPrice({ customFromPriceCents: 0, marginPct: null, marketingTags: [] }),
+    ).toBe(true);
+  });
+});
+
+describe("clientFromPriceCents — neto → precio cliente (pre-promo)", () => {
+  it("sin override usa el margen global (no un margen inventado por superficie)", () => {
+    expect(clientFromPriceCents(30, null)).toBe(applyMargin(30));
+    expect(clientFromPriceCents(1000, null)).toBe(applyMargin(1000));
+  });
+
+  it("neto null y sin override → null (no 0, para no cobrar gratis)", () => {
+    expect(clientFromPriceCents(null, null)).toBeNull();
+  });
+
+  it("customFromPriceCents gana: precio exacto del admin, ignora el neto", () => {
+    expect(
+      clientFromPriceCents(9999, { customFromPriceCents: 250, marginPct: null, marketingTags: [] }),
+    ).toBe(250);
+  });
+
+  it("customFromPriceCents vale aunque el neto sea null (precio fijado sin coste de proveedor)", () => {
+    expect(
+      clientFromPriceCents(null, { customFromPriceCents: 250, marginPct: null, marketingTags: [] }),
+    ).toBe(250);
+  });
+
+  it("caso borde: customFromPriceCents = 0 → devuelve 0 (gratis explícito del admin, no null)", () => {
+    expect(
+      clientFromPriceCents(500, { customFromPriceCents: 0, marginPct: null, marketingTags: [] }),
+    ).toBe(0);
+  });
+
+  it("marginPct aplica su propio margen y redondea", () => {
+    expect(
+      clientFromPriceCents(1000, { customFromPriceCents: null, marginPct: 50, marketingTags: [] }),
+    ).toBe(1500);
+    // round(33 × 150 / 100) = round(49,5) = 50
+    expect(
+      clientFromPriceCents(33, { customFromPriceCents: null, marginPct: 50, marketingTags: [] }),
+    ).toBe(50);
+  });
+
+  it("caso borde: marginPct = 0 → precio cliente = neto (margen cero, no el 1,6× global)", () => {
+    expect(
+      clientFromPriceCents(1234, { customFromPriceCents: null, marginPct: 0, marketingTags: [] }),
+    ).toBe(1234);
   });
 });
 
