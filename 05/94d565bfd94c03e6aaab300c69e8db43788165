@@ -1,0 +1,19 @@
+src/lib/quote-server-pricing.test.ts
+  s_97060edf50f3d4::t_0b873e22f5a113 1-364
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "0594d565bfd94c03e6aaab300c69e8db43788165",
+  "prompts": {},
+  "sessions": {
+    "s_97060edf50f3d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f6197fdf-fe75-4cc3-b7d9-3c38be41334a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
