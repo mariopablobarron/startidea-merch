@@ -60,6 +60,12 @@ const config: NextConfig = {
       // Alias legacy → ruta canónica española
       { source: "/cart", destination: "/carrito", permanent: true },
       { source: "/cart/:path*", destination: "/carrito/:path*", permanent: true },
+      // Migración de dominio: el sitio anterior de merchandising.startidea.es
+      // tenía estas rutas y aquí no existen (daban 404). 301 para no romper
+      // enlaces ni marcadores cuando el DNS apunte al VPS.
+      { source: "/productos", destination: "/catalogo", permanent: true },
+      { source: "/productos/:path*", destination: "/catalogo/:path*", permanent: true },
+      { source: "/contacto", destination: "/#cotizar", permanent: true },
     ];
   },
   async headers() {

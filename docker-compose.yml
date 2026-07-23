@@ -120,12 +120,16 @@ services:
       # Traefik routing — dominio nuevo principal: merchandising.hubstartidea.es
       traefik.enable: "true"
       traefik.docker.network: coolify
-      traefik.http.routers.startidea-merch.rule: "Host(`merchandising.hubstartidea.es`)"
+      # Doble host durante la migración de dominio: el nuevo canónico será
+      # merchandising.startidea.es (subdominio de la marca establecida). Se sirve
+      # ya para que el certificado se emita en cuanto el DNS de IONOS apunte al
+      # VPS; el dominio viejo sigue funcionando (corte sin caída).
+      traefik.http.routers.startidea-merch.rule: "Host(`merchandising.hubstartidea.es`) || Host(`merchandising.startidea.es`)"
       traefik.http.routers.startidea-merch.entrypoints: websecure
       traefik.http.routers.startidea-merch.tls: "true"
       traefik.http.routers.startidea-merch.tls.certresolver: letsencrypt
       traefik.http.routers.startidea-merch.service: startidea-merch
-      traefik.http.routers.startidea-merch-http.rule: "Host(`merchandising.hubstartidea.es`)"
+      traefik.http.routers.startidea-merch-http.rule: "Host(`merchandising.hubstartidea.es`) || Host(`merchandising.startidea.es`)"
       traefik.http.routers.startidea-merch-http.entrypoints: web
       traefik.http.routers.startidea-merch-http.middlewares: startidea-merch-redirect
       traefik.http.middlewares.startidea-merch-redirect.redirectscheme.scheme: https
