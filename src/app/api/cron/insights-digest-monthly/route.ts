@@ -25,7 +25,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
 const SEVERITY_COLOR: Record<string, string> = {
   critical: "#c43c0d",

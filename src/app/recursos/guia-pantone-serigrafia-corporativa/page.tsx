@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Cómo elegir el código Pantone correcto para serigrafiar el logo de tu empresa sin sorpresas. Tabla con 25 colores corporativos clásicos + cómo identificar el Pantone de tu marca.",
   alternates: {
     canonical:
-      "https://merchandising.hubstartidea.es/recursos/guia-pantone-serigrafia-corporativa",
+      "https://merchandising.startidea.es/recursos/guia-pantone-serigrafia-corporativa",
   },
   openGraph: {
     title: "Guía Pantone para serigrafía corporativa",

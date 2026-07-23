@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 /**
  * Diagnóstico del estado de Google Indexing API para nuestra SA.
@@ -99,7 +99,7 @@ export async function GET(req: Request) {
   const sitesBody = await sitesRes.text();
 
   // 5b. Consultar permiso específico en formato sc-domain (Domain property)
-  const domainProp = "sc-domain:merchandising.hubstartidea.es";
+  const domainProp = "sc-domain:merchandising.startidea.es";
   const domRes = await fetch(
     `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(domainProp)}`,
     { headers: { Authorization: `Bearer ${access_token}` } },
@@ -107,7 +107,7 @@ export async function GET(req: Request) {
   const domBody = await domRes.text();
 
   // 5c. Consultar permiso en formato URL-prefix (por si Mario añadió ahí)
-  const urlProp = "https://merchandising.hubstartidea.es/";
+  const urlProp = "https://merchandising.startidea.es/";
   const urlRes = await fetch(
     `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(urlProp)}`,
     { headers: { Authorization: `Bearer ${access_token}` } },

@@ -8,7 +8,7 @@ import { RecommenderProposalPdf } from "@/lib/recommender-proposal-pdf";
 import { sendProposalEmail } from "@/lib/proposal-mailer";
 import { notifyTelegram } from "@/lib/telegram";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export type DeliverResult =
   | { ok: true; proposalNumber: string; sentTo: string }

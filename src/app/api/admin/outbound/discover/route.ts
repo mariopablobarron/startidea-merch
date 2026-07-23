@@ -44,7 +44,7 @@ Sé concreto y realista. NO inventes emails ni teléfonos. Si no estás seguro d
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://merchandising.hubstartidea.es",
+        "HTTP-Referer": "https://merchandising.startidea.es",
         "X-Title": "TodoMerchandising Prospect Sourcing",
       },
       body: JSON.stringify({

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "La lista mínima que un proveedor de merch necesita para devolverte el mockup en 24h sin pingpong. Formatos vectoriales, resoluciones, posiciones y técnicas.",
   alternates: {
     canonical:
-      "https://merchandising.hubstartidea.es/recursos/especificaciones-mockup",
+      "https://merchandising.startidea.es/recursos/especificaciones-mockup",
   },
   openGraph: {
     title: "Especificaciones técnicas para mockup",

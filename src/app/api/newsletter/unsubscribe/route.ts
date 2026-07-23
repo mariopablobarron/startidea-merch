@@ -68,7 +68,7 @@ function html(message: string, ok: boolean): string {
     <p style="font-size:48px;margin:0 0 12px;">${ok ? "✓" : "⚠"}</p>
     <h1>${ok ? "Te hemos dado de baja" : "No hemos podido procesar tu baja"}</h1>
     <p>${message}</p>
-    <p><a href="https://merchandising.hubstartidea.es/">Volver a TodoMerchandising</a></p>
+    <p><a href="https://merchandising.startidea.es/">Volver a TodoMerchandising</a></p>
   </div>
 </body>
 </html>`;

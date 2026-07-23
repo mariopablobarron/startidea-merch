@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: "Centro de ayuda · Cómo funciona TodoMerchandising",
   description:
     "Resolvemos las dudas más frecuentes sobre precio instantáneo, plazos, métodos de personalización, materiales, devoluciones y producción social.",
-  alternates: { canonical: "https://merchandising.hubstartidea.es/ayuda" },
+  alternates: { canonical: "https://merchandising.startidea.es/ayuda" },
 };
 
 const SECTIONS = [

@@ -7,7 +7,7 @@ import { generateProposalNumber } from "@/lib/proposal-number";
 import { signProposalToken } from "@/lib/proposal-token";
 import { RecommenderProposalPdf } from "@/lib/recommender-proposal-pdf";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export type CartDraftResult = {
   proposalId: string;

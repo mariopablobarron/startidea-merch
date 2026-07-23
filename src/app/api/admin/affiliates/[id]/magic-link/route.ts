@@ -45,7 +45,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
   const url = `${base.replace(/\/$/, "")}/afiliado/${token}`;
   return NextResponse.json({ ok: true, url, expiresInDays: 30 });
 }

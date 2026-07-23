@@ -24,13 +24,13 @@ export default function AvisoLegalPage() {
         <li><strong>Teléfono:</strong> +34 958 045 789</li>
         <li><strong>Email general:</strong> <a href="mailto:info@startidea.es">info@startidea.es</a></li>
         <li><strong>Email comercial todomerchandising:</strong> <a href="mailto:pedidos@startidea.es">pedidos@startidea.es</a></li>
-        <li><strong>Sitio web:</strong> https://merchandising.hubstartidea.es</li>
+        <li><strong>Sitio web:</strong> https://merchandising.startidea.es</li>
       </ul>
 
       <h2>2. Objeto</h2>
       <p>
         El presente aviso legal regula el acceso, navegación y uso del sitio web
-        merchandising.hubstartidea.es, así como las responsabilidades derivadas de la utilización
+        merchandising.startidea.es, así como las responsabilidades derivadas de la utilización
         de sus contenidos por parte de los usuarios. El sitio tiene por objeto dar a conocer
         y facilitar la contratación de servicios de merchandising corporativo personalizado
         producidos en colaboración con Centros Especiales de Empleo y talleres locales.

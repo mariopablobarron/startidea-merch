@@ -14,7 +14,7 @@ import { loadActivePromotions } from "@/lib/promotions";
 import { computeServerLinePricing, type ServerMarkingInput } from "@/lib/quote-server-pricing";
 import type { Prisma } from "@prisma/client";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
 export const runtime = "nodejs";
 

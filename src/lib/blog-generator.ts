@@ -122,7 +122,7 @@ REGLAS FAQ: la última sección H2 del bodyMd debe ser "## Preguntas frecuentes"
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://merchandising.hubstartidea.es",
+        "HTTP-Referer": "https://merchandising.startidea.es",
         "X-Title": "TodoMerchandising Blog Generator",
       },
       body: JSON.stringify({

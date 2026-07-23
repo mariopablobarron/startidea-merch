@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     "",
     d.reason ? `Quiere: ${d.reason}` : "",
     "",
-    `<a href="https://merchandising.hubstartidea.es/admin/cart-quotes/${cart.id}">Abrir en /admin</a>`,
+    `<a href="https://merchandising.startidea.es/admin/cart-quotes/${cart.id}">Abrir en /admin</a>`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
       ${d.email ? `<p><strong>Email:</strong> ${escapeHtml(d.email)}</p>` : ""}
       <p><strong>Hora preferida:</strong> ${escapeHtml(d.preferred_time || "Sin especificar")}</p>
       ${d.reason ? `<p><strong>Razón:</strong> ${escapeHtml(d.reason)}</p>` : ""}
-      <p style="margin-top:24px"><a href="https://merchandising.hubstartidea.es/admin/cart-quotes/${cart.id}" style="background:#C8102E;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Abrir en admin</a></p>
+      <p style="margin-top:24px"><a href="https://merchandising.startidea.es/admin/cart-quotes/${cart.id}" style="background:#C8102E;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Abrir en admin</a></p>
     `,
   }).catch((e) =>
     console.error("[request-callback] sendEmail interno falló:", e instanceof Error ? e.message : e),

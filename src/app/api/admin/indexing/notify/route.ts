@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 /**
  * Notifica a Google Indexing API que se re-crawleen URLs concretas.

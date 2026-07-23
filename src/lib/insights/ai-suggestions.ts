@@ -143,7 +143,7 @@ FORMATO de respuesta (JSON estricto, SIN markdown, SIN texto extra antes/despué
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENROUTER_KEY}`,
-        "HTTP-Referer": "https://merchandising.hubstartidea.es",
+        "HTTP-Referer": "https://merchandising.startidea.es",
         "X-Title": "TodoMerch Insights",
       },
       body: JSON.stringify({

@@ -215,7 +215,7 @@ export default function IntegrationsPage() {
             su hora, configura en cron-job.org una tarea cada 5 minutos:
           </p>
           <pre className="mt-3 overflow-x-auto rounded-lg bg-bone px-3 py-2 font-mono text-[11px] text-ink">
-{`POST https://merchandising.hubstartidea.es/api/cron/publish-scheduled
+{`POST https://merchandising.startidea.es/api/cron/publish-scheduled
 Header: X-Cron-Secret: <CRON_SECRET del .env>
 Cadencia: */5 * * * *`}
           </pre>

@@ -5,7 +5,7 @@ import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 const Schema = z.object({
   slug: z.string().min(1).max(160),

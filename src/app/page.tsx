@@ -37,7 +37,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("/");
   return mergeMetadata(
-    { alternates: { canonical: "https://merchandising.hubstartidea.es/" } },
+    { alternates: { canonical: "https://merchandising.startidea.es/" } },
     seo,
   );
 }

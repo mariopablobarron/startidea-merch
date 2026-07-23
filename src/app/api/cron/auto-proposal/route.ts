@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 const MIN_AGE_MIN = 3; // gracia: el cliente puede seguir configurando el carrito
 const MAX_AGE_HOURS = 72; // no procesar carritos antiguos
 const BATCH_LIMIT = 10; // por ejecución (evita picos de CPU/render PDF)

@@ -9,7 +9,7 @@ import { NewsletterForm } from "@/components/NewsletterForm";
 import { SECTORS, getSector } from "@/lib/sectors";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export function generateStaticParams() {
   return SECTORS.map((s) => ({ slug: s.slug }));

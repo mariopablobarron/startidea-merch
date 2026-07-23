@@ -3,7 +3,7 @@ import { resend, MARKETING_FROM, MARKETING_REPLY_TO } from "@/lib/resend";
 import { notifyTelegram } from "@/lib/telegram";
 import { resolveAudience } from "@/lib/broadcast-audience";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 // Estados desde los que se puede lanzar un envío (no SENDING/SENT).
 const SENDABLE = ["DRAFT", "SCHEDULED", "FAILED", "CANCELED"] as const;

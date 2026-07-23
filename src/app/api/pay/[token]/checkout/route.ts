@@ -7,7 +7,7 @@ import { withIva } from "@/lib/iva";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 /**
  * Crea una Stripe Checkout Session para el depósito del CartQuote.

@@ -40,7 +40,7 @@ const montserratAlt = localFont({
   display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

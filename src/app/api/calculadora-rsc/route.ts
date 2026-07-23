@@ -9,7 +9,7 @@ import { rateLimit } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 const Schema = z.object({
   email: z.string().email().max(160),
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
           <a href="${pdfUrl}" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Descargar certificado PDF →</a>
           <p style="margin:14px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;">
             ¿Quieres pasar del cálculo a un pedido real?<br>
-            Entra en <a href="https://merchandising.hubstartidea.es/catalogo" style="color:#E63E73;">nuestro catálogo</a>
+            Entra en <a href="https://merchandising.startidea.es/catalogo" style="color:#E63E73;">nuestro catálogo</a>
             y verás precio al instante por producto.
           </p>
         </div>

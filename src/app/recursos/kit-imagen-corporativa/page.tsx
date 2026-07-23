@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Qué necesitas tener listo antes de pedir tu primer pedido de merchandising: logo en variantes, paleta, tipografía y tagline. Checklist de auditoría y plantilla de brand book editable.",
   alternates: {
     canonical:
-      "https://merchandising.hubstartidea.es/recursos/kit-imagen-corporativa",
+      "https://merchandising.startidea.es/recursos/kit-imagen-corporativa",
   },
   openGraph: {
     title: "Kit de imagen corporativa para PYMEs",

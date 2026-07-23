@@ -10,7 +10,7 @@ import { withIva, ivaPart } from "@/lib/iva";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 const Schema = z.object({
   acceptedTotalCents: z.number().int().positive().max(100_000_000), // <= 1M EUR

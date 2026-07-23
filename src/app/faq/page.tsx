@@ -9,7 +9,7 @@ import { FAQ_CATEGORIES, getAllFaqItems } from "@/lib/faqs-full";
 import { NewsletterForm } from "@/components/NewsletterForm";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export const metadata: Metadata = {
   title: "Preguntas frecuentes · Cotización, plazos, materiales, marcaje",

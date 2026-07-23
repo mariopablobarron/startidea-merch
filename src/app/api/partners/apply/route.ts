@@ -83,7 +83,7 @@ export async function POST(req: Request) {
       `Rol: ${escapeTgHtml(data.role) || "—"}\n` +
       `Audiencia: ${escapeTgHtml(data.audience) || "—"}\n` +
       (data.message ? `Mensaje: ${escapeTgHtml(data.message.slice(0, 300))}\n` : "") +
-      `Admin: ${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es"}/admin/marketing/partners`,
+      `Admin: ${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es"}/admin/marketing/partners`,
     { parseMode: "HTML" },
   ).catch((e) =>
     console.error("[partners-apply] notifyTelegram falló:", e instanceof Error ? e.message : e),

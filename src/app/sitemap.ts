@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SECTORS } from "@/lib/sectors";
 import { tagToSlug } from "@/lib/blog-tags";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
 // Renderizar en request time, no en build. Sin esto, el sitemap se prerender
 // con BD vacía y queda cacheado para siempre (solo 12 URLs estáticas).

@@ -8,7 +8,7 @@ import { SECTORS } from "@/lib/sectors";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export const metadata: Metadata = {
   title: "Merchandising por sector · Tech, eventos, retail, AAPP, RSC, RRHH",

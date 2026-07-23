@@ -23,7 +23,7 @@ const MODEL =
   process.env.OPENROUTER_MODEL_PROPOSAL ||
   process.env.OPENROUTER_MODEL ||
   "anthropic/claude-opus-4.7";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 const Schema = z.object({
   contact: z.object({

@@ -134,7 +134,7 @@ export function autoresponseQuoteEmail(d: QuoteEmailData) {
         </p>
       </td></tr>
       <tr><td style="padding:24px 40px;text-align:center">
-        <a href="https://merchandising.hubstartidea.es" style="display:inline-block;background:${COLORS.accent};color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600">Visitar la web →</a>
+        <a href="https://merchandising.startidea.es" style="display:inline-block;background:${COLORS.accent};color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600">Visitar la web →</a>
       </td></tr>
       <tr><td style="padding:0 40px 32px">
         <div style="padding:20px;background:${COLORS.bone};border-radius:12px">

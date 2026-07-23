@@ -17,7 +17,7 @@ import { CompareBadge } from "@/components/CatalogCardActions";
 import { FavoriteHeart } from "@/components/portal/FavoriteHeart";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 import { marginMultiplier } from "@/lib/pricing";
 import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
 import { displayFromPrice } from "@/lib/product-pricing";
@@ -43,7 +43,7 @@ const BASE_METADATA: Metadata = {
   title: "Catálogo de merchandising personalizable",
   description:
     "Más de 9.000 productos promocionales personalizables: textil, drinkware, escritura, tecnología, eventos. Producción con impacto social en Centros Especiales de Empleo y talleres locales.",
-  alternates: { canonical: "https://merchandising.hubstartidea.es/catalogo" },
+  alternates: { canonical: "https://merchandising.startidea.es/catalogo" },
 };
 
 export const revalidate = 3600;

@@ -219,7 +219,7 @@ export default function SeoEditorPage() {
                   value={form.ogImage}
                   onChange={(e) => setForm({ ...form, ogImage: e.target.value })}
                   className="block w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-xs outline-none focus:border-accent"
-                  placeholder="https://merchandising.hubstartidea.es/og/home.png"
+                  placeholder="https://merchandising.startidea.es/og/home.png"
                 />
               </Field>
 

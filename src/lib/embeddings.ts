@@ -13,7 +13,7 @@
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "text-embedding-3-small";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export async function generateEmbedding(text: string): Promise<number[] | null> {
   if (!text || text.length < 3) return null;

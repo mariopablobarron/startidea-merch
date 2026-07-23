@@ -83,7 +83,7 @@ export async function autoPlaceMakitoOrder(cartId: string): Promise<MakitoAutoOr
   lines.push("");
   lines.push(`<b>Total cliente:</b> ${(makitoPO.totalClientCents / 100).toFixed(2)} €`);
   lines.push(``);
-  lines.push(`👉 Hacer pedido en Makito B2B + actualizar PO en <a href="https://merchandising.hubstartidea.es/admin/cart-quotes/${cart.id}">/admin/cart-quotes/${cart.id.slice(0, 8)}</a>`);
+  lines.push(`👉 Hacer pedido en Makito B2B + actualizar PO en <a href="https://merchandising.startidea.es/admin/cart-quotes/${cart.id}">/admin/cart-quotes/${cart.id.slice(0, 8)}</a>`);
 
   await notifyTelegram(lines.join("\n")).catch(() => {});
 

@@ -16,7 +16,7 @@ const BodySchema = z.object({
   landingPath: z.string().max(200).optional(),
 });
 
-const OWN_HOSTS = ["merchandising.hubstartidea.es", "localhost"];
+const OWN_HOSTS = ["merchandising.startidea.es", "localhost"];
 
 export async function POST(req: Request) {
   let body;

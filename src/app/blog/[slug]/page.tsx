@@ -13,7 +13,7 @@ import { mdToHtml, buildBlogSchema } from "@/lib/blog-generator";
 import { injectInternalLinks, type LinkableEntity } from "@/lib/blog-internal-links";
 import { SECTORS } from "@/lib/sectors";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 // force-dynamic para evitar pre-render en build sin DATABASE_URL.
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ export async function generateMetadata({
     },
   });
   if (!post) return { title: "Artículo no encontrado" };
-  const postUrl = `https://merchandising.hubstartidea.es/blog/${slug}`;
+  const postUrl = `https://merchandising.startidea.es/blog/${slug}`;
   const title = post.metaTitle || post.title;
   const description = post.metaDescription || post.excerpt?.slice(0, 160) || `Artículo sobre ${post.tags[0] || "merchandising"}`;
   return {

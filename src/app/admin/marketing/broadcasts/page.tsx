@@ -239,6 +239,6 @@ const DEFAULT_HTML = `<div style="font-family:-apple-system,sans-serif;max-width
   <h2 style="font-family:Georgia,serif;color:#0a0a0b;">Hola {{firstName}},</h2>
   <p>Te escribimos porque…</p>
   <p style="margin:24px 0;">
-    <a href="https://merchandising.hubstartidea.es/catalogo" style="display:inline-block;background:#ff6b35;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">Ver catálogo →</a>
+    <a href="https://merchandising.startidea.es/catalogo" style="display:inline-block;background:#ff6b35;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">Ver catálogo →</a>
   </p>
 </div>`;

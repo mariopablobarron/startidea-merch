@@ -10,7 +10,7 @@
 import { prisma } from "@/lib/prisma";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
 let CACHE: { at: number; url: string | null } | null = null;
 const CACHE_TTL = 60_000;

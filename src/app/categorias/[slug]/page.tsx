@@ -12,7 +12,7 @@ import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
 import { collectionPageJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export const revalidate = 3600;
 

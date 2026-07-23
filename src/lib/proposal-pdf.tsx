@@ -375,7 +375,7 @@ export async function renderProposalPdf(cart: CartWithItems): Promise<Buffer> {
             STARTIDEA MALAGA SL · CIF B19583632 · C/ Conde Cifuentes 33, 18005 Granada · España{"\n"}
             pedidos@startidea.es · +34 958 045 789{"\n"}
             Inscrita en el Registro Mercantil de Granada · Datos de protección: ver Política de
-            Privacidad en https://merchandising.hubstartidea.es/privacidad
+            Privacidad en https://merchandising.startidea.es/privacidad
           </Text>
         </View>
 

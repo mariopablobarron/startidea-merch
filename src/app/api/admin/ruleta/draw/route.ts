@@ -8,7 +8,7 @@ import { resend, RESEND_FROM } from "@/lib/resend";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 const SETTING_KEY = "ruleta_sorteo_draws";
 const SORTEO_TAG = "ruleta:sorteo";
 

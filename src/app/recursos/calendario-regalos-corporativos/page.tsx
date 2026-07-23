@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Las 12 ventanas del año donde un regalo corporativo bien pensado genera más impacto que en otras. Planifica tu merch de la mano del calendario laboral, fiscal y cultural.",
   alternates: {
     canonical:
-      "https://merchandising.hubstartidea.es/recursos/calendario-regalos-corporativos",
+      "https://merchandising.startidea.es/recursos/calendario-regalos-corporativos",
   },
   openGraph: {
     title: "Calendario corporativo de regalos 2026",

@@ -68,7 +68,7 @@ async function runAction(
       // Dispara manualmente el digest sin esperar al lunes
       const cronSecret = process.env.CRON_SECRET;
       const siteUrl =
-        process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+        process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
       if (!cronSecret) {
         throw new Error("CRON_SECRET no configurado");
       }
@@ -84,7 +84,7 @@ async function runAction(
     case "trigger_metric_snapshot": {
       const cronSecret = process.env.CRON_SECRET;
       const siteUrl =
-        process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+        process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
       if (!cronSecret) throw new Error("CRON_SECRET no configurado");
       const res = await fetch(`${siteUrl}/api/cron/metric-snapshot`, {
         method: "POST",

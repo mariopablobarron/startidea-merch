@@ -17,7 +17,7 @@ const BASE_METADATA: Metadata = {
   title: "Promociones · TodoMerchandising",
   description:
     "Productos destacados, novedades y ofertas activas en merchandising corporativo personalizable. Precio al instante en cada ficha.",
-  alternates: { canonical: "https://merchandising.hubstartidea.es/promociones" },
+  alternates: { canonical: "https://merchandising.startidea.es/promociones" },
 };
 
 export async function generateMetadata(): Promise<Metadata> {

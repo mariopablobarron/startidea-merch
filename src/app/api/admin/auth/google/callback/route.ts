@@ -20,7 +20,7 @@ import { signSession, findAdminUserByEmail, recordLoginEvent } from "@/lib/admin
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 const REDIRECT_URI = `${SITE_URL}/api/admin/auth/google/callback`;
 const SESSION_MAX_AGE = 8 * 60 * 60; // 8h, igual que signSession
 

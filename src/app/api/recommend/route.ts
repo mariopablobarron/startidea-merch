@@ -34,7 +34,7 @@ const Schema = z.object({
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4.5";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export async function POST(req: Request) {
   // Estricto: cada llamada dispara un LLM (coste real + CPU). 10 usos/5 min

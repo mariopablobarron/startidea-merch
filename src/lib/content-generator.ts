@@ -147,7 +147,7 @@ Notes (opcional, max 15 palabras): por qué esta variación.
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://merchandising.hubstartidea.es",
+        "HTTP-Referer": "https://merchandising.startidea.es",
         "X-Title": "TodoMerchandising Content Studio",
       },
       body: JSON.stringify({

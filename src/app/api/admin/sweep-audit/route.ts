@@ -60,7 +60,7 @@ export async function GET(req: Request) {
       name: p.name,
       fromPriceCents: p.fromPriceCents,
       variants: p._count.variants,
-      catalogUrl: `https://merchandising.hubstartidea.es/catalogo/${p.slug}`,
+      catalogUrl: `https://merchandising.startidea.es/catalogo/${p.slug}`,
     })),
   });
 }

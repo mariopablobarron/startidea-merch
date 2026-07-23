@@ -275,7 +275,7 @@ export default function BlogEditorPage({
               </p>
               <div className="rounded-xl border border-line bg-white p-4">
                 <p className="text-xs text-[#202124]">
-                  merchandising.hubstartidea.es/blog/{slug}
+                  merchandising.startidea.es/blog/{slug}
                 </p>
                 <p className="mt-0.5 text-lg font-medium text-[#1a0dab]">
                   {metaTitle || title || "(falta title)"}

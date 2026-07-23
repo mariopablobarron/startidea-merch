@@ -16,10 +16,10 @@ export const dynamic = "force-dynamic";
  *   GET ?action=confirm    → llama insertWebResource para que Google verifique el TXT
  *   GET ?action=list       → lista propiedades verificadas por esta SA
  *
- * Body por defecto: verificación de la Domain property merchandising.hubstartidea.es.
+ * Body por defecto: verificación de la Domain property merchandising.startidea.es.
  */
 const DEFAULT_SITE = {
-  identifier: "merchandising.hubstartidea.es",
+  identifier: "merchandising.startidea.es",
   type: "INET_DOMAIN" as const,
 };
 

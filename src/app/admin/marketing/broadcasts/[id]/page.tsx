@@ -79,7 +79,7 @@ const TEMPLATES = {
   <p style="margin:8px 0 0;font-size:12px;color:#6b6b6b;">Válido en pedidos &gt; 250 uds · este mes</p>
 </div>
 <p style="margin:24px 0;text-align:center;">
-  <a href="https://merchandising.hubstartidea.es/catalogo" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver catálogo →</a>
+  <a href="https://merchandising.startidea.es/catalogo" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver catálogo →</a>
 </p>`,
   },
   novedad: {
@@ -107,7 +107,7 @@ const TEMPLATES = {
   </td></tr>
 </table>
 <p style="margin:24px 0;text-align:center;">
-  <a href="https://merchandising.hubstartidea.es/catalogo?sort=recent" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver novedades →</a>
+  <a href="https://merchandising.startidea.es/catalogo?sort=recent" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver novedades →</a>
 </p>`,
   },
   recordatorio: {
@@ -123,7 +123,7 @@ const TEMPLATES = {
   tarifas en menos de 24h laborables.
 </p>
 <p style="margin:24px 0;text-align:center;">
-  <a href="https://merchandising.hubstartidea.es/cotizar" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Pedir cotización →</a>
+  <a href="https://merchandising.startidea.es/cotizar" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Pedir cotización →</a>
 </p>
 <p style="margin:16px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;text-align:center;">
   Si prefieres hablar antes, responde a este email y te marcamos.
@@ -143,7 +143,7 @@ const TEMPLATES = {
   Empleo de Granada—, solo tienes que echar un vistazo:
 </p>
 <p style="margin:24px 0;text-align:center;">
-  <a href="https://merchandising.hubstartidea.es/catalogo?utm_source=newsletter&utm_medium=email&utm_campaign=reactivacion" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Sí, sigo interesado/a →</a>
+  <a href="https://merchandising.startidea.es/catalogo?utm_source=newsletter&utm_medium=email&utm_campaign=reactivacion" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Sí, sigo interesado/a →</a>
 </p>
 <p style="margin:16px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;text-align:center;">
   Si no haces nada, no pasa nada: dejaremos de escribirte pronto para no molestar.

@@ -12,7 +12,7 @@ const TEMPLATES: Array<{ id: Template; label: string; dim: string; suggested: st
   { id: "email-header", label: "Email header 1200×400", dim: "3:1", suggested: "Cabecera broadcasts" },
 ];
 
-const SITE_URL = "https://merchandising.hubstartidea.es";
+const SITE_URL = "https://merchandising.startidea.es";
 
 /**
  * Generador de creatividad embebido en el editor de pieza.

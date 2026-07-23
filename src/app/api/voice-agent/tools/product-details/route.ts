@@ -90,6 +90,6 @@ export async function POST(req: Request) {
         is_default: t.isDefault,
       })),
     })),
-    product_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es"}/catalogo/${p.slug}`,
+    product_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es"}/catalogo/${p.slug}`,
   });
 }

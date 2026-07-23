@@ -56,7 +56,7 @@ export async function generateMetadata({
     p.override?.metaDescription ||
     p.shortDescription?.slice(0, 160) ||
     `${name} personalizable con tu logo.`;
-  const productUrl = `https://merchandising.hubstartidea.es/catalogo/${slug}`;
+  const productUrl = `https://merchandising.startidea.es/catalogo/${slug}`;
   const productImg = absoluteProxyImageUrl(p.primaryImageUrl);
   return {
     title,
@@ -554,7 +554,7 @@ export default async function ProductDetailPage({
                 <WhatsAppCta
                   productName={displayName}
                   internalRef={product.internalRef}
-                  productUrl={`https://merchandising.hubstartidea.es/catalogo/${product.slug}`}
+                  productUrl={`https://merchandising.startidea.es/catalogo/${product.slug}`}
                   variant="secondary"
                 />
               </div>

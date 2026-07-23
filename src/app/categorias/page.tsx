@@ -7,7 +7,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 // force-dynamic: render en request time (la BD no está disponible en build,
 // igual que en sitemap.ts). Sin esto, Next intenta prerenderizar el índice

@@ -28,8 +28,8 @@ const DEFAULT_AUTO_HTML = `<div style="font-family:-apple-system,sans-serif;max-
   <p>Hemos recibido tu solicitud de cotización. Estamos revisándola y te enviaremos respuesta en menos de {hours} horas laborables.</p>
   <p>Mientras tanto puedes:</p>
   <ul>
-    <li><a href="https://merchandising.hubstartidea.es/recursos" style="color:#E63E73;">Descargar nuestras guías</a></li>
-    <li><a href="https://merchandising.hubstartidea.es/trabajos" style="color:#E63E73;">Ver trabajos realizados</a></li>
+    <li><a href="https://merchandising.startidea.es/recursos" style="color:#E63E73;">Descargar nuestras guías</a></li>
+    <li><a href="https://merchandising.startidea.es/trabajos" style="color:#E63E73;">Ver trabajos realizados</a></li>
   </ul>
   <p>Si es urgente, contesta a este email o escríbenos por WhatsApp.</p>
   <p>Un saludo,<br>El equipo de TodoMerchandising</p>

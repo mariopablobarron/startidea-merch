@@ -25,7 +25,7 @@ import { analyzeCompetitorsForProduct } from "@/lib/competitor-intel";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.OPENROUTER_MODEL_TELEGRAM || "anthropic/claude-sonnet-4.5";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 const MAX_TOOL_ROUNDS = 6;
 const HISTORY_LIMIT = 12; // mensajes de contexto por chat
 const HISTORY_KEEP = 40; // poda: máximo almacenado por chat

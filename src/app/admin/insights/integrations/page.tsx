@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
 function fmtDate(d: Date): string {
   return new Intl.DateTimeFormat("es-ES", {

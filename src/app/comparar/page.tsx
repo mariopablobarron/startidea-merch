@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "Comparar productos · Decide entre 2 ó 3 referencias",
   description:
     "Compara hasta 3 productos del catálogo lado a lado: stock, dimensiones, peso, material, áreas de marcaje, técnicas y precio orientativo por cantidades.",
-  alternates: { canonical: "https://merchandising.hubstartidea.es/comparar" },
+  alternates: { canonical: "https://merchandising.startidea.es/comparar" },
 };
 
 export const revalidate = 3600;

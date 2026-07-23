@@ -15,7 +15,7 @@ import { createPostPaymentMagicLink } from "@/lib/customer-portal-magic";
 import { syncPaymentToFacturaScripts } from "@/lib/facturascripts-sync";
 import { IVA_RATE } from "@/lib/iva";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   title: "Asistente de productos · Catálogo merchandising B2B España",
   description:
     "Recomendador de productos del catálogo B2B de merchandising corporativo de TodoMerchandising (Startidea Málaga SL). Empresa española dada de alta en el registro mercantil. Productos personalizables con precio al instante: textil, drinkware, escritura, eventos.",
-  alternates: { canonical: "https://merchandising.hubstartidea.es/recomendador" },
+  alternates: { canonical: "https://merchandising.startidea.es/recomendador" },
   // Señales adicionales para classifiers ML de firewalls corporativos.
   // Mejora "trust score" y reduce falsos positivos como "Malicious Websites".
   other: {
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
-    url: "https://merchandising.hubstartidea.es/recomendador",
+    url: "https://merchandising.startidea.es/recomendador",
     title: "Asistente de productos · TodoMerchandising B2B",
     description:
       "Catálogo B2B legítimo de merchandising corporativo personalizable. Una iniciativa de Startidea Málaga SL.",

@@ -142,7 +142,7 @@ export default async function BlogOG({ params }: { params: Promise<{ slug: strin
           >
             {date && <span>{date}</span>}
             {date && <span style={{ color: "rgba(11,11,15,0.25)" }}>·</span>}
-            <span>merchandising.hubstartidea.es</span>
+            <span>merchandising.startidea.es</span>
           </div>
         </div>
       </div>

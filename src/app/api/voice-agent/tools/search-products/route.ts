@@ -134,7 +134,7 @@ export async function POST(req: Request) {
         short_description: p.enhancedShortDescription?.slice(0, 200) || p.shortDescription?.slice(0, 200) || null,
         category: p.category?.name || null,
         from_price_eur: price.finalCents != null ? price.finalCents / 100 : null,
-        product_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es"}/catalogo/${p.slug}`,
+        product_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es"}/catalogo/${p.slug}`,
       };
     }),
     note:

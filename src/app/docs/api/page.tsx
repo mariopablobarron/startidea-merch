@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Documentación oficial de la API REST de TodoMerchandising para integrar el catálogo y el sistema de cotizaciones en sistemas corporativos.",
 };
 
-const SITE = "https://merchandising.hubstartidea.es";
+const SITE = "https://merchandising.startidea.es";
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
@@ -84,7 +84,7 @@ export default function ApiDocsPage() {
       "material": "PE",
       "countryOfOrigin": "CN",
       "dimensions": { "length_mm": 1000, "width_mm": 1500, "height_mm": 0, "weight_g": 280 },
-      "image": "https://merchandising.hubstartidea.es/api/m/A7B2C9XK",
+      "image": "https://merchandising.startidea.es/api/m/A7B2C9XK",
       "category": { "name": "Toallas deportivas", "slug": "toallas-deportivas" },
       "variants": [
         { "sku": "STM-A7B2C9-NEG", "colorName": "Negro", "colorGroup": "Negro", "stockQty": 1240,

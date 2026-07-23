@@ -42,7 +42,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   });
   if (!cart) return NextResponse.json({ error: "Quote no encontrada" }, { status: 404 });
 
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
   const paymentUrl = cart.paymentLinkToken ? `${SITE_URL}/pay/${cart.paymentLinkToken}` : null;
 
   return NextResponse.json({

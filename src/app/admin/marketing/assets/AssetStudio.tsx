@@ -276,7 +276,7 @@ function UpscaleForm({
           type="url"
           value={imageUrl}
           onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="https://merchandising.hubstartidea.es/uploads/producto-x.jpg"
+          placeholder="https://merchandising.startidea.es/uploads/producto-x.jpg"
           className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-sm outline-none focus:border-accent"
         />
       </Field>

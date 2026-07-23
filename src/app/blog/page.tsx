@@ -11,13 +11,13 @@ import { collectionPageJsonLd } from "@/lib/jsonld";
 import { tagToSlug } from "@/lib/blog-tags";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 const BASE_METADATA: Metadata = {
   title: "Blog · TodoMerchandising",
   description:
     "Guías prácticas sobre merchandising corporativo: técnicas de marcaje, cantidades mínimas, plazos, sostenibilidad y casos reales B2B.",
-  alternates: { canonical: "https://merchandising.hubstartidea.es/blog" },
+  alternates: { canonical: "https://merchandising.startidea.es/blog" },
 };
 
 export async function generateMetadata(): Promise<Metadata> {

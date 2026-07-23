@@ -5,7 +5,7 @@ import { SignJWT, importPKCS8 } from "jose";
  * verifique propiedad de un dominio mediante DNS TXT record.
  *
  * Flujo (DNS_TXT método para Domain property):
- *  1. getVerificationToken({identifier: "merchandising.hubstartidea.es", type: "INET_DOMAIN"})
+ *  1. getVerificationToken({identifier: "merchandising.startidea.es", type: "INET_DOMAIN"})
  *     → devuelve un token tipo "google-site-verification=XXXXX"
  *  2. Añadir TXT record en DNS del dominio con ese valor
  *  3. insertWebResource({identifier, type: "INET_DOMAIN", verificationMethod: "DNS_TXT"})

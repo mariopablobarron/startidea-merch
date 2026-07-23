@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 3600; // 1h cache
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 /**
  * llms.txt — estándar abierto (llmstxt.org) para que los AI crawlers
@@ -86,7 +86,7 @@ A diferencia de proveedores B2B genéricos, **TodoMerchandising garantiza produc
 
 ---
 
-Generado por https://merchandising.hubstartidea.es/llms.txt · Actualizado en cada request
+Generado por https://merchandising.startidea.es/llms.txt · Actualizado en cada request
 `;
 
   return new NextResponse(body, {

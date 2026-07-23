@@ -12,7 +12,7 @@ export const maxDuration = 60;
  * Cron diario — alerta a Telegram con resumen de stock crítico/agotado.
  *
  * Configurar 1x/día en cron-job.org:
- *   POST https://merchandising.hubstartidea.es/api/cron/stock-alert
+ *   POST https://merchandising.startidea.es/api/cron/stock-alert
  *   Header: X-Cron-Secret: <CRON_SECRET>
  *   Cadence: 0 9 * * *  (9am hora local — antes de turno comercial)
  *
@@ -91,7 +91,7 @@ export const POST = wrapCronHandler("stock-alert", async (req: Request) => {
 
   lines.push("");
   lines.push(
-    `<a href="https://merchandising.hubstartidea.es/admin/stock">Ver panel completo →</a>`,
+    `<a href="https://merchandising.startidea.es/admin/stock">Ver panel completo →</a>`,
   );
 
   await notifyTelegram(lines.join("\n")).catch((e) =>

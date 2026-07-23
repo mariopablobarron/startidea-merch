@@ -85,7 +85,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   // si fallan no rompemos la respuesta del admin.
   if (isPublishing) {
     const SITE_URL =
-      process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+      process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
     const url = `${SITE_URL}/blog/${updated.slug}`;
     if (isGoogleIndexingConfigured()) {
       void notifyGoogleIndexing([url], "URL_UPDATED").catch((e) =>

@@ -5,7 +5,7 @@ import { requireRole } from "@/lib/admin-auth";
 import { midoceanOrders, type MidoceanCreateOrderPayload, type MidoceanOrderItem } from "@/lib/suppliers/midocean-orders";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

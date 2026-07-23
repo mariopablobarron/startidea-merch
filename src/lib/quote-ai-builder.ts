@@ -81,7 +81,7 @@ export async function parseClientBrief(brief: string): Promise<ParseResult> {
       headers: {
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://merchandising.hubstartidea.es",
+        "HTTP-Referer": "https://merchandising.startidea.es",
         "X-Title": "TodoMerchandising AI Quote Builder",
       },
       body: JSON.stringify({

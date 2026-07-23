@@ -127,6 +127,6 @@ export function absoluteProxyImageUrl(
   const rel = proxyImageUrl(original);
   if (!rel) return null;
   if (rel.startsWith("http")) return rel;
-  const base = siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  const base = siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
   return `${base.replace(/\/$/, "")}${rel}`;
 }

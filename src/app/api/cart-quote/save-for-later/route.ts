@@ -7,7 +7,7 @@ import { CartItemSchema, cartItemToCreate } from "@/lib/cart-item-schema";
 
 export const runtime = "nodejs";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
 /**
  * Captura TEMPRANA de email en el carrito — "¿Te guardamos el carrito?".

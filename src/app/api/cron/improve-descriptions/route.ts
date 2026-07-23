@@ -23,7 +23,7 @@ export const maxDuration = 600;
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.OPENROUTER_MODEL_FAST || "anthropic/claude-haiku-4.5";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export const POST = wrapCronHandler("improve-descriptions", async (req: Request) => {
   const auth = requireCronSecret(req);

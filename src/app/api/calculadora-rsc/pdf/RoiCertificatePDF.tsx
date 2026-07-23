@@ -106,7 +106,7 @@ export function RoiCertificatePDF({ calc }: { calc: RoiCalculation }) {
             <Text style={styles.brandFooterText}>
               Una iniciativa de Startidea. Merchandising corporativo personalizable
               producido en Centros Especiales de Empleo y talleres locales.
-              {"\n"}pedidos@startidea.es · merchandising.hubstartidea.es
+              {"\n"}pedidos@startidea.es · merchandising.startidea.es
             </Text>
           </View>
         </View>

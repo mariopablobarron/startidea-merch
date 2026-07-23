@@ -11,7 +11,7 @@ import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
 import { tagToSlug, slugToDisplayTag } from "@/lib/blog-tags";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 export const dynamic = "force-dynamic";
 

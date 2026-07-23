@@ -39,7 +39,7 @@ const INITIAL_BRIEF = {
   keywordTarget: "",
   intent: "INFORMATIONAL" as Intent,
   targetWordCount: 1800,
-  internalLinks: "https://merchandising.hubstartidea.es/catalogo",
+  internalLinks: "https://merchandising.startidea.es/catalogo",
   customInstructions: "",
 };
 
@@ -225,7 +225,7 @@ export default function BlogAdminPage() {
                   value={brief.internalLinks}
                   onChange={(e) => setBrief({ ...brief, internalLinks: e.target.value })}
                   rows={3}
-                  placeholder="https://merchandising.hubstartidea.es/catalogo"
+                  placeholder="https://merchandising.startidea.es/catalogo"
                   className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 font-mono text-xs outline-none focus:border-accent"
                 />
               </Field>

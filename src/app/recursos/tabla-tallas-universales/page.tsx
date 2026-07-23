@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Equivalencias entre las principales marcas de textil promocional. Medidas de pecho y largo para camiseta, polo y sudadera. Evita pedidos con tallas equivocadas.",
   alternates: {
     canonical:
-      "https://merchandising.hubstartidea.es/recursos/tabla-tallas-universales",
+      "https://merchandising.startidea.es/recursos/tabla-tallas-universales",
   },
   openGraph: {
     title: "Tabla de tallas universales para merch textil",
