@@ -1,0 +1,267 @@
+src/app/admin/insights/integrations/page.tsx
+  s_c74f3f79ce848e::t_ab6848f653ccad 22
+src/app/admin/integrations/page.tsx
+  s_c74f3f79ce848e::t_e7b526859e5129 218
+src/app/admin/marketing/assets/AssetStudio.tsx
+  s_c74f3f79ce848e::t_8012bd7fad911f 279
+src/app/admin/marketing/blog/[id]/page.tsx
+  s_c74f3f79ce848e::t_5a501baf04ae11 278
+src/app/admin/marketing/blog/page.tsx
+  s_c74f3f79ce848e::t_28588f12846090 42,228
+src/app/admin/marketing/broadcasts/[id]/page.tsx
+  s_c74f3f79ce848e::t_0a1d99ddb37c4b 82,110,126,146
+src/app/admin/marketing/broadcasts/page.tsx
+  s_c74f3f79ce848e::t_f469253b8d02c4 242
+src/app/admin/marketing/cotizador/page.tsx
+  s_c74f3f79ce848e::t_e3302a683fff2f 31-32
+src/app/admin/marketing/seo/page.tsx
+  s_c74f3f79ce848e::t_f2e4f9c94fe094 222
+src/app/api/admin/affiliates/[id]/magic-link/route.ts
+  s_c74f3f79ce848e::t_4b8b31d7860160 48
+src/app/api/admin/auth/google/callback/route.ts
+  s_c74f3f79ce848e::t_af1b6859352a26 23
+src/app/api/admin/auth/google/start/route.ts
+  s_c74f3f79ce848e::t_d475c67fd9ad7c 16
+src/app/api/admin/blog/[id]/route.ts
+  s_c74f3f79ce848e::t_8bc6c6f945e851 88
+src/app/api/admin/broadcasts/[id]/send/route.ts
+  s_c74f3f79ce848e::t_4bf81745092faa 12
+src/app/api/admin/cart-quotes/[id]/customer-link/route.ts
+  s_c74f3f79ce848e::t_f42a4ea073c49f 10
+src/app/api/admin/cart-quotes/[id]/payment-link/route.ts
+  s_c74f3f79ce848e::t_73c635807c698c 13
+src/app/api/admin/cart-quotes/[id]/place-order/route.ts
+  s_c74f3f79ce848e::t_23b427cfc53a6d 8
+src/app/api/admin/cart-quotes/[id]/proofs/route.ts
+  s_c74f3f79ce848e::t_1e37406698ec04 10
+src/app/api/admin/cart-quotes/[id]/remind/route.ts
+  s_c74f3f79ce848e::t_854100d3ad2474 9
+src/app/api/admin/content/[id]/generate-creative/route.ts
+  s_c74f3f79ce848e::t_b60f49ee1c2af8 9
+src/app/api/admin/crons/trigger/[name]/route.ts
+  s_c74f3f79ce848e::t_7ea24f079598bb 11
+src/app/api/admin/indexing/diagnose/route.ts
+  s_c74f3f79ce848e::t_66d12abaee2cfc 9,102,110
+src/app/api/admin/indexing/notify/route.ts
+  s_c74f3f79ce848e::t_a98aa932ff8263 15
+src/app/api/admin/indexing/site-verify/route.ts
+  s_c74f3f79ce848e::t_b7239e34d0a0fb 19,22
+src/app/api/admin/insights/apply-suggestion/route.ts
+  s_c74f3f79ce848e::t_051e752346eb6c 71,87
+src/app/api/admin/insights/share-url/route.ts
+  s_c74f3f79ce848e::t_f08e2652aec41a 17
+src/app/api/admin/outbound/discover/route.ts
+  s_c74f3f79ce848e::t_ee0acb6611f891 47
+src/app/api/admin/partners/applications/[id]/route.ts
+  s_c74f3f79ce848e::t_60806896eb7b25 11
+src/app/api/admin/proposals/generate/route.ts
+  s_c74f3f79ce848e::t_4c44430ec692a4 26
+src/app/api/admin/quote-ai/save/route.ts
+  s_c74f3f79ce848e::t_c097ca803ed6cf 12
+src/app/api/admin/ruleta/draw/route.ts
+  s_c74f3f79ce848e::t_c5730403aa8745 11
+src/app/api/admin/sweep-audit/route.ts
+  s_c74f3f79ce848e::t_a401707b14385c 63
+src/app/api/calculadora-rsc/pdf/RoiCertificatePDF.tsx
+  s_c74f3f79ce848e::t_21551f4a97d031 109
+src/app/api/calculadora-rsc/route.ts
+  s_c74f3f79ce848e::t_5431dbd9325c36 12,101
+src/app/api/cart-quote/route.ts
+  s_c74f3f79ce848e::t_7e3100677ca701 17
+src/app/api/cart-quote/save-for-later/route.ts
+  s_c74f3f79ce848e::t_019e8531d6dda2 10
+src/app/api/clientes/auth/consume/[token]/route.ts
+  s_c74f3f79ce848e::t_9720d951de178f 8
+src/app/api/clientes/auth/magic-link/route.ts
+  s_c74f3f79ce848e::t_8e25696c4d3f73 12
+src/app/api/cron/abandoned-cart-drip/route.ts
+  s_c74f3f79ce848e::t_82e8ab816f3136 12
+src/app/api/cron/auto-proposal/route.ts
+  s_c74f3f79ce848e::t_dde4138732024a 13
+src/app/api/cron/improve-descriptions/route.ts
+  s_c74f3f79ce848e::t_8ff4e92ac8336e 26
+src/app/api/cron/insights-digest-monthly/route.ts
+  s_c74f3f79ce848e::t_91ff1ed3a44f39 28
+src/app/api/cron/insights-digest/route.ts
+  s_c74f3f79ce848e::t_432e39118c2dc6 34
+src/app/api/cron/post-order-drip/route.ts
+  s_c74f3f79ce848e::t_33b6f2d1802c8a 12
+src/app/api/cron/proposal-followup/route.ts
+  s_c74f3f79ce848e::t_0bdbbda9edaa2f 13
+src/app/api/cron/publish-scheduled/route.ts
+  s_c74f3f79ce848e::t_71860a744855b1 18
+src/app/api/cron/quote-followup/route.ts
+  s_c74f3f79ce848e::t_bda40566e44467 12
+src/app/api/cron/review-invite/route.ts
+  s_c74f3f79ce848e::t_65367ecb5716eb 12
+src/app/api/cron/stock-alert/route.ts
+  s_c74f3f79ce848e::t_43853345c72ca7 15,94
+src/app/api/lead-magnets/[slug]/download/route.ts
+  s_c74f3f79ce848e::t_ad0d3c0355f9f5 11
+src/app/api/mockup-request/route.ts
+  s_c74f3f79ce848e::t_c7998479127b13 13
+src/app/api/newsletter/subscribe/route.ts
+  s_c74f3f79ce848e::t_e0587f19ccf3f5 9
+src/app/api/newsletter/unsubscribe/route.ts
+  s_c74f3f79ce848e::t_050fa5df0dce46 71
+src/app/api/partners/apply/route.ts
+  s_c74f3f79ce848e::t_bb9135596eb886 86
+src/app/api/pay/[token]/checkout/route.ts
+  s_c74f3f79ce848e::t_90ad8a7abc5714 10
+src/app/api/proposal/send/route.ts
+  s_c74f3f79ce848e::t_eab697bf829284 45
+src/app/api/quote-request-product/route.ts
+  s_c74f3f79ce848e::t_8b315536a21b7d 13
+src/app/api/recommend/route.ts
+  s_c74f3f79ce848e::t_85e93c7bbebff6 37
+src/app/api/ruleta/spin/route.ts
+  s_c74f3f79ce848e::t_c9be1c10d0f8cf 17
+src/app/api/track/referrer/route.ts
+  s_c74f3f79ce848e::t_f7246857fd6cca 19
+src/app/api/v1/quotes/[id]/route.ts
+  s_c74f3f79ce848e::t_5ee710e8cdc011 45
+src/app/api/voice-agent/tools/calculate-quote/route.ts
+  s_c74f3f79ce848e::t_b0570cdc045845 8
+src/app/api/voice-agent/tools/product-details/route.ts
+  s_c74f3f79ce848e::t_2d289d3eb6dae0 93
+src/app/api/voice-agent/tools/request-callback/route.ts
+  s_c74f3f79ce848e::t_c4c1432b26e580 96,115
+src/app/api/voice-agent/tools/search-products/route.ts
+  s_c74f3f79ce848e::t_c95ae46bc378a9 137
+src/app/api/voice-agent/tools/submit-quote/route.ts
+  s_c74f3f79ce848e::t_791e78d1805530 10
+src/app/api/webhooks/stripe/route.ts
+  s_c74f3f79ce848e::t_26a82ea7385895 18
+src/app/aviso-legal/page.tsx
+  s_c74f3f79ce848e::t_e8cd554dfa5da2 27,33
+src/app/ayuda/page.tsx
+  s_c74f3f79ce848e::t_456c196c78b962 14
+src/app/blog/[slug]/opengraph-image.tsx
+  s_c74f3f79ce848e::t_3bcca3c0cb13a4 145
+src/app/blog/[slug]/page.tsx
+  s_c74f3f79ce848e::t_577f661bc00a09 16,40
+src/app/blog/page.tsx
+  s_c74f3f79ce848e::t_d234c020748f17 14,20
+src/app/blog/rss.xml/route.ts
+  s_c74f3f79ce848e::t_c16c76498e1cdc 8
+src/app/blog/tag/[tag]/page.tsx
+  s_c74f3f79ce848e::t_9d099f42dae064 14
+src/app/carrito/page.tsx
+  s_c74f3f79ce848e::t_c6dd734e9b29d5 11
+src/app/catalogo/[slug]/page.tsx
+  s_c74f3f79ce848e::t_80bd02b4eacafc 59,557
+src/app/catalogo/page.tsx
+  s_c74f3f79ce848e::t_3ebac9542d3fbc 20,46
+src/app/categorias/[slug]/page.tsx
+  s_c74f3f79ce848e::t_4cd91c6cf06027 15
+src/app/categorias/page.tsx
+  s_c74f3f79ce848e::t_9eddee720169da 10
+src/app/comparar/page.tsx
+  s_c74f3f79ce848e::t_47d39911d43a45 20
+src/app/docs/api/page.tsx
+  s_c74f3f79ce848e::t_bc8689a2755700 12,87
+src/app/faq/page.tsx
+  s_c74f3f79ce848e::t_aacdf3bbeb793c 12
+src/app/layout.tsx
+  s_c74f3f79ce848e::t_44779a3a9892b3 43
+src/app/llms.txt/route.ts
+  s_c74f3f79ce848e::t_4cedd510d6a27b 9,89
+src/app/opengraph-image.tsx
+  s_c74f3f79ce848e::t_226eb97e7dd024 119
+src/app/page.tsx
+  s_c74f3f79ce848e::t_ea4c2b26934dc5 40
+src/app/partners/[slug]/page.tsx
+  s_c74f3f79ce848e::t_1d251c3fc2839b 7
+src/app/promociones/page.tsx
+  s_c74f3f79ce848e::t_17139abe2d478d 20
+src/app/recomendador/page.tsx
+  s_c74f3f79ce848e::t_6a63bc8f85d7f7 44,58
+src/app/recursos/calendario-regalos-corporativos/page.tsx
+  s_c74f3f79ce848e::t_f5178a43ed2c78 16
+src/app/recursos/especificaciones-mockup/page.tsx
+  s_c74f3f79ce848e::t_e754e891dc24fc 16
+src/app/recursos/guia-pantone-serigrafia-corporativa/page.tsx
+  s_c74f3f79ce848e::t_791831e938c9fd 16
+src/app/recursos/kit-imagen-corporativa/page.tsx
+  s_c74f3f79ce848e::t_426faa3adc2bdd 16
+src/app/recursos/page.tsx
+  s_c74f3f79ce848e::t_3379ded49ed866 16
+src/app/recursos/tabla-tallas-universales/page.tsx
+  s_c74f3f79ce848e::t_bf58c55da22f3b 16
+src/app/robots.ts
+  s_c74f3f79ce848e::t_edc3f54c47b7a2 3
+src/app/sectores/[slug]/page.tsx
+  s_c74f3f79ce848e::t_272d85ceada40f 12
+src/app/sectores/page.tsx
+  s_c74f3f79ce848e::t_28cbf91b41d6f2 11
+src/app/sitemap.ts
+  s_c74f3f79ce848e::t_54b8360048de4d 6
+src/app/sobre/page.tsx
+  s_c74f3f79ce848e::t_63985f3144b083 13
+src/app/trabajos/page.tsx
+  s_c74f3f79ce848e::t_b982fcb62593a5 14
+src/components/CreativeGenerator.tsx
+  s_c74f3f79ce848e::t_dd8aff784d447f 15
+src/lib/auto-proposal.ts
+  s_c74f3f79ce848e::t_6946ddae8e01e7 10
+src/lib/blog-generator.ts
+  s_c74f3f79ce848e::t_e98b66b3bd62c3 125
+src/lib/broadcast-send.ts
+  s_c74f3f79ce848e::t_f70d9a369f835a 6
+src/lib/content-generator.ts
+  s_c74f3f79ce848e::t_1278cf629cfceb 150
+src/lib/customer-portal-magic.ts
+  s_c74f3f79ce848e::t_d8759fe54f9a57 5
+src/lib/email-templates.ts
+  s_c74f3f79ce848e::t_d28fd487359d3c 137
+src/lib/embeddings.ts
+  s_c74f3f79ce848e::t_b7c3b7403fd456 16
+src/lib/google-site-verification.ts
+  s_c74f3f79ce848e::t_7971bc4e01e3b3 8
+src/lib/insights/ai-suggestions.ts
+  s_c74f3f79ce848e::t_f9d357cf91cae9 146
+src/lib/jsonld.ts
+  s_c74f3f79ce848e::t_c66f2fdf179e3a 1
+src/lib/linkedin-message.ts
+  s_c74f3f79ce848e::t_d9dfb9e4e08f8c 1
+src/lib/makito-auto-order.ts
+  s_c74f3f79ce848e::t_386ad0cdc89dd2 86
+src/lib/midocean-auto-order.ts
+  s_c74f3f79ce848e::t_deaa4dab34fa28 25
+src/lib/outbound-email.ts
+  s_c74f3f79ce848e::t_c640bc9f5cdb8b 5
+src/lib/product-description-generator.ts
+  s_c74f3f79ce848e::t_8c0edfdbf31ea8 69
+src/lib/proposal-deliver.ts
+  s_c74f3f79ce848e::t_9d648d068e240c 11
+src/lib/proposal-from-cotizacion.ts
+  s_c74f3f79ce848e::t_c90c229b5b90fb 22
+src/lib/proposal-pdf.tsx
+  s_c74f3f79ce848e::t_cac8f2e93263a1 378
+src/lib/proposal-types.ts
+  s_c74f3f79ce848e::t_601f508f7528e0 56
+src/lib/proxy-image.ts
+  s_c74f3f79ce848e::t_04d43978b6f806 130
+src/lib/quote-ai-builder.ts
+  s_c74f3f79ce848e::t_8fbbb03c54ec6e 84
+src/lib/slack-webhook.ts
+  s_c74f3f79ce848e::t_e4a28e72f52ff5 13
+src/lib/telegram-admin-agent.ts
+  s_c74f3f79ce848e::t_354e32050cab36 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "b3978ebe34c6b2cdb6bde4acd6f6e69b10db5b7a",
+  "prompts": {},
+  "sessions": {
+    "s_c74f3f79ce848e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dc340431-c22c-4d4b-b3fb-4a7631374a91",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
