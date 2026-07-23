@@ -1,0 +1,22 @@
+next.config.ts
+  s_65877aa637ec34::t_717a71a7146d1b 63-68
+docker-compose.yml
+  s_65877aa637ec34::t_93bccc2d69705b 123-127
+  s_65877aa637ec34::t_bca2a33bd6729c 132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "e0bbf32d4c45838d32ad09fd3639f968d131c939",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
