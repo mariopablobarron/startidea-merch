@@ -1,0 +1,23 @@
+src/app/api/cron/post-order-drip/route.test.ts
+  s_e876d2bff0c0f7::t_32eb62b8e3852f 1-150,156-196
+  s_e876d2bff0c0f7::t_7217463bf3a216 151-155
+src/app/api/cron/post-order-drip/route.ts
+  s_e876d2bff0c0f7::t_ae0bed87a8610b 65-71,77-81,88
+  s_e876d2bff0c0f7::t_f0b1cef52dc061 6,22-30,38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "599a91ea6f82a21bd10beb1fc0903e835462c046",
+  "prompts": {},
+  "sessions": {
+    "s_e876d2bff0c0f7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "67bac768-b38a-409a-949e-9615a6748eaf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
