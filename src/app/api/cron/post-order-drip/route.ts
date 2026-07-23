@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { sendEmail } from "@/lib/resend";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { withCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,15 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubs
  *
  * Idempotente — no duplica si EmailDripSent existe para (cartId, step).
  * Llamar diariamente desde cron-job.org.
+ *
+ * CLAIM-THEN-SEND (2026-07-23): antes comprobaba EmailDripSent y creaba la fila
+ * DESPUÉS de enviar, dejando una ventana de carrera entre el check y el envío —
+ * dos ejecuciones solapadas (p.ej. el cron y un disparo manual desde
+ * /admin/system/crons) mandaban el mismo email DOS VECES al cliente, incluido el
+ * del cupón del 10%. Ahora se reclama primero (la unique (cartId, step) hace de
+ * cerrojo atómico) y solo después se envía; si el envío falla se libera el claim
+ * para conservar el reintento del día siguiente. Mismo patrón que review-invite
+ * y quote-followup. (Lección de los incidentes de spam de emails por cron.)
  */
 
 const STEPS = [0, 14, 45];
@@ -25,6 +35,7 @@ const STEPS = [0, 14, 45];
 export const POST = wrapCronHandler("post-order-drip", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
+  return withCronLock("post-order-drip", async () => {
 
   const now = Date.now();
   const sent = { D0: 0, D14: 0, D45: 0 };
@@ -51,23 +62,30 @@ export const POST = wrapCronHandler("post-order-drip", async (req: Request) => {
     });
 
     for (const cart of candidates) {
-      // Saltarse si ya se envió este step
-      const already = await prisma.emailDripSent.findUnique({
-        where: { cartId_step: { cartId: cart.id, step } },
-      });
-      if (already) continue;
+      // CLAIM atómico: la unique (cartId, step) hace de cerrojo. Si ya se envió
+      // —o si otra ejecución lo reclamó ahora mismo— el create falla y saltamos.
+      try {
+        await prisma.emailDripSent.create({ data: { cartId: cart.id, step } });
+      } catch {
+        continue;
+      }
 
       try {
         await sendStep(step, cart);
-        await prisma.emailDripSent.create({ data: { cartId: cart.id, step } });
         sent[`D${step}` as keyof typeof sent]++;
       } catch (e) {
+        // Liberamos el claim para que el tick de mañana reintente (mismo
+        // comportamiento que antes ante fallo de envío).
+        await prisma.emailDripSent
+          .delete({ where: { cartId_step: { cartId: cart.id, step } } })
+          .catch(() => {});
         errors.push(`${cart.id} step ${step}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   }
 
   return NextResponse.json({ ok: true, sent, errors });
+  }) as Promise<NextResponse>;
 });
 
 async function sendStep(
