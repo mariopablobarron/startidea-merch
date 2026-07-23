@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@/lib/metricool";
 import { notifyTelegram } from "@/lib/telegram";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { withCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,12 +26,32 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubs
  *   POST /api/cron/publish-scheduled
  *   Header X-Cron-Secret: <CRON_SECRET>
  *
- * Idempotente: marca PUBLISHED tras enviar (no se reintenta). Si falla,
- * marca FAILED con channelResponse.error y avisa por Telegram.
+ * Si falla, marca FAILED con channelResponse.error y avisa por Telegram.
+ *
+ * CLAIM-THEN-PUBLISH (2026-07-23): antes seleccionaba las piezas SCHEDULED,
+ * publicaba y marcaba PUBLISHED DESPUÉS. Entre el SELECT y el marcado había una
+ * ventana real: dos ejecuciones solapadas —el tick del cron y un disparo manual
+ * desde /admin/system/crons, o dos ticks si uno se alarga— leían la misma pieza
+ * en SCHEDULED y la publicaban DOS VECES en la red social, a la vista del
+ * público. El comentario viejo decía "idempotente", pero esa idempotencia era
+ * post-hoc y no cubría la ventana. Ahora cada transición sale de un
+ * `updateMany` condicionado a `status: SCHEDULED`, que en una sola sentencia
+ * atómica hace de cerrojo: solo un proceso obtiene count===1 y publica; el otro
+ * ve count===0 y salta. Mismo patrón que post-order-drip y auto-proposal.
+ *
+ * Semántica deliberada: at-most-once. Se reclama ANTES de publicar, así que un
+ * crash entre el claim y la publicación deja la pieza como PUBLISHED sin haber
+ * salido, en vez de arriesgar una doble publicación. Para contenido público esa
+ * es la dirección correcta del fallo: un post que no sale se ve y se reprograma;
+ * uno duplicado ya no se puede retirar. Un fallo *devuelto* por Metricool sí se
+ * corrige a FAILED, que es reintentable desde el panel.
  */
 export const POST = wrapCronHandler("publish-scheduled", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
+  // TTL 3 min: mayor que maxDuration (120 s) y menor que la cadencia del cron
+  // (*/5), para no bloquear nunca la siguiente ejecución legítima.
+  return withCronLock("publish-scheduled", async () => {
 
   const now = new Date();
   const due = await prisma.contentPiece.findMany({
@@ -49,7 +71,21 @@ export const POST = wrapCronHandler("publish-scheduled", async (req: Request) =>
 
   let published = 0;
   let failed = 0;
+  let claimedByOther = 0;
   const errors: string[] = [];
+
+  /**
+   * Saca la pieza de SCHEDULED en una sola sentencia atómica. Devuelve false si
+   * otra ejecución se la llevó primero (count===0) — ahí hay que saltarla sin
+   * tocar nada, porque el otro proceso ya es el dueño de esa publicación.
+   */
+  async function claim(id: string, data: Prisma.ContentPieceUpdateManyMutationInput) {
+    const res = await prisma.contentPiece.updateMany({
+      where: { id, status: "SCHEDULED" },
+      data,
+    });
+    return res.count === 1;
+  }
 
   for (const piece of due) {
     const metricoolChannel = contentChannelToMetricool(piece.channel);
@@ -57,27 +93,24 @@ export const POST = wrapCronHandler("publish-scheduled", async (req: Request) =>
     // Si el canal no es publicable vía Metricool (EMAIL/WEB/ADS), lo dejamos en
     // APPROVED — Mario lo maneja desde sus propias herramientas (Broadcasts/Ads).
     if (!metricoolChannel) {
-      await prisma.contentPiece.update({
-        where: { id: piece.id },
-        data: {
-          status: "APPROVED",
-          channelResponse: {
-            note: `Canal ${piece.channel} no publicable vía Metricool. Usar herramienta nativa.`,
-            skippedAt: now.toISOString(),
-          },
+      if (!(await claim(piece.id, {
+        status: "APPROVED",
+        channelResponse: {
+          note: `Canal ${piece.channel} no publicable vía Metricool. Usar herramienta nativa.`,
+          skippedAt: now.toISOString(),
         },
-      });
+      }))) claimedByOther++;
       continue;
     }
 
     if (!metricoolCfg) {
-      await prisma.contentPiece.update({
-        where: { id: piece.id },
-        data: {
-          status: "FAILED",
-          channelResponse: { error: "Metricool no configurado en /admin/integrations" },
-        },
-      });
+      if (!(await claim(piece.id, {
+        status: "FAILED",
+        channelResponse: { error: "Metricool no configurado en /admin/integrations" },
+      }))) {
+        claimedByOther++;
+        continue;
+      }
       failed++;
       errors.push(`piece ${piece.id}: Metricool no configurado`);
       continue;
@@ -87,6 +120,13 @@ export const POST = wrapCronHandler("publish-scheduled", async (req: Request) =>
     const fullText = piece.hashtags.length > 0
       ? `${piece.copy}\n\n${piece.hashtags.map((h) => `#${h}`).join(" ")}`
       : piece.copy;
+
+    // CLAIM antes de publicar: este updateMany es el cerrojo. Si no lo ganamos,
+    // otra ejecución ya está publicando esta pieza — salir sin llamar a la red.
+    if (!(await claim(piece.id, { status: "PUBLISHED", publishedAt: now }))) {
+      claimedByOther++;
+      continue;
+    }
 
     const result = await publishToMetricool(metricoolCfg, {
       text: fullText,
@@ -98,11 +138,10 @@ export const POST = wrapCronHandler("publish-scheduled", async (req: Request) =>
     });
 
     if (result.ok) {
+      // Ya está en PUBLISHED por el claim; queda anotar la respuesta del canal.
       await prisma.contentPiece.update({
         where: { id: piece.id },
         data: {
-          status: "PUBLISHED",
-          publishedAt: now,
           channelResponse: {
             externalIds: result.externalIds,
             publishedAt: now.toISOString(),
@@ -112,10 +151,13 @@ export const POST = wrapCronHandler("publish-scheduled", async (req: Request) =>
       });
       published++;
     } else {
+      // Metricool respondió error: la publicación NO salió, así que se corrige
+      // el claim a FAILED (reintentable desde el panel).
       await prisma.contentPiece.update({
         where: { id: piece.id },
         data: {
           status: "FAILED",
+          publishedAt: null,
           channelResponse: { error: result.error, failedAt: now.toISOString() },
         },
       });
@@ -138,6 +180,8 @@ export const POST = wrapCronHandler("publish-scheduled", async (req: Request) =>
     processed: due.length,
     published,
     failed,
+    claimedByOther,
     errors,
   });
+  }, 3 * 60 * 1000) as Promise<NextResponse>;
 });

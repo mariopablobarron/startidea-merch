@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { midoceanOrders } from "@/lib/suppliers/midocean-orders";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { withCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,10 +16,20 @@ export const maxDuration = 300;
  *
  * Salta los que ya están en estado terminal (DELIVERED) y los que
  * tienen tracking actualizado en las últimas 6h para no machacar la API.
+ *
+ * Bajo cron-lock (2026-07-23): el filtro de "<6h" se evalúa leyendo el último
+ * OrderTracking y la fila nueva se inserta después, así que dos ejecuciones
+ * solapadas —el tick y un disparo manual desde /admin/system/crons— leían
+ * ambas el mismo "último tracking" viejo e insertaban DOS filas por pedido,
+ * ensuciando el historial que el cliente ve en /clientes y duplicando llamadas
+ * a la API del proveedor. El lock las serializa; la segunda sale con skipped.
  */
 export const POST = wrapCronHandler("refresh-tracking", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
+  // TTL 10 min: mayor que maxDuration (300 s) y muy por debajo de la cadencia
+  // real del cron (cada 6h), así que nunca bloquea un tick legítimo.
+  return withCronLock("refresh-tracking", async () => {
 
   const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
   const orders = await prisma.cartQuote.findMany({
@@ -102,6 +113,7 @@ export const POST = wrapCronHandler("refresh-tracking", async (req: Request) => 
     skipped,
     failed,
   });
+  }) as Promise<NextResponse>;
 });
 
 function pickString(obj: Record<string, unknown> | undefined, keys: string[]): string | undefined {
