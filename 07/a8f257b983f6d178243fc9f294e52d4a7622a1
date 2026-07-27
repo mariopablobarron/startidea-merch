@@ -1,0 +1,19 @@
+src/app/admin/analytics/seo/page.tsx
+  s_6f979bbb5c27db::t_b428eda4605aec 93,182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "07a8f257b983f6d178243fc9f294e52d4a7622a1",
+  "prompts": {},
+  "sessions": {
+    "s_6f979bbb5c27db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "867a0b96-429b-41cc-9c32-7edd0bbc65f1",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
