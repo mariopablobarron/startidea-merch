@@ -90,7 +90,7 @@ export default function AdminSeoStatsPage() {
               ← Analytics
             </Link>
             <a
-              href="https://search.google.com/search-console?resource_id=https://merchandising.startidea.es/"
+              href="https://search.google.com/search-console?resource_id=sc-domain:merchandising.startidea.es"
               target="_blank"
               rel="noopener"
               className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent"
@@ -179,7 +179,7 @@ function ConfigForm({
                 plantilla oficial de Search Console
               </a>{" "}
               en Looker Studio. Google te pedirá que elijas tu propiedad de GSC
-              (selecciona <code className="rounded bg-bone-soft px-1.5 py-0.5 font-mono text-xs">https://merchandising.startidea.es</code>)
+              (selecciona <code className="rounded bg-bone-soft px-1.5 py-0.5 font-mono text-xs">merchandising.startidea.es</code>, propiedad de dominio)
               y tu propiedad GA4 (<code className="rounded bg-bone-soft px-1.5 py-0.5 font-mono text-xs">Merchandising Startidea</code>).
             </Step>
             <Step n={2}>
