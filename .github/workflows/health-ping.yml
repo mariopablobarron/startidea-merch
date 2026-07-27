@@ -28,7 +28,7 @@ jobs:
           fi
           ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           response=$(curl -sS -w "\n%{http_code}" \
-            -X POST "https://merchandising.hubstartidea.es/api/integrations/event" \
+            -X POST "https://merchandising.startidea.es/api/integrations/event" \
             -H "Content-Type: application/json" \
             -H "x-webhook-secret: $WEBHOOK_SECRET" \
             -d "{\"source\":\"github-actions\",\"type\":\"health_ping\",\"payload\":{\"ts\":\"$ts\",\"runner\":\"ubuntu-latest\"}}")

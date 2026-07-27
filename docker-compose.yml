@@ -117,18 +117,37 @@ services:
       - merch_net
       - coolify
     labels:
-      # Traefik routing — dominio nuevo principal: merchandising.hubstartidea.es
+      # Traefik routing — dominio nuevo principal: merchandising.startidea.es
       traefik.enable: "true"
       traefik.docker.network: coolify
-      # Doble host durante la migración de dominio: el nuevo canónico será
-      # merchandising.startidea.es (subdominio de la marca establecida). Se sirve
-      # ya para que el certificado se emita en cuanto el DNS de IONOS apunte al
-      # VPS; el dominio viejo sigue funcionando (corte sin caída).
-      traefik.http.routers.startidea-merch.rule: "Host(`merchandising.hubstartidea.es`) || Host(`merchandising.startidea.es`)"
+      # Dominio canónico: merchandising.startidea.es. El host viejo
+      # (merchandising.hubstartidea.es) responde 301 SALVO /api/, que sigue
+      # sirviendo directo: integraciones máquina-a-máquina (Telegram, tools de
+      # ElevenLabs, enlaces de email antiguos a /api/m/) pueden tener la URL
+      # vieja configurada y no todos los clientes siguen redirects en POST.
+      traefik.http.routers.startidea-merch.rule: "Host(`merchandising.startidea.es`)"
       traefik.http.routers.startidea-merch.entrypoints: websecure
       traefik.http.routers.startidea-merch.tls: "true"
       traefik.http.routers.startidea-merch.tls.certresolver: letsencrypt
       traefik.http.routers.startidea-merch.service: startidea-merch
+      # host viejo, /api → sirve directo (prioridad explícita sobre el 301)
+      traefik.http.routers.startidea-merch-oldapi.rule: "Host(`merchandising.hubstartidea.es`) && PathPrefix(`/api`)"
+      traefik.http.routers.startidea-merch-oldapi.entrypoints: websecure
+      traefik.http.routers.startidea-merch-oldapi.tls: "true"
+      traefik.http.routers.startidea-merch-oldapi.tls.certresolver: letsencrypt
+      traefik.http.routers.startidea-merch-oldapi.service: startidea-merch
+      traefik.http.routers.startidea-merch-oldapi.priority: "100"
+      # host viejo, resto → 301 al canónico conservando la ruta
+      traefik.http.routers.startidea-merch-old.rule: "Host(`merchandising.hubstartidea.es`)"
+      traefik.http.routers.startidea-merch-old.entrypoints: websecure
+      traefik.http.routers.startidea-merch-old.tls: "true"
+      traefik.http.routers.startidea-merch-old.tls.certresolver: letsencrypt
+      traefik.http.routers.startidea-merch-old.service: startidea-merch
+      traefik.http.routers.startidea-merch-old.priority: "50"
+      traefik.http.routers.startidea-merch-old.middlewares: startidea-merch-domain301
+      traefik.http.middlewares.startidea-merch-domain301.redirectregex.regex: "^https://merchandising\\.hubstartidea\\.es/(.*)"
+      traefik.http.middlewares.startidea-merch-domain301.redirectregex.replacement: "https://merchandising.startidea.es/$${1}"
+      traefik.http.middlewares.startidea-merch-domain301.redirectregex.permanent: "true"
       traefik.http.routers.startidea-merch-http.rule: "Host(`merchandising.hubstartidea.es`) || Host(`merchandising.startidea.es`)"
       traefik.http.routers.startidea-merch-http.entrypoints: web
       traefik.http.routers.startidea-merch-http.middlewares: startidea-merch-redirect

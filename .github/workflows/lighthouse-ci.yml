@@ -25,9 +25,9 @@ jobs:
         run: |
           set -e
           URLS=(
-            "https://merchandising.hubstartidea.es/"
-            "https://merchandising.hubstartidea.es/recomendador"
-            "https://merchandising.hubstartidea.es/catalogo"
+            "https://merchandising.startidea.es/"
+            "https://merchandising.startidea.es/recomendador"
+            "https://merchandising.startidea.es/catalogo"
           )
           mkdir -p reports
           echo "## Lighthouse audit results" >> $GITHUB_STEP_SUMMARY

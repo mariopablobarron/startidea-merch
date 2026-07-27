@@ -12,7 +12,7 @@
  * Uso: bun scripts/audit-supplier-leaks.ts
  */
 
-const SITE = process.env.SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE = process.env.SITE_URL || "https://merchandising.startidea.es";
 
 // Patrones tóxicos
 const LEAK_PATTERNS = [

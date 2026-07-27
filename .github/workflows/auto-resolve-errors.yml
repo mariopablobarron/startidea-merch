@@ -27,7 +27,7 @@ jobs:
             exit 1
           fi
           response=$(curl -sS -w "\n%{http_code}" \
-            -X POST "https://merchandising.hubstartidea.es/api/cron/auto-resolve-errors" \
+            -X POST "https://merchandising.startidea.es/api/cron/auto-resolve-errors" \
             -H "x-cron-secret: $CRON_SECRET")
           body=$(echo "$response" | sed '$d')
           status=$(echo "$response" | tail -n1)

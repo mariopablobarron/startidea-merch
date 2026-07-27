@@ -65,6 +65,6 @@ Agent({ subagent_type: "deal-coach", prompt: "cart cmXXXX · 500 mochilas tech �
 - **Comunicación en español** (Mario es CEO Startidea Malaga SL)
 - **Anti-supplier-leak**: NUNCA mencionar MidOcean/Cifra/Makito al cliente
 - **Acceso a producción**: SSH `root@72.61.195.108`, BD via `docker exec merch-db psql`
-- **Frontend público**: `merchandising.hubstartidea.es`
+- **Frontend público**: `merchandising.startidea.es`
 - **Admin operativo**: `/admin/*` (cookie auth)
 - **Tono Startidea**: directo, datos > opinión, sin marketing fluff

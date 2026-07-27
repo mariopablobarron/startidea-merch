@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
           response=$(curl -sS -w "\n%{http_code}" \
-            -X POST "https://merchandising.hubstartidea.es/api/cron/product-view-rollup" \
+            -X POST "https://merchandising.startidea.es/api/cron/product-view-rollup" \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: $CRON_SECRET")
           body=$(echo "$response" | sed '$d')

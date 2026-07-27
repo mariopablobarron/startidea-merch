@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
           response=$(curl -sS -w "\n%{http_code}" \
-            -X POST "https://merchandising.hubstartidea.es/api/cron/competitor-watch" \
+            -X POST "https://merchandising.startidea.es/api/cron/competitor-watch" \
             -H "x-cron-secret: $CRON_SECRET")
           body=$(echo "$response" | sed '$d')
           code=$(echo "$response" | tail -n1)

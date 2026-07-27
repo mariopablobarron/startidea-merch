@@ -42,7 +42,7 @@ if [ -f "$ENVF" ]; then
   WH_SECRET=$(grep -E "^TELEGRAM_WEBHOOK_SECRET=" "$ENVF" | head -1 | cut -d= -f2-)
   if [ -n "$BOT_TOKEN" ] && [ -n "$WH_SECRET" ]; then
     WH_RES=$(curl -s --max-time 15 -X POST "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" \
-      -d "url=https://merchandising.hubstartidea.es/api/telegram/webhook" \
+      -d "url=https://merchandising.startidea.es/api/telegram/webhook" \
       -d "secret_token=${WH_SECRET}" \
       -d 'allowed_updates=["message"]' | grep -o '"ok":true' || true)
     log "telegram-bot: setWebhook ${WH_RES:-FALLO}"
@@ -152,7 +152,7 @@ log "compose up RC=$CRC (informativo; árbitro real = healthcheck HTTP)"
 # Hasta 6 intentos × 10s = 60s; Next.js + Prisma tardan 20-40s en estar listos
 # en frío. El deploy solo se da por bueno si el contenedor nuevo sirve 200 en
 # la home Y en /catalogo (la ruta crítica del negocio).
-BASE="https://merchandising.hubstartidea.es"
+BASE="https://merchandising.startidea.es"
 
 log "healthcheck home + /catalogo (hasta 60s)"
 SUCCESS=0
@@ -198,8 +198,8 @@ log "imagen viva verificada: corre $SHA"
 # Aceptamos 200 (público), 302 (redirect login), 401 (necesita auth) como OK.
 log "healthcheck rutas adicionales"
 EXTRA_URLS=(
-  "https://merchandising.hubstartidea.es/admin/login"
-  "https://merchandising.hubstartidea.es/recomendador"
+  "https://merchandising.startidea.es/admin/login"
+  "https://merchandising.startidea.es/recomendador"
 )
 FAILED=""
 for url in "${EXTRA_URLS[@]}"; do

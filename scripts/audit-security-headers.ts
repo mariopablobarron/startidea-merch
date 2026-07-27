@@ -11,7 +11,7 @@
  *   bun scripts/audit-security-headers.ts --url=https://otra.url
  */
 
-const url = arg("--url") || "https://merchandising.hubstartidea.es";
+const url = arg("--url") || "https://merchandising.startidea.es";
 
 type Check = {
   header: string;

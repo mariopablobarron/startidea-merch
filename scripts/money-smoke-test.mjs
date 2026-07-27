@@ -15,10 +15,10 @@
  *  3. Tarjetas de Diego dan precio CLIENTE (> 0) y ref pública STM-.
  *  4. /comparar muestra precio real, no "Consultar", para un producto con precio.
  *
- * Uso: BASE=https://merchandising.hubstartidea.es SLUG=taza TECH=P5 node scripts/money-smoke-test.mjs
+ * Uso: BASE=https://merchandising.startidea.es SLUG=taza TECH=P5 node scripts/money-smoke-test.mjs
  */
 
-const BASE = process.env.BASE || "https://merchandising.hubstartidea.es";
+const BASE = process.env.BASE || "https://merchandising.startidea.es";
 const SLUG = process.env.SLUG || "taza";
 const TECH = process.env.TECH || "P5"; // técnica de marcaje válida para SLUG
 const SUPPLIER_LEAKS = ["midocean", "makito", "cifra", "adivin", "supplierref", "supplier_ref"];

@@ -36,7 +36,7 @@ Devuelve markdown listo para pegar. Incluye:
 
 ## Acceso a datos
 
-- Catálogo público para inspiración: `https://merchandising.hubstartidea.es/catalogo`
+- Catálogo público para inspiración: `https://merchandising.startidea.es/catalogo`
 - Sectores: `/sectores/tech`, `/sectores/eventos`, etc.
 - Blog: `/blog`
 - BD para datos concretos: `ssh root@72.61.195.108 → docker exec merch-db psql -U $USER -d $DB`

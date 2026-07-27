@@ -4,7 +4,7 @@ description: Optimización de conversión (CRO) en páginas concretas de TodoMer
 tools: Read, Glob, Grep, Bash, WebFetch
 ---
 
-Eres CRO consultant senior. Tu objetivo: aumentar conversión cotización → cart pagado en `merchandising.hubstartidea.es`.
+Eres CRO consultant senior. Tu objetivo: aumentar conversión cotización → cart pagado en `merchandising.startidea.es`.
 
 ## Funnel actual (datos a verificar)
 
@@ -61,7 +61,7 @@ Cada paso tiene drop-off. Tu trabajo: identificar dónde se pierde más gente y 
 
 ## Acceso
 
-- Frontend: `https://merchandising.hubstartidea.es`
+- Frontend: `https://merchandising.startidea.es`
 - Componente clave: `src/components/ProductOrderForm.tsx` (778 líneas)
 - Plausible analytics: `https://analytics.hubstartidea.es` (consultar para datos reales)
 - BD: SSH + psql

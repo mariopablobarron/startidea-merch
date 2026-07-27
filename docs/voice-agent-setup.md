@@ -59,7 +59,7 @@ En cada tool, configurar:
 
 #### Tool 1: `search_products`
 - **Description**: "Busca productos del catálogo TodoMerchandising por nombre, descripción o categoría. Usa cuando el usuario quiera saber si tenemos un tipo de producto. Devuelve hasta 5 resultados."
-- **URL**: `POST https://merchandising.hubstartidea.es/api/voice-agent/tools/search-products`
+- **URL**: `POST https://merchandising.startidea.es/api/voice-agent/tools/search-products`
 - **Parameters**:
   - `query` (string, required): texto de búsqueda
   - `category` (string, optional): filtro categoría
@@ -67,13 +67,13 @@ En cada tool, configurar:
 
 #### Tool 2: `get_product_details`
 - **Description**: "Obtiene detalles completos de un producto: dimensiones, material, precio desde, zonas de marcaje disponibles, técnicas (serigrafía, láser, bordado, transfer), stock. Usar cuando el cliente quiera saber más de un producto concreto."
-- **URL**: `POST https://merchandising.hubstartidea.es/api/voice-agent/tools/product-details`
+- **URL**: `POST https://merchandising.startidea.es/api/voice-agent/tools/product-details`
 - **Parameters**:
   - `slug` (string, required): slug del producto (lo devuelve search_products)
 
 #### Tool 3: `calculate_quote`
 - **Description**: "Calcula el precio orientativo TOTAL para una cantidad concreta de un producto, con marcaje opcional. Devuelve precio unitario, coste de marcaje por unidad, total. Cifra orientativa que NO sustituye a cotización formal."
-- **URL**: `POST https://merchandising.hubstartidea.es/api/voice-agent/tools/calculate-quote`
+- **URL**: `POST https://merchandising.startidea.es/api/voice-agent/tools/calculate-quote`
 - **Parameters**:
   - `slug` (string, required): slug del producto
   - `quantity` (number, required): cantidad (entero ≥ 1)
@@ -83,7 +83,7 @@ En cada tool, configurar:
 
 #### Tool 4: `submit_quote`
 - **Description**: "Crea cotización formal en TodoMerchandising. SOLO usar cuando el cliente lo pida explícitamente y haya dado nombre, email y empresa. Genera CartQuote real que el equipo procesará en menos de 24h laborables."
-- **URL**: `POST https://merchandising.hubstartidea.es/api/voice-agent/tools/submit-quote`
+- **URL**: `POST https://merchandising.startidea.es/api/voice-agent/tools/submit-quote`
 - **Parameters**:
   - `name` (string, required): nombre del cliente
   - `email` (string, required): email corporativo
@@ -115,7 +115,7 @@ Tras añadir → Force redeploy del container `merch-app`.
 
 ## 4. Verificación
 
-1. Visitar https://merchandising.hubstartidea.es como anónimo
+1. Visitar https://merchandising.startidea.es como anónimo
 2. Botón "Hablar con Carmen" abajo a la izquierda
 3. Permitir micrófono
 4. Probar:

@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
           response=$(curl -sS -w "\n%{http_code}" \
-            -X POST "https://merchandising.hubstartidea.es/api/cron/makito-sync" \
+            -X POST "https://merchandising.startidea.es/api/cron/makito-sync" \
             -H "x-cron-secret: $CRON_SECRET")
           body=$(echo "$response" | sed '$d')
           code=$(echo "$response" | tail -n1)

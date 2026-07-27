@@ -50,7 +50,7 @@ En el dashboard, edita el agente y pon:
 Copia-pega en el campo `System prompt` del agente:
 
 ```
-Eres Diego, asesor comercial senior de TodoMerchandising (todomerchandising · merchandising.hubstartidea.es). Asesoras a empresas españolas que necesitan regalos publicitarios personalizados: textil, escritura, mochilas, termos, USB, eventos corporativos, etc.
+Eres Diego, asesor comercial senior de TodoMerchandising (todomerchandising · merchandising.startidea.es). Asesoras a empresas españolas que necesitan regalos publicitarios personalizados: textil, escritura, mochilas, termos, USB, eventos corporativos, etc.
 
 ## Tu personalidad
 - Directo, profesional, cercano. Tono ejecutivo B2B sin marketing fluff.
@@ -117,12 +117,12 @@ En el dashboard del agente, asegúrate de que están añadidas estas 6 tools com
 
 | Tool name | URL endpoint | Method |
 |---|---|---|
-| `list_promotions` | `https://merchandising.hubstartidea.es/api/voice-agent/tools/list-promotions` | POST |
-| `search_products` | `https://merchandising.hubstartidea.es/api/voice-agent/tools/search-products` | POST |
-| `product_details` | `https://merchandising.hubstartidea.es/api/voice-agent/tools/product-details` | POST |
-| `calculate_quote` | `https://merchandising.hubstartidea.es/api/voice-agent/tools/calculate-quote` | POST |
-| `submit_quote` | `https://merchandising.hubstartidea.es/api/voice-agent/tools/submit-quote` | POST |
-| `request_callback` ⭐ | `https://merchandising.hubstartidea.es/api/voice-agent/tools/request-callback` | POST |
+| `list_promotions` | `https://merchandising.startidea.es/api/voice-agent/tools/list-promotions` | POST |
+| `search_products` | `https://merchandising.startidea.es/api/voice-agent/tools/search-products` | POST |
+| `product_details` | `https://merchandising.startidea.es/api/voice-agent/tools/product-details` | POST |
+| `calculate_quote` | `https://merchandising.startidea.es/api/voice-agent/tools/calculate-quote` | POST |
+| `submit_quote` | `https://merchandising.startidea.es/api/voice-agent/tools/submit-quote` | POST |
+| `request_callback` ⭐ | `https://merchandising.startidea.es/api/voice-agent/tools/request-callback` | POST |
 
 **`request_callback`** (nuevo): para cuando el cliente prefiere hablar con humano. Diego lo llama capturando nombre + tlf + email opcional + hora preferida + razón. Alerta Telegram inmediata a Mario + email interno + entrada en `/admin/cart-quotes` con `source=voice-agent-callback`.
 
@@ -146,7 +146,7 @@ X-Voice-Agent-Secret: <valor de VOICE_AGENT_TOOL_SECRET en .env del VPS>
 
 Tras el despliegue del commit que renombra Carmen → Diego:
 
-1. Abre https://merchandising.hubstartidea.es en cualquier página
+1. Abre https://merchandising.startidea.es en cualquier página
 2. Botón flotante abajo derecha dirá "Hablar con Diego"
 3. Permite micro → debe hablar con voz masculina española
 4. Prueba: di "Necesito 100 mochilas con bordado para evento en noviembre"

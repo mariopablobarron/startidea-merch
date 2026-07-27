@@ -1,7 +1,7 @@
 # Brief para Diego — QA TodoMerchandising
 
 **Fecha**: 2026-05-07
-**Web a probar**: https://merchandising.hubstartidea.es
+**Web a probar**: https://merchandising.startidea.es
 **Tiempo estimado**: 3–4 horas (sesión completa) o 30 min/día durante una semana
 **Reportar a**: Mario (mariopablobarron@gmail.com / Telegram)
 
@@ -21,7 +21,7 @@ Para cada hallazgo abre **una entrada** con este formato (Notion, Google Doc, me
 
 ```
 [BUG | UX | COPY | PERFORMANCE | SEO | A11Y]  ·  Severidad: 🔴 BLOQUEANTE | 🟡 IMPORTANTE | 🟢 MENOR
-URL: https://merchandising.hubstartidea.es/...
+URL: https://merchandising.startidea.es/...
 Navegador: Chrome 125 / Safari 17 / Firefox / mobile
 Qué hago: paso 1, paso 2, paso 3
 Qué pasa: ...

@@ -22,6 +22,6 @@
 
 /* LEGAL */
 
-  Aviso legal: https://merchandising.hubstartidea.es/aviso-legal
-  Privacidad: https://merchandising.hubstartidea.es/privacidad
-  Cookies: https://merchandising.hubstartidea.es/cookies
+  Aviso legal: https://merchandising.startidea.es/aviso-legal
+  Privacidad: https://merchandising.startidea.es/privacidad
+  Cookies: https://merchandising.startidea.es/cookies

@@ -30,7 +30,7 @@ Pegarlas en `/Users/STARTIDEA/startidea-merch/.env` (líneas marcadas como pendi
 
 Dashboard → **Developers → Webhooks → Add endpoint**.
 
-- **URL**: `https://merchandising.hubstartidea.es/api/webhooks/stripe`
+- **URL**: `https://merchandising.startidea.es/api/webhooks/stripe`
 - **Description**: `merch — production` (o `merch — test`)
 - **Events to send** (los que el código maneja en [`route.ts`](../src/app/api/webhooks/stripe/route.ts)):
   - `checkout.session.completed`

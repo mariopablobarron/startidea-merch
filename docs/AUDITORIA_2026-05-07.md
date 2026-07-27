@@ -2,7 +2,7 @@
 
 **Fecha**: 2026-05-07
 **Auditor**: Claude (sesión Mario)
-**Web auditada**: https://merchandising.hubstartidea.es
+**Web auditada**: https://merchandising.startidea.es
 **Benchmark**: https://garrampa.es
 
 ---
@@ -178,7 +178,7 @@ TodoMerchandising tiene **mejor stack técnico, mejor IA y mejor portal B2B** qu
 - ✅ Telegram al equipo en cada cobro.
 
 **Pendientes**:
-1. 🔴 **Verificar dominio Apple Pay en Stripe Dashboard** (`merchandising.hubstartidea.es` debe estar registrado).
+1. 🔴 **Verificar dominio Apple Pay en Stripe Dashboard** (`merchandising.startidea.es` debe estar registrado).
 2. 🟡 **Añadir `payment_intent.succeeded` y `payment_intent.payment_failed`** al endpoint webhook en Stripe Dashboard (los 5 eventos actuales son solo de Checkout Session).
 3. 🟢 **Bizum**: España adora Bizum. Stripe lo está rolling out — activar cuando esté disponible para tu cuenta.
 

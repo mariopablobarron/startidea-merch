@@ -46,8 +46,8 @@ Eres especialista en **AEO (Answer Engine Optimization)** y **GEO (Generative En
 
 ## Acceso
 
-- Frontend: `https://merchandising.hubstartidea.es`
-- robots.txt actual: `curl https://merchandising.hubstartidea.es/robots.txt`
+- Frontend: `https://merchandising.startidea.es`
+- robots.txt actual: `curl https://merchandising.startidea.es/robots.txt`
 - llms.txt: comprobar si existe
 - Test citaciones en IA: usar WebFetch para Perplexity/Google, anotar resultados
 

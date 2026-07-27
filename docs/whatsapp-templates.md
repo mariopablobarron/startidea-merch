@@ -83,7 +83,7 @@ el presupuesto/enlace de pago empieza a salir también por WhatsApp.
 
 ## Recepción (webhook) — opcional
 Para *recibir* mensajes, en Meta (Configuración de la API → Webhooks) registra:
-- **URL de devolución de llamada:** `https://merchandising.hubstartidea.es/api/webhooks/whatsapp`
+- **URL de devolución de llamada:** `https://merchandising.startidea.es/api/webhooks/whatsapp`
 - **Token de verificación:** una cadena que inventes; pon la MISMA en el `.env`:
 ```
 WHATSAPP_WEBHOOK_VERIFY_TOKEN=<la misma cadena que pongas en Meta>

@@ -4,12 +4,12 @@
  *
  * Uso:
  *   bun scripts/cron-stats.ts
- *   bun scripts/cron-stats.ts --site=https://merchandising.hubstartidea.es
+ *   bun scripts/cron-stats.ts --site=https://merchandising.startidea.es
  *
  * Necesita ADMIN_SECRET en env (o lee de ../.env si existe).
  */
 
-const SITE = arg("--site") || process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.hubstartidea.es";
+const SITE = arg("--site") || process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET || readDotEnv()?.ADMIN_SECRET;
 if (!ADMIN_SECRET) {

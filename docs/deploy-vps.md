@@ -10,7 +10,7 @@ VPS Hostinger `72.61.195.108` (compartido con resto del portfolio Startidea). Pa
 
 ## 1. DNS
 
-Crear A-record `merchandising.hubstartidea.es → 72.61.195.108` via Hostinger MCP:
+Crear A-record `merchandising.startidea.es → 72.61.195.108` via Hostinger MCP:
 
 ```python
 mcp__hostinger-mcp__DNS_updateDNSRecordsV1(
@@ -24,7 +24,7 @@ mcp__hostinger-mcp__DNS_updateDNSRecordsV1(
 Verificar propagación:
 
 ```bash
-dig +short merchandising.hubstartidea.es @1.1.1.1
+dig +short merchandising.startidea.es @1.1.1.1
 # debe devolver 72.61.195.108 en 30-90s
 ```
 
@@ -88,7 +88,7 @@ docker compose exec app pnpm prisma migrate deploy
 Traefik (gestionado por Coolify) debe emitir el cert automáticamente al ver el container `healthy` en network `coolify`:
 
 ```bash
-curl -sI https://merchandising.hubstartidea.es/api/health
+curl -sI https://merchandising.startidea.es/api/health
 # 200 OK con cert válido (ssl_verify_result=0) → todo OK
 ```
 
@@ -102,7 +102,7 @@ Caveat conocido: si otro stack tiene un router con un Host alias roto, Let's Enc
 
 ## 6. Probar webhook desde Stripe
 
-Dashboard Stripe → Webhooks → endpoint `merchandising.hubstartidea.es/api/webhooks/stripe` → **Send test event** → `checkout.session.completed`.
+Dashboard Stripe → Webhooks → endpoint `merchandising.startidea.es/api/webhooks/stripe` → **Send test event** → `checkout.session.completed`.
 
 En el VPS:
 
@@ -114,7 +114,7 @@ Si la firma es válida, devuelve 200. Si dice `Invalid signature`, revisar que `
 
 ## 7. Test end-to-end con tarjeta de prueba
 
-1. Visitar `https://merchandising.hubstartidea.es`.
+1. Visitar `https://merchandising.startidea.es`.
 2. Crear un cart-quote completo desde el frontend.
 3. En `/admin` (login con `ADMIN_SECRET`), generar payment-link.
 4. Pagar con `4242 4242 4242 4242`.

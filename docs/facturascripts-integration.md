@@ -1,6 +1,6 @@
 # Integración merch-app → FacturaScripts
 
-> Guía técnica para que `merchandising.hubstartidea.es` cree facturas automáticas en FacturaScripts cuando Stripe confirma un pago.
+> Guía técnica para que `merchandising.startidea.es` cree facturas automáticas en FacturaScripts cuando Stripe confirma un pago.
 
 ## Resumen
 

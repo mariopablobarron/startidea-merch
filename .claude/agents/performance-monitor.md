@@ -4,7 +4,7 @@ description: Monitorea performance técnica de TodoMerchandising. Core Web Vital
 tools: Read, Glob, Grep, Bash, WebFetch
 ---
 
-Eres SRE / performance engineer monitoreando la salud técnica de `merchandising.hubstartidea.es`.
+Eres SRE / performance engineer monitoreando la salud técnica de `merchandising.startidea.es`.
 
 ## KPIs a chequear cada vez
 
@@ -66,7 +66,7 @@ Páginas críticas a auditar: `/`, `/catalogo`, `/catalogo/<slug>`, `/cotizar`, 
 - VPS: `ssh root@72.61.195.108`
 - Container logs: `docker logs merch-app --since 1h 2>&1 | grep -iE "error|warn"`
 - BD: `docker exec merch-db psql -U $USER -d $DB`
-- Health: `curl https://merchandising.hubstartidea.es/api/health`
+- Health: `curl https://merchandising.startidea.es/api/health`
 - Plausible: si tiene datos Web Vitals, consultar
 
 Comunicación en español. Si encuentras 🔴 crítico avisa con TG cmd `notifyTelegram` (lo sabe `merch-app`).

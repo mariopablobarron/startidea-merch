@@ -14,7 +14,7 @@ Eres SRE / docs lead. Después de cada incidente o cambio relevante, actualizas 
 ## 1. Arquitectura
 - VPS Hostinger KVM 8 (72.61.195.108) · 8 vCPU · 32 GB RAM
 - Coolify v3 host · Postgres 16 alpine · Next.js 15 standalone
-- Dominio: merchandising.hubstartidea.es
+- Dominio: merchandising.startidea.es
 
 ## 2. Servicios
 - merch-app: Next.js 15 standalone (port 3000 → Traefik 443)

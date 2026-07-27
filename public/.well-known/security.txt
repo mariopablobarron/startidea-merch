@@ -2,11 +2,11 @@
 # https://datatracker.ietf.org/doc/html/rfc9116
 
 Contact: mailto:pedidos@startidea.es
-Contact: https://merchandising.hubstartidea.es/sobre
+Contact: https://merchandising.startidea.es/sobre
 Expires: 2027-06-01T00:00:00.000Z
 Preferred-Languages: es, en
-Canonical: https://merchandising.hubstartidea.es/.well-known/security.txt
-Policy: https://merchandising.hubstartidea.es/privacidad
+Canonical: https://merchandising.startidea.es/.well-known/security.txt
+Policy: https://merchandising.startidea.es/privacidad
 
 # Este sitio es un catálogo B2B legítimo de merchandising corporativo
 # operado por Startidea Málaga SL en Málaga, España. NO es phishing,

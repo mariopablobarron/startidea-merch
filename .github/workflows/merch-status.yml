@@ -36,6 +36,6 @@ jobs:
           # Sin pipe curl→intérprete: json.tool solo FORMATEA (no ejecuta),
           # pero el patrón dispara el SAST del audit. A fichero y listo.
           curl -sS --max-time 30 \
-            "https://merchandising.hubstartidea.es/api/cron/${ENDPOINT}" \
+            "https://merchandising.startidea.es/api/cron/${ENDPOINT}" \
             -H "x-cron-secret: $CRON_SECRET" -o /tmp/status.json
           python3 -m json.tool /tmp/status.json

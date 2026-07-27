@@ -27,7 +27,7 @@ push main ──► CI ───► VPS Direct Deploy SSH ──► /root/deploy
                                        │                               │
                                        └────── network merch_net ──────┘
 
-DNS: merchandising.hubstartidea.es → 72.61.195.108 (A record en Hostinger)
+DNS: merchandising.startidea.es → 72.61.195.108 (A record en Hostinger)
 TLS: Coolify proxy maneja Let's Encrypt en el VPS (otros apps comparten host)
 ```
 
@@ -55,7 +55,7 @@ gh run list --limit 3 --json conclusion,name,headSha
 ```bash
 git push origin main
 # Espera ~2-3 min, luego:
-gh run list --workflow="Deploy a producción (merchandising.hubstartidea.es)" --limit 1
+gh run list --workflow="Deploy a producción (merchandising.startidea.es)" --limit 1
 ```
 
 ### Si el deploy falla
@@ -75,7 +75,7 @@ gh run list --workflow="Deploy a producción (merchandising.hubstartidea.es)" --
 python3 -c "
 import urllib.request
 for p in ['/', '/admin', '/admin/insights', '/catalogo', '/recomendador']:
-    r = urllib.request.urlopen('https://merchandising.hubstartidea.es'+p, timeout=15)
+    r = urllib.request.urlopen('https://merchandising.startidea.es'+p, timeout=15)
     print(f'{r.status}  {p}')
 "
 ```
@@ -420,7 +420,7 @@ CI no corre tests aún (TODO: añadir step `pnpm test` a `ci.yml`).
 
 ### VPS rechaza SSH "broken pipe" tras un incidente
 
-Patrón observado **2026-06-04**: 3 sitios distintos del VPS (`merchandising.hubstartidea.es`,
+Patrón observado **2026-06-04**: 3 sitios distintos del VPS (`merchandising.startidea.es`,
 `startidea.es`, `tresmilmillonesdelatidos.es`) devolvieron **404** simultáneamente
 durante ~3 horas. SSH al puerto 22 conecta pero los comandos rechazan con
 `Connection reset by peer` / `client_loop: send disconnect: Broken pipe`.
@@ -439,7 +439,7 @@ durante ~3 horas. SSH al puerto 22 conecta pero los comandos rechazan con
 6. Tras recuperación, `gh run rerun <id>` de los workflows fallidos para limpiar historial.
 
 **Síntoma típico del cron watchdog en este caso**:
-`curl: (28) Failed to connect to merchandising.hubstartidea.es port 443 after 135000 ms`.
+`curl: (28) Failed to connect to merchandising.startidea.es port 443 after 135000 ms`.
 
 ## 16. Contactos
 
@@ -459,7 +459,7 @@ cambiado, está desactualizado por defecto — léelo con escepticismo.*
 
 ## 17. Firewall vendor categorizations
 
-`merchandising.hubstartidea.es` fue marcado como "Malicious Websites" por varios
+`merchandising.startidea.es` fue marcado como "Malicious Websites" por varios
 firewalls corporativos en mayo 2026 al ser dominio nuevo. Trabajo de recategorización
 en marcha desde finales de mayo.
 
