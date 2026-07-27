@@ -1,0 +1,20 @@
+src/app/admin/analytics/seo/page.tsx
+  s_65877aa637ec34::t_76c6aad56609bc 93
+  s_65877aa637ec34::t_d6b88efd25b8e5 182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "6cf17f5c76ee3ad65c804cd60445ed7fc3767cfd",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
