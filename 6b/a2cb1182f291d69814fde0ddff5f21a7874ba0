@@ -1,0 +1,114 @@
+docker-compose.yml
+  s_65877aa637ec34::t_7982fa1b779f7d 123-128,133-150
+  s_4ccdcf455112ce::t_806c5c67814ad9 120
+.claude/agents/README.md
+  s_65877aa637ec34::t_c388a5b8575f3a 68
+.claude/agents/ai-search-optimizer.md
+  s_65877aa637ec34::t_be7cb578803e95 49-50
+.claude/agents/content-creator.md
+  s_65877aa637ec34::t_b36ef340ad1bfe 39
+.claude/agents/landing-cro.md
+  s_65877aa637ec34::t_54f2371e5c84c4 7,64
+.claude/agents/ops-runbook.md
+  s_65877aa637ec34::t_aa128972b9ec57 17
+.claude/agents/performance-monitor.md
+  s_65877aa637ec34::t_c8da42f924cfef 7,69
+.claude/agents/seo-auditor.md
+  s_65877aa637ec34::t_2ec974a7b8ea85 7,39
+.claude/agents/social-media.md
+  s_65877aa637ec34::t_05578485d25ff1 32
+.env.example
+  s_65877aa637ec34::t_cf3ca157f9bee5 10
+.github/workflows/ai-usage-alert.yml
+  s_65877aa637ec34::t_ae55f7f59c5b15 30
+.github/workflows/auto-resolve-errors.yml
+  s_65877aa637ec34::t_2946c9b67aecab 30
+.github/workflows/cifra-sync.yml
+  s_65877aa637ec34::t_05d85f5e51aed2 39
+.github/workflows/competitor-watch.yml
+  s_65877aa637ec34::t_eb9c0baf94c1fd 33
+.github/workflows/cron-watchdog.yml
+  s_65877aa637ec34::t_238ac05814b774 30
+.github/workflows/embeddings-sync.yml
+  s_65877aa637ec34::t_b24d174175f0a5 30
+.github/workflows/health-ping.yml
+  s_65877aa637ec34::t_829696c7993eb6 31
+.github/workflows/insights-digest-monthly.yml
+  s_65877aa637ec34::t_dc71fa33b71470 29
+.github/workflows/insights-digest.yml
+  s_65877aa637ec34::t_8d05ff09bd1e7f 29
+.github/workflows/lighthouse-ci.yml
+  s_65877aa637ec34::t_50b4c31be28add 28-30
+.github/workflows/makito-marking-enrich.yml
+  s_65877aa637ec34::t_feac646b8f1a27 29
+.github/workflows/makito-sync.yml
+  s_65877aa637ec34::t_dc21aa88589384 33
+.github/workflows/merch-status.yml
+  s_65877aa637ec34::t_f330ab9b5cb878 39
+.github/workflows/metric-snapshot.yml
+  s_65877aa637ec34::t_d607cdec5256a6 29
+.github/workflows/midocean-print-pricelist-sync.yml
+  s_65877aa637ec34::t_6f0d3cdd96d573 31
+.github/workflows/midocean-sync.yml
+  s_65877aa637ec34::t_0b4685d1498298 32
+.github/workflows/product-view-rollup.yml
+  s_65877aa637ec34::t_184eb28a44d953 33
+OPERATIONS.md
+  s_65877aa637ec34::t_8525ceab894f81 30,58,78,423,442,462
+docs/AUDITORIA_2026-05-07.md
+  s_65877aa637ec34::t_c13e8df6f6e36b 5,181
+docs/DIEGO_QA_BRIEFING.md
+  s_65877aa637ec34::t_9f86b98e13de08 4,24
+docs/deploy-vps.md
+  s_65877aa637ec34::t_f5aac92110940c 13,27,91,105,117
+docs/facturascripts-integration.md
+  s_65877aa637ec34::t_6e4623ff4ab077 3
+docs/stripe-activation.md
+  s_65877aa637ec34::t_f9b6d9fc94a37e 33
+docs/voice-agent-diego.md
+  s_65877aa637ec34::t_8c1f494c8db273 53,120-125,149
+docs/voice-agent-setup.md
+  s_65877aa637ec34::t_6327e25fdaeefd 62,70,76,86,118
+docs/whatsapp-templates.md
+  s_65877aa637ec34::t_48608562497b43 86
+public/.well-known/security.txt
+  s_65877aa637ec34::t_4a93c4a11d5172 5,8-9
+public/humans.txt
+  s_65877aa637ec34::t_9c09c79422fa61 25-27
+scripts/audit-security-headers.ts
+  s_65877aa637ec34::t_c943e3984b4758 14
+scripts/audit-supplier-leaks.ts
+  s_65877aa637ec34::t_42d91d25679074 15
+scripts/cron-stats.ts
+  s_65877aa637ec34::t_fb55ada69efce1 7,12
+scripts/deploy.sh
+  s_65877aa637ec34::t_a4a77a1d199a41 45,155,201-202
+scripts/money-smoke-test.mjs
+  s_65877aa637ec34::t_ef61563ec761a6 18,21
+docs/spec-cotizador-rapido.md
+  s_65877aa637ec34::t_1e60b2e582f8c0 1-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "6ba2cb1182f291d69814fde0ddff5f21a7874ba0",
+  "prompts": {},
+  "sessions": {
+    "s_4ccdcf455112ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "019f556a-6ea9-75a0-bbcb-381a6660f9b0",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
