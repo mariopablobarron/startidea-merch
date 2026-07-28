@@ -1,0 +1,21 @@
+scripts/deploy.sh
+  s_65877aa637ec34::t_82e810b292f01f 128-131
+src/lib/search/meili.ts
+  s_65877aa637ec34::t_9f0601f640c3f9 173-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "046bbb40a2a658a02d7abb99eaa6ecade5bf51a0",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
