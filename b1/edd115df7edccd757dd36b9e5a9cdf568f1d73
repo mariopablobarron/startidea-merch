@@ -1,0 +1,33 @@
+src/lib/suppliers/sanitize-supplier-text.ts
+  s_0d1a2460b04965::t_0fb1b211648927 1-85
+src/lib/suppliers/sanitize-supplier-text.test.ts
+  s_0d1a2460b04965::t_229cc473e8c04b 23-24
+  s_0d1a2460b04965::t_dfac309ddfd990 33-34
+  s_0d1a2460b04965::t_7a865a1314a246 1-22,25-32,35-107
+src/lib/suppliers/no-raw-supplier-text.guard.test.ts
+  s_0d1a2460b04965::t_a4ee9cbbeadeea 1-99
+src/app/api/search/suggest/route.ts
+  s_0d1a2460b04965::t_9835869f77038d 66-71
+src/lib/suppliers/cifra-sync.ts
+  s_0d1a2460b04965::t_45687d30cf015c 43,209-210,220-222,229-230,240-242,299,314
+src/lib/suppliers/makito-sync.ts
+  s_0d1a2460b04965::t_d3b27651cfc621 36,298-299,307-309,316-317,325-327,367,378
+src/lib/suppliers/midocean-sync.ts
+  s_0d1a2460b04965::t_7f17ac175e3d7b 21,280-284,341
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "b1edd115df7edccd757dd36b9e5a9cdf568f1d73",
+  "prompts": {},
+  "sessions": {
+    "s_0d1a2460b04965": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bf581c32-4bdf-4305-9ed0-9de2a8115d57",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
