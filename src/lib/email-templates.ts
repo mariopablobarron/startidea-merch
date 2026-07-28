@@ -295,3 +295,6 @@ export function abandonedCartDripEmail(d: CartDripEmailData): {
 
   return { subject, html, text };
 }
+
+// Paleta del sistema de email, exportada para fragmentos custom de senders.
+export const EMAIL_COLORS = COLORS;
