@@ -22,6 +22,7 @@ import { notifyTelegram } from "@/lib/telegram";
 import { XMLParser } from "fast-xml-parser";
 import { prisma } from "@/lib/prisma";
 import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
+import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
 import { Prisma } from "@prisma/client";
 import {
   fetchProductsXml,
@@ -583,6 +584,16 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
     productsUpserted,
     errorsJson: errors.length ? errors.slice(0, 100) : null,
   });
+
+  // El catálogo cambió → refrescar el índice de búsqueda. Nunca es fatal:
+  // con Meili caído, la búsqueda cae sola al fallback Prisma.
+  if (meiliEnabled()) {
+    try {
+      await reindexAllProducts();
+    } catch (e) {
+      console.error("[makito-sync] reindex Meili falló:", e instanceof Error ? e.message : e);
+    }
+  }
   // Aviso interno si la duración se degrada (solo en la transición).
   await checkAndAlertSupplierDegradation(SUPPLIER);
   return result;

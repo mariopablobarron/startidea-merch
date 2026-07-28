@@ -22,6 +22,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
+import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
 import { Prisma } from "@prisma/client";
 import { extractSize, colorGroupFromName, canonicalColorGroup } from "@/lib/variant-grouping";
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
@@ -463,6 +464,16 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
     productsUpserted,
     errorsJson: errors.length ? errors.slice(0, 100) : null,
   });
+
+  // El catálogo cambió → refrescar el índice de búsqueda. Nunca es fatal:
+  // con Meili caído, la búsqueda cae sola al fallback Prisma.
+  if (meiliEnabled()) {
+    try {
+      await reindexAllProducts();
+    } catch (e) {
+      console.error("[cifra-sync] reindex Meili falló:", e instanceof Error ? e.message : e);
+    }
+  }
   // Aviso interno si la duración se degrada (solo en la transición).
   await checkAndAlertSupplierDegradation(SUPPLIER);
 

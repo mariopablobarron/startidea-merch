@@ -4,6 +4,7 @@ import { proxyImageUrl } from "@/lib/proxy-image";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { getNotificationRules } from "@/lib/notification-rules";
 import { publicRef } from "@/lib/internal-ref";
+import { suggestProductsSafe } from "@/lib/search/meili";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,27 +44,11 @@ export async function GET(req: Request) {
     );
   }
 
-  const [products, categories] = await Promise.all([
-    prisma.product.findMany({
-      where: {
-        active: true,
-        OR: [
-          { name: { contains: q, mode: "insensitive" } },
-          // Búsqueda por NUESTRA ref (STM-XXXXXX), nunca por la del proveedor.
-          { internalRef: { contains: q, mode: "insensitive" } },
-        ],
-      },
-      orderBy: [{ name: "asc" }],
-      take: 8,
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        internalRef: true,
-        primaryImageUrl: true,
-        category: { select: { name: true } },
-      },
-    }),
+  // Motor principal: Meilisearch (tolerancia a erratas + ranking). Si no está
+  // disponible (null) caemos al contains de Prisma de siempre — la búsqueda
+  // nunca se rompe por caerse el buscador.
+  const [meiliHits, categories] = await Promise.all([
+    suggestProductsSafe(q, 8),
     prisma.category.findMany({
       where: { name: { contains: q, mode: "insensitive" } },
       orderBy: [{ level: "asc" }, { name: "asc" }],
@@ -71,6 +56,44 @@ export async function GET(req: Request) {
       select: { slug: true, name: true, level: true, parent: { select: { name: true } } },
     }),
   ]);
+
+  const products =
+    meiliHits !== null
+      ? meiliHits.map((h) => ({
+          slug: h.slug,
+          name: h.name,
+          ref: h.ref, // ya es la STM pública (ver buildProductSearchDocument)
+          imageUrl: h.imageUrl, // ya proxificada al indexar
+          category: h.categoryPath || null,
+        }))
+      : (
+          await prisma.product.findMany({
+            where: {
+              active: true,
+              OR: [
+                { name: { contains: q, mode: "insensitive" } },
+                // Búsqueda por NUESTRA ref (STM-XXXXXX), nunca por la del proveedor.
+                { internalRef: { contains: q, mode: "insensitive" } },
+              ],
+            },
+            orderBy: [{ name: "asc" }],
+            take: 8,
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              internalRef: true,
+              primaryImageUrl: true,
+              category: { select: { name: true } },
+            },
+          })
+        ).map((p) => ({
+          slug: p.slug,
+          name: p.name,
+          ref: publicRef(p), // NUNCA supplierRef en endpoint público
+          imageUrl: proxyImageUrl(p.primaryImageUrl), // nunca URL cruda de proveedor
+          category: p.category?.name ?? null,
+        }));
 
   // Log query para detectar demanda no cubierta. Solo cuando la búsqueda
   // tiene 3+ caracteres (filtra ruido) y no se repite del MISMO IP en
@@ -160,13 +183,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json(
     {
-      products: products.map((p) => ({
-        slug: p.slug,
-        name: p.name,
-        ref: publicRef(p), // NUNCA supplierRef en endpoint público
-        imageUrl: proxyImageUrl(p.primaryImageUrl), // nunca URL cruda de proveedor
-        category: p.category?.name,
-      })),
+      products,
       categories: categories.map((c) => ({
         slug: c.slug,
         name: c.name,

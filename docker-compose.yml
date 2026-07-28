@@ -12,6 +12,22 @@ services:
     networks:
       - merch_net
 
+  # Buscador del catálogo (erratas + relevancia). SOLO red interna: sin
+  # labels Traefik ni puertos publicados — la web habla con él vía
+  # http://merch-meili:7700 y toda búsqueda pública pasa por nuestras APIs.
+  meili:
+    image: getmeili/meilisearch:v1.51
+    container_name: merch-meili
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_ENV: production
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - merch_meili:/meili_data
+    networks:
+      - merch_net
+
   app:
     build:
       context: .
@@ -164,3 +180,4 @@ networks:
 volumes:
   merch_pgdata_v2:
   merch_uploads:
+  merch_meili:

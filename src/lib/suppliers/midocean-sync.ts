@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
+import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
 import {
   midoceanClient,
   pickPrimaryImage,
@@ -216,6 +217,16 @@ export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
     productsUpserted,
     errorsJson: errors.length ? errors.slice(0, 100) : null,
   });
+
+  // El catálogo cambió → refrescar el índice de búsqueda. Nunca es fatal:
+  // con Meili caído, la búsqueda cae sola al fallback Prisma.
+  if (meiliEnabled()) {
+    try {
+      await reindexAllProducts();
+    } catch (e) {
+      console.error("[midocean-sync] reindex Meili falló:", e instanceof Error ? e.message : e);
+    }
+  }
   // Aviso interno si la duración se degrada (solo en la transición).
   await checkAndAlertSupplierDegradation("midocean");
 

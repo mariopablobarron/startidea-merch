@@ -19,6 +19,7 @@ import { FavoriteHeart } from "@/components/portal/FavoriteHeart";
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 import { marginMultiplier } from "@/lib/pricing";
+import { searchProductIdsSafe } from "@/lib/search/meili";
 import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
 import { displayFromPrice } from "@/lib/product-pricing";
 
@@ -106,19 +107,26 @@ export default async function CatalogoPage({
   // positivos (p.ej. "camiseta" devolvía una bolsa de agua cuya descripción
   // larga la mencionaba). El material se filtra aparte. Mario 2026-06-16.
   const searchTerms = q ? q.split(/\s+/).filter((w) => w.length > 2) : [];
+  // Motor principal: Meilisearch (erratas + relevancia) → lista de IDs que se
+  // inyecta al pipeline Prisma, así TODOS los filtros (color/talla/precio/
+  // stock) y ordenaciones siguen funcionando igual. null = Meili caído o sin
+  // configurar → fallback al contains de siempre. [] = "de verdad no hay nada".
+  const meiliIds = searchTerms.length > 0 ? await searchProductIdsSafe(qRaw) : null;
   const searchClause: Prisma.ProductWhereInput | undefined =
-    searchTerms.length > 0
-      ? {
-          AND: searchTerms.map((term) => ({
-            OR: [
-              { name: { contains: term, mode: "insensitive" as const } },
-              { shortDescription: { contains: term, mode: "insensitive" as const } },
-              { tags: { has: term.toLowerCase() } },
-              { category: { name: { contains: term, mode: "insensitive" as const } } },
-            ],
-          })),
-        }
-      : undefined;
+    meiliIds !== null
+      ? { id: { in: meiliIds } }
+      : searchTerms.length > 0
+        ? {
+            AND: searchTerms.map((term) => ({
+              OR: [
+                { name: { contains: term, mode: "insensitive" as const } },
+                { shortDescription: { contains: term, mode: "insensitive" as const } },
+                { tags: { has: term.toLowerCase() } },
+                { category: { name: { contains: term, mode: "insensitive" as const } } },
+              ],
+            })),
+          }
+        : undefined;
 
   // Price filter: el usuario filtra en precio CLIENTE (€ con margen). Para
   // override.customFromPriceCents (ya es precio cliente) comparamos directo;
