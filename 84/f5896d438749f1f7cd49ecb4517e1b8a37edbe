@@ -1,0 +1,25 @@
+src/lib/email-templates.ts
+  s_65877aa637ec34::t_d9aa62a52ee1eb 48
+  s_65877aa637ec34::t_9db13cc445e77d 29
+src/lib/broadcast-send.ts
+  s_65877aa637ec34::t_35e53730c8a697 5
+  s_65877aa637ec34::t_66afce54c7ad21 159-162,164-167
+src/lib/email-templates.drip.test.ts
+  s_65877aa637ec34::t_e1f84cf37c6303 73-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "84f5896d438749f1f7cd49ecb4517e1b8a37edbe",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
