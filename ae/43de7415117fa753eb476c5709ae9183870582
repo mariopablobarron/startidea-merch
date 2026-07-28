@@ -1,0 +1,21 @@
+src/lib/email-templates.ts
+  s_c74f3f79ce848e::t_a23acd91a443ad 298-300
+src/lib/proposal-mailer.ts
+  s_c74f3f79ce848e::t_9cff6b2f51b4fc 9-16,55-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "ae43de7415117fa753eb476c5709ae9183870582",
+  "prompts": {},
+  "sessions": {
+    "s_c74f3f79ce848e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dc340431-c22c-4d4b-b3fb-4a7631374a91",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
