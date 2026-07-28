@@ -125,6 +125,10 @@ ensure_canonical_name() {
 recreate_once() {
   drop_dead_canonical          # suelta un merch-app Exited que ocupe el nombre
   purge_prefixed_residue       # borra residuos <hash>_merch-app preexistentes
+  # Servicios auxiliares (meili): up SIN --force-recreate — solo crea/arranca
+  # si faltan o cambió su config. El índice vive en volumen; no hay churn.
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+    up -d meili 2>&1 | tail -3 || true
   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
     up -d --force-recreate --remove-orphans app 2>&1 | tail -20
   local rc=${PIPESTATUS[0]}

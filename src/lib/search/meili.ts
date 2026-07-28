@@ -170,6 +170,16 @@ export async function reindexAllProducts(): Promise<{ indexed: number }> {
     if (rows.length < BATCH) break;
   }
 
+  // Primer arranque: swap exige que AMBOS índices existan. Crear el
+  // definitivo vacío si aún no está (index_already_exists = ignorable).
+  await meiliFetch<{ taskUid: number }>(`/indexes`, {
+    method: "POST",
+    body: JSON.stringify({ uid: INDEX, primaryKey: "id" }),
+    timeoutMs: 5_000,
+  })
+    .then((t) => waitForTask(t.taskUid))
+    .catch(() => {});
+
   const swap = await meiliFetch<{ taskUid: number }>(`/swap-indexes`, {
     method: "POST",
     body: JSON.stringify([{ indexes: [INDEX, tmp] }]),
