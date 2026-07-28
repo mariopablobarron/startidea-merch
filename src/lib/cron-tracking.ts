@@ -114,17 +114,33 @@ export function wrapCronHandler(
       const elapsedMs = Date.now() - startMs;
       const status = res?.status ?? 500;
       const ok = !thrownError && status >= 200 && status < 300;
-      void recordCronRun(name, {
-        at: startedAt.toISOString(),
-        elapsedMs,
-        ok,
-        status,
-        error: thrownError
-          ? thrownError instanceof Error
-            ? thrownError.message.slice(0, 300)
-            : String(thrownError).slice(0, 300)
-          : undefined,
-      });
+      // Una llamada rechazada por autenticación NO es una ejecución del cron:
+      // es alguien (o algo) llamando a la ruta sin el secreto. Registrarla deja
+      // el cron marcado como "última run = fallo" hasta su siguiente ejecución
+      // con éxito — semanas, para un cron semanal o mensual. Pasó de verdad: el
+      // 27-jul tres crons quedaron en rojo permanente por unos 401 del mismo
+      // segundo, y ese ruido tapó un problema real en el aviso del watchdog.
+      // Si el secreto se rompiera de verdad, el cron dejaría de registrar runs
+      // y el watchdog lo detectaría igualmente por SILENCIO, que sí se resuelve
+      // solo cuando vuelve a ejecutarse.
+      //
+      // Va como condición y NO como `return` temprano: un `return` dentro de un
+      // `finally` sustituye al valor que devolvía el `try` (la Response) y se
+      // tragaría además la excepción del `catch`.
+      const rejectedByAuth = !thrownError && (status === 401 || status === 403);
+      if (!rejectedByAuth) {
+        void recordCronRun(name, {
+          at: startedAt.toISOString(),
+          elapsedMs,
+          ok,
+          status,
+          error: thrownError
+            ? thrownError instanceof Error
+              ? thrownError.message.slice(0, 300)
+              : String(thrownError).slice(0, 300)
+            : undefined,
+        });
+      }
     }
   };
 }

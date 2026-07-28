@@ -14,7 +14,10 @@ const requireCronSecret = vi.fn();
 // Catálogo mockeado como array mutable: por defecto vacío (preserva el
 // comportamiento de los tests existentes, que solo conocían listCronNames).
 // Los tests de la "red de seguridad" empujan entradas aquí.
-const catalogEntries: { name: string }[] = [];
+// `scheduleCron` es opcional aquí a propósito: las entradas reales del catálogo
+// siempre lo llevan, pero los tests que no lo declaran comprueban justo el caso
+// del cron que aún no tiene disparador declarado.
+const catalogEntries: { name: string; scheduleCron?: string }[] = [];
 vi.mock("@/lib/cron-catalog", () => ({
   // Getter en vez de asignación directa: el factory de vi.mock se ejecuta
   // hoisted (antes de que corra `const catalogEntries = []`), así que una
@@ -177,13 +180,63 @@ describe("POST /api/cron/cron-watchdog", () => {
         status: 200,
       },
     ]);
-    // BD ya recordaba este como problema
-    findUnique.mockResolvedValueOnce({ value: ["ai-usage-alert"] });
+    // BD ya recordaba este como problema, avisado hace 2h
+    findUnique.mockResolvedValueOnce({
+      value: { names: ["ai-usage-alert"], at: new Date(NOW - 2 * 3_600_000).toISOString() },
+    });
     const res = await POST(makeReq());
     const data = await res.json();
     expect(data.issuesCount).toBe(1);
     expect(data.notified).toBe(false);
     expect(notifyAdmins).not.toHaveBeenCalled();
+  });
+
+  it("pero un problema que SIGUE ahí se recuerda pasadas 72h (no se olvida)", async () => {
+    // El anti-spam anterior solo comparaba listas: mientras el problema no
+    // cambiara, no volvía a avisarse jamás. Con `cifra-sync` parado desde el
+    // 26-jul eso significó un aviso único y luego silencio, con el catálogo y
+    // los precios de un proveedor entero congelados.
+    vi.mocked(listCronNames).mockResolvedValueOnce(["ai-usage-alert"]);
+    vi.mocked(getCronHistory).mockResolvedValueOnce([
+      {
+        at: new Date(NOW - 48 * 3_600_000).toISOString(),
+        elapsedMs: 100,
+        ok: true,
+        status: 200,
+      },
+    ]);
+    findUnique.mockResolvedValueOnce({
+      value: { names: ["ai-usage-alert"], at: new Date(NOW - 96 * 3_600_000).toISOString() },
+    });
+    upsert.mockResolvedValueOnce({});
+    const res = await POST(makeReq());
+    const data = await res.json();
+    expect(data.notified).toBe(true);
+    expect(data.notifyReason).toBe("persistente");
+    expect(notifyAdmins).toHaveBeenCalledOnce();
+    expect(notifyAdmins.mock.calls[0][0].title).toContain("SIGUE");
+  });
+
+  it("lee el estado ANTIGUO (array plano, lo que hay hoy en producción) sin perder la lista", async () => {
+    vi.mocked(listCronNames).mockResolvedValueOnce(["ai-usage-alert"]);
+    vi.mocked(getCronHistory).mockResolvedValueOnce([
+      {
+        at: new Date(NOW - 48 * 3_600_000).toISOString(),
+        elapsedMs: 100,
+        ok: true,
+        status: 200,
+      },
+    ]);
+    findUnique.mockResolvedValueOnce({ value: ["ai-usage-alert"] }); // formato viejo
+    upsert.mockResolvedValueOnce({});
+    const res = await POST(makeReq());
+    const data = await res.json();
+    // Sin fecha no se sabe cuándo se avisó → recuerda una vez y ya queda con
+    // fecha para las siguientes.
+    expect(data.notified).toBe(true);
+    const stored = upsert.mock.calls[0][0].update.value;
+    expect(stored.names).toEqual(["ai-usage-alert"]);
+    expect(typeof stored.at).toBe("string");
   });
 
   it("anti-spam: lista distinta → sí alerta", async () => {
@@ -235,15 +288,34 @@ describe("POST /api/cron/cron-watchdog", () => {
     expect(data.notified).toBe(false);
     expect(upsert).toHaveBeenCalledOnce(); // limpia
     const stored = upsert.mock.calls[0][0].update.value;
-    expect(stored).toEqual([]);
+    expect(stored).toEqual({ names: [], at: null });
   });
 
-  it("metric-snapshot tiene umbral 2h (más estricto)", async () => {
+  it("metric-snapshot es diario: 3h sin correr NO es motivo de alarma", async () => {
+    // Antes su umbral era 2h ("cada hora"), pero metric-snapshot.yml corre
+    // `35 3 * * *`. Con 2h se marcaba como parado ~22h de cada 24 y ese ruido
+    // acompañaba a todos los avisos reales.
     vi.mocked(listCronNames).mockResolvedValueOnce(["metric-snapshot"]);
-    // 3h sin run, umbral 2h → silencioso
     vi.mocked(getCronHistory).mockResolvedValueOnce([
       {
         at: new Date(NOW - 3 * 3_600_000).toISOString(),
+        elapsedMs: 100,
+        ok: true,
+        status: 200,
+      },
+    ]);
+    findUnique.mockResolvedValueOnce(null);
+    const resOk = await POST(makeReq());
+    const dataOk = await resOk.json();
+    expect(dataOk.silent).toEqual([]);
+    expect(dataOk.notified).toBe(false);
+  });
+
+  it("metric-snapshot parado de verdad (2 días) sí se detecta", async () => {
+    vi.mocked(listCronNames).mockResolvedValueOnce(["metric-snapshot"]);
+    vi.mocked(getCronHistory).mockResolvedValueOnce([
+      {
+        at: new Date(NOW - 48 * 3_600_000).toISOString(),
         elapsedMs: 100,
         ok: true,
         status: 200,
@@ -272,6 +344,65 @@ describe("POST /api/cron/cron-watchdog", () => {
     expect(status.lastRunAt).toBeNull();
     expect(status.silent).toBe(true);
     expect(data.notified).toBe(true);
+  });
+
+  it("un cron del catálogo SIN disparador no genera falsa alarma por silencio", async () => {
+    // Caso real: `publish-scheduled` anunciaba `*/5 * * * *` pero no existe ni
+    // línea de crontab ni workflow que lo llame, así que salía como "parado" en
+    // todos los avisos y nadie podía cerrarlo nunca.
+    catalogEntries.push({ name: "sin-disparador", scheduleCron: "—" });
+    vi.mocked(listCronNames).mockResolvedValueOnce([]);
+    vi.mocked(getCronHistory).mockResolvedValueOnce([]);
+    findUnique.mockResolvedValueOnce(null);
+    const res = await POST(makeReq());
+    const data = await res.json();
+    expect(data.silent).toEqual([]);
+    expect(data.notified).toBe(false);
+    expect(data.unwatched).toEqual([
+      { name: "sin-disparador", reason: "no tiene disparador programado" },
+    ]);
+  });
+
+  it("un cron no vigilado por silencio SÍ avisa si su última ejecución falló", async () => {
+    // No se ignora el cron: se ignora su silencio.
+    catalogEntries.push({ name: "sin-disparador", scheduleCron: "—" });
+    vi.mocked(listCronNames).mockResolvedValueOnce(["sin-disparador"]);
+    vi.mocked(getCronHistory).mockResolvedValueOnce([
+      {
+        at: new Date(NOW - 240 * 3_600_000).toISOString(),
+        elapsedMs: 100,
+        ok: false,
+        status: 500,
+      },
+    ]);
+    findUnique.mockResolvedValueOnce(null);
+    upsert.mockResolvedValueOnce({});
+    const res = await POST(makeReq());
+    const data = await res.json();
+    expect(data.silent).toEqual([]);
+    expect(data.failing).toContain("sin-disparador");
+    expect(data.notified).toBe(true);
+  });
+
+  it("lo que cuesta dinero va primero en el mensaje (el push se trunca a 280)", async () => {
+    vi.mocked(listCronNames).mockResolvedValueOnce([
+      "ai-usage-alert",
+      "cifra-sync",
+    ]);
+    vi.mocked(getCronHistory).mockImplementation(async () => [
+      {
+        at: new Date(NOW - 240 * 3_600_000).toISOString(),
+        elapsedMs: 100,
+        ok: true,
+        status: 200,
+      },
+    ]);
+    findUnique.mockResolvedValueOnce(null);
+    upsert.mockResolvedValueOnce({});
+    await POST(makeReq());
+    const body = notifyAdmins.mock.calls[0][0].body as string;
+    expect(body.indexOf("cifra-sync")).toBeLessThan(body.indexOf("ai-usage-alert"));
+    expect(body).toContain("🔴"); // marcado como crítico
   });
 
   it("cron trackeado (con historia vacía por edge case) sigue tratándose como 'nuevo', no silencioso, aunque esté también en el catálogo", async () => {

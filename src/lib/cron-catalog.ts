@@ -58,8 +58,10 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "embeddings-sync",
     endpointPath: "/api/cron/embeddings-sync",
     method: "POST",
-    schedule: "diario",
-    scheduleCron: "—",
+    // Sí tiene disparador: .github/workflows/embeddings-sync.yml → `0 5 * * *`.
+    // El "—" anterior lo dejaba fuera de la vigilancia por silencio.
+    schedule: "diario 05:00 UTC (GitHub Actions)",
+    scheduleCron: "0 5 * * *",
     frequencyHours: 24,
     description: "Genera embeddings semánticos de productos (OpenAI)",
   },
@@ -112,8 +114,16 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "publish-scheduled",
     endpointPath: "/api/cron/publish-scheduled",
     method: "POST",
-    schedule: "cada 5 min",
-    scheduleCron: "*/5 * * * *",
+    // Verificado 2026-07-29: NO existe disparador — ni línea de crontab en el
+    // VPS ni workflow en .github/workflows (la única mención de
+    // "publish-scheduled" en el crontab es un comentario de otro proyecto), y
+    // no hay ninguna key `cron_runs_publish-scheduled`, o sea que la ruta nunca
+    // se ha ejecutado. El "cada 5 min" que ponía aquí era falso y hacía que el
+    // watchdog lo diera por parado eternamente. Sin daño hoy: ContentPiece
+    // está a 0 filas (nadie usa el Creator Studio en merch). Si se activa,
+    // devolver aquí el `*/5 * * * *` junto con la línea de crontab real.
+    schedule: "sin disparador (solo manual desde /admin/system/crons)",
+    scheduleCron: "—",
     frequencyHours: 1,
     description: "Publica piezas de marketing programadas",
   },

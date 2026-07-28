@@ -172,6 +172,40 @@ describe("wrapCronHandler", () => {
     expect(stored.status).toBe(500);
   });
 
+  it("NO registra un 401: una llamada sin secreto no es una ejecución del cron", async () => {
+    // Pasó de verdad el 27-jul: unos 401 dejaron tres crons marcados como
+    // "última run = fallo". Para un cron semanal o mensual ese rojo dura
+    // semanas y tapa los avisos reales del watchdog.
+    const handler = vi.fn().mockResolvedValue(
+      NextResponse.json({ error: "unauthorized" }, { status: 401 }),
+    );
+    const wrapped = wrapCronHandler("test-cron", handler);
+    const res = await wrapped(new Request("https://t"));
+    expect(res.status).toBe(401); // la respuesta al llamante no cambia
+    await new Promise((r) => setTimeout(r, 10));
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("NO registra un 403 (misma razón que el 401)", async () => {
+    const handler = vi.fn().mockResolvedValue(
+      NextResponse.json({ error: "forbidden" }, { status: 403 }),
+    );
+    const wrapped = wrapCronHandler("test-cron", handler);
+    await wrapped(new Request("https://t"));
+    await new Promise((r) => setTimeout(r, 10));
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("un 401 lanzado como excepción SÍ se registra (es un fallo real, no un rechazo)", async () => {
+    findUnique.mockResolvedValueOnce(null);
+    upsert.mockResolvedValueOnce({});
+    const handler = vi.fn().mockRejectedValue(new Error("401 al llamar a un tercero"));
+    const wrapped = wrapCronHandler("test-cron", handler);
+    await expect(wrapped(new Request("https://t"))).rejects.toThrow();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(upsert).toHaveBeenCalledOnce();
+  });
+
   it("trunca mensaje de error a 300 chars", async () => {
     findUnique.mockResolvedValueOnce(null);
     upsert.mockResolvedValueOnce({});

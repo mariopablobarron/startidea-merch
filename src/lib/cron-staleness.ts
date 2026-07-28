@@ -14,14 +14,32 @@ import { findCron } from "@/lib/cron-catalog";
  *
  * Los overrides quedan solo para crons que NO viven en CRON_CATALOG (los de
  * GitHub Actions: se trackean vía wrapCronHandler pero no están en el catálogo).
+ * Cada valor va contrastado contra el `schedule:` REAL de su workflow en
+ * `.github/workflows/` — un umbral inventado produce falsas alarmas eternas
+ * (ver el caso de `metric-snapshot` más abajo).
  */
 export const EXPECTED_HOURS_OVERRIDE: Record<string, number> = {
-  "metric-snapshot": 2, // cada hora
-  "ai-usage-alert": 30, // diario
-  "auto-resolve-errors": 30, // diario
-  "product-view-rollup": 30, // diario
-  "insights-digest": 8 * 24, // semanal
-  "insights-digest-monthly": 35 * 24, // mensual
+  // metric-snapshot.yml → `35 3 * * *` = DIARIO (el comentario anterior decía
+  // "cada hora" y ponía 2h: un cron diario quedaba marcado como parado ~22h de
+  // cada 24, o sea casi siempre. Era el mayor generador de ruido del watchdog).
+  "metric-snapshot": 30, // metric-snapshot.yml → `35 3 * * *` diario
+  "ai-usage-alert": 30, // ai-usage-alert.yml → `0 10 * * *` diario
+  "auto-resolve-errors": 30, // auto-resolve-errors.yml → `15 4 * * *` diario
+  "product-view-rollup": 30, // product-view-rollup.yml → `30 3 * * *` diario
+  "insights-digest": 8 * 24, // insights-digest.yml → `0 8 * * 1` semanal
+  "insights-digest-monthly": 35 * 24, // insights-digest-monthly.yml → `0 9 1 * *` mensual
+};
+
+/**
+ * Crons cuya ejecución real NO pasa por una llamada HTTP a su ruta: el silencio
+ * de `cron_runs_*` es lo ESPERADO, no una avería. Vigilarlos por silencio
+ * genera una falsa alarma permanente que no se puede resolver.
+ */
+export const NOT_HTTP_TRIGGERED: Record<string, string> = {
+  // El crontab del VPS lo dice explícitamente: "El backup-db NO está aquí —
+  // /root/backup-merch.sh hace backup local+TG a 03:00". La ruta HTTP existe
+  // para disparo manual desde el panel, pero nadie la llama de forma periódica.
+  "backup-db": "lo ejecuta /root/backup-merch.sh en el host, no la ruta HTTP",
 };
 
 export const DEFAULT_HOURS = 30;
@@ -31,6 +49,24 @@ export const DEFAULT_HOURS = 30;
 // tiempo uno realmente parado.
 export const STALE_MARGIN = 2;
 
+/**
+ * Crons cuyo silencio cuesta DINERO o toca al cliente, y que por tanto van
+ * primero en el aviso: el cuerpo del push se trunca a 280 caracteres, así que
+ * el orden decide qué llega a verse. Los tres syncs de proveedor congelan
+ * catálogo, stock y **precio de coste** (con lo que el PVP deja de reflejar la
+ * realidad); los guards vigilan márgenes; webhook-retry reintenta los webhooks
+ * de pago de Stripe.
+ */
+export const CRITICAL_CRONS = new Set([
+  "midocean-sync",
+  "midocean-print-pricelist-sync",
+  "cifra-sync",
+  "makito-sync",
+  "override-price-drift",
+  "tariff-coverage-watchdog",
+  "webhook-retry",
+]);
+
 /** Horas de silencio a partir de las cuales un cron se considera "parado". */
 export function expectedHoursFor(name: string): number {
   const override = EXPECTED_HOURS_OVERRIDE[name];
@@ -38,4 +74,126 @@ export function expectedHoursFor(name: string): number {
   const cat = findCron(name);
   if (cat && cat.frequencyHours > 0) return cat.frequencyHours * STALE_MARGIN;
   return DEFAULT_HOURS;
+}
+
+export type SilenceWatchability =
+  | { watchable: true }
+  | { watchable: false; reason: string };
+
+/**
+ * ¿Tiene sentido avisar de que este cron lleva tiempo sin ejecutarse?
+ *
+ * Solo si algo lo dispara de verdad. Un cron sin disparador (`scheduleCron: "—"`
+ * en el catálogo) o disparado fuera de la ruta HTTP nunca dejará de estar
+ * "silencioso", así que avisar de él es ruido permanente — y el ruido es lo que
+ * hizo que un problema REAL (cifra-sync parado casi 3 días, con los precios de
+ * 2.513 productos congelados) pasara desapercibido entre 6 falsas alarmas.
+ *
+ * Ojo: "no vigilable por silencio" NO significa "no importa". Sigue apareciendo
+ * en el panel /admin/system/crons y un fallo suyo al ejecutarse sí se avisa.
+ */
+export function silenceWatchability(name: string): SilenceWatchability {
+  const notHttp = NOT_HTTP_TRIGGERED[name];
+  if (notHttp) return { watchable: false, reason: notHttp };
+  const cat = findCron(name);
+  // `typeof` y no solo `cat &&`: una entrada de catálogo incompleta (o un test
+  // que lo mockea a medias) no debe tumbar el watchdog entero. Sin dato, se
+  // vigila — que es el lado seguro: preferimos un aviso de más a dejar de mirar
+  // un cron por un campo que falta.
+  if (cat && typeof cat.scheduleCron === "string" && cat.scheduleCron.trim() === "—") {
+    return { watchable: false, reason: "no tiene disparador programado" };
+  }
+  // Fuera del catálogo (crons de GitHub Actions) se vigilan igual: los trackea
+  // wrapCronHandler y su umbral sale de EXPECTED_HOURS_OVERRIDE / DEFAULT_HOURS.
+  return { watchable: true };
+}
+
+/** Los críticos primero; dentro de cada grupo, orden alfabético estable. */
+export function sortBySeverity(names: string[]): string[] {
+  return [...names].sort((a, b) => {
+    const ca = CRITICAL_CRONS.has(a) ? 0 : 1;
+    const cb = CRITICAL_CRONS.has(b) ? 0 : 1;
+    if (ca !== cb) return ca - cb;
+    return a.localeCompare(b);
+  });
+}
+
+/**
+ * Cada cuánto se recuerda un problema que SIGUE ahí.
+ *
+ * El anti-spam original solo comparaba conjuntos: mientras la lista de crons con
+ * problemas no cambiara, no se volvía a avisar NUNCA. Con `cifra-sync` parado
+ * desde el 26-jul eso significó un único aviso, perdido entre 6 falsas alarmas,
+ * y después silencio mientras los precios de un proveedor entero seguían
+ * congelados.
+ *
+ * 72h es el punto medio entre recordar y molestar: el watchdog corre a diario,
+ * así que un problema persistente se recuerda cada 3 días en vez de cada día.
+ * Es la misma lógica por la que `override-price-drift` repite su aviso semanal
+ * mientras el problema siga vivo: callarse ante un problema de dinero que no se
+ * ha resuelto es peor que repetirse.
+ */
+export const REALERT_AFTER_HOURS = 72;
+
+export type WatchdogAlertDecision = {
+  notify: boolean;
+  reason: "sin-issues" | "lista-nueva" | "persistente" | "ya-avisado";
+};
+
+/**
+ * Decide si el watchdog debe avisar. Pura para poder testearla: la ruta solo
+ * lee estado, llama a esto y notifica.
+ *
+ * - Lista distinta a la última avisada → avisa (hay algo nuevo).
+ * - Lista igual pero ≥ REALERT_AFTER_HOURS desde el último aviso → recuerda.
+ * - Lista igual y reciente → calla.
+ *
+ * `lastAlertAt: null` (estado en formato antiguo, sin fecha) cuenta como "hace
+ * mucho": preferimos un recordatorio de más al desplegar que seguir mudos ante
+ * un problema que ya llevaba días abierto.
+ */
+export function decideWatchdogAlert(input: {
+  currentNames: string[];
+  lastNames: string[];
+  lastAlertAt: string | null;
+  nowMs: number;
+}): WatchdogAlertDecision {
+  const { currentNames, lastNames, lastAlertAt, nowMs } = input;
+  if (currentNames.length === 0) return { notify: false, reason: "sin-issues" };
+
+  const current = new Set(currentNames);
+  const last = new Set(lastNames);
+  const sameAsBefore =
+    current.size === last.size && [...current].every((n) => last.has(n));
+  if (!sameAsBefore) return { notify: true, reason: "lista-nueva" };
+
+  const lastMs = lastAlertAt ? Date.parse(lastAlertAt) : NaN;
+  if (!Number.isFinite(lastMs)) return { notify: true, reason: "persistente" };
+  const hours = (nowMs - lastMs) / 3_600_000;
+  if (hours >= REALERT_AFTER_HOURS) return { notify: true, reason: "persistente" };
+  return { notify: false, reason: "ya-avisado" };
+}
+
+/** Estado persistido en AdminSetting `cron_watchdog_last_alert`. */
+export type WatchdogAlertState = { names: string[]; at: string | null };
+
+/**
+ * Lee el estado tolerando el formato ANTIGUO (array plano de nombres, sin
+ * fecha), que es lo que hay hoy en producción. Sin esto, el primer run tras el
+ * deploy perdería la memoria de lo ya avisado y alertaría de todo otra vez.
+ */
+export function parseWatchdogAlertState(value: unknown): WatchdogAlertState {
+  if (Array.isArray(value)) {
+    return { names: value.filter((v): v is string => typeof v === "string"), at: null };
+  }
+  if (value && typeof value === "object") {
+    const obj = value as { names?: unknown; at?: unknown };
+    if (Array.isArray(obj.names)) {
+      return {
+        names: obj.names.filter((v): v is string => typeof v === "string"),
+        at: typeof obj.at === "string" ? obj.at : null,
+      };
+    }
+  }
+  return { names: [], at: null };
 }
