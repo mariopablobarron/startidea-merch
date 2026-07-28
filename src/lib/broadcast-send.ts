@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { resend, MARKETING_FROM, MARKETING_REPLY_TO } from "@/lib/resend";
 import { notifyTelegram } from "@/lib/telegram";
 import { resolveAudience } from "@/lib/broadcast-audience";
+import { emailShell } from "@/lib/email-templates";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
@@ -155,33 +156,15 @@ export function applyFooter(html: string, unsubscribeUrl: string, preheader?: st
     return html.replace(/<\/body>/i, `${footer}</body>`);
   }
 
-  const preheaderHtml = preheader
-    ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">${preheader.replace(/[<>&]/g, "")}</div>`
-    : "";
-
-  return `<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>todomerchandising</title>
-</head>
-<body style="margin:0;padding:0;background:#F4EFE6;font-family:Helvetica,Arial,sans-serif;color:#2A2A2A;">
-${preheaderHtml}
-<div style="background:#F4EFE6;padding:32px 16px;">
-  <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;">
-    <div style="padding:32px 32px 8px;">
+  // Shell ÚNICO de marca: delegamos en el central (email-templates.ts) con
+  // soporte de baja — misma fuente de verdad que el resto de emails.
+  return emailShell(
+    `<tr><td style="padding:32px 40px 8px;font-size:15px;line-height:1.6;color:#2A2A2A">
 ${html}
-    </div>
-    <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
-      <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
-      <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
-      <p style="margin:6px 0 0;"><a href="${unsubscribeUrl}" style="color:rgba(244,239,230,0.7);text-decoration:underline;">Darme de baja</a></p>
-    </div>
-  </div>
-</div>
-</body>
-</html>`;
+    </td></tr>`,
+    preheader ?? "",
+    { unsubscribeUrl },
+  );
 }
 
 export function stripHtml(html: string): string {

@@ -26,7 +26,7 @@ const BASE_STYLES = `
   padding: 0;
 `;
 
-function wrap(content: string, preheader = "") {
+function wrap(content: string, preheader = "", opts?: { unsubscribeUrl?: string }) {
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -45,6 +45,7 @@ ${preheader ? `<div style="display:none;font-size:1px;line-height:1px;max-height
           todo<span style="color:${COLORS.accent}">merchandising</span>
         </p>
         <p style="margin:6px 0 0">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
+        ${opts?.unsubscribeUrl ? `<p style="margin:6px 0 0"><a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:rgba(244,239,230,0.7);text-decoration:underline">Darme de baja</a></p>` : ""}
       </td></tr>
     </table>
   </td></tr>

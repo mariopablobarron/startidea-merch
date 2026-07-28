@@ -70,3 +70,21 @@ describe("abandonedCartDripEmail", () => {
     }
   });
 });
+
+import { emailShell } from "./email-templates";
+
+describe("emailShell con baja (broadcasts)", () => {
+  it("añade el enlace de baja al footer central", () => {
+    const html = emailShell("<tr><td>hola</td></tr>", "pre", {
+      unsubscribeUrl: "https://merchandising.startidea.es/api/newsletter/unsubscribe?token=t1",
+    });
+    expect(html).toContain("Darme de baja");
+    expect(html).toContain("unsubscribe?token=t1");
+    expect(html).toContain("STARTIDEA MALAGA SL");
+  });
+
+  it("sin unsubscribeUrl no hay enlace de baja (transaccionales)", () => {
+    const html = emailShell("<tr><td>hola</td></tr>");
+    expect(html).not.toContain("Darme de baja");
+  });
+});
