@@ -52,8 +52,14 @@ export async function POST(req: Request) {
   }
 
   const json = await internalRes.json();
-  const unit = json.clientUnitPrice?.value ?? null;
-  const total = json.clientTotal?.value ?? null;
+  // El endpoint devuelve Money como {cents, formatted} — NUNCA .value. Leer
+  // .value aquí dejaba unit/total a null y TODAS las cotizaciones de David
+  // caían al fallback "presupuesto formal en 24h" (bug cazado en E2E 2026-07-28).
+  const unitCents = json.clientUnitPrice?.cents ?? json.unitClientCents ?? null;
+  const totalCents = json.clientTotal?.cents ?? json.totalClientCents ?? null;
+  const markingPerUnitCents = json.clientMarkingPerUnit?.cents ?? null;
+  const unit = unitCents != null ? unitCents / 100 : null;
+  const total = totalCents != null ? totalCents / 100 : null;
 
   // Optimizamos respuesta para que Carmen la lea fácilmente. Si no hay precio
   // (producto sin tier configurado), devolvemos mensaje claro que Carmen puede
@@ -74,7 +80,7 @@ export async function POST(req: Request) {
     product_slug: d.slug,
     quantity: d.quantity,
     unit_price_eur: unit,
-    marking_unit_price_eur: json.clientMarkingPerUnit?.value ?? null,
+    marking_unit_price_eur: markingPerUnitCents != null ? markingPerUnitCents / 100 : null,
     total_eur: total,
     valid_for_days: 30,
     notes:
