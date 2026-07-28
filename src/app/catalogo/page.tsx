@@ -86,6 +86,9 @@ export default async function CatalogoPage({
   const priceMax = sp.priceMax ? Math.max(0, parseInt(sp.priceMax, 10) || 0) : null;
   const inStock = sp.stock === "1";
   const sort: Sort = (sp.sort as Sort) || "name";
+  // ¿El usuario ELIGIÓ orden? Si no, con búsqueda activa mandará la relevancia
+  // de Meili en vez del alfabético (que enterraba el mejor resultado).
+  const sortExplicit = Boolean(sp.sort);
   const page = Math.max(1, parseInt(sp.page || "1", 10) || 1);
   const perPage = 24;
 
@@ -209,13 +212,29 @@ export default async function CatalogoPage({
         : { name: "asc" },
   ];
 
+  // ORDEN POR RELEVANCIA: con búsqueda Meili activa y sin sort explícito del
+  // usuario, se pagina sobre los IDs en el orden que los rankeó Meili (los
+  // filtros color/talla/precio ya aplicaron vía `where`). Dos queries baratas:
+  // ids filtrados (≤600) + los 24 de la página.
+  const relevanceSort = meiliIds !== null && !sortExplicit;
+  let pageIds: string[] | null = null;
+  if (relevanceSort) {
+    const idRows = await prisma.product.findMany({ where, select: { id: true } });
+    const rank = new Map(meiliIds!.map((id, i) => [id, i] as const));
+    const rankedIds = idRows
+      .map((r) => r.id)
+      .sort((a, b) => (rank.get(a) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b) ?? Number.MAX_SAFE_INTEGER));
+    pageIds = rankedIds.slice((page - 1) * perPage, page * perPage);
+  }
+
   const [products, total, topCategories, subCategories, colorGroups, sizes, materials, activePromos] =
     await Promise.all([
       prisma.product.findMany({
-        where,
+        // Con relevancia: la página ya viene resuelta en pageIds (orden Meili);
+        // sin ella, paginación SQL clásica.
+        where: pageIds ? { id: { in: pageIds } } : where,
         orderBy,
-        skip: (page - 1) * perPage,
-        take: perPage,
+        ...(pageIds ? {} : { skip: (page - 1) * perPage, take: perPage }),
         select: {
           id: true,
           slug: true,
@@ -314,6 +333,13 @@ export default async function CatalogoPage({
       if (qRaw) params.set("q", qRaw);
       redirect(`/catalogo?${params.toString()}`);
     }
+  }
+
+  // La query con {id:{in:pageIds}} devuelve en orden arbitrario → restaurar
+  // el orden de relevancia de Meili.
+  if (pageIds) {
+    const pos = new Map(pageIds.map((id, i) => [id, i] as const));
+    products.sort((a, b) => (pos.get(a.id) ?? 0) - (pos.get(b.id) ?? 0));
   }
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
