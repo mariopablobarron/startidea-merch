@@ -4,6 +4,7 @@ import { requireCronSecret } from "@/lib/auth";
 import { resend, RESEND_FROM } from "@/lib/resend";
 import { withCronLock } from "@/lib/cron-lock";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { abandonedCartDripEmail } from "@/lib/email-templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -141,85 +142,32 @@ async function sendStep(
     estimatedTotalCents: number | null;
     items: Array<{ quantity: number; productName: string; totalClientCents: number | null }>;
   },
-  step: DripStep,
+  // 30 excluido: ese paso solo archiva, jamás envía email (guard en el caller).
+  step: Exclude<DripStep, 30>,
 ) {
   const firstName = cart.name.split(" ")[0] || "";
   const recoverUrl = `${SITE_URL}/cotizar?recover=${cart.id}`;
-  const itemsHtml = cart.items
-    .map(
-      (it) => `
-      <tr>
-        <td style="padding:6px 0;border-bottom:1px solid #eee;font-size:14px;">${it.quantity}× ${it.productName}</td>
-        <td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;color:#888;font-size:13px;">${
-          it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : ""
-        }</td>
-      </tr>`,
-    )
-    .join("");
 
-  const totalLine = cart.estimatedTotalCents
-    ? `<p style="margin-top:14px;font-size:17px;color:#0a0a0b;"><strong>Total estimado: ${EUR.format(cart.estimatedTotalCents / 100)}</strong></p>`
-    : "";
-
-  let subject: string;
-  let lead: string;
-  let extraBlock = "";
-  let ctaLabel = "Retomar mi cotización →";
-
-  if (step === 1) {
-    subject = `${firstName ? firstName + ", t" : "T"}u cotización en TodoMerchandising te espera`;
-    lead = "Te dejaste algunos productos en tu cotización ayer y no queremos que se te pasen.";
-  } else if (step === 3) {
-    subject = `${firstName ? firstName + ", " : ""}¿quieres que te ayudemos a cerrar la cotización?`;
-    lead = "Llevamos unos días con tu cotización a medias. Si tienes dudas con cantidades, técnica de marcaje o plazos, podemos llamarte y resolverlo en 10 min.";
-    extraBlock = `
-      <p style="margin:20px 0;padding:14px;background:#f1ede5;border-radius:8px;font-size:14px;color:#444;">
-        💬 <strong>¿Necesitas ayuda?</strong> Responde a este email o escríbenos por WhatsApp y un asesor humano te marca en 1h laboral.
-      </p>`;
-  } else {
-    // step === 7
-    subject = `${firstName ? firstName + ", " : ""}última oportunidad — descuento por confirmar esta semana`;
-    lead = "Esta es la última vez que te escribimos sobre tu cotización pendiente. Si quieres cerrarla, te aplicamos un -10% por las molestias de la espera.";
-    const discounted = cart.estimatedTotalCents
-      ? EUR.format((cart.estimatedTotalCents * 0.9) / 100)
-      : null;
-    extraBlock = `
-      <div style="margin:20px 0;padding:18px;background:linear-gradient(135deg,#ff6b35 0%,#ff8a5b 100%);color:#fff;border-radius:12px;text-align:center;">
-        <p style="margin:0 0 6px;font-size:13px;letter-spacing:1px;text-transform:uppercase;opacity:.85;">Descuento exclusivo</p>
-        <p style="margin:0;font-family:Georgia,serif;font-size:28px;font-weight:600;">-10%</p>
-        ${discounted ? `<p style="margin:6px 0 0;font-size:15px;opacity:.9;">Total con descuento: <strong>${discounted}</strong></p>` : ""}
-        <p style="margin:8px 0 0;font-size:11px;opacity:.85;">Válido si confirmas esta semana. Aplica al pulsar el botón abajo.</p>
-      </div>`;
-    ctaLabel = "Quiero el -10% →";
-  }
+  const { subject, html, text } = abandonedCartDripEmail({
+    step,
+    firstName: firstName || null,
+    fallbackName: cart.name,
+    items: cart.items.map((it) => ({
+      quantity: it.quantity,
+      name: it.productName,
+      amountFormatted: it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : null,
+    })),
+    totalFormatted: cart.estimatedTotalCents ? EUR.format(cart.estimatedTotalCents / 100) : null,
+    discountedTotalFormatted:
+      step === 7 && cart.estimatedTotalCents ? EUR.format((cart.estimatedTotalCents * 0.9) / 100) : null,
+    recoverUrl,
+  });
 
   await resend!.emails.send({
     from: RESEND_FROM,
     to: cart.email,
     subject,
-    html: `
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;color:#0a0a0b;line-height:1.5;">
-  <h2 style="font-family:Georgia,serif;font-size:24px;color:#0a0a0b;margin:0 0 8px;">Hola ${firstName || cart.name},</h2>
-  <p style="font-size:15px;color:#444;">${lead}</p>
-
-  <table style="width:100%;margin-top:16px;">
-    ${itemsHtml}
-  </table>
-  ${totalLine}
-  ${extraBlock}
-
-  <div style="margin:28px 0;">
-    <a href="${recoverUrl}" style="display:inline-block;background:#ff6b35;color:#fff;text-decoration:none;padding:14px 26px;border-radius:999px;font-weight:600;font-size:15px;">${ctaLabel}</a>
-  </div>
-
-  <p style="color:#888;font-size:12px;">¿Prefieres que dejemos de enviarte estos avisos? Responde "BAJA" a este email.</p>
-
-  <hr style="border:none;border-top:1px solid #eee;margin:28px 0;">
-  <p style="color:#888;font-size:11px;margin:0;">
-    STARTIDEA MALAGA SL · CIF B19583632 · Málaga, España<br>
-    Email automático · drip ${step}
-  </p>
-</div>`,
-    text: `Hola ${firstName || cart.name},\n\n${lead}\n\nProductos:\n${cart.items.map((it) => `- ${it.quantity}× ${it.productName}`).join("\n")}\n\nRetomar: ${recoverUrl}\n\nSTARTIDEA MALAGA SL`,
+    html,
+    text,
   });
 }

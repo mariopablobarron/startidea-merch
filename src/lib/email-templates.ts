@@ -152,3 +152,145 @@ export function autoresponseQuoteEmail(d: QuoteEmailData) {
     `${firstName}, recibimos tu solicitud — respuesta en 24h`,
   );
 }
+
+// ── Primitivas reutilizables (la "idea react-email" sin la dependencia) ──────
+// Cada helper devuelve filas <tr><td> listas para componer dentro de wrap(),
+// siguiendo el patrón de internalQuoteEmail/autoresponseQuoteEmail. Objetivo:
+// que NINGÚN sender vuelva a fabricar su propio shell/footer/botón a mano.
+
+export { wrap as emailShell, escapeHtml };
+
+/** Cabecera: kicker "— Sección" + titular Georgia. titleHtml YA escapado. */
+export function emailHeader(kicker: string, titleHtml: string): string {
+  return `
+      <tr><td style="padding:32px 40px 8px">
+        <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b">— ${escapeHtml(kicker)}</p>
+        <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:${COLORS.ink}">${titleHtml}</h1>
+      </td></tr>`;
+}
+
+/** Párrafo de cuerpo. innerHtml YA escapado (permite <strong> intencional). */
+export function emailPara(innerHtml: string): string {
+  return `
+      <tr><td style="padding:16px 40px 0;font-size:15px;line-height:1.6;color:#444">
+        <p style="margin:0">${innerHtml}</p>
+      </td></tr>`;
+}
+
+/** CTA principal — botón píldora accent centrado. */
+export function emailButton(href: string, label: string): string {
+  return `
+      <tr><td style="padding:28px 40px;text-align:center">
+        <a href="${escapeHtml(href)}" style="display:inline-block;background:${COLORS.accent};color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600">${escapeHtml(label)}</a>
+      </td></tr>`;
+}
+
+/** Caja destacada sobre fondo bone (avisos, "mientras tanto", ayuda…). */
+export function emailInfoBox(innerHtml: string): string {
+  return `
+      <tr><td style="padding:20px 40px 0">
+        <div style="padding:16px 20px;background:${COLORS.bone};border-radius:12px;font-size:14px;line-height:1.6;color:#444">${innerHtml}</div>
+      </td></tr>`;
+}
+
+/** Tabla de líneas (carrito/pedido): cantidad × nombre + importe opcional. */
+export function emailItemsTable(
+  items: Array<{ quantity: number; name: string; amountFormatted?: string | null }>,
+  totalFormatted?: string | null,
+): string {
+  const rows = items
+    .map(
+      (it) => `
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid ${COLORS.divider};font-size:14px;color:${COLORS.ink}">${it.quantity}× ${escapeHtml(it.name)}</td>
+          <td style="padding:8px 0;border-bottom:1px solid ${COLORS.divider};text-align:right;color:#6b6b6b;font-size:13px">${it.amountFormatted ? escapeHtml(it.amountFormatted) : ""}</td>
+        </tr>`,
+    )
+    .join("");
+  return `
+      <tr><td style="padding:20px 40px 0">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+        ${totalFormatted ? `<p style="margin:14px 0 0;font-size:17px;color:${COLORS.ink}"><strong>Total estimado: ${escapeHtml(totalFormatted)}</strong></p>` : ""}
+      </td></tr>`;
+}
+
+/** Nota final pequeña (baja, aviso de automatismo…). */
+export function emailFinePrint(innerHtml: string): string {
+  return `
+      <tr><td style="padding:20px 40px 28px">
+        <p style="margin:0;color:#a09e98;font-size:12px;line-height:1.5">${innerHtml}</p>
+      </td></tr>`;
+}
+
+// ── Drip de carrito abandonado (24h / 72h / 7d) ──────────────────────────────
+// Copy heredado 1:1 del cron; aquí solo cambia el shell (marca única, preheader,
+// footer legal central) y que TODO lo que viene del usuario va escapado — el
+// inline antiguo interpolaba cart.name sin escapar (inyección HTML).
+
+export type CartDripEmailData = {
+  step: 1 | 3 | 7;
+  firstName: string | null;
+  fallbackName: string;
+  items: Array<{ quantity: number; name: string; amountFormatted?: string | null }>;
+  totalFormatted?: string | null;
+  discountedTotalFormatted?: string | null; // solo step 7
+  recoverUrl: string;
+};
+
+export function abandonedCartDripEmail(d: CartDripEmailData): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const who = d.firstName || d.fallbackName;
+  let subject: string;
+  let lead: string;
+  let kicker: string;
+  let extraBlock = "";
+  let ctaLabel = "Retomar mi cotización →";
+
+  if (d.step === 1) {
+    kicker = "Tu cotización";
+    subject = `${d.firstName ? d.firstName + ", t" : "T"}u cotización en TodoMerchandising te espera`;
+    lead = "Te dejaste algunos productos en tu cotización ayer y no queremos que se te pasen.";
+  } else if (d.step === 3) {
+    kicker = "Tu cotización";
+    subject = `${d.firstName ? d.firstName + ", " : ""}¿quieres que te ayudemos a cerrar la cotización?`;
+    lead =
+      "Llevamos unos días con tu cotización a medias. Si tienes dudas con cantidades, técnica de marcaje o plazos, podemos llamarte y resolverlo en 10 min.";
+    extraBlock = emailInfoBox(
+      `💬 <strong>¿Necesitas ayuda?</strong> Responde a este email o escríbenos por WhatsApp y un asesor humano te marca en 1h laboral.`,
+    );
+  } else {
+    kicker = "Última oportunidad";
+    subject = `${d.firstName ? d.firstName + ", " : ""}última oportunidad — descuento por confirmar esta semana`;
+    lead =
+      "Esta es la última vez que te escribimos sobre tu cotización pendiente. Si quieres cerrarla, te aplicamos un -10% por las molestias de la espera.";
+    extraBlock = `
+      <tr><td style="padding:20px 40px 0">
+        <div style="padding:18px;background:${COLORS.accent};color:#fff;border-radius:12px;text-align:center">
+          <p style="margin:0 0 6px;font-size:13px;letter-spacing:1px;text-transform:uppercase;opacity:.85">Descuento exclusivo</p>
+          <p style="margin:0;font-family:Georgia,serif;font-size:28px;font-weight:600">-10%</p>
+          ${d.discountedTotalFormatted ? `<p style="margin:6px 0 0;font-size:15px;opacity:.9">Total con descuento: <strong>${escapeHtml(d.discountedTotalFormatted)}</strong></p>` : ""}
+          <p style="margin:8px 0 0;font-size:11px;opacity:.85">Válido si confirmas esta semana. Aplica al pulsar el botón abajo.</p>
+        </div>
+      </td></tr>`;
+    ctaLabel = "Quiero el -10% →";
+  }
+
+  const html = wrap(
+    emailHeader(kicker, `Hola ${escapeHtml(who)},`) +
+      emailPara(escapeHtml(lead)) +
+      emailItemsTable(d.items, d.totalFormatted) +
+      extraBlock +
+      emailButton(d.recoverUrl, ctaLabel) +
+      emailFinePrint(
+        `¿Prefieres que dejemos de enviarte estos avisos? Responde "BAJA" a este email.<br>Email automático · drip ${d.step}`,
+      ),
+    lead,
+  );
+
+  const text = `Hola ${who},\n\n${lead}\n\nProductos:\n${d.items.map((it) => `- ${it.quantity}× ${it.name}`).join("\n")}\n\nRetomar: ${d.recoverUrl}\n\nSTARTIDEA MALAGA SL`;
+
+  return { subject, html, text };
+}
