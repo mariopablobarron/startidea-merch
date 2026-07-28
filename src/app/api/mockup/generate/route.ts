@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
+import { removeLogoBackgroundSafe } from "@/lib/logo-tools";
 import { prisma } from "@/lib/prisma";
 import { getMarkingBase } from "@/lib/marking-base-cache";
 import { rateLimit } from "@/lib/rate-limit";
@@ -124,7 +125,10 @@ export async function POST(req: Request) {
     }
   }
 
-  const logoBuffer = Buffer.from(await file.arrayBuffer());
+  let logoBuffer: Buffer = Buffer.from(await file.arrayBuffer());
+  // Se rellena tras leer metadata: true si rembg quitó el fondo de un JPG/PNG
+  // opaco. Cambia el warning "no_alpha" por un aviso positivo.
+  let backgroundRemoved = false;
 
   // Procesar imagen base (separado del logo para distinguir errores)
   let baseImg: ReturnType<typeof sharp>;
@@ -161,6 +165,19 @@ export async function POST(req: Request) {
     /* lo manejamos abajo si el resize falla */
   }
 
+  // Logo opaco (JPG o PNG sin alpha): intentar quitar el fondo con el sidecar
+  // rembg ANTES de componer — el cliente sube el logo "de WhatsApp" y aun así
+  // el mockup sale limpio. Si rembg falla/está caído, seguimos con el
+  // original y el warning clásico (nunca bloquea).
+  if (!logoHasAlpha && logoFormat !== "svg" && logoOriginalW > 0) {
+    const cleaned = await removeLogoBackgroundSafe(logoBuffer);
+    if (cleaned) {
+      logoBuffer = cleaned;
+      logoHasAlpha = true;
+      backgroundRemoved = true;
+    }
+  }
+
   // Tamaño del logo: ~30% del ancho de la imagen base
   const targetLogoW = Math.round(baseW * 0.3);
   let logoResized: { data: Buffer; info: { width: number; height: number } };
@@ -185,8 +202,17 @@ export async function POST(req: Request) {
   // para decidir si avisar. No bloquean el render — informan.
   const warnings: Array<{ code: string; level: "info" | "warn"; text: string }> = [];
 
-  // 1) Logo sin canal alfa → fondo no transparente (probable JPG con bg)
-  if (!logoHasAlpha && logoFormat !== "svg") {
+  // 1) Logo sin canal alfa → fondo no transparente (probable JPG con bg).
+  //    Si rembg lo limpió, el aviso pasa a ser positivo.
+  if (backgroundRemoved) {
+    warnings.push({
+      code: "bg_removed",
+      level: "info",
+      text:
+        "Tu logo venía con fondo y se lo hemos quitado automáticamente para la vista previa. " +
+        "Para producción final te pediremos el original en vectorial si lo tienes.",
+    });
+  } else if (!logoHasAlpha && logoFormat !== "svg") {
     warnings.push({
       code: "no_alpha",
       level: "warn",

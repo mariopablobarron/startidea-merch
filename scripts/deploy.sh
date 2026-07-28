@@ -128,7 +128,7 @@ recreate_once() {
   # Servicios auxiliares (meili): up SIN --force-recreate — solo crea/arranca
   # si faltan o cambió su config. El índice vive en volumen; no hay churn.
   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-    up -d meili 2>&1 | tail -3 || true
+    up -d meili rembg 2>&1 | tail -3 || true
   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
     up -d --force-recreate --remove-orphans app 2>&1 | tail -20
   local rc=${PIPESTATUS[0]}

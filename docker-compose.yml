@@ -28,6 +28,20 @@ services:
     networks:
       - merch_net
 
+  # Eliminación de fondo de logos (rembg, modo servidor). SOLO red interna;
+  # la app le habla vía http://merch-rembg:7000 con fallback si está caído.
+  # mem_limit protege el VPS: la inferencia U2Net en CPU puede picar RAM.
+  rembg:
+    image: danielgatis/rembg:2.0.77
+    container_name: merch-rembg
+    restart: unless-stopped
+    command: ["s", "--host", "0.0.0.0", "--port", "7000"]
+    mem_limit: 1500m
+    volumes:
+      - merch_rembg_models:/root/.u2net
+    networks:
+      - merch_net
+
   app:
     build:
       context: .
@@ -181,3 +195,4 @@ volumes:
   merch_pgdata_v2:
   merch_uploads:
   merch_meili:
+  merch_rembg_models:
