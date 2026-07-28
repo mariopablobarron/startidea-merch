@@ -5,6 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/admin-auth";
 import { sendEmail } from "@/lib/resend";
 import { notifyTelegram } from "@/lib/telegram";
+import {
+  emailShell,
+  emailHeader,
+  emailPara,
+  emailButton,
+  emailFinePrint,
+  escapeHtml,
+} from "@/lib/email-templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -109,7 +117,7 @@ export async function POST(req: Request) {
       .map(
         (l) => `
         <tr>
-          <td style="padding:10px;border-bottom:1px solid #eee;">${l.productName}<br><small style="color:#888">${l.productRef}${l.techniqueName ? ` · ${l.techniqueName}` : ""}</small></td>
+          <td style="padding:10px;border-bottom:1px solid #eee;">${escapeHtml(l.productName)}<br><small style="color:#888">${escapeHtml(l.productRef)}${l.techniqueName ? ` · ${escapeHtml(l.techniqueName)}` : ""}</small></td>
           <td style="padding:10px;border-bottom:1px solid #eee;text-align:center;">${l.totalQty}</td>
           <td style="padding:10px;border-bottom:1px solid #eee;text-align:right;font-weight:600;">${EUR.format(l.totalPriceCents / 100)}</td>
         </tr>`,
@@ -125,30 +133,31 @@ export async function POST(req: Request) {
       to: data.customerEmail,
       subject: `${firstName ? firstName + ", t" : "T"}u cotización cerrada · TodoMerchandising`,
       context: `quote-ai cerrado · ${cart.id}`,
-      html: `<div style="font-family:-apple-system,sans-serif;max-width:640px;margin:0 auto;color:#2A2A2A;">
-        <h2 style="font-family:Georgia,serif;">Cotización cerrada</h2>
-        <p>Hola ${firstName || data.customerName},</p>
-        <p>Aquí tienes el presupuesto cerrado para tu pedido:</p>
-        <table style="width:100%;border-collapse:collapse;margin-top:16px;">
-          <thead>
-            <tr style="background:#F4EFE6;">
-              <th style="padding:10px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Producto</th>
-              <th style="padding:10px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Cant.</th>
-              <th style="padding:10px;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Total</th>
-            </tr>
-          </thead>
-          <tbody>${itemsHtml}</tbody>
-          <tfoot>
-            <tr><td colspan="2" style="padding:12px;text-align:right;font-weight:600;">Total:</td>
-            <td style="padding:12px;text-align:right;font-weight:700;font-size:18px;color:#E63E73;">${EUR.format(totalCents / 100)}</td></tr>
-          </tfoot>
-        </table>
-        <p style="margin-top:24px;text-align:center;">
-          <a href="${ctaUrl}" style="background:#E63E73;color:white;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">${ctaLabel}</a>
-        </p>
-        <p style="font-size:13px;color:#666;margin-top:24px;">Plazo de entrega típico 7-15 días laborables desde aprobación del mockup. Precios incluyen marcaje en la técnica indicada. IVA no incluido (21% aplicable). Si necesitas factura pro-forma o ajustar cantidades, responde a este email.</p>
-        <p style="color:#666;font-size:11px;margin-top:24px;">Ref interna: <code>${cart.id.slice(0, 8)}</code><br>STARTIDEA MALAGA SL · CIF B19583632</p>
-      </div>`,
+      html: emailShell(
+        emailHeader("Cotización cerrada", `Hola ${escapeHtml(firstName || data.customerName)},`) +
+          emailPara("Aquí tienes el presupuesto cerrado para tu pedido:") +
+          `<tr><td style="padding:20px 40px 0">
+            <table style="width:100%;border-collapse:collapse">
+              <thead>
+                <tr style="background:#F4EFE6">
+                  <th style="padding:10px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Producto</th>
+                  <th style="padding:10px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Cant.</th>
+                  <th style="padding:10px;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Total</th>
+                </tr>
+              </thead>
+              <tbody>${itemsHtml}</tbody>
+              <tfoot>
+                <tr><td colspan="2" style="padding:12px;text-align:right;font-weight:600">Total:</td>
+                <td style="padding:12px;text-align:right;font-weight:700;font-size:18px;color:#E63E73">${EUR.format(totalCents / 100)}</td></tr>
+              </tfoot>
+            </table>
+          </td></tr>` +
+          emailButton(ctaUrl, ctaLabel) +
+          emailFinePrint(
+            `Plazo de entrega típico 7-15 días laborables desde aprobación del mockup. Precios incluyen marcaje en la técnica indicada. IVA no incluido (21% aplicable). Si necesitas factura pro-forma o ajustar cantidades, responde a este email.<br><br>Ref interna: <code>${cart.id.slice(0, 8)}</code>`,
+          ),
+        `Presupuesto cerrado: ${EUR.format(totalCents / 100)} — confirma cuando quieras`,
+      ),
     }).catch((err) => console.error("[ai-quote save email]", err));
   }
 
