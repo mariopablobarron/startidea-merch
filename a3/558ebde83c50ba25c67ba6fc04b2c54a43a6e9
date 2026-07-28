@@ -1,0 +1,56 @@
+src/app/api/search/suggest/route.ts
+  s_65877aa637ec34::t_e51c44f6b7a58a 186
+  s_65877aa637ec34::t_c23dd7c9e5c196 7
+  s_65877aa637ec34::t_259c20a199ddb9 47-51,60-96
+  s_c74f3f79ce848e::t_f017c86651312e 97
+src/lib/suppliers/cifra-sync.ts
+  s_65877aa637ec34::t_26c6dacf09e271 467-476
+  s_65877aa637ec34::t_6f12e2c692cb62 25
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_db2f157cf203ec 22
+  s_65877aa637ec34::t_472136700733d5 110-114,116-129
+docker-compose.yml
+  s_65877aa637ec34::t_73b200c8885f86 183
+  s_65877aa637ec34::t_34e3bfa9e12eda 15-30
+src/lib/suppliers/midocean-sync.ts
+  s_65877aa637ec34::t_3f4bffec0e4cea 220-229
+  s_65877aa637ec34::t_be3dd67b4202e8 4
+src/app/api/admin/search/reindex/route.ts
+  s_65877aa637ec34::t_0164537cd2b346 1-31
+src/lib/suppliers/makito-sync.ts
+  s_65877aa637ec34::t_1aa08861b2118b 587-596
+  s_65877aa637ec34::t_b0485348ac0854 25
+src/lib/search/meili.ts
+  s_65877aa637ec34::t_845c30c849c0b1 90
+  s_65877aa637ec34::t_55aefe6a2d808f 19
+  s_65877aa637ec34::t_c93c3d4260f84a 73
+  s_65877aa637ec34::t_ca0b39839d93d6 1-18,20-72,74-89,91-220
+src/lib/search/meili.test.ts
+  s_65877aa637ec34::t_1ece9d1fe7c525 1-52
+.env.example
+  s_65877aa637ec34::t_6e78a63c16e1c8 105-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "a3558ebde83c50ba25c67ba6fc04b2c54a43a6e9",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_c74f3f79ce848e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dc340431-c22c-4d4b-b3fb-4a7631374a91",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
