@@ -133,6 +133,11 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ApiResponse | null>(null);
+  // Conversación: brief enviado + turnos (para que el cliente pueda SEGUIR
+  // escribiendo — responder aclaraciones o pedir ajustes sin rehacer el brief).
+  const [submittedBrief, setSubmittedBrief] = useState("");
+  const [thread, setThread] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [followUp, setFollowUp] = useState("");
 
   // Estado del card "enviar propuesta por email + PDF"
   const [emailInput, setEmailInput] = useState("");
@@ -202,21 +207,33 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
     }
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (brief.trim().length < 20) return;
+  // Resumen del turno del asistente para el historial de conversación: la
+  // pregunta de aclaración si la hay; si no, el summary del modelo.
+  function assistantDigest(data: ApiResponse): string {
+    if (!("ok" in data)) return "";
+    if ("needsClarification" in data && data.needsClarification && data.clarificationQuestion)
+      return data.clarificationQuestion;
+    return ("summary" in data && data.summary) || "";
+  }
+
+  async function requestRecommendation(payload: {
+    brief: string;
+    followUp?: string;
+    history?: Array<{ role: "user" | "assistant"; content: string }>;
+  }) {
     setLoading(true);
-    setResult(null);
 
     try {
       const res = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          brief: brief.trim(),
+          brief: payload.brief,
           budget: budget ? Number(budget) : undefined,
           quantity: quantity ? Number(quantity) : undefined,
           ecoOnly: ecoOnly || undefined,
+          followUp: payload.followUp,
+          history: payload.history,
         }),
       });
       const data: ApiResponse = await res.json();
@@ -236,6 +253,15 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
         return;
       }
       setResult(data);
+      // Hilo de conversación: en el primer envío se estrena; en seguimientos
+      // se acumula (capado por turno; la API además limita a 10 turnos).
+      const userTurn = (payload.followUp ?? payload.brief).slice(0, 1500);
+      const digest = assistantDigest(data).slice(0, 1500);
+      setThread((t) => [
+        ...(payload.followUp ? t : []),
+        { role: "user" as const, content: userTurn },
+        ...(digest ? [{ role: "assistant" as const, content: digest }] : []),
+      ]);
     } catch {
       setResult({
         error: "No hemos podido generar la recomendación en este momento.",
@@ -244,6 +270,29 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
     } finally {
       setLoading(false);
     }
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = brief.trim();
+    if (trimmed.length < 20) return;
+    setResult(null);
+    setSubmittedBrief(trimmed);
+    setThread([]);
+    await requestRecommendation({ brief: trimmed });
+  }
+
+  // Seguimiento: responder a la aclaración o pedir ajustes sin rehacer el brief.
+  async function sendFollowUp(e: React.FormEvent) {
+    e.preventDefault();
+    const text = followUp.trim();
+    if (!text || loading) return;
+    setFollowUp("");
+    await requestRecommendation({
+      brief: submittedBrief || brief.trim(),
+      followUp: text,
+      history: thread.slice(-8),
+    });
   }
 
   return (
@@ -390,7 +439,7 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
               {result.clarificationQuestion}
             </p>
             <p className="mt-3 text-sm text-ink/70">
-              Añádelo a tu brief y vuelve a pedir recomendación.
+              Respóndeme en la caja de aquí abajo y sigo con tu recomendación.
             </p>
           </div>
         )}
@@ -685,6 +734,33 @@ export function Recommender({ emailCard }: { emailCard?: EmailCardVariant } = {}
               Cotizar con detalle ahora →
             </Link>
           </div>
+        )}
+
+        {/* Compositor de seguimiento: la conversación NO se corta tras la
+            primera respuesta — responder aclaraciones o pedir ajustes aquí. */}
+        {result && "ok" in result && !("fallback" in result) && (
+          <form onSubmit={sendFollowUp} className="mt-6 rounded-3xl border border-line bg-bone p-5">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+              Sigue la conversación
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                value={followUp}
+                onChange={(e) => setFollowUp(e.target.value)}
+                placeholder="Responde o pide cambios: «más barato», «solo eco», «¿y en azul?»…"
+                maxLength={1000}
+                aria-label="Responder al recomendador"
+                className="min-w-0 flex-1 rounded-full border border-line bg-white px-4 py-3 text-base outline-none placeholder:text-ink/40 focus:border-accent"
+              />
+              <button
+                type="submit"
+                disabled={loading || !followUp.trim()}
+                className="shrink-0 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-bone transition hover:bg-accent-dark disabled:opacity-50"
+              >
+                {loading ? "Pensando…" : "Enviar"}
+              </button>
+            </div>
+          </form>
         )}
       </div>
     </div>

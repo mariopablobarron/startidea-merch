@@ -30,6 +30,20 @@ const Schema = z.object({
   quantity: z.number().int().positive().max(1_000_000).optional(),
   preferredCategories: z.array(z.string()).max(8).optional(),
   ecoOnly: z.boolean().optional(),
+  // Conversación: turnos previos (brief inicial + resúmenes del asistente) y
+  // el nuevo mensaje del cliente. Con followUp presente, el último mensaje al
+  // modelo es ese texto (el brief original viaja dentro de history). Capado
+  // corto: es contexto, no un segundo brief.
+  history: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().min(1).max(1500),
+      }),
+    )
+    .max(10)
+    .optional(),
+  followUp: z.string().min(1).max(1000).optional(),
 });
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
@@ -55,7 +69,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const { brief, budget, quantity, preferredCategories, ecoOnly } = parsed.data;
+  const { brief, budget, quantity, preferredCategories, ecoOnly, history, followUp } = parsed.data;
 
   // Degradación elegante: el cliente NUNCA ve un error técnico. Si la IA no
   // está disponible (sin key, red caída, proveedor con 5xx/429 tras retries),
@@ -202,6 +216,18 @@ INSTRUCCIONES DE PROCESADO:
 
 Devuelve SOLO el JSON descrito.`;
 
+  // Seguimiento de conversación: el cliente responde a una aclaración o pide
+  // ajustes sobre las recomendaciones ya dadas. El hilo previo viaja en
+  // history; el último mensaje es SOLO el texto nuevo.
+  const followUpPrompt = followUp
+    ? `El cliente CONTINÚA la conversación anterior. Su nuevo mensaje:
+"""
+${followUp}
+"""
+
+Ajusta tu respuesta según este mensaje (afinar productos, responder a tu pregunta de aclaración, cambiar presupuesto/cantidad/estilo…). Mantén las INSTRUCCIONES DE PROCESADO del brief original. Devuelve SOLO el JSON descrito, mismo formato.`
+    : null;
+
   // 2) Llamada al gateway de IA (formato OpenAI-compatible) con reintento.
   // Errores transitorios (red, 429, 5xx) se reintentan una vez; si aun así
   // falla, degradamos al catálogo filtrado — nunca un error técnico al cliente.
@@ -216,7 +242,10 @@ Devuelve SOLO el JSON descrito.`;
         role: "system",
         content: `CATÁLOGO DISPONIBLE (${products.length} productos):\n\n${catalogBlock}`,
       },
-      { role: "user", content: userPrompt },
+      ...(followUpPrompt && history?.length
+        ? history.map((m) => ({ role: m.role, content: m.content }))
+        : []),
+      { role: "user", content: followUpPrompt ?? userPrompt },
     ],
   });
 
