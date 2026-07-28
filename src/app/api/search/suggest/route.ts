@@ -63,7 +63,12 @@ export async function GET(req: Request) {
           slug: h.slug,
           name: h.name,
           ref: h.ref, // ya es la STM pública (ver buildProductSearchDocument)
-          imageUrl: h.imageUrl, // ya proxificada al indexar
+          // Meili ya indexa la URL proxificada, pero la reproxificamos al
+          // emitir: proxyImageUrl es idempotente para rutas /… (coste cero) y
+          // así un índice construido con datos viejos o crudos tampoco delata
+          // al proveedor. Es la misma defensa en profundidad que el resto de
+          // rutas públicas, y lo que exige el guard de CI.
+          imageUrl: proxyImageUrl(h.imageUrl),
           category: h.categoryPath || null,
         }))
       : (

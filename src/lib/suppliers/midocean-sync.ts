@@ -18,6 +18,7 @@ import { extractSize, canonicalColorGroup, colorGroupFromName } from "@/lib/vari
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
 import { notifyTelegram } from "@/lib/telegram";
 import { ensureMediaAsset } from "@/lib/proxy-image";
+import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
 
 export type MidoceanSyncResult = {
   startedAt: string;
@@ -276,11 +277,11 @@ async function upsertProduct(
     supplier: "midocean" as const,
     supplierRef: raw.master_code,
     slug,
-    name: raw.product_name,
-    brand: raw.brand,
-    shortDescription: raw.short_description,
-    longDescription: raw.long_description,
-    material: raw.material,
+    name: sanitizeSupplierName(raw.product_name),
+    brand: sanitizeSupplierText(raw.brand),
+    shortDescription: sanitizeSupplierText(raw.short_description),
+    longDescription: sanitizeSupplierText(raw.long_description),
+    material: sanitizeSupplierText(raw.material),
     categoryId,
     supplierCategoryCode: raw.category_code,
     weightG: parseWeightToG(raw.gross_weight, raw.gross_weight_unit),
@@ -337,7 +338,7 @@ async function upsertProduct(
       productId: product.id,
       sku: v.sku,
       variantId: v.variant_id,
-      colorName: v.color_description,
+      colorName: sanitizeSupplierText(v.color_description),
       // Canonicalizamos el grupo del feed (MidOcean manda "Azul"/"Marrón"/
       // "Purple"/"Oro" — mayúscula/inglés) al mismo vocabulario minúsculas-sin-
       // acentos que Cifra/Makito, o el filtro de color parte el catálogo.

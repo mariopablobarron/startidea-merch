@@ -33,6 +33,7 @@ import {
 } from "./makito";
 import { resolveCleanProductSlug } from "./midocean-sync";
 import { ensureMediaAsset } from "@/lib/proxy-image";
+import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
 import { colorGroupFromName } from "@/lib/variant-grouping";
 
 const SUPPLIER = "makito" as const;
@@ -294,8 +295,8 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
                 supplier: SUPPLIER,
                 supplierRef: ref,
                 slug: slugToUse,
-                name: String(p.name).trim(),
-                shortDescription: String(p.extendedinfo || p.otherinfo || "").trim() || null,
+                name: sanitizeSupplierName(String(p.name)),
+                shortDescription: sanitizeSupplierText(String(p.extendedinfo || p.otherinfo || "")),
                 category: categoryId ? { connect: { id: categoryId } } : undefined,
                 supplierCategoryCode: String(p.categories?.category_ref_1 || "") || null,
                 weightG: toNum(p.item_weight) || null,
@@ -303,17 +304,17 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
                 widthMm: cmToMm(p.item_width),
                 heightMm: cmToMm(p.item_hight),
                 primaryImageUrl,
-                material: String(p.composition || "").trim() || null,
-                brand: String(p.brand || "").trim() || null,
-                markingTechniqueHint: String(p.printcode || "").trim() || null,
+                material: sanitizeSupplierText(String(p.composition || "")),
+                brand: sanitizeSupplierText(String(p.brand || "")),
+                markingTechniqueHint: sanitizeSupplierText(String(p.printcode || "")),
                 tags: [],
                 active: true,
                 syncedAt: new Date(),
               },
               update: {
                 ...(needsNewSlug ? { slug: slugToUse } : {}),
-                name: String(p.name).trim(),
-                shortDescription: String(p.extendedinfo || p.otherinfo || "").trim() || null,
+                name: sanitizeSupplierName(String(p.name)),
+                shortDescription: sanitizeSupplierText(String(p.extendedinfo || p.otherinfo || "")),
                 category: categoryId ? { connect: { id: categoryId } } : undefined,
                 supplierCategoryCode: String(p.categories?.category_ref_1 || "") || null,
                 weightG: toNum(p.item_weight) || null,
@@ -321,9 +322,9 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
                 widthMm: cmToMm(p.item_width),
                 heightMm: cmToMm(p.item_hight),
                 primaryImageUrl,
-                material: String(p.composition || "").trim() || null,
-                brand: String(p.brand || "").trim() || null,
-                markingTechniqueHint: String(p.printcode || "").trim() || null,
+                material: sanitizeSupplierText(String(p.composition || "")),
+                brand: sanitizeSupplierText(String(p.brand || "")),
+                markingTechniqueHint: sanitizeSupplierText(String(p.printcode || "")),
                 active: true,
                 syncedAt: new Date(),
               },
@@ -363,7 +364,7 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
                 product: { connect: { id: product.id } },
                 sku: matnr,
                 variantId: matnr,
-                colorName: String(v.colourname || v.colour || "").trim() || null,
+                colorName: sanitizeSupplierText(String(v.colourname || v.colour || "")),
                 // El feed Makito NO trae grupo de color → lo derivamos del nombre
                 // para que el producto entre en el filtro de color del catálogo.
                 colorGroup: colorGroupFromName(String(v.colourname || v.colour || "")),
@@ -374,7 +375,7 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
                 stockUpdatedAt: new Date(),
               },
               update: {
-                colorName: String(v.colourname || v.colour || "").trim() || null,
+                colorName: sanitizeSupplierText(String(v.colourname || v.colour || "")),
                 colorGroup: colorGroupFromName(String(v.colourname || v.colour || "")),
                 size: String(v.size || "").trim() || null,
                 imageUrl: variantImg,

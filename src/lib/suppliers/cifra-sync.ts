@@ -40,6 +40,7 @@ import {
 // resolución de colisión con sufijos -2, -3... Importante para cumplir
 // regla anti-supplier-leak (no exponer "cif-" en URLs públicas).
 import { resolveCleanProductSlug } from "./midocean-sync";
+import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
 // Proxy de imágenes: registra el original en MediaAsset y devuelve
 // `/api/m/<hash>` opaco. CRÍTICO: publicatalogue.com delata a Cifra,
 // nunca debe llegar al HTML público (regla anti-supplier-leak).
@@ -205,8 +206,8 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 supplier: SUPPLIER,
                 supplierRef: rootmodel,
                 slug: slugToUse,
-                name: head.name.trim(),
-                shortDescription: head.description?.trim() || null,
+                name: sanitizeSupplierName(head.name),
+                shortDescription: sanitizeSupplierText(head.description),
                 category: categoryId ? { connect: { id: categoryId } } : undefined,
                 supplierCategoryCode: head.category || null,
                 weightG: parseFloat(head.pncaja || "0") > 0
@@ -216,17 +217,17 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 widthMm: cmStringToMm(head.width),
                 heightMm: cmStringToMm(head.height),
                 primaryImageUrl: proxiedPrimary,
-                material: head.material?.trim() || null,
-                markingTechniqueHint: head.tgrabacion?.trim() || null,
-                markingSizeHint: head.mgrabacion?.trim() || null,
+                material: sanitizeSupplierText(head.material),
+                markingTechniqueHint: sanitizeSupplierText(head.tgrabacion),
+                markingSizeHint: sanitizeSupplierText(head.mgrabacion),
                 tags: [],
                 active: true,
                 syncedAt: new Date(),
               },
               update: {
                 ...(needsNewSlug ? { slug: slugToUse } : {}),
-                name: head.name.trim(),
-                shortDescription: head.description?.trim() || null,
+                name: sanitizeSupplierName(head.name),
+                shortDescription: sanitizeSupplierText(head.description),
                 category: categoryId ? { connect: { id: categoryId } } : undefined,
                 supplierCategoryCode: head.category || null,
                 weightG: parseFloat(head.pncaja || "0") > 0
@@ -236,9 +237,9 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 widthMm: cmStringToMm(head.width),
                 heightMm: cmStringToMm(head.height),
                 primaryImageUrl: proxiedPrimary,
-                material: head.material?.trim() || null,
-                markingTechniqueHint: head.tgrabacion?.trim() || null,
-                markingSizeHint: head.mgrabacion?.trim() || null,
+                material: sanitizeSupplierText(head.material),
+                markingTechniqueHint: sanitizeSupplierText(head.tgrabacion),
+                markingSizeHint: sanitizeSupplierText(head.mgrabacion),
                 active: true,
                 syncedAt: new Date(),
               },
@@ -295,7 +296,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 product: { connect: { id: product.id } },
                 sku: v.model,
                 variantId: v.model,
-                colorName: color.name,
+                colorName: sanitizeSupplierText(color.name),
                 // Canonicalizamos el grupo del dict (guarda "marrón"/"lila" con
                 // tilde) al vocabulario minúsculas-sin-acentos común; y si el
                 // sufijo no resolvió grupo, lo derivamos del nombre. Sin esto el
@@ -310,7 +311,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 stockUpdatedAt: new Date(),
               },
               update: {
-                colorName: color.name,
+                colorName: sanitizeSupplierText(color.name),
                 // Canonicalizamos el grupo del dict (guarda "marrón"/"lila" con
                 // tilde) al vocabulario minúsculas-sin-acentos común; y si el
                 // sufijo no resolvió grupo, lo derivamos del nombre. Sin esto el
