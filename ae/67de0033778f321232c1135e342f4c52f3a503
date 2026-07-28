@@ -1,0 +1,20 @@
+src/app/api/voice-agent/tools/calculate-quote/route.ts
+  s_65877aa637ec34::t_367b2e37e3194a 55-62
+  s_65877aa637ec34::t_3b0b5209aad0c2 83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "ae67de0033778f321232c1135e342f4c52f3a503",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
