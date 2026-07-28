@@ -1,0 +1,25 @@
+src/app/api/cron/abandoned-cart-drip/route.ts
+  s_65877aa637ec34::t_04f878fa454091 145-146
+  s_65877aa637ec34::t_6c2b7a84fb7c19 7
+  s_65877aa637ec34::t_6fae164596a5ac 150-164,170-171
+src/lib/email-templates.drip.test.ts
+  s_65877aa637ec34::t_b774c2c4d938df 1-72
+src/lib/email-templates.ts
+  s_65877aa637ec34::t_f6152ee2eb4f25 155-296
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "5a28227fa457be5b1b491b5f8f18699824ebdb08",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
