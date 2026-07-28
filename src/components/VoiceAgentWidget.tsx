@@ -35,6 +35,13 @@ import { addItem } from "@/lib/cart-storage";
  * proveedor dentro del árbol, el hook tira error. Por eso exportamos el wrapper.
  */
 export function VoiceAgentWidget() {
+  // Dentro de un iframe (la ficha en popup carga la página completa) el
+  // widget NO debe montarse: duplicaría la píldora y pelearía por el micro.
+  const [inIframe, setInIframe] = useState(false);
+  useEffect(() => {
+    if (window.self !== window.top) setInIframe(true);
+  }, []);
+  if (inIframe) return null;
   return (
     <ConversationProvider>
       <VoiceAgentInner />
@@ -211,6 +218,9 @@ function VoiceAgentInner() {
   // Contexto pendiente de enviar a David cuando conecte (viene de AskDiego).
   const pendingContextRef = useRef<string | null>(null);
   const [productSlugsDiscussed, setProductSlugsDiscussed] = useState<Set<string>>(new Set());
+  // Tarjeta elegida por el cliente (toque directo) y ficha abierta en popup.
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [fichaUrl, setFichaUrl] = useState<string | null>(null);
   const startedAtRef = useRef<number | null>(null);
   const toolsCalledRef = useRef<Array<{ tool: string; ok: boolean; at: string }>>([]);
   // true mientras la desconexión es intencionada (Terminar/watchdog): no
@@ -620,6 +630,32 @@ function VoiceAgentInner() {
     }
     setDraft("");
   }, [c, draft]);
+
+  // ── Elegir producto tocando su tarjeta ──────────────────────────
+  // Tocar la tarjeta = "este es el que quiero": se marca visualmente y se le
+  // dice a David como mensaje de usuario para que siga directo con el precio,
+  // sin obligar al cliente a describir el producto de palabra. La ficha se
+  // abre aparte en popup (setFichaUrl) para no sacarle de la llamada.
+  const selectProduct = useCallback(
+    (it: ProductCard) => {
+      setSelectedSlug(it.slug);
+      setProductSlugsDiscussed((s) => {
+        const n = new Set(s);
+        n.add(it.slug);
+        return n;
+      });
+      if (c.status !== "connected") return;
+      const text = `He elegido «${it.name}» (${it.ref}). Dame precio de este.`;
+      setMessages((m) => [...m, { role: "user", text, at: Date.now() }]);
+      setAwaitingReply(true);
+      try {
+        c.sendUserMessage(text);
+      } catch {
+        /* sesión caída: el status lo reflejará */
+      }
+    },
+    [c],
+  );
 
   // ── Silenciar a David (para escribir con calma) ─────────────────
   // Mutea su VOZ (setVolume 0) y su ESCUCHA (setMuted) → chat de texto puro.
@@ -1074,36 +1110,63 @@ function VoiceAgentInner() {
                 </div>
               ) : m.role === "products" ? (
                 <div key={i} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-                  {m.items.map((it) => (
-                    <a
-                      key={it.slug}
-                      href={it.url}
-                      target="_blank"
-                      rel="noopener"
-                      className="w-32 shrink-0 overflow-hidden rounded-xl border border-line bg-white hover:border-accent"
-                    >
-                      {it.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- tarjeta efímera del chat; el proxy ya sirve tamaño razonable
-                        <img
-                          src={it.image}
-                          alt={it.name}
-                          loading="lazy"
-                          className="h-24 w-full bg-bone-soft object-contain"
-                        />
-                      ) : (
-                        <div className="h-24 w-full bg-bone-soft" />
-                      )}
-                      <div className="px-2 py-1.5">
-                        <p className="truncate text-[11px] font-medium text-ink">{it.name}</p>
-                        <p className="text-[10px] text-ink/50">{it.ref}</p>
-                        {it.priceFromCents != null && (
-                          <p className="text-[11px] font-semibold text-accent-deep">
-                            desde {(it.priceFromCents / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
-                          </p>
+                  {m.items.map((it) => {
+                    const chosen = selectedSlug === it.slug;
+                    return (
+                      <div
+                        key={it.slug}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={chosen}
+                        onClick={() => selectProduct(it)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            selectProduct(it);
+                          }
+                        }}
+                        className={`relative w-32 shrink-0 cursor-pointer overflow-hidden rounded-xl border bg-white transition-colors ${
+                          chosen ? "border-accent ring-2 ring-accent/50" : "border-line hover:border-accent"
+                        }`}
+                      >
+                        {chosen && (
+                          <span className="absolute right-1 top-1 z-10 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white shadow">
+                            ✓ Elegido
+                          </span>
                         )}
+                        {it.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- tarjeta efímera del chat; el proxy ya sirve tamaño razonable
+                          <img
+                            src={it.image}
+                            alt={it.name}
+                            loading="lazy"
+                            className="h-24 w-full bg-bone-soft object-contain"
+                          />
+                        ) : (
+                          <div className="h-24 w-full bg-bone-soft" />
+                        )}
+                        <div className="px-2 py-1.5">
+                          <p className="truncate text-[11px] font-medium text-ink">{it.name}</p>
+                          <p className="text-[10px] text-ink/50">{it.ref}</p>
+                          {it.priceFromCents != null && (
+                            <p className="text-[11px] font-semibold text-accent-deep">
+                              desde {(it.priceFromCents / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFichaUrl(it.url);
+                            }}
+                            className="mt-1 w-full rounded-full border border-line px-2 py-0.5 text-[10px] font-medium text-ink/70 hover:border-accent hover:text-accent"
+                          >
+                            Ver ficha
+                          </button>
+                        </div>
                       </div>
-                    </a>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div
@@ -1271,6 +1334,44 @@ function VoiceAgentInner() {
               </p>
             </footer>
           )}
+        </div>
+      )}
+      {/* Ficha de producto en POPUP: iframe sobre la conversación. La llamada
+          con David sigue viva debajo (el widget del iframe no se monta, ver
+          guard inIframe). En móvil ocupa casi toda la pantalla, tipo sheet. */}
+      {fichaUrl && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/50 sm:items-center sm:p-6"
+          onClick={() => setFichaUrl(null)}
+        >
+          <div
+            className="relative flex h-[88vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:h-[85vh] sm:max-w-3xl sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-line bg-bone-soft/70 px-4 py-2">
+              <p className="truncate text-xs font-medium text-ink/70">
+                Ficha de producto — la conversación con David sigue activa
+              </p>
+              <div className="flex shrink-0 items-center gap-2">
+                <a
+                  href={fichaUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="rounded-full border border-line px-3 py-1 text-[11px] font-medium text-ink/70 hover:border-accent hover:text-accent"
+                >
+                  Abrir en pestaña
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setFichaUrl(null)}
+                  className="rounded-full bg-ink px-3 py-1 text-[11px] font-semibold text-bone hover:bg-accent"
+                >
+                  Cerrar ✕
+                </button>
+              </div>
+            </div>
+            <iframe src={fichaUrl} title="Ficha de producto" className="w-full flex-1" />
+          </div>
         </div>
       )}
     </>
