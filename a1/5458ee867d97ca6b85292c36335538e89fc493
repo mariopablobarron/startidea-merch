@@ -1,0 +1,22 @@
+src/app/catalogo/page.tsx
+  s_65877aa637ec34::t_807edf7f8cb9ef 338-344
+  s_65877aa637ec34::t_9c8893b3082c60 89-91
+  s_65877aa637ec34::t_4161632352196a 233-235,237
+  s_65877aa637ec34::t_e96f85a6792a7c 215-229
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "a15458ee867d97ca6b85292c36335538e89fc493",
+  "prompts": {},
+  "sessions": {
+    "s_65877aa637ec34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09be501c-fea4-4e5e-ba37-545d057a463d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
