@@ -18,7 +18,10 @@ const SECURITY_HEADERS = [
     value: "max-age=63072000; includeSubDomains; preload",
   },
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
+  // SAMEORIGIN (no DENY): el widget de David abre la ficha de producto en un
+  // popup con iframe del propio dominio; DENY lo dejaba en blanco. El
+  // clickjacking desde sitios ajenos sigue bloqueado.
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     // microphone=(self) lo necesita el widget de voz de Carmen (WebRTC en
