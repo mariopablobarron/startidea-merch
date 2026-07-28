@@ -1,0 +1,55 @@
+src/lib/cron-staleness.test.ts
+  s_43c4b0089b4a46::t_3611b043b7ff42 2-11,40-49,65-265
+src/lib/cron-tracking.test.ts
+  s_43c4b0089b4a46::t_c464bcb2e820e1 175-208
+src/lib/cron-catalog.ts
+  s_43c4b0089b4a46::t_6793ad79041c39 117-126
+  s_43c4b0089b4a46::t_555bebe018e650 61-64
+src/lib/cron-tracking.ts
+  s_43c4b0089b4a46::t_75ff4b89620b73 126-143
+  s_43c4b0089b4a46::t_ddefeb1277578b 117-125
+src/app/api/cron/cron-watchdog/route.test.ts
+  s_43c4b0089b4a46::t_aabebb9f0623ea 237,316-321,346-404
+  s_43c4b0089b4a46::t_2c9258104e65ff 288,291-294,305-315
+  s_43c4b0089b4a46::t_621af7a17b98aa 180-183,191-236
+  s_c74f3f79ce848e::t_3ecadfb5afe667 238
+src/app/api/cron/cron-watchdog/route.ts
+  s_43c4b0089b4a46::t_177ca04929d180 32-39
+  s_43c4b0089b4a46::t_f0ab6369aea7c7 72
+  s_43c4b0089b4a46::t_6fdeeb0a476a12 80-101
+  s_43c4b0089b4a46::t_6505812753bd48 179,181,186-191,197,199
+  s_43c4b0089b4a46::t_2aca6fe49a5458 204,206,210-211
+  s_43c4b0089b4a46::t_0e66c6d79a50f2 134-142,144-146,152,157-163
+  s_43c4b0089b4a46::t_fb565a9cb7da41 225-228
+  s_43c4b0089b4a46::t_d886f7d13ad6ad 167-171
+  s_43c4b0089b4a46::t_fe3db9ebd2a4fb 13-20
+src/lib/cron-staleness.ts
+  s_43c4b0089b4a46::t_4389fa97ed2f5c 25-30
+  s_43c4b0089b4a46::t_dac59d09034e8a 99-103
+  s_43c4b0089b4a46::t_e4c7e30a7d0265 17-19,22-24,31,33-42,52-69,78-98,104-199
+  s_43c4b0089b4a46::t_47b7dbf9534ca2 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "6212068821744aeec46fb5afe61367a12672d45e",
+  "prompts": {},
+  "sessions": {
+    "s_43c4b0089b4a46": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "66bef831-11d0-4da6-a817-37d040524671",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_c74f3f79ce848e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dc340431-c22c-4d4b-b3fb-4a7631374a91",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
