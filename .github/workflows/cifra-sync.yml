@@ -27,23 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: Disparar cifra-sync
-        env:
-          CRON_SECRET: ${{ secrets.MERCH_CRON_SECRET }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::error::Falta secret MERCH_CRON_SECRET"
-            exit 1
-          fi
-          response=$(curl -sS -w "\n%{http_code}" \
-            -X POST "https://merchandising.startidea.es/api/cron/cifra-sync" \
-            -H "x-cron-secret: $CRON_SECRET")
-          body=$(echo "$response" | sed '$d')
-          code=$(echo "$response" | tail -n1)
-          echo "HTTP $code"
-          echo "$body"
-          # 202 Accepted es el caso normal (fire-and-forget); 200 también ok
-          if [ "$code" != "202" ] && [ "$code" != "200" ]; then
-            echo "::error::cifra-sync devolvió $code (esperado 202)"
-            exit 1
-          fi
+        uses: ./.github/actions/cron-trigger
+        with:
+          name: cifra-sync
+          url: https://merchandising.startidea.es/api/cron/cifra-sync
+          secret: ${{ secrets.MERCH_CRON_SECRET }}
+          accept: "200 202"

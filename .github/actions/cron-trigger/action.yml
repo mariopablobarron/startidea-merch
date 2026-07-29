@@ -1,0 +1,50 @@
+name: Disparar cron de merch
+description: >-
+  Llama a un endpoint /api/cron/* de merch con el secret, valida el código HTTP
+  y reintenta únicamente cuando la petición no llegó a salir (fallo de red).
+
+inputs:
+  name:
+    description: Nombre del cron, solo para los mensajes de error
+    required: true
+  url:
+    description: URL completa del endpoint
+    required: true
+  secret:
+    description: MERCH_CRON_SECRET
+    required: true
+  method:
+    description: Método HTTP
+    required: false
+    default: POST
+  accept:
+    description: Códigos HTTP aceptados, separados por espacios
+    required: false
+    default: "200 202"
+  retries:
+    description: Reintentos ante fallo de conexión (0 = ninguno)
+    required: false
+    default: "2"
+  connect-timeout:
+    description: Segundos de espera para establecer la conexión
+    required: false
+    default: "20"
+  max-time:
+    description: Segundos máximos de la petición completa
+    required: false
+    default: "120"
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        INPUT_NAME: ${{ inputs.name }}
+        INPUT_URL: ${{ inputs.url }}
+        INPUT_SECRET: ${{ inputs.secret }}
+        INPUT_METHOD: ${{ inputs.method }}
+        INPUT_ACCEPT: ${{ inputs.accept }}
+        INPUT_RETRIES: ${{ inputs.retries }}
+        INPUT_CONNECT_TIMEOUT: ${{ inputs.connect-timeout }}
+        INPUT_MAX_TIME: ${{ inputs.max-time }}
+      run: bash "$GITHUB_ACTION_PATH/trigger.sh"
