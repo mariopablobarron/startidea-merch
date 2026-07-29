@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   classifyResults,
   buildAlertText,
+  esFalloDeConexion,
   KIND_MONEY,
   KIND_AVAILABILITY,
   // @ts-expect-error — .mjs sin tipos, importado a propósito desde el test
@@ -103,5 +104,35 @@ describe("buildAlertText — el aviso no puede afirmar lo que no consta", () => 
   it("va acotado para no reventar el mensaje de Telegram", () => {
     const muchos = Array.from({ length: 200 }, (_, i) => moneyFail(`fallo número ${i} con nombre largo`));
     expect(buildAlertText(classifyResults(muchos), "https://run/4").length).toBeLessThanOrEqual(900);
+  });
+});
+
+describe("esFalloDeConexion — solo se reintenta lo que no llegó a salir", () => {
+  const err = (code: string, anidado = false) =>
+    anidado ? Object.assign(new Error("fetch failed"), { cause: Object.assign(new Error("x"), { code }) }) : Object.assign(new Error("x"), { code });
+
+  it("reconoce el timeout de conexión real que vimos el 29-jul (va en err.cause)", () => {
+    expect(esFalloDeConexion(err("UND_ERR_CONNECT_TIMEOUT", true))).toBe(true);
+  });
+
+  it("conexión rechazada y DNS que no resuelve sí se reintentan", () => {
+    expect(esFalloDeConexion(err("ECONNREFUSED"))).toBe(true);
+    expect(esFalloDeConexion(err("ENOTFOUND"))).toBe(true);
+  });
+
+  it("un fallo que NO es de conexión no se reintenta", () => {
+    // Si el servidor respondió (o cortó tras recibir), repetir duplicaría
+    // trabajo: /api/recommend gasta LLM de pago y tiene rate limit.
+    expect(esFalloDeConexion(err("UND_ERR_HEADERS_TIMEOUT", true))).toBe(false);
+    expect(esFalloDeConexion(new Error("boom"))).toBe(false);
+    expect(esFalloDeConexion(undefined)).toBe(false);
+  });
+
+  it("no se cuelga con una cadena de causas circular", () => {
+    const a: Error & { cause?: unknown } = new Error("a");
+    const b: Error & { cause?: unknown } = new Error("b");
+    a.cause = b;
+    b.cause = a;
+    expect(esFalloDeConexion(a)).toBe(false);
   });
 });

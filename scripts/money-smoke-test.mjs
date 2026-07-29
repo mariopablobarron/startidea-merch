@@ -111,8 +111,47 @@ function writeGithubOutput(classification, runUrl) {
   }
 }
 
+/**
+ * ¿El fallo prueba que la petición NUNCA llegó a salir? Mismo discriminante
+ * verificado para los workflows de cron en 9128f96: solo se reintenta lo que
+ * está probado que no se ejecutó. Un timeout DESPUÉS de conectar, o un 5xx,
+ * significan que el servidor sí recibió la petición — y /api/recommend gasta
+ * LLM de pago y tiene rate limit, así que repetirla sería trabajo duplicado.
+ */
+export function esFalloDeConexion(err) {
+  const codes = ["UND_ERR_CONNECT_TIMEOUT", "ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ECONNRESET"];
+  const vistos = new Set();
+  for (let e = err; e && !vistos.has(e); e = e.cause) {
+    vistos.add(e);
+    if (typeof e.code === "string" && codes.includes(e.code)) return true;
+  }
+  return false;
+}
+
+/**
+ * fetch que no tumba el barrido entero. Antes, un parpadeo de red dejaba el
+ * script en `main().catch` sin clasificar nada: el workflow caía al mensaje
+ * genérico y volvía a anunciar "una invariante de dinero se rompió" cuando lo
+ * único que había pasado es que no hubo conexión (visto en vivo el 29-jul
+ * 18:16, y el mismo cuadro que tumbó el cron de Makito a las 05:31).
+ */
+async function safeFetch(url, opts, intentos = 3) {
+  let ultimo;
+  for (let i = 1; i <= intentos; i++) {
+    try {
+      return await fetch(url, opts);
+    } catch (e) {
+      ultimo = e;
+      if (!esFalloDeConexion(e) || i === intentos) break;
+      await new Promise((r) => setTimeout(r, 2000 * i));
+    }
+  }
+  // Superficie inalcanzable: status 0 → se trata como "no respondió".
+  return { status: 0, text: async () => "", _networkError: ultimo?.message || String(ultimo) };
+}
+
 async function getJson(path, opts) {
-  const r = await fetch(BASE + path, { ...opts, headers: { "Content-Type": "application/json", ...(opts?.headers || {}) } });
+  const r = await safeFetch(BASE + path, { ...opts, headers: { "Content-Type": "application/json", ...(opts?.headers || {}) } });
   const text = await r.text();
   let json = null;
   try { json = JSON.parse(text); } catch { /* no-json */ }
@@ -182,19 +221,20 @@ async function main() {
   ];
   for (const surface of publicSurfaces) {
     const { path, method = "GET", body } = surface;
-    const r = await fetch(BASE + path, {
+    const r = await safeFetch(BASE + path, {
       method,
       ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
     });
     const text = (await r.text()).toLowerCase();
     const respondio = r.status === 200;
-    check(`${method} ${path} responde`, respondio, `status ${r.status}`, KIND_AVAILABILITY);
+    const motivo = r._networkError ? `sin conexión: ${r._networkError}` : `status ${r.status}`;
+    check(`${method} ${path} responde`, respondio, motivo, KIND_AVAILABILITY);
     if (!respondio) {
       // Barrer el cuerpo de un 500 (o de un 429) no prueba que la superficie
       // esté limpia: prueba que no había cuerpo que barrer. Marcarlo ✓ era un
       // falso verde en un check de FUGA — el mismo patrón que ya mordió con
       // el índice de búsqueda. Ahora se registra como no comprobado.
-      unchecked(`sin proveedor en ${method} ${path}`, `superficie devolvió ${r.status}`);
+      unchecked(`sin proveedor en ${method} ${path}`, r._networkError ? "no hubo conexión" : `superficie devolvió ${r.status}`);
       continue;
     }
     const leak = ALL_LEAKS.find((s) => text.includes(s));
@@ -216,7 +256,7 @@ async function main() {
   }
 
   // ── 4. /comparar con precio real ─────────────────────────────────
-  const cmp = await fetch(`${BASE}/comparar?slugs=${encodeURIComponent(SLUG)}`);
+  const cmp = await safeFetch(`${BASE}/comparar?slugs=${encodeURIComponent(SLUG)}`);
   const cmpBody = await cmp.text();
   if (cmp.status !== 200) {
     unchecked("/comparar muestra un precio con €", `status ${cmp.status}`);
