@@ -26,19 +26,28 @@ jobs:
       - name: Ejecutar money smoke test
         id: smoke
         run: node scripts/money-smoke-test.mjs
+      # El texto lo redacta el propio script (steps.smoke.outputs.alert_text) para
+      # que distinga "una invariante de dinero se ha roto" de "una superficie no
+      # respondió y no se ha podido comprobar". El job falla igual en los dos
+      # casos: lo que no puede es AFIRMAR una rotura que no consta. Si el script
+      # se cayó antes de escribir el output, se usa el texto genérico.
       - name: Alerta Telegram si falla
         if: failure()
         env:
           TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ALERT_TEXT: ${{ steps.smoke.outputs.alert_text }}
         run: |
           if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
             echo "::warning::Sin secrets Telegram — no se envía alerta"
             exit 0
           fi
           RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          if [ -z "$ALERT_TEXT" ]; then
+            ALERT_TEXT="🚨 MONEY SMOKE FALLÓ (el guard no llegó a clasificar el fallo) — revisar YA: ${RUN_URL}"
+          fi
           curl -sS -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             -d "chat_id=${TG_CHAT}" \
             -d "disable_web_page_preview=true" \
-            --data-urlencode "text=🚨 MONEY SMOKE FALLÓ — una invariante de dinero o de exposición de proveedor se rompió en producción. Revisar YA: ${RUN_URL}" \
+            --data-urlencode "text=${ALERT_TEXT}" \
             > /dev/null || echo "::warning::No se pudo avisar por Telegram"
