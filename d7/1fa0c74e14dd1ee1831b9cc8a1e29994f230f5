@@ -1,0 +1,26 @@
+scripts/money-smoke-test.mjs
+  s_3d9149cddcace3::t_31fddeed806776 114-152,154
+  s_3d9149cddcace3::t_55a0dad3f0becb 230-231
+  s_3d9149cddcace3::t_33d5e34e78c45f 259
+  s_3d9149cddcace3::t_91174c06eff05d 237
+  s_3d9149cddcace3::t_5fdf4cbf360f10 224
+src/lib/money-smoke-severity.test.ts
+  s_3d9149cddcace3::t_cded5b184c57fd 9
+  s_3d9149cddcace3::t_f10ff5361915f8 109-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "d71fa0c74e14dd1ee1831b9cc8a1e29994f230f5",
+  "prompts": {},
+  "sessions": {
+    "s_3d9149cddcace3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b493b4af-edd7-43bb-8155-49422b5bb14b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
