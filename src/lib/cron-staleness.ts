@@ -28,7 +28,40 @@ export const EXPECTED_HOURS_OVERRIDE: Record<string, number> = {
   "product-view-rollup": 30, // product-view-rollup.yml → `30 3 * * *` diario
   "insights-digest": 8 * 24, // insights-digest.yml → `0 8 * * 1` semanal
   "insights-digest-monthly": 35 * 24, // insights-digest-monthly.yml → `0 9 1 * *` mensual
+  // competitor-watch.yml → `0 6 * * 1` SEMANAL. Sin esta entrada caía a
+  // DEFAULT_HOURS (30h) y salía "parado" de martes a domingo: la misma falsa
+  // alarma que metric-snapshot, en la dirección contraria. El guard
+  // cron-staleness-vs-workflows.guard.test.ts impide que vuelva a colarse.
+  "competitor-watch": 8 * 24,
 };
+
+/**
+ * Frecuencia aproximada, en horas, de una expresión cron de 5 campos.
+ *
+ * No pretende ser un parser completo: solo distinguir los órdenes de magnitud
+ * que necesita el watchdog (horaria / cada N horas / diaria / semanal /
+ * mensual) para comprobar que su umbral de silencio es coherente con lo que
+ * dispara el cron de verdad. Ante una expresión que no entiende, devuelve
+ * `null` en vez de inventarse un número — que es exactamente cómo nacieron las
+ * falsas alarmas que este módulo arrastra.
+ */
+export function estimateFrequencyHours(expr: string): number | null {
+  const parts = expr.trim().split(/\s+/);
+  if (parts.length !== 5) return null;
+  const [, hour, dom, , dow] = parts;
+
+  if (dom !== "*") return 30 * 24; // día fijo del mes → mensual
+  if (dow !== "*") return 7 * 24; // día fijo de la semana → semanal
+
+  if (hour === "*") return 1;
+  const everyN = /^\*\/(\d+)$/.exec(hour);
+  if (everyN) {
+    const n = Number(everyN[1]);
+    return n > 0 && n <= 24 ? n : null;
+  }
+  if (/^\d+$/.test(hour)) return 24; // hora fija, todos los días
+  return null;
+}
 
 /**
  * Crons cuya ejecución real NO pasa por una llamada HTTP a su ruta: el silencio
