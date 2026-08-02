@@ -1,0 +1,48 @@
+src/components/VoiceAgentWidget.guard.test.ts
+  s_578116e23e11cc::t_a174619c3ecd98 1-21,23-34
+  s_578116e23e11cc::t_49b4e87c98dd40 22
+src/lib/page-seo.test.ts
+  s_578116e23e11cc::t_fcffd70c38ad9b 1-40
+src/app/catalogo/[slug]/page.tsx
+  s_578116e23e11cc::t_e16668652c050e 264-277,431,435-437
+src/components/VoiceAgentWidget.tsx
+  s_578116e23e11cc::t_4ab89ed06ea2fb 5,184-189,296-299,321,950,952,954-963,1006-1007,1010-1012,1020-1025,1032,1035
+  s_578116e23e11cc::t_49b4e87c98dd40 1008
+src/lib/page-seo.ts
+  s_578116e23e11cc::t_fcffd70c38ad9b 59-62
+  s_578116e23e11cc::t_ee3be6d91ed1e3 63
+src/components/CatalogFiltersDisclosure.tsx
+  s_578116e23e11cc::t_bf2c9abfe44c3b 1-11,32,39-40,42-43
+  s_578116e23e11cc::t_94a832b8c146a1 12-31,33-38,41
+src/components/portal/FavoriteHeart.tsx
+  s_578116e23e11cc::t_9a1388ee3172e3 60
+src/app/recursos/[slug]/page.tsx
+  s_578116e23e11cc::t_fcffd70c38ad9b 11-13,30
+src/components/CatalogCardActions.tsx
+  s_578116e23e11cc::t_9a1388ee3172e3 11-12,58
+src/components/CatalogFiltersDisclosure.guard.test.ts
+  s_578116e23e11cc::t_94a832b8c146a1 22,25-28
+  s_578116e23e11cc::t_1ecccee20be261 1-14,20-21,23-24,29-38,49-50
+  s_578116e23e11cc::t_cf5bb4dd185cf1 39-41
+  s_578116e23e11cc::t_146a55c0deecdd 15-19,42-48
+src/app/catalogo/page.tsx
+  s_578116e23e11cc::t_f44bc6bb700962 18,101-110,432,492-494,656,666,721
+  s_578116e23e11cc::t_fcffd70c38ad9b 39-45
+  s_578116e23e11cc::t_9a1388ee3172e3 776,778,780-783,875-883
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "6267ee546d3a25f1c003b04001a421b08e085ed8",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
