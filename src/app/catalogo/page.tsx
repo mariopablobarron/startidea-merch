@@ -15,6 +15,7 @@ import { collectionPageJsonLd } from "@/lib/jsonld";
 import { SortSelect } from "@/components/SortSelect";
 import { CompareBadge } from "@/components/CatalogCardActions";
 import { FavoriteHeart } from "@/components/portal/FavoriteHeart";
+import { CatalogFiltersDisclosure } from "@/components/CatalogFiltersDisclosure";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
@@ -35,7 +36,13 @@ export async function generateMetadata({
   // para consolidar autoridad y evitar contenido duplicado por query params.
   const cat = ((await searchParams).cat || "").trim();
   if (cat) {
-    merged.alternates = { ...(merged.alternates || {}), canonical: `${SITE_URL}/categorias/${cat}` };
+    return {
+      ...merged,
+      alternates: {
+        ...(merged.alternates || {}),
+        canonical: `${SITE_URL}/categorias/${cat}`,
+      },
+    };
   }
   return merged;
 }
@@ -91,6 +98,16 @@ export default async function CatalogoPage({
   const sortExplicit = Boolean(sp.sort);
   const page = Math.max(1, parseInt(sp.page || "1", 10) || 1);
   const perPage = 24;
+  const activeFilterCount = [
+    Boolean(qRaw),
+    Boolean(catSlug),
+    Boolean(colorGroup),
+    Boolean(talla),
+    Boolean(material),
+    priceMin !== null,
+    priceMax !== null,
+    inStock,
+  ].filter(Boolean).length;
 
   // Resolve category — puede ser top-level o sub-categoría (level 2/3)
   const category = catSlug
@@ -412,6 +429,7 @@ export default async function CatalogoPage({
                 type="search"
                 name="q"
                 defaultValue={q}
+                aria-label="Buscar productos en el catálogo"
                 placeholder="Buscar productos…"
                 className="flex-1 rounded-full border border-line bg-bone-soft px-5 py-3 text-base outline-none transition focus:border-accent"
               />
@@ -471,8 +489,9 @@ export default async function CatalogoPage({
         <section className="bg-bone py-6 lg:py-8">
           <div className="mx-auto max-w-8xl px-6 lg:px-10">
             <div className="grid gap-8 lg:grid-cols-[240px,1fr]">
-              {/* Sidebar filtros */}
-              <aside className="lg:sticky lg:top-24 lg:self-start">
+              {/* En móvil los filtros permanecen plegados para que el primer
+                  producto aparezca enseguida. En escritorio siguen sticky. */}
+              <CatalogFiltersDisclosure activeCount={activeFilterCount}>
                 <FilterBlock title="Categoría">
                   <Chip
                     href="/catalogo"
@@ -634,6 +653,7 @@ export default async function CatalogoPage({
                         name="priceMin"
                         defaultValue={priceMin ?? ""}
                         min={0}
+                        aria-label="Precio mínimo por unidad"
                         placeholder="Desde"
                         className="w-full rounded-lg border border-line bg-bone-soft px-2.5 py-1.5 text-xs outline-none focus:border-accent"
                       />
@@ -643,6 +663,7 @@ export default async function CatalogoPage({
                         name="priceMax"
                         defaultValue={priceMax ?? ""}
                         min={0}
+                        aria-label="Precio máximo por unidad"
                         placeholder="Hasta"
                         className="w-full rounded-lg border border-line bg-bone-soft px-2.5 py-1.5 text-xs outline-none focus:border-accent"
                       />
@@ -697,7 +718,7 @@ export default async function CatalogoPage({
                     Limpiar todos los filtros
                   </Link>
                 )}
-              </aside>
+              </CatalogFiltersDisclosure>
 
               {/* Grid de productos */}
               <div>
@@ -752,15 +773,14 @@ export default async function CatalogoPage({
                         const tags = ov?.marketingTags ?? [];
 
                         return (
-                          <Link
+                          <article
                             key={p.id}
-                            href={`/catalogo/${p.slug}`}
-                            className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft p-3 transition hover:border-accent/40 lg:p-4"
+                            className="group relative flex flex-col rounded-3xl border border-line bg-bone-soft transition hover:border-accent/40"
                           >
-                            {/* Favorito arriba a la derecha (los badges van a la izquierda) */}
-                            <div className="absolute right-3 top-3 z-10">
-                              <FavoriteHeart productId={p.id} size="sm" />
-                            </div>
+                            <Link
+                              href={`/catalogo/${p.slug}`}
+                              className="relative flex h-full flex-col rounded-[inherit] p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 lg:p-4"
+                            >
                             {/* Badges de marketing arriba a la izquierda */}
                             {(isFeatured || tags.length > 0 || hasPromo) && (
                               <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1">
@@ -802,7 +822,6 @@ export default async function CatalogoPage({
                               ) : (
                                 <div className="grid h-full place-items-center text-ink/30">Sin imagen</div>
                               )}
-                              <CompareBadge slug={p.slug} />
                             </div>
                             <h3 className="mt-3 line-clamp-2 font-display text-base font-semibold text-ink lg:text-lg">
                               {displayName}
@@ -853,7 +872,15 @@ export default async function CatalogoPage({
                               )}
                               <span className="font-medium text-accent">Personalizar →</span>
                             </div>
-                          </Link>
+                            </Link>
+                            {/* Acciones independientes: nunca anidar botones dentro del enlace. */}
+                            <div className="absolute right-3 top-3 z-20">
+                              <FavoriteHeart productId={p.id} size="sm" />
+                            </div>
+                            <div className="absolute right-3 top-14 z-20">
+                              <CompareBadge slug={p.slug} />
+                            </div>
+                          </article>
                         );
                       })}
                     </div>

@@ -54,8 +54,12 @@ export function mergeMetadata(
   base: Metadata,
   override: PageSeoData | null,
 ): Metadata {
-  if (!override) return base;
   const result: Metadata = { ...base };
+
+  // Nunca devolver la referencia compartida del metadata base. Algunas rutas
+  // ajustan después campos según la petición (por ejemplo, el canonical de
+  // /catalogo?cat=...) y mutarían el objeto de módulo para futuras peticiones.
+  if (!override) return result;
 
   if (override.title) result.title = override.title;
   if (override.description) result.description = override.description;

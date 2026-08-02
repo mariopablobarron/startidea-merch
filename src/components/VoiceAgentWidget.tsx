@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
+import { usePathname } from "next/navigation";
 import { trackLead } from "@/lib/ads-events";
 import { addItem } from "@/lib/cart-storage";
 
@@ -180,6 +181,12 @@ function micUnblockHint(): string {
 }
 
 function VoiceAgentInner() {
+  const pathname = usePathname() || "";
+  // Catálogo y ficha concentran filtros/configurador/CTA de compra. Ahí una
+  // invitación automática compite con la tarea principal y tapa controles en
+  // móvil; el lanzador compacto sigue disponible para quien quiera usarlo.
+  const suppressAutomaticNudge =
+    pathname === "/catalogo" || pathname.startsWith("/catalogo/");
   const [open, setOpen] = useState(false);
   const [bootingError, setBootingError] = useState<string | null>(null);
   const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
@@ -286,6 +293,10 @@ function VoiceAgentInner() {
   }, []);
 
   useEffect(() => {
+    if (suppressAutomaticNudge) {
+      setNudge(false);
+      return;
+    }
     try {
       const until = Number(localStorage.getItem("merch:diego-nudge-until") || 0);
       if (Date.now() < until) return;
@@ -307,7 +318,7 @@ function VoiceAgentInner() {
       clearInterval(poll);
       if (show) clearTimeout(show);
     };
-  }, []);
+  }, [suppressAutomaticNudge]);
 
   const snoozeNudge = useCallback((hours: number) => {
     setNudge(false);
@@ -936,12 +947,20 @@ function VoiceAgentInner() {
     <>
       {/* Burbuja de invitación (nudge) — explica qué es David e incita a abrir.
           Transparencia IA (AI Act art. 50): se presenta como asistente de IA. */}
-      {nudge && !open && !isActive && !isConnecting && (
+      {nudge && !suppressAutomaticNudge && !open && !isActive && !isConnecting && (
         <div
-          className="fixed bottom-40 right-6 z-40 w-64 rounded-2xl border border-line bg-white p-3.5 shadow-xl"
-          style={{ animation: "diego-nudge-in 0.35s ease-out" }}
+          className="diego-nudge-motion fixed bottom-40 right-6 z-40 hidden w-64 rounded-2xl border border-line bg-white p-3.5 shadow-xl sm:block"
         >
-          <style>{`@keyframes diego-nudge-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+          <style>{`
+            @keyframes diego-nudge-in {
+              from { opacity: 0; transform: translateY(8px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            .diego-nudge-motion { animation: diego-nudge-in 0.35s ease-out; }
+            @media (prefers-reduced-motion: reduce) {
+              .diego-nudge-motion { animation: none; }
+            }
+          `}</style>
           <button
             type="button"
             onClick={() => snoozeNudge(24)}
@@ -984,11 +1003,13 @@ function VoiceAgentInner() {
             void start();
           }}
           aria-label={`Hablar o escribir con ${agentName}, asistente virtual con IA`}
-          className="fixed bottom-24 right-6 z-40 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-semibold text-bone shadow-lg hover:bg-accent"
+          aria-controls="voice-agent-dialog"
+          aria-expanded={open}
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)_+_6rem)] right-3 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-ink text-bone shadow-lg hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:bottom-24 sm:right-6 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-semibold"
         >
-          <MicIcon className="h-4 w-4" />
-          Habla o escribe a {agentName}
-          <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-wider">
+          <MicIcon className="h-5 w-5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Habla o escribe a {agentName}</span>
+          <span className="absolute -right-1 -top-1 rounded-full border border-bone bg-accent px-1.5 py-0.5 text-[8px] font-bold tracking-wider sm:static sm:border-0 sm:bg-white/20 sm:text-[9px]">
             IA
           </span>
         </button>
@@ -996,17 +1017,22 @@ function VoiceAgentInner() {
 
       {/* Panel conversación activa */}
       {(open || isActive || isConnecting) && (
-        <div className="fixed bottom-6 left-6 right-6 z-50 max-w-md rounded-2xl border border-line bg-white shadow-2xl sm:left-auto">
+        <div
+          id="voice-agent-dialog"
+          role="dialog"
+          aria-label={`${agentName}, asistente virtual con IA`}
+          className="fixed bottom-6 left-6 right-6 z-50 max-w-md rounded-2xl border border-line bg-white shadow-2xl sm:left-auto"
+        >
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
             <div className="flex items-center gap-2">
               <span
                 className={`inline-block h-2.5 w-2.5 rounded-full ${
                   isActive
                     ? c.isSpeaking
-                      ? "animate-pulse bg-accent"
+                      ? "motion-safe:animate-pulse bg-accent"
                       : "bg-social"
                     : isConnecting
-                      ? "animate-pulse bg-amber-400"
+                      ? "motion-safe:animate-pulse bg-amber-400"
                       : "bg-line"
                 }`}
               />
