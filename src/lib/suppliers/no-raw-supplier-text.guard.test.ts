@@ -39,6 +39,7 @@ const TEXT_FIELDS = [
 ];
 
 const SANITIZER = /sanitizeSupplier(Text|Name)\s*\(/;
+const ASSIGNMENT_LINE = /^\s*([A-Za-z_$][\w$]*)\s*:\s*(.+?),?\s*$/;
 
 function read(rel: string): string {
   return readFileSync(join(process.cwd(), rel), "utf8");
@@ -50,12 +51,11 @@ function read(rel: string): string {
  * de un tipo/zod, y las claves de un `where`.
  */
 function assignmentLines(src: string, field: string): { line: number; text: string }[] {
-  const re = new RegExp(`^\\s*${field}\\s*:\\s*(.+?),?\\s*$`);
   const out: { line: number; text: string }[] = [];
   src.split("\n").forEach((text, i) => {
-    const m = text.match(re);
-    if (!m) return;
-    const value = m[1].trim();
+    const m = text.match(ASSIGNMENT_LINE);
+    if (!m || m[1] !== field) return;
+    const value = m[2].trim();
     if (/^(true|false|undefined)\b/.test(value)) return; // select
     if (/^(string|number|boolean)\b/.test(value)) return; // anotación de tipo
     if (/^z\./.test(value)) return; // zod
