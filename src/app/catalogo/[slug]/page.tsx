@@ -261,18 +261,20 @@ export default async function ProductDetailPage({
           <ProductColorProvider>
           <div className="mx-auto grid max-w-8xl gap-12 px-6 lg:grid-cols-[1.3fr,1fr] lg:px-10">
             {/* IZQUIERDA — galería + variantes + descripción.
-                En mobile va DESPUÉS del configurador (order-2) para que
-                el cliente vea precio + upload logo + total ANTES de tener
-                que hacer scroll por toda la galería + descripción larga.
-                Audit móvil: ficha tenía 8 553 px altura y el "Subir logo"
-                quedaba a y=5316. Con este reorder el configurador queda
-                "above the fold" en mobile. */}
-            <div className="order-2 lg:order-1">
-              <ProductGallery
-                primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
-                productName={displayName}
-                colorOptions={colorOptions}
-              />
+                En móvil `contents` permite intercalar la información de compra:
+                galería → producto/precio/configurador → contenido técnico.
+                En escritorio vuelve a ser un único bloque y conserva la galería
+                y la descripción en la columna izquierda. */}
+            <div className="contents lg:order-1 lg:block">
+              <div className="order-1">
+                <ProductGallery
+                  primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
+                  productName={displayName}
+                  colorOptions={colorOptions}
+                />
+              </div>
+
+              <div className="order-3">
 
               {/* Descripción larga + ficha técnica */}
               {displayDescription && (
@@ -426,11 +428,13 @@ export default async function ProductDetailPage({
                   </ul>
                 </div>
               )}
+              </div>
             </div>
 
             {/* DERECHA — sticky con info + configurador.
-                Mobile: order-1 (arriba del todo). Desktop: order normal. */}
-            <aside className="order-1 lg:order-2 lg:sticky lg:top-24 lg:self-start">
+                Mobile: entre la galería y el contenido técnico. Desktop: sticky
+                en la columna derecha como hasta ahora. */}
+            <aside className="order-2 lg:sticky lg:top-24 lg:self-start">
               {/* Banda de promoción activa: aparece encima de la marca y muy visible */}
               {activePromo && (
                 <div

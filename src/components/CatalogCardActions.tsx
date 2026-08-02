@@ -8,8 +8,8 @@ const STORAGE_KEY = "merch:compare";
  * Decora cada card del catálogo con un badge "✓ Comparando" cuando el slug
  * está en localStorage. Toggle directo desde la card sin entrar a la ficha.
  *
- * Se renderiza dentro del `<Link>` de la card pero usa stopPropagation
- * para no navegar al pulsar.
+ * Se renderiza como acción hermana del `<Link>` de la card para no anidar
+ * elementos interactivos. Mantiene preventDefault/stopPropagation por robustez.
  */
 export function CompareBadge({ slug }: { slug: string }) {
   const [list, setList] = useState<string[]>([]);
@@ -55,7 +55,7 @@ export function CompareBadge({ slug }: { slug: string }) {
       onClick={toggle}
       disabled={full}
       title={full ? "Máximo 3 productos en comparador" : inside ? "Quitar del comparador" : "Añadir al comparador"}
-      className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border text-xs transition ${
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-xs transition ${
         inside
           ? "border-accent bg-accent text-bone"
           : "border-line bg-bone text-ink/50 hover:border-accent hover:text-accent"

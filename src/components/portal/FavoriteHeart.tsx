@@ -57,7 +57,7 @@ export function FavoriteHeart({
   }, [productId]);
 
   async function toggle(e: React.MouseEvent) {
-    // La card del catálogo es un <Link>: el corazón no debe navegar.
+    // Mantener aislada la acción incluso si otro consumidor la coloca sobre un enlace.
     e.preventDefault();
     e.stopPropagation();
     if (loggedIn === false) {

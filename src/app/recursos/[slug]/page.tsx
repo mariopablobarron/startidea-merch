@@ -8,6 +8,9 @@ import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { LeadMagnetForm } from "@/components/LeadMagnetForm";
 import { prisma } from "@/lib/prisma";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
+
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
@@ -24,6 +27,7 @@ export async function generateMetadata({
   return {
     title: `${m.title} · Descarga gratis`,
     description: m.description?.slice(0, 160) || `Descarga ${m.title} en PDF.`,
+    alternates: { canonical: `${SITE_URL}/recursos/${slug}` },
     openGraph: {
       title: m.title,
       description: m.description || undefined,
