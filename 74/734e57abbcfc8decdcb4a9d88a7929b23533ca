@@ -1,0 +1,26 @@
+src/lib/coupons-claim.test.ts
+  s_d2904baec8da1f::t_c7d4edbe5c3b2e 1-186
+src/lib/coupons.ts
+  s_d2904baec8da1f::t_b922a2570ed9ca 48-62,64-97,105-106
+src/app/api/cart-quote/route.ts
+  s_d2904baec8da1f::t_386aee3d6a3c1d 395-397,400,402,404
+  s_d2904baec8da1f::t_96fb73bc01bf87 232-250
+  s_d2904baec8da1f::t_00222e3745e64b 8
+  s_d2904baec8da1f::t_601e16b9f75aa3 345-349
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "74734e57abbcfc8decdcb4a9d88a7929b23533ca",
+  "prompts": {},
+  "sessions": {
+    "s_d2904baec8da1f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "17f97687-3e26-4a1f-9dce-8ef813931e05",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
