@@ -1,0 +1,19 @@
+.gitleaksignore
+  s_632ef1280a46c0::t_f4c9fa90e18fdc 16-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "da474cae0cbbf2b6d03408cc0276b4c7981b1b32",
+  "prompts": {},
+  "sessions": {
+    "s_632ef1280a46c0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "38952054-b53f-42ec-9345-4cb1c94882f7",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
