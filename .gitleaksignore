@@ -13,3 +13,12 @@ f7581da7015525f2e23e030bebc870254c96a0fd:docs/deploy-vps.md:generic-api-key:134
 974f4eb7c95c5ef0b7c0eb5d27530ea8deea5d06:src/app/docs/api/page.tsx:curl-auth-header:72
 974f4eb7c95c5ef0b7c0eb5d27530ea8deea5d06:src/app/docs/api/page.tsx:curl-auth-header:113
 974f4eb7c95c5ef0b7c0eb5d27530ea8deea5d06:src/app/docs/api/page.tsx:curl-auth-header:158
+
+# Bloque HTTP de ejemplo en la doc de FacturaScripts. La línea es literalmente
+# `Token: <API_KEY>` (placeholder, nunca tuvo un valor real: idéntica en 892ed84
+# y en HEAD), y lo que la regla generic-api-key toma por secreto es la referencia
+# de producto de ejemplo que va justo debajo en el mismo bloque.
+# Auditado 2026-08-03: no hay ninguna cadena con forma de credencial en el fichero.
+# Solo lo ve el escaneo `schedule` (escanea todo el historial); los runs de
+# pull_request escanean el diff y por eso salían verdes desde el 20-jun.
+892ed84f1790e913ecc681dd9b34beeff3a47f54:docs/facturascripts-integration.md:generic-api-key:68
