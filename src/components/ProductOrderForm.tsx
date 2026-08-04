@@ -110,7 +110,13 @@ export function ProductOrderForm({
     return baseCentsForEstimate ? defaultTiersFromBase(baseCentsForEstimate) : [];
   }, [tiers, baseCentsForEstimate]);
 
-  const positionsAvailable = positions.filter((p) => p.techniques.length > 0);
+  // Memoizado a propósito: este array alimenta las dependencias del efecto de
+  // cálculo. Sin useMemo se recreaba en CADA render, el efecto se re-disparaba
+  // aunque no hubiera cambiado nada y el precio parpadeaba sin parar.
+  const positionsAvailable = useMemo(
+    () => positions.filter((p) => p.techniques.length > 0),
+    [positions],
+  );
   const canMark = positionsAvailable.length > 0;
 
   // Estado
@@ -219,6 +225,7 @@ export function ProductOrderForm({
       setCalc(null);
       return;
     }
+    const ctrl = new AbortController();
     const timer = setTimeout(async () => {
       setLoadingCalc(true);
       try {
@@ -256,24 +263,38 @@ export function ProductOrderForm({
             quantity: finalQty,
             markings: markingsPayload,
           }),
+          signal: ctrl.signal,
         });
         const data: CalcResponse = await res.json();
         setCalc(data);
+      } catch (e) {
+        // Petición abortada por una más reciente: no es un error, y sobre todo
+        // NO debe apagar el indicador de carga ni pisar el precio con un
+        // resultado viejo (dos respuestas fuera de orden hacían saltar la cifra).
+        if ((e as Error)?.name === "AbortError") return;
       } finally {
-        setLoadingCalc(false);
+        if (!ctrl.signal.aborted) setLoadingCalc(false);
       }
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+    // Dependencias por IDENTIFICADOR, no por objeto: `position` y `technique`
+    // se derivan de positionsAvailable en cada render, así que incluirlos
+    // re-disparaba el efecto constantemente. Sus valores relevantes ya están
+    // aquí como primitivas. El lint pide los objetos: NO se los damos a
+    // propósito — devolverlos reintroduce el parpadeo del precio.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     withMarking,
     productSlug,
     finalQty,
+    position?.positionId,
     technique?.techniqueCode,
     colours,
     manipulation,
     printAreaCm2,
-    position,
-    technique,
     maxColors,
     extraMarkings,
     positionsAvailable,
@@ -889,8 +910,17 @@ export function ProductOrderForm({
             Total · {finalQty.toLocaleString("es-ES")} uds
             {withMarking ? " · con marcaje" : " · sin marcaje"}
           </p>
-          <p className="mt-1 font-display text-3xl font-semibold tabular-nums text-ink">
-            {loadingCalc ? (
+          {/* Mientras recalcula NO se borra la cifra: se atenúa. Sustituirla por
+              "…" la hacía desaparecer y, al ser mucho más estrecho, además
+              saltaba el ancho de la línea en cada recálculo. Solo se muestra el
+              placeholder cuando todavía no hay ningún precio que enseñar. */}
+          <p
+            className={`mt-1 font-display text-3xl font-semibold tabular-nums text-ink transition-opacity duration-200 ${
+              loadingCalc ? "opacity-50" : "opacity-100"
+            }`}
+            aria-busy={loadingCalc}
+          >
+            {totalCents == null && loadingCalc ? (
               "…"
             ) : (
               <AnimatedPrice cents={totalCents} format={(c) => formatMoney(c).formatted} />
