@@ -738,65 +738,140 @@ export function ProductOrderForm({
           <p className="text-[11px] font-medium uppercase tracking-wider text-ink/50">
             Opciones de marcaje
           </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Zona">
-              <select
-                value={positionIdx}
-                onChange={(e) => {
-                  setPositionIdx(parseInt(e.target.value, 10));
-                  setTechIdx(0);
-                }}
-                className="w-full rounded-lg border border-line bg-bone px-2.5 py-1.5 text-sm outline-none focus:border-accent"
-              >
+          {/* Elegir marcaje era cuatro desplegables anidados: había que abrir cada
+              uno para saber qué había dentro, y en móvil cada uno lanza el picker
+              nativo. Medido sobre el catálogo: el 43% de los productos tiene UNA
+              sola zona (un desplegable de una única opción) y el 97% tiene 6
+              técnicas o menos, así que casi siempre caben a la vista. Se muestran
+              como opciones visibles y solo se degrada a <select> cuando de verdad
+              hay demasiadas. */}
+          <div className="grid gap-4">
+            {/* ── Zona ── */}
+            {positionsAvailable.length === 1 ? (
+              <p className="text-xs text-ink/60">
+                Se marca en{" "}
+                <strong className="font-semibold text-ink">
+                  {displayPositionId(positionsAvailable[0].positionId)}
+                </strong>
+                {positionsAvailable[0].maxWidthMm && positionsAvailable[0].maxHeightMm
+                  ? ` · área máxima ${positionsAvailable[0].maxWidthMm}×${positionsAvailable[0].maxHeightMm} mm`
+                  : ""}
+              </p>
+            ) : positionsAvailable.length <= 5 ? (
+              <OptionGroup label="Zona del marcaje">
                 {positionsAvailable.map((p, i) => (
-                  <option key={p.id} value={i}>
+                  <ChoiceChip
+                    key={p.id}
+                    selected={i === positionIdx}
+                    onClick={() => {
+                      setPositionIdx(i);
+                      setTechIdx(0);
+                    }}
+                    sub={
+                      p.maxWidthMm && p.maxHeightMm
+                        ? `${p.maxWidthMm}×${p.maxHeightMm} mm`
+                        : undefined
+                    }
+                  >
                     {displayPositionId(p.positionId)}
-                    {p.maxWidthMm && p.maxHeightMm
-                      ? ` · ${p.maxWidthMm}×${p.maxHeightMm}mm`
-                      : ""}
-                  </option>
+                  </ChoiceChip>
                 ))}
-              </select>
-            </Field>
-            <Field
-              label="Técnica"
-              hint={technique && <MarkingTechniqueTooltip name={technique.techniqueName} />}
-            >
-              <select
-                value={techIdx}
-                onChange={(e) => setTechIdx(parseInt(e.target.value, 10))}
-                className="w-full rounded-lg border border-line bg-bone px-2.5 py-1.5 text-sm outline-none focus:border-accent"
-              >
-                {position?.techniques.map((t, i) => (
-                  <option key={t.techniqueId} value={i}>
-                    {t.techniqueName}
-                  </option>
+              </OptionGroup>
+            ) : (
+              <Field label="Zona del marcaje">
+                <select
+                  value={positionIdx}
+                  onChange={(e) => {
+                    setPositionIdx(parseInt(e.target.value, 10));
+                    setTechIdx(0);
+                  }}
+                  className="min-h-[44px] w-full rounded-lg border border-line bg-bone px-2.5 text-sm outline-none focus:border-accent"
+                >
+                  {positionsAvailable.map((p, i) => (
+                    <option key={p.id} value={i}>
+                      {displayPositionId(p.positionId)}
+                      {p.maxWidthMm && p.maxHeightMm
+                        ? ` · ${p.maxWidthMm}×${p.maxHeightMm}mm`
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+
+            {/* ── Técnica ── */}
+            {(position?.techniques.length ?? 0) > 1 &&
+              ((position?.techniques.length ?? 0) <= 6 ? (
+                <OptionGroup
+                  label="Técnica"
+                  hint={technique && <MarkingTechniqueTooltip name={technique.techniqueName} />}
+                >
+                  {position?.techniques.map((t, i) => (
+                    <ChoiceChip
+                      key={t.techniqueId}
+                      selected={i === techIdx}
+                      onClick={() => setTechIdx(i)}
+                    >
+                      {t.techniqueName}
+                    </ChoiceChip>
+                  ))}
+                </OptionGroup>
+              ) : (
+                <Field
+                  label="Técnica"
+                  hint={technique && <MarkingTechniqueTooltip name={technique.techniqueName} />}
+                >
+                  <select
+                    value={techIdx}
+                    onChange={(e) => setTechIdx(parseInt(e.target.value, 10))}
+                    className="min-h-[44px] w-full rounded-lg border border-line bg-bone px-2.5 text-sm outline-none focus:border-accent"
+                  >
+                    {position?.techniques.map((t, i) => (
+                      <option key={t.techniqueId} value={i}>
+                        {t.techniqueName}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              ))}
+            {position?.techniques.length === 1 && technique && (
+              <p className="text-xs text-ink/60">
+                Técnica: <strong className="font-semibold text-ink">{technique.techniqueName}</strong>{" "}
+                <MarkingTechniqueTooltip name={technique.techniqueName} />
+              </p>
+            )}
+
+            {/* ── Nº de tintas ── */}
+            {maxColors > 1 ? (
+              <OptionGroup label={`Nº de tintas del logo · máx. ${maxColors}`}>
+                {Array.from({ length: maxColors }, (_, i) => i + 1).map((n) => (
+                  <ChoiceChip key={n} selected={n === colours} onClick={() => setColours(n)} compact>
+                    {n}
+                  </ChoiceChip>
                 ))}
-              </select>
-            </Field>
-            <Field label="Nº de colores">
-              <input
-                type="number"
-                min={1}
-                max={maxColors}
-                value={colours}
-                onChange={(e) => setColours(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-full rounded-lg border border-line bg-bone px-2.5 py-1.5 text-sm outline-none focus:border-accent"
-              />
-            </Field>
-            <Field label="Complejidad del logo">
-              <select
-                value={manipulation}
-                onChange={(e) => setManipulation(e.target.value)}
-                className="w-full rounded-lg border border-line bg-bone px-2.5 py-1.5 text-sm outline-none focus:border-accent"
-              >
-                {MANIPULATIONS.map((m) => (
-                  <option key={m.code} value={m.code}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
+              </OptionGroup>
+            ) : (
+              <p className="text-xs text-ink/60">
+                Esta técnica se aplica a <strong className="font-semibold text-ink">1 tinta</strong>.
+              </p>
+            )}
+
+            {/* ── Complejidad ── */}
+            <OptionGroup label="Complejidad del arte">
+              {MANIPULATIONS.map((m) => (
+                <ChoiceChip
+                  key={m.code}
+                  selected={m.code === manipulation}
+                  onClick={() => setManipulation(m.code)}
+                >
+                  {m.label}
+                </ChoiceChip>
+              ))}
+            </OptionGroup>
+            <p className="-mt-2 text-[11px] text-ink/45">
+              Se refiere al detalle del dibujo que nos envíes, no a las tintas que has elegido
+              arriba. Si dudas, déjalo como está: lo ajustamos al revisar tu logo.
+            </p>
           </div>
           {calc && "error" in calc && (
             <p className="text-[11px] text-accent-deep">⚠ {calc.error}</p>
@@ -1091,6 +1166,69 @@ function Badge({ color, children }: { color: "accent" | "social"; children: Reac
     >
       {children}
     </span>
+  );
+}
+
+/**
+ * Grupo de opciones visibles. Reutiliza la misma etiqueta que `Field` para que
+ * un grupo de chips y un desplegable se lean igual cuando conviven (productos
+ * con muchas zonas o técnicas siguen usando `<select>`).
+ */
+function OptionGroup({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div role="group" aria-label={label}>
+      <span className="flex items-center text-[11px] font-medium uppercase tracking-wider text-ink/50">
+        {label}
+        {hint}
+      </span>
+      <div className="mt-2 flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Opción táctil. `min-h-[44px]` no es decorativo: es el objetivo táctil mínimo
+ * que ya se aplicó al footer por accesibilidad, y aquí importa más porque estos
+ * controles deciden el precio. `compact` es para las tintas, que son un dígito
+ * y necesitan ancho de botón, no de etiqueta.
+ */
+function ChoiceChip({
+  selected,
+  onClick,
+  children,
+  sub,
+  compact,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  sub?: string;
+  compact?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`min-h-[44px] rounded-xl border text-left text-sm transition-colors ${
+        compact ? "min-w-[44px] px-3 text-center tabular-nums" : "px-3.5"
+      } py-2 ${
+        selected
+          ? "border-accent bg-accent/10 font-semibold text-ink"
+          : "border-line bg-bone text-ink/75 hover:border-accent/60"
+      }`}
+    >
+      {children}
+      {sub && <span className="mt-0.5 block text-[11px] font-normal text-ink/50">{sub}</span>}
+    </button>
   );
 }
 
