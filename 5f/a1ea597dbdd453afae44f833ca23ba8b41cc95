@@ -1,0 +1,40 @@
+src/app/catalogo/[slug]/page.tsx
+  s_bac15d47a63f1a::t_686b33db60b3a5 381
+  s_bac15d47a63f1a::t_92ea195f21aa20 390
+  s_bac15d47a63f1a::t_2820dedca1080c 27
+  s_bac15d47a63f1a::t_da2980af2e87f2 400
+src/lib/marking-position-label.test.ts
+  s_bac15d47a63f1a::t_fe18c322d4c349 1-160
+src/lib/marking-position-label.ts
+  s_bac15d47a63f1a::t_0ef8dfb562229d 1-109
+src/components/ProductOrderForm.tsx
+  s_bac15d47a63f1a::t_0c2fbfcb1cca50 754-771
+  s_bac15d47a63f1a::t_8ec705e507f7c4 788
+  s_bac15d47a63f1a::t_42494454659cf1 410
+  s_bac15d47a63f1a::t_29ff4fdeb4b1c2 804
+  s_bac15d47a63f1a::t_92b8752bd980a2 4-7
+  s_bac15d47a63f1a::t_0ad1e27b792b94 391
+  s_bac15d47a63f1a::t_3b5f263ec9f969 486
+src/components/ExtraMarkingsPanel.tsx
+  s_bac15d47a63f1a::t_f92e481acb36c1 110
+  s_bac15d47a63f1a::t_dd00304599c499 3
+src/components/MockupGenerator.tsx
+  s_bac15d47a63f1a::t_a0ebbe77e34586 4
+  s_bac15d47a63f1a::t_a2af9e9cf531bf 159,161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "5fa1ea597dbdd453afae44f833ca23ba8b41cc95",
+  "prompts": {},
+  "sessions": {
+    "s_bac15d47a63f1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2b7b399b-fa99-4c51-a780-48c5f394c29a",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
