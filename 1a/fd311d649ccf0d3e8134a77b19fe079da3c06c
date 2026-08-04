@@ -1,0 +1,19 @@
+src/lib/cotizar-core.test.ts
+  s_3e563e35c47ba8::t_ae614ef2dcbdec 1-324
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "1afd311d649ccf0d3e8134a77b19fe079da3c06c",
+  "prompts": {},
+  "sessions": {
+    "s_3e563e35c47ba8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98471e88-7f5b-40e0-852e-7a391f429cfd",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
