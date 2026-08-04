@@ -1,0 +1,19 @@
+src/app/admin/proposals/page.tsx
+  s_3e563e35c47ba8::t_6944516d5a9b3e 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "d7dfcc65d7c350bfa88a58c7ca54499ad5ae5c24",
+  "prompts": {},
+  "sessions": {
+    "s_3e563e35c47ba8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98471e88-7f5b-40e0-852e-7a391f429cfd",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
