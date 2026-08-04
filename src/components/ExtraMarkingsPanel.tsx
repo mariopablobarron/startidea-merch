@@ -1,6 +1,6 @@
 "use client";
 
-import { displayPositionId } from "@/lib/marking-position-display";
+import { positionOptionLabel } from "@/lib/marking-position-label";
 import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 
 export type ExtraMarking = {
@@ -107,7 +107,7 @@ export function ExtraMarkingsPanel({
                     >
                       {positionsAvailable.map((p, idx) => (
                         <option key={p.id} value={idx}>
-                          {displayPositionId(p.positionId)}
+                          {positionOptionLabel(p, idx)}
                         </option>
                       ))}
                     </select>

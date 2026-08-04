@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { displayPositionId } from "@/lib/marking-position-display";
+import {
+  describeSinglePosition,
+  positionOptionLabel,
+} from "@/lib/marking-position-label";
 import {
   defaultTiersFromBase,
   formatMoney,
@@ -385,7 +388,7 @@ export function ProductOrderForm({
       ? [
           {
             positionId: position.positionId,
-            positionLabel: displayPositionId(position.positionId),
+            positionLabel: positionOptionLabel(position, positionIdx),
             techniqueCode: technique.techniqueCode,
             techniqueName: technique.techniqueName,
             numberOfColors: Math.min(colours, maxColors),
@@ -404,7 +407,7 @@ export function ProductOrderForm({
                 : null;
               return {
                 positionId: p.positionId,
-                positionLabel: displayPositionId(p.positionId),
+                positionLabel: positionOptionLabel(p, em.positionIdx),
                 techniqueCode: t.techniqueCode,
                 techniqueName: t.techniqueName,
                 numberOfColors: Math.min(em.colours, t.maxColors ?? 1),
@@ -480,7 +483,7 @@ export function ProductOrderForm({
   function onCotizar() {
     const markingTxt =
       withMarking && technique && position
-        ? ` · ${technique.techniqueName} en ${displayPositionId(position.positionId)}${
+        ? ` · ${technique.techniqueName} en ${positionOptionLabel(position, positionIdx)}${
             colours > 1 ? ` · ${colours} colores` : ""
           }`
         : " · sin marcaje";
@@ -748,15 +751,24 @@ export function ProductOrderForm({
           <div className="grid gap-4">
             {/* ── Zona ── */}
             {positionsAvailable.length === 1 ? (
-              <p className="text-xs text-ink/60">
-                Se marca en{" "}
-                <strong className="font-semibold text-ink">
-                  {displayPositionId(positionsAvailable[0].positionId)}
-                </strong>
-                {positionsAvailable[0].maxWidthMm && positionsAvailable[0].maxHeightMm
-                  ? ` · área máxima ${positionsAvailable[0].maxWidthMm}×${positionsAvailable[0].maxHeightMm} mm`
-                  : ""}
-              </p>
+              /* Con una sola zona no hay nada que elegir, así que esto es una
+                 frase, no un control. Y ahí el nombre genérico estorba: «Se
+                 marca en Default» no dice dónde va el logo. Cuando el código no
+                 informa se enuncia el área máxima, que sí; y si tampoco hay
+                 medidas (las 1.991 DEFAULT del catálogo) no se escribe nada. */
+              (() => {
+                const { zone, size } = describeSinglePosition(positionsAvailable[0]);
+                if (!zone && !size) return null;
+                return (
+                  <p className="text-xs text-ink/60">
+                    Se marca en{" "}
+                    <strong className="font-semibold text-ink">
+                      {zone ?? `un área de ${size}`}
+                    </strong>
+                    {zone && size ? ` · área máxima ${size}` : ""}
+                  </p>
+                );
+              })()
             ) : positionsAvailable.length <= 5 ? (
               <OptionGroup label="Zona del marcaje">
                 {positionsAvailable.map((p, i) => (
@@ -773,7 +785,7 @@ export function ProductOrderForm({
                         : undefined
                     }
                   >
-                    {displayPositionId(p.positionId)}
+                    {positionOptionLabel(p, i)}
                   </ChoiceChip>
                 ))}
               </OptionGroup>
@@ -789,7 +801,7 @@ export function ProductOrderForm({
                 >
                   {positionsAvailable.map((p, i) => (
                     <option key={p.id} value={i}>
-                      {displayPositionId(p.positionId)}
+                      {positionOptionLabel(p, i)}
                       {p.maxWidthMm && p.maxHeightMm
                         ? ` · ${p.maxWidthMm}×${p.maxHeightMm}mm`
                         : ""}

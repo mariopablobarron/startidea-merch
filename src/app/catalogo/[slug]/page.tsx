@@ -24,7 +24,7 @@ import { publicRef } from "@/lib/internal-ref";
 import { FavoriteHeart } from "@/components/portal/FavoriteHeart";
 import { AskDiego } from "@/components/AskDiego";
 import { publicBrand } from "@/lib/brand-filter";
-import { displayPositionId } from "@/lib/marking-position-display";
+import { positionOptionLabel } from "@/lib/marking-position-label";
 import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
 import { JsonLd } from "@/components/JsonLd";
 import { productJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
@@ -378,7 +378,7 @@ export default async function ProductDetailPage({
                     />
                   </p>
                   <ul className="mt-5 grid gap-4 sm:grid-cols-2">
-                    {product.positions.map((pos) => (
+                    {product.positions.map((pos, posIdx) => (
                       <li
                         key={pos.id}
                         className="overflow-hidden rounded-2xl border border-line bg-bone-soft"
@@ -387,7 +387,7 @@ export default async function ProductDetailPage({
                           <div className="relative aspect-[4/3] bg-bone">
                             <Image
                               src={proxyImageUrl(pos.imageUrl)!}
-                              alt={`Zona ${displayPositionId(pos.positionId)}`}
+                              alt={`Zona ${positionOptionLabel(pos, posIdx)}`}
                               fill
                               sizes="(max-width:640px) 100vw, 50vw"
                               className="object-contain p-3"
@@ -397,7 +397,7 @@ export default async function ProductDetailPage({
                         )}
                         <div className="p-5">
                           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
-                            {displayPositionId(pos.positionId)}
+                            {positionOptionLabel(pos, posIdx)}
                           </p>
                           {(pos.maxWidthMm || pos.maxHeightMm) && (
                             <p className="mt-2 font-display text-xl font-semibold text-ink tabular-nums">

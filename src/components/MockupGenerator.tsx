@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { displayPositionId } from "@/lib/marking-position-display";
+import { positionOptionLabel } from "@/lib/marking-position-label";
 
 type Position = { id: string; positionId: string };
 
@@ -156,9 +156,9 @@ export function MockupGenerator({
                 onChange={(e) => setPositionId(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-line bg-bone-soft px-3 py-2.5 text-sm outline-none focus:border-accent"
               >
-                {positions.map((p) => (
+                {positions.map((p, i) => (
                   <option key={p.id} value={p.positionId}>
-                    {displayPositionId(p.positionId)}
+                    {positionOptionLabel(p, i)}
                   </option>
                 ))}
               </select>
