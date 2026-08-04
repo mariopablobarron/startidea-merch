@@ -1,0 +1,23 @@
+src/lib/suppliers/feed-number-parsing.test.ts
+  s_c06b87e7156d2a::t_10e5e17c035817 1-103
+src/lib/suppliers/midocean-pricelist-sync.ts
+  s_c06b87e7156d2a::t_41cb9a79493b54 3-7
+src/lib/suppliers/feed-number-parsing.ts
+  s_c06b87e7156d2a::t_06fcfac9c87fc4 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "e7880f6b68bd05e8b9b1d0cd0a9b1c084a406747",
+  "prompts": {},
+  "sessions": {
+    "s_c06b87e7156d2a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ff608d3-e894-4fff-9992-72aeee3dc32c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
