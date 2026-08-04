@@ -1,0 +1,24 @@
+src/components/ProductOrderForm.tsx
+  s_3e563e35c47ba8::t_82d88b19674984 922
+  s_3e563e35c47ba8::t_4caa4fddd58577 113-119
+  s_3e563e35c47ba8::t_0535df1600f153 913-921,923
+  s_3e563e35c47ba8::t_044fbd264ca0d9 266,270-274,276,279-285,293
+  s_3e563e35c47ba8::t_0001b019c5f98f 286-288
+  s_3e563e35c47ba8::t_5814a852d9ce40 228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "3fda0d5f6e66b2994c022561b25e3bb831bbcfa0",
+  "prompts": {},
+  "sessions": {
+    "s_3e563e35c47ba8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98471e88-7f5b-40e0-852e-7a391f429cfd",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
