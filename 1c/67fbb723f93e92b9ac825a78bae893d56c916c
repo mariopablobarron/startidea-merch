@@ -1,0 +1,21 @@
+package.json
+  s_c06b87e7156d2a::t_d8e9b8e8c1b63e 76-78
+pnpm-lock.yaml
+  s_c06b87e7156d2a::t_b20fe12da433a2 9-11,1155-1156,1158-1159,1161-1162,4192,4197,4201,5462,5466,5470
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "1c67fbb723f93e92b9ac825a78bae893d56c916c",
+  "prompts": {},
+  "sessions": {
+    "s_c06b87e7156d2a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ff608d3-e894-4fff-9992-72aeee3dc32c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
