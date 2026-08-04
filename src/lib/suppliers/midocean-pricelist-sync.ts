@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { midoceanClient } from "./midocean";
+import {
+  eurStringToCents,
+  intFromQty,
+  parseAreaCm2,
+} from "./feed-number-parsing";
 
 /**
  * Sync print pricelist (tarifa de marcaje) y product pricelist desde MidOcean.
@@ -53,37 +58,6 @@ type MidoceanProductPricelist = {
     scales?: Array<{ minimum_quantity: string; price: string }>;
   }>;
 };
-
-function eurStringToCents(s: string | undefined | null): number {
-  if (s == null) return 0;
-  // MidOcean usa coma decimal: "0,52" → 52 céntimos
-  // O "1.000,50" → 100050 céntimos
-  const cleaned = s.replace(/\./g, "").replace(",", ".");
-  const n = parseFloat(cleaned);
-  if (!Number.isFinite(n)) return 0;
-  return Math.round(n * 100);
-}
-
-function intFromQty(s: string | undefined): number {
-  if (!s) return 1;
-  const cleaned = s.replace(/[.,]/g, "");
-  const n = parseInt(cleaned, 10);
-  return Number.isFinite(n) ? n : 1;
-}
-
-/**
- * Área en cm² del feed — MISMO formato europeo que los precios: punto =
- * millares, coma = decimal. El sentinel del rango superior llega como
- * "999.999" (= 999999, infinito del feed); parseFloat lo leía como ~1.000 cm²
- * → cualquier espalda de sudadera (1.120 cm²) quedaba FUERA de todos los
- * rangos y el marcaje cotizaba 0 € (auditoría 2026-07-09).
- */
-function parseAreaCm2(s: string | undefined | null): number | null {
-  if (s == null || s === "") return null;
-  const cleaned = String(s).replace(/\./g, "").replace(",", ".");
-  const n = parseFloat(cleaned);
-  return Number.isFinite(n) ? n : null;
-}
 
 export type MidoceanPrintSyncResult = {
   startedAt: string;
