@@ -62,9 +62,21 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
   }
 
   // Si hay PurchaseOrders (split aplicado), procesar SOLO el PO MidOcean.
-  // Si no hay POs, procesar todos los items del cart (caso legacy o cart
-  // que solo tiene MidOcean).
+  // Si no hay NINGÚN PO, procesar todos los items del cart (caso legacy:
+  // carts anteriores al split, que por definición eran solo de MidOcean).
   const midoceanPO = cart.purchaseOrders.find((po) => po.supplier === "midocean");
+
+  // Split hecho pero ningún PO es de MidOcean ⇒ este carrito no lleva
+  // productos suyos y no hay nada que pedirles. Sin este corte se caía al
+  // fallback de abajo y se les mandaba el carrito entero: un pedido a
+  // MidOcean con SKUs de otro proveedor. Es el mismo corte que ya hacen
+  // makito-auto-order y cifra-auto-order ("Sin PO X (no hay productos X en
+  // este cart)"); MidOcean se quedó sin él porque es el único que carga
+  // TODOS los POs del cart en vez de filtrar por su supplier.
+  if (!midoceanPO && cart.purchaseOrders.length > 0) {
+    return { skipped: true, reason: "El cart no tiene productos MidOcean" };
+  }
+
   const itemsToProcess = midoceanPO
     ? cart.items.filter((it) => it.purchaseOrderId === midoceanPO.id)
     : cart.items;
