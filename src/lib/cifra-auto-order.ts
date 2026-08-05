@@ -22,6 +22,7 @@ import { prisma } from "@/lib/prisma";
 import { createOrder, type CifraOrderPayload } from "@/lib/suppliers/cifra";
 import { notifyTelegram } from "@/lib/telegram";
 import { provinciaFromPostalCodeOrCity } from "@/lib/spain-postal-code";
+import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
 
 export type CifraAutoOrderResult =
   | { ok: true; orderId: string }
@@ -40,11 +41,34 @@ function liveOrdersEnabled(): boolean {
   return process.env.CIFRA_LIVE_ORDERS === "true";
 }
 
+const SUPPLIER = "cifra";
+
 export async function autoPlaceCifraOrder(cartId: string): Promise<CifraAutoOrderResult> {
   if (!autoEnabled()) {
     return { skipped: true, reason: "CIFRA_AUTO_PLACE_ON_PAYMENT=false" };
   }
 
+  // Mismo cerrojo que MidOcean, y puesto ANTES de que haga falta: hoy Cifra va
+  // en simulación (`CIFRA_LIVE_ORDERS` no está activada), así que la carrera no
+  // muerde. Pero el día que se active bastaría ese cambio de una variable de
+  // entorno para abrir la ventana entera, y nadie tendría por qué acordarse de
+  // este fichero. Lo protege también el guard estático de este directorio.
+  if (!(await claimSupplierOrder(SUPPLIER, cartId))) {
+    return { skipped: true, reason: "Ya hay otro proceso cursando este pedido" };
+  }
+
+  const contacto = { hecho: false };
+  try {
+    return await cursarPedidoCifra(cartId, contacto);
+  } finally {
+    if (!contacto.hecho) await releaseSupplierOrderClaim(SUPPLIER, cartId);
+  }
+}
+
+async function cursarPedidoCifra(
+  cartId: string,
+  contacto: { hecho: boolean },
+): Promise<CifraAutoOrderResult> {
   const cart = await prisma.cartQuote.findUnique({
     where: { id: cartId },
     include: {
@@ -121,7 +145,9 @@ export async function autoPlaceCifraOrder(cartId: string): Promise<CifraAutoOrde
     return { ok: true, dryRun: true, reason: "CIFRA_LIVE_ORDERS=false (dry run)" };
   }
 
-  // POST real a Cifra
+  // POST real a Cifra. A partir de aquí el pedido puede haber salido: el
+  // cerrojo ya no se suelta (ver supplier-order-claim.ts).
+  contacto.hecho = true;
   try {
     const response = await createOrder(payload);
     const orderId = String(response.data?.order_id || "");
