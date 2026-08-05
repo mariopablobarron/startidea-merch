@@ -1,0 +1,40 @@
+src/lib/supplier-order-claim.ts
+  s_9b5800dafae70c::t_3f7c38e5d78153 1-53
+src/lib/midocean-auto-order.test.ts
+  s_9b5800dafae70c::t_2c087b51b64b18 9-18,28-50
+  s_9b5800dafae70c::t_ba9d280c06e55b 142
+  s_9b5800dafae70c::t_2ffedccdfaf355 51,374-470
+src/lib/midocean-auto-order.ts
+  s_9b5800dafae70c::t_4848a56b5635f3 183-185
+  s_9b5800dafae70c::t_16e4bf33d9ed1c 178-179
+  s_9b5800dafae70c::t_7523eb6bdcb592 44-45,51-73
+  s_9b5800dafae70c::t_67f0ad88946c50 23
+src/app/api/admin/cart-quotes/[id]/place-order/route.ts
+  s_9b5800dafae70c::t_70b3eff4fb195a 119-121
+  s_9b5800dafae70c::t_d89c10d9275363 101-115
+  s_762620f3e5943b::t_da60d10ebd0bd1 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "9988ad5f4a870779940175545347b2c4114e7162",
+  "prompts": {},
+  "sessions": {
+    "s_762620f3e5943b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4280fb49-60be-4c31-a569-950e1d3a7b50",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_9b5800dafae70c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96c94b0f-8e69-4603-95a5-0426365b83a1",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
