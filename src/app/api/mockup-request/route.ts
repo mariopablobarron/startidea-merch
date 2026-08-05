@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/resend";
 import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { displayPositionId } from "@/lib/marking-position-display";
+import { standalonePositionLabel } from "@/lib/marking-position-label";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -76,7 +77,12 @@ export async function POST(req: Request) {
   });
 
   const productName = product?.name || data.productSlug;
+  // Dos etiquetas distintas a propósito. Dentro (Telegram, buzón de pedidos@) hace
+  // falta que la zona salga SIEMPRE, aunque el código no diga nada: es con lo que
+  // el equipo localiza el área para dibujar el mockup. Al cliente, en cambio,
+  // «Default» no le dice dónde va su logo y delata el feed, así que ahí se calla.
   const positionLabel = data.positionId ? displayPositionId(data.positionId) : null;
+  const clientPositionLabel = standalonePositionLabel(data.positionId);
   const firstName = data.name.split(" ")[0];
 
   // 1) Email confirmación cliente (template Startidea)
@@ -94,7 +100,7 @@ export async function POST(req: Request) {
             <span style="color:#E63E73;">Te mandamos mockup técnico en 4h.</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
-            Recibimos tu petición de mockup para <strong>${productName}</strong>${positionLabel ? ` · ${positionLabel}` : ""}.
+            Recibimos tu petición de mockup para <strong>${productName}</strong>${clientPositionLabel ? ` · ${clientPositionLabel}` : ""}.
             Nuestro equipo te enviará el mockup técnico con las
             <strong>dimensiones exactas del área de marcaje</strong> y la técnica
             recomendada en <strong>menos de 4 horas laborables</strong>, sin compromiso.

@@ -5,6 +5,7 @@ import {
   formatPositionSize,
   positionOptionLabel,
   describeSinglePosition,
+  standalonePositionLabel,
 } from "./marking-position-label";
 
 /**
@@ -156,5 +157,39 @@ describe("describeSinglePosition (prosa: mejor callar que decir «Default»)", (
       zone: "Trasera",
       size: null,
     });
+  });
+});
+
+describe("standalonePositionLabel (zona suelta: email de mockup, agente de voz)", () => {
+  it("«DEFAULT» no llega al cliente: sin lista no hay número honesto que darle", () => {
+    expect(standalonePositionLabel("DEFAULT")).toBeNull();
+    expect(standalonePositionLabel("default")).toBeNull();
+    expect(standalonePositionLabel("N/A")).toBeNull();
+  });
+
+  it("conserva el número del proveedor, que es el que el cliente eligió en la ficha", () => {
+    expect(standalonePositionLabel("Area 3")).toBe("Área 3");
+    expect(standalonePositionLabel("AREA_2")).toBe("Área 2");
+    expect(standalonePositionLabel("Zona 5")).toBe("Área 5");
+  });
+
+  it("los códigos que informan se traducen igual que en la ficha", () => {
+    expect(standalonePositionLabel("FRONT")).toBe("Frontal");
+    expect(standalonePositionLabel("ROUNDSCREEN")).toBe("Lateral · serigrafía rotativa");
+    expect(standalonePositionLabel("LEFT CHEST")).toBe("Pecho izquierdo");
+  });
+
+  it("sin zona (el formulario de mockup no la exige) no inventa ninguna", () => {
+    expect(standalonePositionLabel(null)).toBeNull();
+    expect(standalonePositionLabel(undefined)).toBeNull();
+    expect(standalonePositionLabel("   ")).toBeNull();
+  });
+
+  it("ninguna etiqueta que salga al cliente contiene la palabra cruda del feed", () => {
+    for (const code of [...GENERICAS_REALES, ...INFORMATIVAS_REALES]) {
+      const label = standalonePositionLabel(code);
+      if (label === null) continue;
+      expect(label, code).not.toMatch(/default/i);
+    }
   });
 });

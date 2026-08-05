@@ -98,6 +98,25 @@ export function positionOptionLabel(position: PositionLike, index: number): stri
 }
 
 /**
+ * Etiqueta para nombrarle al cliente una zona SUELTA, fuera de la ficha: el
+ * email de confirmación del mockup, o lo que el agente de voz le dice. Aquí no
+ * hay lista donde numerar por orden —llega un código y nada más—, así que el
+ * genérico sin número no puede convertirse en «Zona 1»: sería un número
+ * inventado, y el que el cliente vio en la ficha depende de cuántas zonas
+ * tuviera el producto. En ese caso devuelve null y quien llama omite la
+ * mención, igual que hace la ficha con la frase «Se marca en …».
+ *
+ * El número del proveedor sí se conserva («Area 3» → «Área 3») porque es el
+ * mismo que el cliente eligió y el que viaja en el pedido.
+ */
+export function standalonePositionLabel(code: string | null | undefined): string | null {
+  if (!code || !code.trim()) return null;
+  if (!isGenericPositionId(code)) return displayPositionId(code);
+  const number = genericZoneNumber(code);
+  return number !== null ? `Área ${number}` : null;
+}
+
+/**
  * Para la frase «Se marca en …» cuando el producto tiene UNA sola zona. Aquí sí
  * puede devolver null: si el código es genérico y no hay medidas, lo correcto es
  * no escribir la frase en vez de inventarse un nombre.
