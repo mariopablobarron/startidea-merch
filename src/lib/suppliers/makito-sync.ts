@@ -20,6 +20,7 @@
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
 import { notifyTelegram } from "@/lib/telegram";
 import { XMLParser } from "fast-xml-parser";
+import { measureSyncBlocking } from "./blocking-timer";
 import { prisma } from "@/lib/prisma";
 import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
 import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
@@ -147,7 +148,9 @@ type XmlVariant = {
 
 function parseXmlProducts(xml: string): XmlProduct[] {
   const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
-  const data = parser.parse(xml) as { catalog?: { product?: XmlProduct | XmlProduct[] } };
+  const data = measureSyncBlocking("makito · parse XML productos", () => parser.parse(xml)) as {
+    catalog?: { product?: XmlProduct | XmlProduct[] };
+  };
   const products = data?.catalog?.product;
   if (!products) return [];
   return Array.isArray(products) ? products : [products];
@@ -173,7 +176,9 @@ type XmlPrice = {
 
 function parseXmlPrices(xml: string): XmlPrice[] {
   const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
-  const data = parser.parse(xml) as { catalog?: { product?: XmlPrice | XmlPrice[] } };
+  const data = measureSyncBlocking("makito · parse XML precios", () => parser.parse(xml)) as {
+    catalog?: { product?: XmlPrice | XmlPrice[] };
+  };
   const items = data?.catalog?.product;
   if (!items) return [];
   return Array.isArray(items) ? items : [items];
@@ -190,7 +195,9 @@ type XmlStock = {
 
 function parseXmlStock(xml: string): XmlStock[] {
   const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
-  const data = parser.parse(xml) as { catalog?: { product?: XmlStock | XmlStock[] } };
+  const data = measureSyncBlocking("makito · parse XML stock", () => parser.parse(xml)) as {
+    catalog?: { product?: XmlStock | XmlStock[] };
+  };
   const items = data?.catalog?.product;
   if (!items) return [];
   return Array.isArray(items) ? items : [items];
