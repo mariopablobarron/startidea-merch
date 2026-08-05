@@ -1,0 +1,28 @@
+src/lib/suppliers/blocking-timer.ts
+  s_1646cefbed971c::t_0c97bea4c3ad75 1-57
+src/lib/suppliers/blocking-timer.test.ts
+  s_1646cefbed971c::t_42548342a85ded 1-28,33-83
+  s_1646cefbed971c::t_df1ea82a779e22 29-32
+src/lib/suppliers/parse-instrumentado.guard.test.ts
+  s_1646cefbed971c::t_70364ce426b683 55
+  s_1646cefbed971c::t_90a13a256bb0b1 22-32,36-40
+  s_1646cefbed971c::t_6511014b135099 1-21,33-35,41-54,56-65
+src/lib/suppliers/makito-sync.ts
+  s_1646cefbed971c::t_c88842d2fe4c52 23,151-153,179-181,198-200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "183a85be8f3e070657db77830d02f8d06465a035",
+  "prompts": {},
+  "sessions": {
+    "s_1646cefbed971c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea374ecf-c622-43be-85aa-4f87ef375fb0",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
