@@ -40,6 +40,46 @@ const SUPPLIER_HOSTS = [
 const ALL_LEAKS = [...SUPPLIER_LEAKS, ...SUPPLIER_HOSTS];
 
 /**
+ * Techo por petición. `fetch` no trae uno propio: undici corta la CONEXIÓN a
+ * los ~10 s, pero una vez conectado espera cabeceras hasta 300 s. Con 9
+ * peticiones y 3 intentos cada una, una red mala se comía de sobra los 3 min
+ * del job — y ahí es donde el guard moría (ver BUDGET_MS).
+ * 20 s deja holgura a `/api/recommend`, que tarda 8-12 s de forma legítima
+ * porque llama al LLM; bajarlo lo marcaría caído sin estarlo.
+ */
+const REQUEST_TIMEOUT_MS = Number(process.env.SMOKE_REQUEST_TIMEOUT_MS || 20_000);
+
+/**
+ * Presupuesto total del barrido, y la razón de ser de este bloque.
+ *
+ * El 2026-08-05 a las 03:32 UTC este job se quedó CANCELADO al tocar el
+ * `timeout-minutes: 3`. Un job cancelado NO es un job fallido: `if: failure()`
+ * no se ejecuta ⇒ **no salió la alerta de Telegram**, y en la lista de runs
+ * quedó un "cancelled" que se lee como algo manual y benigno. O sea: el guard
+ * que vigila el dinero y la fuga de proveedor se murió en silencio justo en el
+ * escenario para el que se le añadió la resiliencia de red.
+ *
+ * Con presupuesto, quien decide el resultado es el script y no GitHub: al
+ * agotarse, las superficies que falten se registran como NO COMPROBADAS
+ * (jamás como ok) y el barrido llega igual a clasificar y a avisar.
+ */
+const BUDGET_MS = Number(process.env.SMOKE_BUDGET_MS || 240_000);
+
+/**
+ * Cuánto se le concede al siguiente intento sin pasarse del presupuesto.
+ * Pura y exportada: es la que garantiza que el barrido TERMINA.
+ * 0 significa "no queda presupuesto" ⇒ ni se toca la red.
+ */
+export function timeoutParaIntento(deadline, ahora, maxPorPeticion = REQUEST_TIMEOUT_MS) {
+  const restante = deadline - ahora;
+  if (restante <= 0) return 0;
+  return Math.min(maxPorPeticion, restante);
+}
+
+/** Instante límite del barrido. Lo fija `main()`; importar el módulo no arranca el reloj. */
+let deadline = Number.POSITIVE_INFINITY;
+
+/**
  * Categorías de fallo. Las dos hacen fallar el job — esto NO relaja el guard.
  * Lo que cambia es lo que se le dice a quien recibe la alerta:
  *  - MONEY: una invariante de dinero o de exposición de proveedor se ha roto
@@ -138,8 +178,17 @@ export function esFalloDeConexion(err) {
 async function safeFetch(url, opts, intentos = 3) {
   let ultimo;
   for (let i = 1; i <= intentos; i++) {
+    const ms = timeoutParaIntento(deadline, Date.now());
+    if (ms === 0) {
+      // Sin presupuesto no se toca la red: se devuelve "no respondió" al
+      // instante para que el barrido llegue a clasificar y a avisar.
+      return { status: 0, text: async () => "", _networkError: "presupuesto de tiempo agotado" };
+    }
     try {
-      return await fetch(url, opts);
+      // El abort NO se reintenta a propósito: la petición SÍ salió, y repetir
+      // /api/recommend gasta LLM de pago. `esFalloDeConexion` lo deja fuera
+      // porque un AbortError/TimeoutError no trae `code` de conexión.
+      return await fetch(url, { ...opts, signal: AbortSignal.timeout(ms) });
     } catch (e) {
       ultimo = e;
       if (!esFalloDeConexion(e) || i === intentos) break;
@@ -159,6 +208,8 @@ async function getJson(path, opts) {
 }
 
 async function main() {
+  deadline = Date.now() + BUDGET_MS;
+
   // ── 1. Marcaje se cobra ──────────────────────────────────────────
   const bare = await getJson("/api/quote/calculate", {
     method: "POST",
