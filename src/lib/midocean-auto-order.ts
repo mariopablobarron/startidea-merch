@@ -20,6 +20,7 @@ import {
   type MidoceanOrderItem,
 } from "@/lib/suppliers/midocean-orders";
 import { notifyTelegram } from "@/lib/telegram";
+import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
@@ -40,11 +41,36 @@ function autoEnabled(): boolean {
   return true;
 }
 
+const SUPPLIER = "midocean";
+
 export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderResult> {
   if (!autoEnabled()) {
     return { skipped: true, reason: "MIDOCEAN_AUTO_PLACE_ON_PAYMENT=false" };
   }
 
+  // Reclamar ANTES de mirar nada. Comprobar "¿ya está pedido?" y después
+  // llamar al proveedor deja una ventana del tamaño de una llamada HTTP, y en
+  // esa ventana caben dos pedidos: el webhook de Stripe llega por dos ramas
+  // del mismo pago, y el panel tiene un botón «enviar» que hace lo mismo.
+  if (!(await claimSupplierOrder(SUPPLIER, cartId))) {
+    return { skipped: true, reason: "Ya hay otro proceso cursando este pedido" };
+  }
+
+  // El cerrojo solo se suelta si NO se llegó a hablar con el proveedor. Ver
+  // supplier-order-claim.ts: la dirección elegida del fallo es "como mucho una
+  // vez" — antes un pedido parado que uno duplicado.
+  const contacto = { hecho: false };
+  try {
+    return await cursarPedidoMidocean(cartId, contacto);
+  } finally {
+    if (!contacto.hecho) await releaseSupplierOrderClaim(SUPPLIER, cartId);
+  }
+}
+
+async function cursarPedidoMidocean(
+  cartId: string,
+  contacto: { hecho: boolean },
+): Promise<AutoOrderResult> {
   const cart = await prisma.cartQuote.findUnique({
     where: { id: cartId },
     include: {
@@ -149,9 +175,14 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
     items,
   };
 
+  // A partir de aquí el pedido puede haber salido: el cerrojo ya no se suelta.
+  contacto.hecho = true;
   const result = await midoceanOrders.createOrder(payload);
 
   if (result.dryRun) {
+    // En simulación no se ha hablado con nadie: soltar el cerrojo para no
+    // dejar el carrito bloqueado una hora por una prueba.
+    contacto.hecho = false;
     await prisma.cartQuote.update({
       where: { id: cart.id },
       data: {

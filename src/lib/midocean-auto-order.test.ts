@@ -6,6 +6,16 @@ const poUpdate = vi.fn();
 const createOrderMock = vi.fn();
 const notifyTelegramMock = vi.fn();
 
+/**
+ * AdminSetting falso que modela el índice único de Postgres. El cerrojo de
+ * pedido se usa REAL contra esto (no se mockea): lo que hay que probar es el
+ * invariante «dos ejecuciones solapadas piden una sola vez», no que se llamó a
+ * una función. Por eso la comprobación y la inserción son SÍNCRONAS antes de
+ * devolver la promesa — si se hicieran tras un `await`, dos ejecuciones
+ * concurrentes ganarían las dos y el test mentiría.
+ */
+const settings = new Map<string, number>();
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     cartQuote: {
@@ -14,6 +24,30 @@ vi.mock("@/lib/prisma", () => ({
     },
     purchaseOrder: {
       update: (...a: unknown[]) => poUpdate(...a),
+    },
+    adminSetting: {
+      create: ({ data }: { data: { key: string; value: number } }) => {
+        if (settings.has(data.key)) return Promise.reject(new Error("unique constraint"));
+        settings.set(data.key, data.value);
+        return Promise.resolve(data);
+      },
+      findUnique: ({ where }: { where: { key: string } }) =>
+        Promise.resolve(settings.has(where.key) ? { value: settings.get(where.key) } : null),
+      updateMany: ({
+        where,
+        data,
+      }: {
+        where: { key: string; value: { equals: number } };
+        data: { value: number };
+      }) => {
+        if (settings.get(where.key) !== where.value.equals) return Promise.resolve({ count: 0 });
+        settings.set(where.key, data.value);
+        return Promise.resolve({ count: 1 });
+      },
+      delete: ({ where }: { where: { key: string } }) => {
+        settings.delete(where.key);
+        return Promise.resolve({});
+      },
     },
   },
 }));
@@ -105,6 +139,7 @@ function payloadEnviado() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  settings.clear();
   delete process.env.MIDOCEAN_AUTO_PLACE_ON_PAYMENT;
   cartUpdate.mockResolvedValue({});
   poUpdate.mockResolvedValue({});
@@ -334,5 +369,102 @@ describe("autoPlaceMidoceanOrder · el fallback legacy sigue funcionando", () =>
 
     expect(createOrderMock).toHaveBeenCalledTimes(1);
     expect(payloadEnviado().items[0].master_code).toBe("MO1234");
+  });
+});
+
+describe("autoPlaceMidoceanOrder · dos ejecuciones solapadas", () => {
+  it("el webhook y el botón del panel a la vez hacen UN solo pedido", async () => {
+    // El caso que motiva el cerrojo: Stripe manda dos eventos del mismo pago
+    // (llegan por ramas distintas y la dedup por id de evento no los frena) o
+    // alguien pulsa «enviar» mientras el webhook ya está cursando.
+    // Sin cerrojo, ambos ven midoceanOrderId a null y ambos piden.
+    cartFindUnique.mockResolvedValue(cart());
+    let enVuelo = 0;
+    let simultaneidadMaxima = 0;
+    createOrderMock.mockImplementation(async () => {
+      simultaneidadMaxima = Math.max(simultaneidadMaxima, ++enVuelo);
+      await new Promise((r) => setTimeout(r, 10)); // la llamada al proveedor tarda
+      enVuelo--;
+      return { dryRun: false, ok: true, orderId: "MO-ORDER-1", raw: {} };
+    });
+
+    const [a, b] = await Promise.all([
+      autoPlaceMidoceanOrder("cart_abcdef123456"),
+      autoPlaceMidoceanOrder("cart_abcdef123456"),
+    ]);
+
+    expect(createOrderMock).toHaveBeenCalledTimes(1);
+    expect(simultaneidadMaxima).toBe(1);
+    // Uno cursa y el otro se aparta sin error: la dedup no es un fallo.
+    const cursados = [a, b].filter((r) => "ok" in r && r.ok).length;
+    const apartados = [a, b].filter((r) => "skipped" in r).length;
+    expect(cursados).toBe(1);
+    expect(apartados).toBe(1);
+  });
+
+  it("tras un pedido cursado el cerrojo NO se suelta (como mucho una vez)", async () => {
+    // Si se soltara, un reintento posterior volvería a pedir en el hueco entre
+    // la llamada al proveedor y el guard de midoceanOrderId.
+    cartFindUnique.mockResolvedValue(cart());
+
+    await autoPlaceMidoceanOrder("cart_abcdef123456");
+
+    expect([...settings.keys()].some((k) => k.includes("cart_abcdef123456"))).toBe(true);
+  });
+
+  it("si se aparta sin llamar al proveedor, suelta el cerrojo para no bloquear el reintento", async () => {
+    // Falta la dirección: no se ha pedido nada, así que el carrito tiene que
+    // quedar libre para cursarse en cuanto el admin complete los datos.
+    cartFindUnique.mockResolvedValue(cart({ shippingAddress: null }));
+
+    await autoPlaceMidoceanOrder("cart_abcdef123456");
+
+    expect(createOrderMock).not.toHaveBeenCalled();
+    expect([...settings.keys()].some((k) => k.includes("cart_abcdef123456"))).toBe(false);
+  });
+
+  it("un rechazo del proveedor tampoco suelta el cerrojo", async () => {
+    // Se llegó a hablar con ellos: el reintento lo decide una persona desde el
+    // panel, no un segundo disparo automático martilleando al proveedor.
+    createOrderMock.mockResolvedValue({ dryRun: false, ok: false, status: 400, error: "no" });
+    cartFindUnique.mockResolvedValue(
+      cart({
+        purchaseOrders: [{ id: "po_mid", supplier: "midocean" }],
+        items: [{ ...cart().items[0], purchaseOrderId: "po_mid" }],
+      }),
+    );
+
+    await autoPlaceMidoceanOrder("cart_abcdef123456");
+
+    expect([...settings.keys()].some((k) => k.includes("cart_abcdef123456"))).toBe(true);
+  });
+});
+
+describe("autoPlaceMidoceanOrder · el caso que justifica el diseño", () => {
+  it("si la llamada al proveedor REVIENTA, el cerrojo tampoco se suelta", async () => {
+    // El peor caso posible: un timeout de red. La petición pudo llegar y
+    // crearse el pedido allí, y nosotros no llegamos a enterarnos. Soltar el
+    // cerrojo aquí permitiría a un segundo disparo pedirlo otra vez, que es
+    // exactamente la mercancía duplicada que se quiere evitar. Por eso el
+    // "ya hemos hablado con ellos" se marca ANTES del await, no después.
+    createOrderMock.mockRejectedValue(new Error("ETIMEDOUT"));
+    cartFindUnique.mockResolvedValue(cart());
+
+    await expect(autoPlaceMidoceanOrder("cart_abcdef123456")).rejects.toThrow("ETIMEDOUT");
+
+    expect([...settings.keys()].some((k) => k.includes("cart_abcdef123456"))).toBe(true);
+  });
+});
+
+describe("autoPlaceMidoceanOrder · simulación", () => {
+  it("dry-run suelta el cerrojo: no se ha hablado con el proveedor", async () => {
+    // Bloquear el carrito una hora por una prueba sería un efecto colateral
+    // molesto y sin justificación: en dry-run no sale ningún pedido.
+    createOrderMock.mockResolvedValue({ dryRun: true, payload: {}, reason: "sin API key" });
+    cartFindUnique.mockResolvedValue(cart());
+
+    await autoPlaceMidoceanOrder("cart_abcdef123456");
+
+    expect([...settings.keys()].some((k) => k.includes("cart_abcdef123456"))).toBe(false);
   });
 });
