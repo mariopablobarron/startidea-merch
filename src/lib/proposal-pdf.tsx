@@ -8,7 +8,8 @@ import {
   renderToBuffer,
   Font,
 } from "@react-pdf/renderer";
-import type { CartQuote, CartQuoteItem } from "@prisma/client";
+import type { CartQuote } from "@prisma/client";
+import { markingCellText, type ItemWithMarkings } from "@/lib/marking-cell-text";
 
 /**
  * Genera un PDF de propuesta comercial a partir de un CartQuote.
@@ -188,7 +189,7 @@ const EUR = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 2,
 });
 
-type CartWithItems = CartQuote & { items: CartQuoteItem[] };
+type CartWithItems = CartQuote & { items: ItemWithMarkings[] };
 
 export async function renderProposalPdf(cart: CartWithItems): Promise<Buffer> {
   const issuedAt = new Date();
@@ -306,11 +307,7 @@ export async function renderProposalPdf(cart: CartWithItems): Promise<Buffer> {
                   </Text>
                 </View>
                 <Text style={[styles.td, styles.cQty]}>{it.quantity.toLocaleString("es-ES")}</Text>
-                <Text style={[styles.td, styles.cTech]}>
-                  {it.markingTechniqueName
-                    ? `${it.markingTechniqueName}${it.markingPositionId ? ` · ${it.markingPositionId}` : ""}${it.markingColours && it.markingColours > 1 ? ` · ${it.markingColours} col.` : ""}`
-                    : "—"}
-                </Text>
+                <Text style={[styles.td, styles.cTech]}>{markingCellText(it)}</Text>
                 <Text style={[styles.td, styles.cPrice]}>
                   {it.unitPriceClientCents != null ? EUR.format(it.unitPriceClientCents / 100) : "—"}
                 </Text>

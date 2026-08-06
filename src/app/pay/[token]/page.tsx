@@ -34,6 +34,11 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
           markingTechniqueName: true,
           markingPositionId: true,
           totalClientCents: true,
+          // Todas las posiciones de marca (Área 1 + Área 7…), no solo la plana.
+          markings: {
+            orderBy: { order: "asc" as const },
+            select: { positionId: true, positionLabel: true, techniqueName: true },
+          },
         },
       },
       payments: {
@@ -115,7 +120,20 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
                     <p className="truncate font-medium text-ink">{it.productName}</p>
                     <p className="text-xs text-ink/60">
                       {it.quantity} uds
-                      {it.markingTechniqueName ? ` · ${it.markingTechniqueName} en ${it.markingPositionId}` : ""}
+                      {(() => {
+                        // Todas las posiciones marcadas de la línea, no solo la primera.
+                        const positions =
+                          it.markings && it.markings.length > 0
+                            ? it.markings.map((m) => m.positionLabel ?? m.positionId)
+                            : it.markingPositionId
+                              ? [it.markingPositionId]
+                              : [];
+                        const technique =
+                          it.markings?.[0]?.techniqueName ?? it.markingTechniqueName;
+                        return technique && positions.length > 0
+                          ? ` · ${technique} en ${positions.join(", ")}`
+                          : "";
+                      })()}
                     </p>
                   </div>
                   <p className="font-medium tabular-nums">
