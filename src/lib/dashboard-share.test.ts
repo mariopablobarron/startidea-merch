@@ -1,11 +1,16 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
+import crypto from "node:crypto";
 import { signShareToken, verifyShareToken } from "./dashboard-share";
 
-// Fijar secret antes de cargar el módulo no es posible aquí porque ya está
-// importado — pero como el módulo cachea SECRET en module-load, lo fijamos
-// en setup.
+// El secreto ya NO se cachea al cargar el módulo: se resuelve en cada llamada.
+// Antes sí, y por eso este beforeAll no surtía efecto — los tests corrían en
+// realidad contra el literal de desarrollo. Ahora fija de verdad el secreto.
 beforeAll(() => {
   process.env.DASHBOARD_SHARE_SECRET = "test-secret-for-vitest-do-not-deploy";
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("signShareToken + verifyShareToken", () => {
@@ -95,5 +100,66 @@ describe("signShareToken + verifyShareToken", () => {
     } else {
       expect(a).not.toBe(b);
     }
+  });
+});
+
+describe("dashboard-share · el secreto ya no puede salir del código", () => {
+  /** Como estaba producción: ninguna de las tres envs puesta. */
+  function sinNingunSecretoEnProduccion() {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DASHBOARD_SHARE_SECRET", "");
+    vi.stubEnv("NEXTAUTH_SECRET", "");
+    vi.stubEnv("ADMIN_SECRET", "");
+  }
+
+  it("un token firmado con el literal público YA NO abre el dashboard", () => {
+    // Este era el agujero, y no exigía adivinar nada: el scope solo puede ser
+    // "summary" o "full", así que el literal del repo bastaba para entrar.
+    // Verificado contra producción antes del arreglo: devolvía HTTP 200.
+    const literalPublico = "dev-share-secret-do-not-use-in-prod";
+    const expiry = Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
+    const payload = `full.${expiry}`;
+    const forjado = `${payload}.${crypto
+      .createHmac("sha256", literalPublico)
+      .update(payload)
+      .digest("base64url")}`;
+
+    expect(verifyShareToken(forjado)).toMatchObject({
+      valid: false,
+      reason: "bad-signature",
+    });
+  });
+
+  it("en producción sin secreto no firma", () => {
+    sinNingunSecretoEnProduccion();
+    expect(() => signShareToken("full")).toThrow(/ADMIN_SECRET/);
+  });
+
+  it("en producción sin secreto no da por bueno ningún token", () => {
+    const tokenValido = signShareToken("full");
+    sinNingunSecretoEnProduccion();
+    expect(verifyShareToken(tokenValido)).toMatchObject({
+      valid: false,
+      reason: "not-configured",
+    });
+  });
+
+  it("un expiry con sufijo no numérico se rechaza", () => {
+    const tok = signShareToken("summary");
+    const [scope, expiry, sig] = tok.split(".");
+    expect(verifyShareToken(`${scope}.${expiry}XYZ.${sig}`)).toMatchObject({
+      valid: false,
+      reason: "bad-expiry",
+    });
+  });
+
+  it("cae a ADMIN_SECRET si no hay una env propia", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DASHBOARD_SHARE_SECRET", "");
+    vi.stubEnv("NEXTAUTH_SECRET", "");
+    vi.stubEnv("ADMIN_SECRET", "un-secreto-de-admin-de-verdad");
+
+    const tok = signShareToken("summary");
+    expect(verifyShareToken(tok)).toMatchObject({ valid: true, scope: "summary" });
   });
 });
