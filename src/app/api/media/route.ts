@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { resolveSigningSecret } from "@/lib/signing-secret";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,15 +28,27 @@ const ALLOWED_HOSTS = new Set([
   "assets.xindao.com",
 ]);
 
-const SECRET = process.env.MEDIA_PROXY_SECRET || process.env.ADMIN_SECRET || "fallback";
+// Hoy resuelve a ADMIN_SECRET (MEDIA_PROXY_SECRET no está puesta), así que
+// esto no cambia ninguna firma viva. Lo que quita es el literal "fallback":
+// sin él, quedarse sin secreto convertía esto en un proxy firmable por
+// cualquiera, y lo que se filtraría por ahí son las URLs de los CDN de
+// proveedor, que es justo lo que este proxy existe para ocultar.
+function getSecret(): string | null {
+  return resolveSigningSecret({
+    candidates: [process.env.MEDIA_PROXY_SECRET, process.env.ADMIN_SECRET],
+    devFallback: "dev-only-media-proxy-secret",
+  });
+}
 
-function sign(url: string): string {
-  return createHmac("sha256", SECRET).update(url).digest("base64url");
+function sign(url: string, secret: string): string {
+  return createHmac("sha256", secret).update(url).digest("base64url");
 }
 
 function verify(url: string, sig: string): boolean {
   if (!sig) return false;
-  const expected = sign(url);
+  const secret = getSecret();
+  if (!secret) return false;
+  const expected = sign(url, secret);
   if (sig.length !== expected.length) return false;
   try {
     return timingSafeEqual(Buffer.from(sig), Buffer.from(expected));

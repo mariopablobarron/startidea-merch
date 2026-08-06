@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { signProposalToken, verifyProposalToken } from "./proposal-token";
 
 /**
@@ -17,6 +17,75 @@ const AHORA = new Date("2026-08-06T12:00:00Z");
 const DIA = 24 * 3600 * 1000;
 
 describe("proposal-token", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  /** Deja el entorno como estaba producción: ninguna env de firma puesta. */
+  function sinNingunSecretoEnProduccion() {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("PROPOSAL_SIGN_SECRET", "");
+    vi.stubEnv("NEXTAUTH_SECRET", "");
+    vi.stubEnv("ADMIN_SECRET", "");
+  }
+
+  describe("en producción sin secreto configurado: falla CERRADO", () => {
+    it("no firma: prefiere reventar a emitir un enlace que parece seguro", () => {
+      sinNingunSecretoEnProduccion();
+      expect(() => signProposalToken(ID_A, AHORA)).toThrow(/ADMIN_SECRET/);
+    });
+
+    it("no da por bueno NINGÚN token, ni el que firmaría el literal de dev", () => {
+      // Este es el agujero que se cierra: el literal está en un repo público,
+      // así que cualquiera podía firmarse un enlace válido.
+      const conLiteralDeDev = signProposalToken(ID_A, AHORA);
+
+      sinNingunSecretoEnProduccion();
+      expect(verifyProposalToken(conLiteralDeDev, AHORA)).toEqual({
+        valid: false,
+        reason: "not-configured",
+      });
+    });
+  });
+
+  describe("en producción con ADMIN_SECRET: funciona, y el literal deja de valer", () => {
+    it("firma y verifica con normalidad", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("ADMIN_SECRET", "un-secreto-de-verdad-de-64-chars");
+
+      const token = signProposalToken(ID_A, AHORA);
+      expect(verifyProposalToken(token, AHORA)).toEqual({
+        valid: true,
+        proposalId: ID_A,
+      });
+    });
+
+    it("un enlace firmado ANTES con el literal ya no verifica", () => {
+      // Consecuencia esperada y asumida: los enlaces ya enviados por email hay
+      // que reenviarlos. Se fija aquí para que nadie la descubra por sorpresa.
+      const enlaceViejo = signProposalToken(ID_A, AHORA);
+
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("ADMIN_SECRET", "un-secreto-de-verdad-de-64-chars");
+
+      expect(verifyProposalToken(enlaceViejo, AHORA)).toEqual({
+        valid: false,
+        reason: "bad-signature",
+      });
+    });
+
+    it("prefiere PROPOSAL_SIGN_SECRET sobre ADMIN_SECRET", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("ADMIN_SECRET", "el-de-admin");
+      vi.stubEnv("PROPOSAL_SIGN_SECRET", "el-propio");
+      const conElPropio = signProposalToken(ID_A, AHORA);
+
+      vi.stubEnv("PROPOSAL_SIGN_SECRET", "");
+      // Ya solo queda el de admin: el token anterior no puede validar.
+      expect(verifyProposalToken(conElPropio, AHORA).valid).toBe(false);
+    });
+  });
+
   describe("camino legítimo", () => {
     it("un token recién firmado verifica y devuelve SU propuesta", () => {
       const token = signProposalToken(ID_A, AHORA);
