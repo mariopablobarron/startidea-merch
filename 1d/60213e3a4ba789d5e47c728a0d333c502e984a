@@ -1,0 +1,36 @@
+src/middleware.ts
+  s_57070d4c8f98a5::t_a03a74a701dcab 18,24-26
+  s_57070d4c8f98a5::t_7b21cd89d812ec 40
+  s_57070d4c8f98a5::t_46664723bf455c 3
+  s_57070d4c8f98a5::t_261cab06e6cb42 55
+src/lib/jwt-domain-confusion.guard.test.ts
+  s_57070d4c8f98a5::t_b11aa144cb4e31 1-96
+src/lib/affiliate-magic.ts
+  s_57070d4c8f98a5::t_53e017de9906fe 33-34,39,45-46,48
+  s_57070d4c8f98a5::t_20c7c7c15ece7b 12,14-25
+src/lib/customer-auth.ts
+  s_57070d4c8f98a5::t_e659a8e43022e4 5,10-17
+  s_57070d4c8f98a5::t_64aa852bce7914 30-31,36,40-41,43
+src/lib/admin-auth.ts
+  s_57070d4c8f98a5::t_fd79181425a270 17-23
+  s_57070d4c8f98a5::t_a002a0c0c21f7d 36-37,42,46-47,49
+  s_57070d4c8f98a5::t_65653938d43eb1 6
+src/lib/jwt-domain-key.ts
+  s_57070d4c8f98a5::t_221ea7c6fcb51d 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "1d60213e3a4ba789d5e47c728a0d333c502e984a",
+  "prompts": {},
+  "sessions": {
+    "s_57070d4c8f98a5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9a8f6b5a-e934-41c2-a481-c784ac553410",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}
