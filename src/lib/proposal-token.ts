@@ -38,6 +38,14 @@ export function verifyProposalToken(
   const [proposalId, expiryStr, sig] = parts;
   const expiry = parseInt(expiryStr, 10);
   if (!Number.isFinite(expiry)) return { valid: false, reason: "bad-expiry" };
+  // La firma se calcula sobre el expiry YA PARSEADO, así que sin esta
+  // comprobación `<id>.1788603470XYZ.<firma>` verificaría igual que el token
+  // legítimo (parseInt se come el sufijo). No permite alargar la caducidad ni
+  // cambiar de propuesta —ambas van firmadas—, pero admite infinitas variantes
+  // válidas del mismo token, y eso rompería cualquier revocación o registro que
+  // compare tokens por igualdad. Exigimos la forma canónica: los emitidos por
+  // signProposalToken siempre la tienen, así que no invalida ninguno vivo.
+  if (String(expiry) !== expiryStr) return { valid: false, reason: "bad-expiry" };
   if (expiry < Math.floor(now.getTime() / 1000)) {
     return { valid: false, reason: "expired" };
   }
