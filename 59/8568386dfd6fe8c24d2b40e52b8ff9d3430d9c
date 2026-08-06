@@ -1,0 +1,27 @@
+src/lib/dashboard-share.test.ts
+  s_c0a8a1b276bd3e::t_193343684b6ee7 1,5-7,12-13
+  s_c0a8a1b276bd3e::t_efe4427d735c63 2
+  s_c0a8a1b276bd3e::t_5dddd004ae17e1 14-15
+src/lib/secreto-sin-fallback-literal.guard.test.ts
+  s_c0a8a1b276bd3e::t_8065e674e81028 1-114
+src/lib/dashboard-share.ts
+  s_c0a8a1b276bd3e::t_308cacbdaae984 13,15-34,38-39,43-48,51
+  s_c0a8a1b276bd3e::t_b3d26322adbb19 57-58
+  s_c0a8a1b276bd3e::t_5d72507a28033e 67-70,74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "598568386dfd6fe8c24d2b40e52b8ff9d3430d9c",
+  "prompts": {},
+  "sessions": {
+    "s_c0a8a1b276bd3e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0e453132-41d8-48cc-9f8c-04e8f37d9a1e",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
