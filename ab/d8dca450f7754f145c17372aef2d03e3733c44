@@ -1,0 +1,34 @@
+src/components/CartPage.tsx
+  s_57070d4c8f98a5::t_ced6c04f907698 525-546,548
+src/lib/marking-cell-text.ts
+  s_57070d4c8f98a5::t_f8a484c61bc714 1-29
+src/app/api/admin/cart-quotes/[id]/proposal/route.ts
+  s_57070d4c8f98a5::t_d663eeca6e0772 22-24
+src/app/pay/[token]/page.tsx
+  s_57070d4c8f98a5::t_6064e8f8f877c7 123-136
+  s_57070d4c8f98a5::t_e4963e9b8c07e3 37-41
+src/lib/proposal-pdf-marking.test.ts
+  s_57070d4c8f98a5::t_5c4f28614296f8 1,3-4,6-11,13-75
+  s_57070d4c8f98a5::t_a9ef56e9af06f0 2,5,12
+src/lib/proposal-pdf.tsx
+  s_57070d4c8f98a5::t_596ca3b3d70a52 11
+  s_57070d4c8f98a5::t_89e554b1e5ec7b 12
+  s_57070d4c8f98a5::t_5f8b83b9e84ed5 310
+  s_57070d4c8f98a5::t_ee5933e00da102 192
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "abd8dca450f7754f145c17372aef2d03e3733c44",
+  "prompts": {},
+  "sessions": {
+    "s_57070d4c8f98a5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9a8f6b5a-e934-41c2-a481-c784ac553410",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
