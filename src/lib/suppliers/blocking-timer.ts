@@ -55,3 +55,22 @@ export function measureSyncBlocking<T>(label: string, fn: () => T, options: Meas
     if (line) emit(line);
   }
 }
+
+/**
+ * `res.json()` con el parse medido.
+ *
+ * Existe porque el 6-ago, al medir Makito por primera vez, salió un tramo único
+ * de 4,78 s de bucle retenido — y al buscar quién más tenía la misma forma
+ * aparecieron los otros dos proveedores: MidOcean y Cifra descargan su catálogo
+ * entero y lo convierten con `res.json()`, que por dentro es un `JSON.parse`
+ * **síncrono** del cuerpo completo. Bloquea igual que el XML; lo único que
+ * pasaba es que nadie lo estaba midiendo.
+ *
+ * Equivale a `res.json()`: lee el cuerpo como texto y lo parsea. Se separa en
+ * dos pasos porque `res.json()` no deja envolver solo la parte síncrona, que es
+ * justo la que retiene el bucle — la descarga no lo hace.
+ */
+export async function measuredJson<T>(label: string, res: Response, options: MeasureOptions = {}): Promise<T> {
+  const text = await res.text();
+  return measureSyncBlocking(label, () => JSON.parse(text) as T, options);
+}

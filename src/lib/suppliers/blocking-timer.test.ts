@@ -6,7 +6,7 @@
  * errores propagados, y sin ensuciar el log cuando no hay bloqueo real.
  */
 import { describe, it, expect, vi } from "vitest";
-import { blockingLogLine, measureSyncBlocking, BLOCKING_WARN_MS } from "./blocking-timer";
+import { blockingLogLine, measureSyncBlocking, measuredJson, BLOCKING_WARN_MS } from "./blocking-timer";
 
 /** Reloj falso: cada llamada devuelve el siguiente valor de la lista. */
 function fakeClock(...values: number[]) {
@@ -79,5 +79,43 @@ describe("measureSyncBlocking", () => {
     }
     expect(emit).toHaveBeenCalledTimes(1);
     expect(emit.mock.calls[0][0]).toContain("12000 ms");
+  });
+});
+
+describe("measuredJson", () => {
+  /** Response de verdad, para no fabricar un doble que se comporte distinto. */
+  function respuesta(body: string): Response {
+    return new Response(body, { headers: { "content-type": "application/json" } });
+  }
+
+  it("devuelve lo mismo que res.json()", async () => {
+    const payload = [{ model: "A-012-AM", price: "1.234,56" }];
+    const texto = JSON.stringify(payload);
+    const porNuestraVia = await measuredJson("x", respuesta(texto), { emit: vi.fn() });
+    const porResJson = await respuesta(texto).json();
+    expect(porNuestraVia).toEqual(porResJson);
+  });
+
+  it("mide el parse y avisa cuando retiene el bucle", async () => {
+    const emit = vi.fn();
+    await measuredJson("midocean · parse JSON /gateway/products/2.0", respuesta("{}"), {
+      now: fakeClock(0, 4_780),
+      emit,
+    });
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(emit.mock.calls[0][0]).toContain("4780 ms");
+    expect(emit.mock.calls[0][0]).toContain("midocean");
+  });
+
+  it("no dice nada cuando el parse es rápido", async () => {
+    const emit = vi.fn();
+    await measuredJson("x", respuesta("{}"), { now: fakeClock(0, 5), emit });
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it("un cuerpo no-JSON sigue lanzando, como haría res.json()", async () => {
+    await expect(
+      measuredJson("x", respuesta("<html>error 500</html>"), { emit: vi.fn() }),
+    ).rejects.toThrow();
   });
 });

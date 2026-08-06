@@ -40,6 +40,15 @@ function ficherosConParseXml(): string[] {
     );
 }
 
+/**
+ * Clientes que descargan un CATÁLOGO entero de proveedor. Lista literal a
+ * propósito: si alguien renombra uno, `readFileSync` revienta con ENOENT y el
+ * guard se entera, en vez de quedarse mirando un conjunto vacío.
+ *
+ * Makito no está aquí porque su feed es XML y lo cubre el bloque de arriba.
+ */
+const CLIENTES_DE_CATALOGO = ["midocean.ts", "cifra.ts"];
+
 describe("guard · todo parse XML de proveedor está cronometrado", () => {
   it("hay al menos un fichero con parse XML (si no, el guard no vigila nada)", () => {
     // Sin esto el guard sería vacuamente verde el día que alguien renombre algo.
@@ -61,5 +70,50 @@ describe("guard · todo parse XML de proveedor está cronometrado", () => {
     }
 
     expect(sinCronometrar).toEqual([]);
+  });
+});
+
+/**
+ * El hermano del de arriba, para JSON.
+ *
+ * Se escribió el 6-ago después de medir Makito por primera vez: al buscar quién
+ * más tenía la misma forma resultó que **los otros dos proveedores también**.
+ * MidOcean convierte ~25 MB de JSON y Cifra su catálogo entero, los dos con
+ * `res.json()`, que por dentro es un `JSON.parse` síncrono. Bloqueaban el bucle
+ * exactamente igual que el XML; la única diferencia era que nadie lo medía —y
+ * el guard anterior no podía verlo, porque solo buscaba `parser.parse(`.
+ *
+ * La regla es deliberadamente tosca: en un cliente de catálogo **todo** `.json()`
+ * va medido, sin excepciones por «esa respuesta es pequeña». Juzgar cuál merece
+ * cronómetro es justo la decisión que dejó a estos dos sin él durante meses, y
+ * el umbral de 250 ms ya hace que las respuestas pequeñas no escriban nada.
+ */
+describe("guard · los clientes de catálogo no convierten JSON sin medirlo", () => {
+  it.each(CLIENTES_DE_CATALOGO)("%s importa el cronómetro", (fichero) => {
+    const fuente = readFileSync(join(DIR, fichero), "utf-8");
+    expect(fuente).toMatch(/measuredJson/);
+  });
+
+  it.each(CLIENTES_DE_CATALOGO)("%s no deja ningún .json() crudo", (fichero) => {
+    const crudos = readFileSync(join(DIR, fichero), "utf-8")
+      .split("\n")
+      .map((linea, i) => ({ linea: linea.trim(), n: i + 1 }))
+      .filter(({ linea }) => /\.json\(\)/.test(linea) && !esComentario(linea))
+      .filter(({ linea }) => !linea.includes("measuredJson"));
+
+    expect(
+      crudos.map((c) => `${fichero}:${c.n}  ${c.linea}`),
+      `Convertir el cuerpo con .json() retiene el bucle de eventos mientras dura, ` +
+        `y aquí se descargan catálogos de MB. Usa measuredJson(etiqueta, res) — ` +
+        `ver src/lib/suppliers/blocking-timer.ts.`,
+    ).toEqual([]);
+  });
+
+  it("los ficheros vigilados existen y traen JSON de verdad (anti-falso-verde)", () => {
+    // Un guard que mira ficheros vacíos o inexistentes pasa para siempre.
+    for (const fichero of CLIENTES_DE_CATALOGO) {
+      const fuente = readFileSync(join(DIR, fichero), "utf-8");
+      expect(fuente, `${fichero}: no parece un cliente HTTP`).toMatch(/await fetch\(/);
+    }
   });
 });
