@@ -4,6 +4,7 @@ import { quoteMarkingNet } from "@/lib/marking-quote";
 import { defaultTiersFromBase, orderTotalCents, pickTier } from "@/lib/pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 import { computeClientPricing } from "@/lib/product-pricing";
+import { resolveProductBySlug } from "@/lib/product-slug-resolver";
 
 /**
  * Recálculo de precio de una línea EN SERVIDOR — fuente autoritativa.
@@ -54,29 +55,32 @@ export async function computeServerLinePricing(
   line: ServerLineInput,
   activePromos: ActivePromos,
 ): Promise<ServerLinePricing> {
-  const product = await prisma.product.findUnique({
-    where: { slug: line.productSlug },
-    include: {
-      variants: {
-        where: { priceTiers: { some: {} } },
-        orderBy: { sku: "asc" },
-        take: 1,
-        // Solo tramos de precio: este recálculo alimenta el checkout del
-        // cliente y no debe arrastrar `images[]`/`variantId` del proveedor.
-        select: { id: true, priceTiers: { orderBy: { minQty: "asc" } } },
-      },
-      category: { select: { name: true } },
-      override: true,
-      // Posiciones + técnicas del producto: los parámetros de marcaje que
-      // envía el navegador NO son de fiar — validamos pertenencia y usamos
-      // el área/maxColors de la BD (auditoría 2026-07-09).
-      positions: {
-        include: {
-          techniques: { include: { technique: { select: { code: true } } } },
+  const resolved = await resolveProductBySlug(line.productSlug, (slug) =>
+    prisma.product.findUnique({
+      where: { slug },
+      include: {
+        variants: {
+          where: { priceTiers: { some: {} } },
+          orderBy: { sku: "asc" },
+          take: 1,
+          // Solo tramos de precio: este recálculo alimenta el checkout del
+          // cliente y no debe arrastrar `images[]`/`variantId` del proveedor.
+          select: { id: true, priceTiers: { orderBy: { minQty: "asc" } } },
+        },
+        category: { select: { name: true } },
+        override: true,
+        // Posiciones + técnicas del producto: los parámetros de marcaje que
+        // envía el navegador NO son de fiar — validamos pertenencia y usamos
+        // el área/maxColors de la BD (auditoría 2026-07-09).
+        positions: {
+          include: {
+            techniques: { include: { technique: { select: { code: true } } } },
+          },
         },
       },
-    },
-  });
+    }),
+  );
+  const product = resolved?.product;
   if (!product) return { ok: false, reason: `Producto no encontrado: ${line.productSlug}` };
   if (line.quantity < 1) return { ok: false, reason: "Cantidad inválida" };
 

@@ -14,6 +14,7 @@ import { loadActivePromotions } from "@/lib/promotions";
 import { computeServerLinePricing, type ServerMarkingInput } from "@/lib/quote-server-pricing";
 import type { Prisma } from "@prisma/client";
 import { normalizeProductName } from "@/lib/product-name";
+import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
@@ -152,10 +153,22 @@ export async function POST(req: Request) {
     );
   }
   const data = parsed.data;
-  const clientTotal = data.items.reduce((sum, it) => sum + (it.totalClientCents || 0), 0);
+  const resolvedProducts = await resolveProductsBySlugs(
+    data.items.map((item) => item.productSlug),
+    (slugs) =>
+      prisma.product.findMany({
+        where: { slug: { in: [...slugs] } },
+        select: { slug: true },
+      }),
+  );
+  const items = data.items.map((item) => ({
+    ...item,
+    productSlug: resolvedProducts.get(item.productSlug)?.canonicalSlug ?? item.productSlug,
+  }));
+  const clientTotal = items.reduce((sum, it) => sum + (it.totalClientCents || 0), 0);
 
   // Pago directo: SOLO si el cliente lo pide y todos los items traen precio.
-  const allPriced = data.items.every(
+  const allPriced = items.every(
     (it) => typeof it.totalClientCents === "number" && it.totalClientCents > 0,
   );
   const wantsDirectPay = Boolean(data.directPay && allPriced);
@@ -170,7 +183,7 @@ export async function POST(req: Request) {
   if (wantsDirectPay) {
     const activePromos = await loadActivePromotions();
     const recalced = await Promise.all(
-      data.items.map((it) => {
+      items.map((it) => {
         const serverMarkings: ServerMarkingInput[] = normalizeMarkings(it).map((m) => ({
           techniqueCode: m.techniqueCode,
           positionId: m.positionId,
@@ -292,7 +305,7 @@ export async function POST(req: Request) {
       depositPercent: directPay ? 100 : null,
       acceptedTotalCents: directPay ? payableTotal : null,
       items: {
-        create: data.items.map((it, i) => {
+        create: items.map((it, i) => {
           // Shape efectivo de marcajes (array prima; si no, campos planos).
           const markingsArr = normalizeMarkings(it);
           const first = markingsArr[0];

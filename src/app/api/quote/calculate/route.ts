@@ -9,6 +9,7 @@ import { computeClientPricing } from "@/lib/product-pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { rateLimit } from "@/lib/rate-limit";
 import { publicProductName } from "@/lib/product-name";
+import { resolveProductBySlug } from "@/lib/product-slug-resolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,21 +72,24 @@ export async function POST(req: Request) {
   const data = parsed.data;
 
   // Producto + override + primera variante CON tiers (mismo criterio que la ficha).
-  const product = await prisma.product.findUnique({
-    where: { slug: data.productSlug },
-    include: {
-      variants: {
-        where: { priceTiers: { some: {} } },
-        orderBy: { sku: "asc" },
-        take: 1,
-        // Ruta pública: solo los tramos de precio. `include` traía además
-        // `images[]`/`variantId` (datos crudos de proveedor) sin necesidad.
-        select: { id: true, priceTiers: { orderBy: { minQty: "asc" } } },
+  const resolved = await resolveProductBySlug(data.productSlug, (slug) =>
+    prisma.product.findUnique({
+      where: { slug },
+      include: {
+        variants: {
+          where: { priceTiers: { some: {} } },
+          orderBy: { sku: "asc" },
+          take: 1,
+          // Ruta pública: solo los tramos de precio. `include` traía además
+          // `images[]`/`variantId` (datos crudos de proveedor) sin necesidad.
+          select: { id: true, priceTiers: { orderBy: { minQty: "asc" } } },
+        },
+        category: { select: { name: true } },
+        override: true,
       },
-      category: { select: { name: true } },
-      override: true,
-    },
-  });
+    }),
+  );
+  const product = resolved?.product;
   if (!product) return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
 
   // Precio cliente del PRODUCTO — MISMA fuente que la ficha (coste neto → margen

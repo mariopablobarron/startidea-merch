@@ -180,10 +180,10 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
           // y convertía <p>Nombre</p> en URLs pnombrep.
           const cleanName = sanitizeSupplierName(head.name);
 
-          // Slug limpio: si ya existe el producto y tiene slug "limpio"
-          // (no empieza por cif-), lo reusamos; si no, generamos uno nuevo
-          // a partir del nombre. Esto migra automáticamente los slugs
-          // legacy en cada sync hasta que TODOS sean limpios.
+          // Slug limpio: si ya existe el producto y no usa el prefijo cif-, lo
+          // preservamos. Los artefactos históricos pnombre[p] se migran con el
+          // endpoint one-shot que además conserva redirect; el sync no debe
+          // cambiar URLs públicas silenciosamente.
           const existing = await prisma.product.findUnique({
             where: { supplier_supplierRef: { supplier: SUPPLIER, supplierRef: rootmodel } },
             select: { id: true, slug: true },

@@ -7,6 +7,7 @@ import { displayPositionId } from "@/lib/marking-position-display";
 import { standalonePositionLabel } from "@/lib/marking-position-label";
 import { rateLimit } from "@/lib/rate-limit";
 import { publicProductName } from "@/lib/product-name";
+import { resolveProductBySlug } from "@/lib/product-slug-resolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,19 +59,22 @@ export async function POST(req: Request) {
   const data = parsed.data;
 
   // Producto (opcional pero útil para enlazar)
-  const product = await prisma.product.findUnique({
-    where: { slug: data.productSlug },
-    select: {
-      id: true,
-      name: true,
-      override: { select: { customName: true } },
-    },
-  });
+  const resolved = await resolveProductBySlug(data.productSlug, (slug) =>
+    prisma.product.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        name: true,
+        override: { select: { customName: true } },
+      },
+    }),
+  );
+  const product = resolved?.product;
 
   const created = await prisma.mockupRequest.create({
     data: {
       productId: product?.id ?? null,
-      productSlug: data.productSlug,
+      productSlug: resolved?.canonicalSlug ?? data.productSlug,
       positionId: data.positionId ?? null,
       name: data.name,
       email: data.email,

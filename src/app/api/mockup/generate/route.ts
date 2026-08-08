@@ -4,6 +4,7 @@ import { removeLogoBackgroundSafe } from "@/lib/logo-tools";
 import { prisma } from "@/lib/prisma";
 import { getMarkingBase } from "@/lib/marking-base-cache";
 import { rateLimit } from "@/lib/rate-limit";
+import { resolveProductBySlug } from "@/lib/product-slug-resolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,12 +49,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "productSlug requerido" }, { status: 400 });
   }
 
-  const product = await prisma.product.findUnique({
-    where: { slug: productSlug },
-    include: {
-      positions: { orderBy: { positionId: "asc" } },
-    },
-  });
+  const resolved = await resolveProductBySlug(productSlug, (slug) =>
+    prisma.product.findUnique({
+      where: { slug },
+      include: {
+        positions: { orderBy: { positionId: "asc" } },
+      },
+    }),
+  );
+  const product = resolved?.product;
   if (!product) return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
 
   const position = positionIdInput

@@ -14,6 +14,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { resolveProductBySlug } from "@/lib/product-slug-resolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,12 +40,14 @@ export async function POST(req: Request) {
   // Resolver slug → productId si solo viene slug
   let productId = body.productId;
   if (!productId && body.slug) {
-    const p = await prisma.product.findUnique({
-      where: { slug: body.slug },
-      select: { id: true },
-    });
-    if (!p) return NextResponse.json({ ok: false, error: "NOT_FOUND" });
-    productId = p.id;
+    const resolved = await resolveProductBySlug(body.slug, (slug) =>
+      prisma.product.findUnique({
+        where: { slug },
+        select: { id: true },
+      }),
+    );
+    if (!resolved) return NextResponse.json({ ok: false, error: "NOT_FOUND" });
+    productId = resolved.product.id;
   }
   if (!productId) {
     return NextResponse.json({ ok: false, error: "NO_PRODUCT" }, { status: 400 });

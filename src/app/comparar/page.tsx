@@ -13,6 +13,7 @@ import { proxyImageUrl } from "@/lib/proxy-image";
 import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
+import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
 
 export const metadata: Metadata = {
   title: "Comparar productos · Decide entre 2 ó 3 referencias",
@@ -38,30 +39,36 @@ export default async function CompararPage({
     .slice(0, 3);
 
   const products = slugs.length
-    ? await prisma.product.findMany({
-        where: { slug: { in: slugs }, active: true, NOT: { override: { is: { hidden: true } } } },
-        include: {
-          category: { select: { name: true } },
-          override: {
-            select: {
-              customName: true,
-              customFromPriceCents: true,
-              marginPct: true,
-              marketingTags: true,
+    ? await resolveProductsBySlugs(slugs, (candidateSlugs) =>
+        prisma.product.findMany({
+          where: {
+            slug: { in: [...candidateSlugs] },
+            active: true,
+            NOT: { override: { is: { hidden: true } } },
+          },
+          include: {
+            category: { select: { name: true } },
+            override: {
+              select: {
+                customName: true,
+                customFromPriceCents: true,
+                marginPct: true,
+                marketingTags: true,
+              },
+            },
+            variants: {
+              select: { stockQty: true, colorName: true, size: true },
+            },
+            positions: {
+              include: { techniques: { include: { technique: true } } },
             },
           },
-          variants: {
-            select: { stockQty: true, colorName: true, size: true },
-          },
-          positions: {
-            include: { techniques: { include: { technique: true } } },
-          },
-        },
-      })
-    : [];
+        }),
+      )
+    : new Map();
 
   // Mantener el orden que el usuario indicó en el query string
-  const ordered = slugs.map((s) => products.find((p) => p.slug === s)).filter(Boolean);
+  const ordered = slugs.map((s) => products.get(s)?.product).filter(Boolean);
 
   // Precio /100 uds con la cascada REAL (override > promo > margen sobre los
   // tramos netos del proveedor) — la única página pública que usaba el

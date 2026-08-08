@@ -11,7 +11,7 @@ export const maxDuration = 120;
  * Migración one-shot de slugs de Product:
  *   - Detecta productos cuyo slug contiene el supplier SKU (master_code).
  *   - Genera un slug LIMPIO sólo con el nombre comercial.
- *   - Archiva el slug antiguo en ProductSlugRedirect → 301 desde el detalle.
+ *   - Archiva el slug antiguo en ProductSlugRedirect → 308 permanente desde el detalle.
  *
  * Modos:
  *   GET  /api/admin/products/migrate-slugs?dry=1 (default)
@@ -31,20 +31,25 @@ type Plan = {
 };
 
 async function buildPlan(): Promise<Plan[]> {
-  const products = await prisma.product.findMany({
-    select: { id: true, name: true, supplier: true, supplierRef: true, slug: true },
-  });
+  const [products, redirects] = await Promise.all([
+    prisma.product.findMany({
+      select: { id: true, name: true, supplier: true, supplierRef: true, slug: true },
+    }),
+    prisma.productSlugRedirect.findMany({ select: { oldSlug: true } }),
+  ]);
 
   const plan: Plan[] = [];
   // Mapa local para detectar colisiones contra otros newSlug ya planeados,
   // sin tener que ir y volver a Postgres en cada iteración.
-  const reserved = new Set<string>(products.map((p) => p.slug));
+  const reserved = new Set<string>([
+    ...products.map((p) => p.slug),
+    ...redirects.map((redirect) => redirect.oldSlug),
+  ]);
 
   for (const p of products) {
     const masterToken = p.supplierRef.toLowerCase();
     if (!p.slug.toLowerCase().includes(masterToken)) continue; // ya limpio
-    // Reservar el viejo nombre durante la planificación
-    reserved.delete(p.slug);
+    // El slug viejo seguirá reservado como URL histórica tras la migración.
     const candidate = await pickCleanSlug(p.name, p.id, reserved);
     reserved.add(candidate);
     plan.push({
@@ -78,6 +83,7 @@ async function pickCleanSlug(
     }
     i++;
   }
+  if (reserved.has(candidate)) throw new Error(`No hay slug libre para ${name}`);
   return candidate;
 }
 
@@ -110,21 +116,45 @@ export async function POST(req: Request) {
   const errors: Array<{ productId: string; error: string }> = [];
 
   // Aplicamos uno a uno (la unique constraint impide batch ciego):
-  //   1) crear/upsert redirect oldSlug → productId
+  //   1) crear el redirect o verificar que ya pertenece al mismo producto
   //   2) actualizar product.slug
   for (const item of plan) {
     try {
-      await prisma.$transaction([
-        prisma.productSlugRedirect.upsert({
-          where: { oldSlug: item.oldSlug },
-          create: { oldSlug: item.oldSlug, productId: item.productId },
-          update: { productId: item.productId },
-        }),
-        prisma.product.update({
-          where: { id: item.productId },
+      await prisma.$transaction(async (tx) => {
+        const [redirect, targetRedirect, targetProduct] = await Promise.all([
+          tx.productSlugRedirect.findUnique({
+            where: { oldSlug: item.oldSlug },
+            select: { productId: true },
+          }),
+          tx.productSlugRedirect.findUnique({
+            where: { oldSlug: item.newSlug },
+            select: { productId: true },
+          }),
+          tx.product.findUnique({
+            where: { slug: item.newSlug },
+            select: { id: true },
+          }),
+        ]);
+        if (redirect && redirect.productId !== item.productId) {
+          throw new Error(`El slug histórico ${item.oldSlug} ya pertenece a otro producto`);
+        }
+        if (targetRedirect) {
+          throw new Error(`El destino ${item.newSlug} es una URL histórica reservada`);
+        }
+        if (targetProduct && targetProduct.id !== item.productId) {
+          throw new Error(`El destino ${item.newSlug} ya pertenece a otro producto`);
+        }
+        if (!redirect) {
+          await tx.productSlugRedirect.create({
+            data: { oldSlug: item.oldSlug, productId: item.productId },
+          });
+        }
+        const updated = await tx.product.updateMany({
+          where: { id: item.productId, slug: item.oldSlug },
           data: { slug: item.newSlug },
-        }),
-      ]);
+        });
+        if (updated.count !== 1) throw new Error("Plan obsoleto; slug no actualizado");
+      });
       migrated++;
     } catch (e) {
       errors.push({

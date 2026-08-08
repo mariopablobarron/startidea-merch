@@ -264,7 +264,7 @@ async function upsertProduct(
   // Slug LIMPIO sin supplier SKU (no exponer "-mo9812" al cliente).
   // Si ya existe el producto con un slug que NO contiene el master_code,
   // lo mantenemos (estable). Si no, calculamos uno nuevo con resolución
-  // de colisiones y archivamos el slug antiguo como redirect 301.
+  // de colisiones y archivamos el slug antiguo como redirect permanente 308.
   const existing = await prisma.product.findUnique({
     where: { supplier_supplierRef: { supplier: "midocean", supplierRef: raw.master_code } },
     select: { id: true, slug: true },
@@ -303,24 +303,38 @@ async function upsertProduct(
     syncedAt: new Date(),
   };
 
-  const product = await prisma.product.upsert({
-    where: { supplier_supplierRef: { supplier: "midocean", supplierRef: raw.master_code } },
-    create: productData,
-    update: productData,
-  });
-
-  // Si el slug acaba de cambiar, archivar el viejo como redirect 301.
-  // Solo si el viejo era no-limpio (contenía supplier SKU) — los renames
-  // espontáneos no nos interesan.
-  if (existing && existing.slug !== slug && existing.slug.toLowerCase().includes(masterToken)) {
-    await prisma.productSlugRedirect
-      .upsert({
+  // El cambio de slug y su redirect forman una sola unidad. La URL histórica
+  // es create-only: si ya pertenece a otro producto, abortamos en vez de
+  // reasignarla o guardar el producto sin redirect.
+  const product = await prisma.$transaction(async (tx) => {
+    if (existing && existing.slug !== slug && existing.slug.toLowerCase().includes(masterToken)) {
+      const current = await tx.product.findUnique({
+        where: { id: existing.id },
+        select: { slug: true },
+      });
+      if (current?.slug !== existing.slug) {
+        throw new Error(`Slug obsoleto durante sync MidOcean para ${raw.master_code}`);
+      }
+      const redirect = await tx.productSlugRedirect.findUnique({
         where: { oldSlug: existing.slug },
-        create: { oldSlug: existing.slug, productId: product.id },
-        update: { productId: product.id },
-      })
-      .catch(() => {});
-  }
+        select: { productId: true },
+      });
+      if (redirect && redirect.productId !== existing.id) {
+        throw new Error(`El slug histórico ${existing.slug} ya pertenece a otro producto`);
+      }
+      if (!redirect) {
+        await tx.productSlugRedirect.create({
+          data: { oldSlug: existing.slug, productId: existing.id },
+        });
+      }
+    }
+
+    return tx.product.upsert({
+      where: { supplier_supplierRef: { supplier: "midocean", supplierRef: raw.master_code } },
+      create: productData,
+      update: productData,
+    });
+  });
 
   // Asignar referencia propia Startidea (determinística desde id) si falta.
   // No se sobrescribe nunca para mantener estabilidad de URLs/refs ya conocidas.
@@ -409,7 +423,8 @@ async function upsertProduct(
 }
 
 /**
- * Genera un slug limpio (sin supplier SKU) único entre productos.
+ * Genera un slug limpio (sin supplier SKU) único entre productos y URLs
+ * históricas. ProductSlugRedirect.oldSlug comparte el namespace lógico.
  * Si colisiona con otro producto distinto, añade sufijo -2, -3, …
  * El productSelf permite reutilizar el slug propio sin contarse a sí mismo
  * como colisión.
@@ -423,11 +438,17 @@ export async function resolveCleanProductSlug(
   let suffix = 1;
   // Hasta 50 intentos (suficiente para repeticiones reales de nombre)
   while (suffix <= 50) {
-    const collision = await prisma.product.findUnique({
-      where: { slug: candidate },
-      select: { id: true },
-    });
-    if (!collision || collision.id === productSelfId) return candidate;
+    const [collision, historical] = await Promise.all([
+      prisma.product.findUnique({
+        where: { slug: candidate },
+        select: { id: true },
+      }),
+      prisma.productSlugRedirect.findUnique({
+        where: { oldSlug: candidate },
+        select: { oldSlug: true },
+      }),
+    ]);
+    if ((!collision || collision.id === productSelfId) && !historical) return candidate;
     suffix++;
     candidate = `${base}-${suffix}`;
   }

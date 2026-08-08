@@ -46,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       prisma.product.findMany({
         where: { active: true, NOT: { override: { is: { hidden: true } } } },
         select: { slug: true, syncedAt: true },
-        take: 3000,
+        orderBy: { slug: "asc" },
       }),
       prisma.category.findMany({ select: { slug: true } }),
       prisma.blogPost.findMany({
