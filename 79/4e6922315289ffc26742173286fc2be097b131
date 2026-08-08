@@ -1,0 +1,23 @@
+src/lib/dashboard-share.test.ts
+  s_578116e23e11cc::t_a2356e98599178 122-123
+package.json
+  s_578116e23e11cc::t_4040b3bd0a23cb 79
+pnpm-lock.yaml
+  s_578116e23e11cc::t_11cfa884ca9510 12,2319-2320,5493,5712
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "794e6922315289ffc26742173286fc2be097b131",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
