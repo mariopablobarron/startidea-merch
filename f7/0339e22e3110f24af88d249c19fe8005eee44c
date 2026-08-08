@@ -1,0 +1,37 @@
+src/components/SpotifyPixel.tsx
+  s_13c6a17efffee8::t_d1fa99c58a991f 1-4,6-62
+  s_13c6a17efffee8::t_b866ede0477139 5
+src/app/cookies/page.tsx
+  s_13c6a17efffee8::t_b866ede0477139 46,121
+  s_13c6a17efffee8::t_d1fa99c58a991f 11,70-91,133
+src/components/SpinWheelPopup.tsx
+  s_13c6a17efffee8::t_b866ede0477139 19
+src/components/CookieBanner.tsx
+  s_13c6a17efffee8::t_d1fa99c58a991f 13,61,157-158
+  s_13c6a17efffee8::t_b866ede0477139 15,24
+src/components/EmailCapturePopup.tsx
+  s_13c6a17efffee8::t_b866ede0477139 27
+src/app/layout.tsx
+  s_13c6a17efffee8::t_d1fa99c58a991f 17,109,139
+src/app/privacidad/page.tsx
+  s_13c6a17efffee8::t_d1fa99c58a991f 11,35,107-110
+  s_13c6a17efffee8::t_2108261fd489ac 111
+src/components/VoiceAgentWidget.tsx
+  s_13c6a17efffee8::t_b866ede0477139 299
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "f70339e22e3110f24af88d249c19fe8005eee44c",
+  "prompts": {},
+  "sessions": {
+    "s_13c6a17efffee8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fde79-70ee-7721-af04-fb14c8b3aa94",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
