@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
+import { publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,7 +63,15 @@ export async function POST(req: Request) {
   const slugs = data.items.map((i) => i.product_slug);
   const products = await prisma.product.findMany({
     where: { slug: { in: slugs } },
-    select: { id: true, slug: true, name: true, internalRef: true, primaryImageUrl: true, fromPriceCents: true },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      internalRef: true,
+      primaryImageUrl: true,
+      fromPriceCents: true,
+      override: { select: { customName: true } },
+    },
   });
   if (products.length === 0) {
     return NextResponse.json({ error: "Ningún slug coincide con un producto activo" }, { status: 400 });
@@ -95,7 +104,7 @@ export async function POST(req: Request) {
       return {
         productSlug: p.slug,
         productRef: p.internalRef || p.slug,
-        productName: p.name,
+        productName: publicProductName(p.name, p.override?.customName),
         primaryImageUrl: proxyImageUrl(p.primaryImageUrl), // guardar proxy, nunca crudo
         quantity: it.quantity,
         // shape plano (primer marcaje, compat) + array completo

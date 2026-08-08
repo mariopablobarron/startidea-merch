@@ -9,6 +9,7 @@ import { proxyImageUrl } from "@/lib/proxy-image";
 import { defaultTiersFromBase, pickTier } from "@/lib/pricing";
 import { computeClientPricing } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
+import { legacyHtmlToText, normalizeProductName, publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -148,7 +149,7 @@ export async function POST(req: Request) {
   const catalogBlock = products
     .map(
       (p, i) =>
-        `[${i + 1}] ${p.name} · ref ${publicRef(p)} · ${p.category?.name || "—"} · ${p.material || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${p.enhancedShortDescription || p.shortDescription || ""}`,
+        `[${i + 1}] ${normalizeProductName(p.name)} · ref ${publicRef(p)} · ${p.category?.name || "—"} · ${legacyHtmlToText(p.material) || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${legacyHtmlToText(p.enhancedShortDescription || p.shortDescription)}`,
     )
     .join("\n");
 
@@ -340,12 +341,13 @@ Ajusta tu respuesta según este mensaje (afinar productos, responder a tu pregun
           id: true, internalRef: true,
           primaryImageUrl: true,
           category: { select: { name: true } },
+          override: { select: { customName: true } },
         },
       });
       if (!p) return null;
       return {
         slug: p.slug,
-        name: p.name,
+        name: publicProductName(p.name, p.override?.customName),
         ref: publicRef(p), // NUNCA supplierRef en endpoint público
         category: p.category?.name,
         // NUNCA la URL cruda del CDN: delata al proveedor (MidOcean guarda la
@@ -441,7 +443,12 @@ Ajusta tu respuesta según este mensaje (afinar productos, responder a tu pregun
           fromPriceCents: true,
           category: { select: { name: true } },
           override: {
-            select: { customFromPriceCents: true, marginPct: true, marketingTags: true },
+            select: {
+              customName: true,
+              customFromPriceCents: true,
+              marginPct: true,
+              marketingTags: true,
+            },
           },
           variants: {
             select: {
@@ -456,7 +463,7 @@ Ajusta tu respuesta según este mensaje (afinar productos, responder a tu pregun
 
       base.product = {
         slug: p.slug,
-        name: p.name,
+        name: publicProductName(p.name, p.override?.customName),
         ref: publicRef(p), // NUNCA supplierRef en endpoint público
         url: `/catalogo/${p.slug}`,
         primaryImageUrl: proxyImageUrl(p.primaryImageUrl), // ver nota arriba

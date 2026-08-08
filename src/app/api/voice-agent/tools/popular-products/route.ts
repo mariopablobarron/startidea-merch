@@ -15,6 +15,7 @@ import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { getTopViewedProducts } from "@/lib/insights";
 import { prisma } from "@/lib/prisma";
 import { displayFromPrice } from "@/lib/product-pricing";
+import { publicProductName } from "@/lib/product-name";
 import { loadActivePromotions } from "@/lib/promotions";
 
 export const runtime = "nodejs";
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
         )
       : null;
     return {
-      name: found?.override?.customName || p.name,
+      name: publicProductName(found?.name || p.name, found?.override?.customName),
       slug: p.slug,
       views_30d: p.view30d,
       from_price_eur: price?.finalCents != null ? price.finalCents / 100 : null,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeProductName } from "@/lib/product-name";
 
 /**
  * Schema compartido de una LÍNEA de carrito tal como viaja del navegador al
@@ -23,7 +24,7 @@ export const CartMarkingSchema = z.object({
 export const CartItemSchema = z.object({
   productSlug: z.string().min(1),
   productRef: z.string().min(1),
-  productName: z.string().min(1),
+  productName: z.string().min(1).max(500),
   primaryImageUrl: z.string().nullable().optional(),
   quantity: z.number().int().positive().max(1_000_000),
   variantSku: z.string().nullable().optional(),
@@ -69,7 +70,7 @@ export function cartItemToCreate(it: CartItemInput) {
   return {
     productSlug: it.productSlug,
     productRef: it.productRef,
-    productName: it.productName,
+    productName: normalizeProductName(it.productName),
     primaryImageUrl: it.primaryImageUrl ?? null,
     quantity: it.quantity,
     variantSku: it.variantSku ?? null,

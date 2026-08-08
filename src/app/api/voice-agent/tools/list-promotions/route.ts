@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
 import { prisma } from "@/lib/prisma";
+import { publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,12 +56,19 @@ export async function POST(req: Request) {
     productIds.length > 0
       ? prisma.product.findMany({
           where: { id: { in: productIds } },
-          select: { id: true, name: true, slug: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            override: { select: { customName: true } },
+          },
         })
       : Promise.resolve([]),
   ]);
   const catMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
-  const prodMap = Object.fromEntries(products.map((p) => [p.id, p.name]));
+  const prodMap = Object.fromEntries(
+    products.map((p) => [p.id, publicProductName(p.name, p.override?.customName)]),
+  );
 
   const items = promos.map((p) => {
     const descuento =

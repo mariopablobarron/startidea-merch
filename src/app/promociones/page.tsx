@@ -12,6 +12,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
 import { displayFromPrice } from "@/lib/product-pricing";
+import { publicProductName } from "@/lib/product-name";
 
 const BASE_METADATA: Metadata = {
   title: "Promociones · TodoMerchandising",
@@ -97,7 +98,12 @@ export default async function PromocionesPage() {
                 .flatMap((p) => p.targetIds),
             },
           },
-          select: { id: true, name: true, slug: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            override: { select: { customName: true } },
+          },
         })
       : Promise.resolve([]),
   ]);
@@ -160,7 +166,12 @@ export default async function PromocionesPage() {
                       : p.scope === "CATEGORY"
                         ? p.targetIds.map((id) => catLookup[id]?.name).filter(Boolean) as string[]
                         : p.scope === "PRODUCT_LIST"
-                          ? p.targetIds.map((id) => prodLookup[id]?.name).filter(Boolean) as string[]
+                          ? p.targetIds
+                              .map((id) => prodLookup[id])
+                              .filter((target): target is NonNullable<typeof target> => Boolean(target))
+                              .map((target) =>
+                                publicProductName(target.name, target.override?.customName),
+                              )
                           : p.targetIds;
                   const ctaLink =
                     p.scope === "CATEGORY" && p.targetIds[0] && catLookup[p.targetIds[0]]
@@ -216,7 +227,7 @@ export default async function PromocionesPage() {
               <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                 {products.map((p) => {
                   const ov = p.override;
-                  const displayName = ov?.customName || p.name;
+                  const displayName = publicProductName(p.name, ov?.customName);
                   // Precio "desde" cliente (neto → margen/override → PERCENT).
                   // Misma fuente que ficha, catálogo y carrito.
                   const priceInfo = displayFromPrice(

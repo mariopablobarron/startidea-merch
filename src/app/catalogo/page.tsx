@@ -23,6 +23,7 @@ import { marginMultiplier } from "@/lib/pricing";
 import { searchProductIdsSafe } from "@/lib/search/meili";
 import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
 import { displayFromPrice } from "@/lib/product-pricing";
+import { groupLegacyHtmlValues, publicProductName } from "@/lib/product-name";
 
 export async function generateMetadata({
   searchParams,
@@ -206,16 +207,43 @@ export default async function CatalogoPage({
         }
       : undefined;
 
-  const where: Prisma.ProductWhereInput = {
+  const whereWithoutMaterial: Prisma.ProductWhereInput = {
     active: true,
     NOT: { override: { is: { hidden: true } } },
     ...(searchClause ? searchClause : {}),
     ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
-    ...(material
-      ? { material: { contains: material, mode: "insensitive" as const } }
-      : {}),
     ...(priceFilter || {}),
     ...(variantsFilter || {}),
+  };
+
+  // Se obtienen sin aplicar el filtro de material para agrupar representaciones
+  // equivalentes (ABS, <p>ABS</p>, entidades…). El chip visible usa el label
+  // limpio y el filtro incluye TODOS los valores raw del grupo.
+  const materialGroups = await prisma.product.groupBy({
+    by: ["material"],
+    where: { ...whereWithoutMaterial, material: { not: null } },
+    _count: { _all: true },
+    orderBy: { material: "asc" },
+  });
+  const groupedMaterialValues = groupLegacyHtmlValues(
+    materialGroups.map((group) => group.material),
+  );
+  const selectedMaterialGroup = material
+    ? groupedMaterialValues.find(
+        (group) =>
+          group.label.toLocaleLowerCase("es") === material.toLocaleLowerCase("es") ||
+          group.values.some(
+            (raw) => raw.toLocaleLowerCase("es") === material.toLocaleLowerCase("es"),
+          ),
+      )
+    : null;
+  const where: Prisma.ProductWhereInput = {
+    ...whereWithoutMaterial,
+    ...(material
+      ? selectedMaterialGroup
+        ? { material: { in: selectedMaterialGroup.values } }
+        : { material: { contains: material, mode: "insensitive" as const } }
+      : {}),
   };
 
   // Productos destacados (override.featured = true) siempre primero,
@@ -244,7 +272,7 @@ export default async function CatalogoPage({
     pageIds = rankedIds.slice((page - 1) * perPage, page * perPage);
   }
 
-  const [products, total, topCategories, subCategories, colorGroups, sizes, materials, activePromos] =
+  const [products, total, topCategories, subCategories, colorGroups, sizes, activePromos] =
     await Promise.all([
       prisma.product.findMany({
         // Con relevancia: la página ya viene resuelta en pageIds (orden Meili);
@@ -316,14 +344,6 @@ export default async function CatalogoPage({
         where: { product: { is: where }, size: { not: null } },
         _count: { _all: true },
       }),
-      // Materiales más comunes
-      prisma.product.groupBy({
-        by: ["material"],
-        where: { ...where, material: { not: null } },
-        _count: { _all: true },
-        orderBy: { material: "asc" },
-        take: 12,
-      }),
       // Promociones activas — se aplican a card price + badge
       loadActivePromotions(),
     ]);
@@ -375,6 +395,28 @@ export default async function CatalogoPage({
       return ia - ib;
     });
 
+  // El value conserva el texto de BD para que el filtro siga encontrando los
+  // registros legacy; la etiqueta visible nunca muestra tags ni entidades.
+  const materialCountByRaw = new Map(
+    materialGroups.flatMap((group) =>
+      group.material ? [[group.material, group._count._all] as const] : [],
+    ),
+  );
+  const allMaterialOptions = groupedMaterialValues
+    .map((group) => ({
+      value: group.label,
+      label: group.label,
+      count: group.values.reduce((sum, raw) => sum + (materialCountByRaw.get(raw) ?? 0), 0),
+    }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"));
+  let materialOptions = allMaterialOptions.slice(0, 8);
+  if (material && !materialOptions.some((option) => option.value === selectedMaterialGroup?.label)) {
+    const selectedOption = allMaterialOptions.find(
+      (option) => option.value === selectedMaterialGroup?.label,
+    );
+    if (selectedOption) materialOptions = [selectedOption, ...materialOptions.slice(0, 7)];
+  }
+
   // Sidebar de categorías: hay cientos de categorías top-level (feed de
   // proveedores). Mostrar las ~14 con más productos (las relevantes) + un
   // "Ver todas" al hub /categorias. La activa siempre se muestra aunque esté
@@ -399,7 +441,7 @@ export default async function CatalogoPage({
       : "Más de 9.000 productos promocionales personalizables con producción en Centros Especiales de Empleo.",
     url: `${SITE_URL}/catalogo${catSlug ? `?cat=${catSlug}` : ""}`,
     items: products.slice(0, 24).map((p) => ({
-      name: p.override?.customName || p.name,
+      name: publicProductName(p.name, p.override?.customName),
       url: `${SITE_URL}/catalogo/${p.slug}`,
       image: absoluteProxyImageUrl(p.primaryImageUrl),
     })),
@@ -597,7 +639,7 @@ export default async function CatalogoPage({
                   </FilterBlock>
                 )}
 
-                {materials.length > 0 && (
+                {materialOptions.length > 0 && (
                   <FilterBlock title="Material">
                     <Chip
                       href={buildHref({
@@ -613,25 +655,25 @@ export default async function CatalogoPage({
                       active={!material}
                       label="Cualquiera"
                     />
-                    {materials
-                      .filter((m) => m.material)
-                      .slice(0, 8)
-                      .map((m) => (
+                    {materialOptions.map((option) => (
                         <Chip
-                          key={m.material!}
+                          key={option.value}
                           href={buildHref({
                             q: qRaw,
                             cat: catSlug,
                             color: colorGroup,
                             talla,
-                            mat: m.material!,
+                            mat: option.value,
                             sort,
                             priceMin: priceMin?.toString(),
                             priceMax: priceMax?.toString(),
                             stock: inStock ? "1" : undefined,
                           })}
-                          active={material.toLowerCase() === m.material!.toLowerCase()}
-                          label={m.material!}
+                          active={
+                            selectedMaterialGroup?.label.toLocaleLowerCase("es") ===
+                            option.value.toLocaleLowerCase("es")
+                          }
+                          label={option.label}
                         />
                       ))}
                   </FilterBlock>
@@ -744,14 +786,14 @@ export default async function CatalogoPage({
                         const inStock = p.variants.length > 0;
                         // Aplicar overrides admin si existen
                         const ov = p.override;
-                        const displayName = ov?.customName || p.name;
+                        const displayName = publicProductName(p.name, ov?.customName);
                         // Precio "desde" cliente (neto → margen/override → PERCENT).
                         // FIXED no toca el "desde" (es descuento de pedido) pero sí
                         // aparece como badge. Misma fuente que ficha y carrito.
                         const priceInfo = displayFromPrice(
                           {
                             id: p.id,
-                            name: p.name,
+                            name: displayName,
                             brand: p.brand,
                             categoryId: p.categoryId,
                             fromPriceCents: p.fromPriceCents,

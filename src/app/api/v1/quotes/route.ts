@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { authenticateApiKey, requireScope } from "@/lib/api-auth";
 import { notifyAdmins } from "@/lib/notify-admin";
+import { publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,7 +74,13 @@ export async function POST(req: Request) {
   // próximo sync. Esto es intencional para no filtrar el sourcing.
   const products = await prisma.product.findMany({
     where: { internalRef: { in: data.items.map((it) => it.ref) }, active: true },
-    select: { internalRef: true, slug: true, name: true, primaryImageUrl: true },
+    select: {
+      internalRef: true,
+      slug: true,
+      name: true,
+      primaryImageUrl: true,
+      override: { select: { customName: true } },
+    },
   });
   const byRef = new Map(products.map((p) => [p.internalRef!, p]));
   const unknown = data.items.filter((it) => !byRef.has(it.ref));
@@ -104,7 +111,7 @@ export async function POST(req: Request) {
           return {
             productSlug: p.slug,
             productRef: it.ref,
-            productName: p.name,
+            productName: publicProductName(p.name, p.override?.customName),
             primaryImageUrl: proxyImageUrl(p.primaryImageUrl), // guardar proxy, nunca crudo
             quantity: it.quantity,
             variantSku: it.variantSku,

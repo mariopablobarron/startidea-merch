@@ -23,6 +23,14 @@ const base: CartItemInput = {
 };
 
 describe("cartItemToCreate — marcaje (array multi-marca)", () => {
+  it("no persiste HTML arbitrario enviado como productName por el navegador", () => {
+    const out = cartItemToCreate({
+      ...base,
+      productName: "&lt;p&gt;Taza &amp; termo&lt;/p&gt;<script>alert(1)</script>",
+    });
+    expect(out.productName).toBe("Taza & termo");
+  });
+
   it("persiste el array completo con order incremental y refleja el 1º en los campos planos", () => {
     const out = cartItemToCreate({
       ...base,

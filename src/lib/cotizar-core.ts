@@ -5,6 +5,7 @@ import { validateCoupon } from "@/lib/coupons";
 import { applyMargin, defaultTiersFromBase, pickTier } from "@/lib/pricing";
 import { computeClientPricing } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
+import { publicProductName } from "@/lib/product-name";
 import { withIva, ivaPart } from "@/lib/iva";
 
 /**
@@ -110,7 +111,12 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
       markingSizeHint: true,
       primaryImageUrl: true,
       override: {
-        select: { customFromPriceCents: true, marginPct: true, marketingTags: true },
+        select: {
+          customName: true,
+          customFromPriceCents: true,
+          marginPct: true,
+          marketingTags: true,
+        },
       },
     },
   });
@@ -134,7 +140,7 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
   const netUnitCents = tier?.unitPriceCents || prod.fromPriceCents || 0;
 
   const productOut: CotizarProduct = {
-    name: prod.name,
+    name: publicProductName(prod.name, prod.override?.customName),
     brand: prod.brand,
     publicRef: prod.internalRef || prod.slug,
     internalRef: prod.internalRef,

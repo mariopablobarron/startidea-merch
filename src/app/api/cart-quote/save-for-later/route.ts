@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/resend";
 import { CartItemSchema, cartItemToCreate } from "@/lib/cart-item-schema";
+import { normalizeProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 
@@ -93,7 +94,10 @@ export async function POST(req: Request) {
     const total = items.reduce((s, it) => s + (it.totalClientCents || 0), 0);
     const lines = items
       .slice(0, 6)
-      .map((it) => `<li>${it.quantity} × ${escapeHtml(it.productName)}</li>`)
+      .map(
+        (it) =>
+          `<li>${it.quantity} × ${escapeHtml(normalizeProductName(it.productName))}</li>`,
+      )
       .join("");
     void sendEmail({
       to: email,

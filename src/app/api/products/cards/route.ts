@@ -5,6 +5,7 @@ import { displayFromPrice } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { publicRef } from "@/lib/internal-ref";
+import { publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,7 +71,7 @@ export async function GET(req: Request) {
       );
       return {
         slug: p.slug,
-        name: p.override?.customName || p.name,
+        name: publicProductName(p.name, p.override?.customName),
         ref: publicRef(p),
         image: proxyImageUrl(p.primaryImageUrl),
         priceFromCents: price.finalCents,

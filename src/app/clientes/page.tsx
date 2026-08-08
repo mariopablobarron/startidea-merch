@@ -10,6 +10,7 @@ import { clientFromPriceCents } from "@/lib/product-pricing";
 import { ReorderButton } from "@/components/portal/ReorderButton";
 import { QuickOrder } from "@/components/portal/QuickOrder";
 import { ProfileForm } from "@/components/portal/ProfileForm";
+import { publicProductName } from "@/lib/product-name";
 
 export const metadata: Metadata = {
   title: "Portal cliente",
@@ -99,7 +100,12 @@ export default async function CustomerPortalPage() {
             // clientFromPriceCents (margen/override), nunca crudo.
             fromPriceCents: true,
             override: {
-              select: { customFromPriceCents: true, marginPct: true, marketingTags: true },
+              select: {
+                customName: true,
+                customFromPriceCents: true,
+                marginPct: true,
+                marketingTags: true,
+              },
             },
           },
         },
@@ -545,7 +551,7 @@ export default async function CustomerPortalPage() {
                       )}
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium text-ink">
-                          {f.product.name}
+                          {publicProductName(f.product.name, f.product.override?.customName)}
                         </span>
                         {(() => {
                           if (!f.product.active) {

@@ -6,6 +6,7 @@ import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
 import { semanticSearch } from "@/lib/embeddings";
 import { displayFromPrice } from "@/lib/product-pricing";
+import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 import { loadActivePromotions } from "@/lib/promotions";
 
 export const runtime = "nodejs";
@@ -129,9 +130,11 @@ export async function POST(req: Request) {
       return {
         ref: publicRef(p),
         slug: p.slug,
-        name: p.override?.customName || p.name,
+        name: publicProductName(p.name, p.override?.customName),
         brand: publicBrand(p.brand),
-        short_description: p.enhancedShortDescription?.slice(0, 200) || p.shortDescription?.slice(0, 200) || null,
+        short_description:
+          legacyHtmlToText(p.enhancedShortDescription || p.shortDescription).slice(0, 200) ||
+          null,
         category: p.category?.name || null,
         from_price_eur: price.finalCents != null ? price.finalCents / 100 : null,
         product_url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es"}/catalogo/${p.slug}`,

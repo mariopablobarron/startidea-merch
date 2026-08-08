@@ -3,6 +3,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { publicRef } from "@/lib/internal-ref";
+import { publicProductName } from "@/lib/product-name";
 
 /**
  * Best-sellers / destacados en la home — productos con precio "desde" visible,
@@ -65,7 +66,7 @@ export async function BestSellers() {
         <div className="mt-8 grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-4">
           {products.map((p) => {
             const ov = p.override;
-            const name = ov?.customName || p.name;
+            const name = publicProductName(p.name, ov?.customName);
             const priceCents =
               ov?.customFromPriceCents != null
                 ? ov.customFromPriceCents

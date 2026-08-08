@@ -17,6 +17,8 @@
  * se borra como palabra exacta, nunca "adivina"/"adivinar".
  */
 
+import { legacyHtmlToText, normalizeProductName } from "@/lib/product-name";
+
 /** Ningún email tiene por qué viajar en un campo público de catálogo. */
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 
@@ -59,8 +61,8 @@ function isEmptyish(s: string): boolean {
  */
 export function sanitizeSupplierText(value: string | null | undefined): string | null {
   if (value == null) return null;
-  const raw = String(value);
-  if (!raw.trim()) return null;
+  const raw = legacyHtmlToText(value);
+  if (!raw) return null;
 
   const cleaned = tidy(
     raw
@@ -74,12 +76,11 @@ export function sanitizeSupplierText(value: string | null | undefined): string |
 }
 
 /**
- * Variante para `Product.name`, que es NOT NULL: si el saneado dejara el nombre
- * vacío se conserva el original recortado. Un producto sin nombre rompe la ficha
- * y el buscador, y ese daño es peor que el caso —teórico— de un nombre que sea
- * literalmente la marca del proveedor y nada más.
+ * Variante para `Product.name`, que es NOT NULL: si el saneado de proveedor
+ * dejara el nombre vacío se conserva el nombre ya convertido a texto plano.
+ * Si el feed no trae ningún nombre útil, usa el fallback estable "Producto".
  */
 export function sanitizeSupplierName(value: string | null | undefined): string {
-  const fallback = String(value ?? "").trim();
-  return sanitizeSupplierText(value) ?? fallback;
+  const fallback = normalizeProductName(value);
+  return sanitizeSupplierText(fallback) ?? fallback;
 }
