@@ -16,7 +16,7 @@ import { trackLead } from "@/lib/ads-events";
  */
 
 const STORAGE_KEY = "merch:ruleta:v1";
-const COOKIE_CONSENT_KEY = "merch:cookie-consent:v1";
+const COOKIE_CONSENT_KEY = "merch:cookie-consent:v2";
 const SHOW_AFTER_MS = 5000;
 const MOBILE_AUTO_SHOW_MS = 60000;
 const MOBILE_MIN_SCROLL_PERCENT = 50;

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function CookiesPage() {
   return (
-    <LegalLayout title="Política de cookies" updatedAt="18 de mayo de 2026">
+    <LegalLayout title="Política de cookies" updatedAt="8 de agosto de 2026">
       <h2>1. ¿Qué son las cookies?</h2>
       <p>
         Las cookies son pequeños archivos que se descargan en el dispositivo del usuario al
@@ -43,7 +43,7 @@ export default function CookiesPage() {
         </li>
         <li>
           <strong>Preferencia de consentimiento</strong>:{" "}
-          <code>merch:cookie-consent:v1</code>, recuerda tu elección sobre las cookies
+          <code>merch:cookie-consent:v2</code>, recuerda tu elección sobre las cookies
           opcionales para no volver a mostrar el banner.
         </li>
       </ul>
@@ -67,7 +67,28 @@ export default function CookiesPage() {
         </li>
       </ul>
 
-      <h3>2.3 Cookies de terceros activadas al usar funcionalidades específicas</h3>
+      <h3>2.3 Cookies de marketing (requieren consentimiento previo)</h3>
+      <p>
+        Solo se activan si el usuario acepta expresamente la categoría de marketing. Se
+        utilizan para medir y atribuir el resultado de campañas publicitarias.
+      </p>
+      <ul>
+        <li>
+          <strong>Spotify Pixel</strong> (proveedor: Spotify). Registra visitas y eventos de
+          conversión para relacionarlos con campañas de Spotify y evaluar su rendimiento.
+          Más información: {" "}
+          <a
+            href="https://www.spotify.com/es/legal/privacy-policy/"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            política de privacidad de Spotify
+          </a>
+          .
+        </li>
+      </ul>
+
+      <h3>2.4 Cookies de terceros activadas al usar funcionalidades específicas</h3>
       <p>
         Estas cookies solo se cargan cuando el usuario interactúa con una funcionalidad
         externa del sitio.
@@ -97,7 +118,7 @@ export default function CookiesPage() {
       <h2>3. Gestión y revocación del consentimiento</h2>
       <p>
         Puedes <strong>revocar o cambiar tu consentimiento</strong> en cualquier momento
-        borrando la cookie <code>merch:cookie-consent:v1</code> desde tu navegador o
+        borrando la cookie <code>merch:cookie-consent:v2</code> desde tu navegador o
         eliminando los datos del sitio. Al volver a entrar, te mostraremos de nuevo el
         banner de cookies para que elijas.
       </p>
@@ -109,7 +130,7 @@ export default function CookiesPage() {
 
       <h2>4. Transferencias internacionales</h2>
       <p>
-        Google (GA4), Stripe y ElevenLabs son proveedores con presencia en Estados Unidos.
+        Google (GA4), Spotify, Stripe y ElevenLabs son proveedores con presencia internacional.
         Las transferencias se realizan al amparo de las cláusulas contractuales tipo
         aprobadas por la Comisión Europea y, en su caso, del Data Privacy Framework
         UE–EE.UU. Más detalle en la{" "}

@@ -24,7 +24,7 @@ const SHOW_AFTER_MS = 5000;
 // bloquea el menú hamburguesa y mata la conversión.
 const MOBILE_AUTO_SHOW_MS = 60000;
 const MOBILE_MIN_SCROLL_PERCENT = 50;
-const COOKIE_CONSENT_KEY = "merch:cookie-consent:v1"; // no mostrar antes de que decidan cookies
+const COOKIE_CONSENT_KEY = "merch:cookie-consent:v2"; // no mostrar antes de que decidan cookies
 
 export function EmailCapturePopup({
   onShow,

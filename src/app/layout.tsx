@@ -14,6 +14,7 @@ import { Analytics } from "@/components/Analytics";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { AdsPixels } from "@/components/AdsPixels";
 import { CookieBanner } from "@/components/CookieBanner";
+import { SpotifyPixel } from "@/components/SpotifyPixel";
 import { EntryPopupAB } from "@/components/EntryPopupAB";
 import { AttributionTracker } from "@/components/AttributionTracker";
 import { VoiceAgentGate } from "@/components/VoiceAgentGate";
@@ -105,6 +106,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://connect.facebook.net" />
         <link rel="dns-prefetch" href="https://px.ads.linkedin.com" />
+        <link rel="dns-prefetch" href="https://pixel.byspotify.com" />
         {/* Umami analytics (privacy-first, sin cookies) */}
         <Script
           defer
@@ -134,6 +136,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ReferrerTracker />
         <AttributionTracker />
         <Analytics />
+        <SpotifyPixel />
         <CookieBanner />
         <EntryPopupAB />
         <VoiceAgentGate />

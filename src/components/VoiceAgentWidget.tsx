@@ -307,7 +307,7 @@ function VoiceAgentInner() {
     const poll = setInterval(() => {
       let cookiesDecided = true;
       try {
-        cookiesDecided = !!localStorage.getItem("merch:cookie-consent:v1");
+        cookiesDecided = !!localStorage.getItem("merch:cookie-consent:v2");
       } catch {}
       if (cookiesDecided && !show) {
         clearInterval(poll);
