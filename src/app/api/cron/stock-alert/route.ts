@@ -52,13 +52,18 @@ export const POST = wrapCronHandler("stock-alert", async (req: Request) => {
       ORDER BY total_stock ASC
       LIMIT 20
     `,
-    prisma.product.count({
-      where: {
-        active: true,
-        syncedAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-      },
-    }),
+    // Mantener el mismo ámbito que los agotados/críticos y el panel admin:
+    // un producto oculto por override no es una alerta operativa.
+    prisma.$queryRaw<{ n: bigint }[]>`
+      SELECT COUNT(*)::BIGINT AS n
+      FROM "Product" p
+      LEFT JOIN "ProductOverride" o ON o."productId" = p."id"
+      WHERE p."active" = TRUE
+        AND p."syncedAt" < ${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}
+        AND (o."hidden" IS NULL OR o."hidden" = FALSE)
+    `,
   ]);
+  const staleCount = Number(stale[0]?.n ?? 0);
 
   if (soldOut.length === 0 && critical.length === 0) {
     return NextResponse.json({ ok: true, sent: false, reason: "Sin alertas" });
@@ -84,9 +89,9 @@ export const POST = wrapCronHandler("stock-alert", async (req: Request) => {
     if (critical.length > 8) lines.push(`  …y ${critical.length - 8} más`);
   }
 
-  if (stale > 7) {
+  if (staleCount > 7) {
     lines.push("");
-    lines.push(`⚠️ ${stale} productos sin sync hace +7 días`);
+    lines.push(`⚠️ ${staleCount} productos sin sync hace +7 días`);
   }
 
   lines.push("");
@@ -103,6 +108,6 @@ export const POST = wrapCronHandler("stock-alert", async (req: Request) => {
     sent: true,
     soldOut: soldOut.length,
     critical: critical.length,
-    stale,
+    stale: staleCount,
   });
 });

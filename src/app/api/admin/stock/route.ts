@@ -110,9 +110,18 @@ export async function GET(req: Request) {
     WHERE p."active" = TRUE AND (o."hidden" IS NULL OR o."hidden" = FALSE)
     GROUP BY tier
   `);
-  const staleCount = await prisma.product.count({
-    where: { active: true, syncedAt: { lt: staleSince } },
-  });
+  // Debe tener exactamente la misma población que el listado: los productos
+  // ocultos por un override administrativo no son accionables y no pueden
+  // inflar el chip "Sin sync >7d" frente a las filas que ve el operador.
+  const [staleCountRow] = await prisma.$queryRaw<{ n: bigint }[]>`
+    SELECT COUNT(*)::BIGINT AS n
+    FROM "Product" p
+    LEFT JOIN "ProductOverride" o ON o."productId" = p."id"
+    WHERE p."active" = TRUE
+      AND p."syncedAt" < ${staleSince}
+      AND (o."hidden" IS NULL OR o."hidden" = FALSE)
+  `;
+  const staleCount = Number(staleCountRow?.n ?? 0);
 
   const tierCounts: Record<string, number> = {
     sold_out: 0,
