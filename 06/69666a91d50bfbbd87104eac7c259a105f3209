@@ -1,0 +1,119 @@
+src/app/api/admin/products/migrate-slugs/route.ts
+  s_578116e23e11cc::t_0c978cc62ec6a1 14
+  s_578116e23e11cc::t_3484731e68c69c 34-39,44-47,52,86,124-137,140-145
+  s_578116e23e11cc::t_af05539a769b7e 119,123,138-139,146-153,155-157
+src/lib/cifra-html-slug-migration.test.ts
+  s_578116e23e11cc::t_23825a76ef576f 5
+  s_578116e23e11cc::t_b58dcb39bc74f6 6,111
+  s_578116e23e11cc::t_00187d7195cf32 1-2,4,7-83,93,116
+  s_578116e23e11cc::t_e3eda6cc4b41e9 3,84-92
+  s_578116e23e11cc::t_ec7b37a24e8ad6 94-110,112-115
+src/lib/suppliers/midocean-sync.ts
+  s_578116e23e11cc::t_f220368c8779b9 267,426-427,441-451
+  s_578116e23e11cc::t_af05539a769b7e 306-318,320-337
+src/app/api/cart-quote/route.ts
+  s_578116e23e11cc::t_f27df246a55431 17,156-168,171,186,308
+src/lib/cron-lock.ts
+  s_578116e23e11cc::t_813439694ec248 2,5-18,44,54-72,74-75,77-96
+  s_578116e23e11cc::t_1d6aa9513737ff 73,76
+  s_f59d3da7d74d22::t_889c16343f8174 97
+src/lib/quote-server-pricing.test.ts
+  s_578116e23e11cc::t_1274730755dea4 4,12-14,102,117-129
+  s_66a2fa2b4f18f9::t_ed9e35878e3bd5 130-131
+prisma/schema.prisma
+  s_578116e23e11cc::t_0c978cc62ec6a1 751
+src/lib/product-slug-resolver.ts
+  s_578116e23e11cc::t_b44d49d1cacb1c 1-97
+src/app/api/products/cards/route.ts
+  s_578116e23e11cc::t_fc669f1b8bb232 9,32-55,58-59,65
+src/lib/product-slug-resolver.test.ts
+  s_578116e23e11cc::t_b44d49d1cacb1c 1-44
+src/app/api/admin/products/migrate-cifra-html-slugs/route.ts
+  s_578116e23e11cc::t_594d3b37807105 46-50,58-61,63-64,66,68-69,71,73-74,76,78-79,81,83-84,86-87,92,98,100-101,245-246,254
+  s_578116e23e11cc::t_11bf09a2a9d6d7 1-4,6-12,14-26,29-35,37-38,102-129,167-180,191-244,247-249,252-253,255-279,305-312,314-331,333,336-350,352-372,374,376-377,380-386,395-396,398,403-406,408-409,411-412
+  s_578116e23e11cc::t_a14722cbff3219 130-136,138-166,187-189,250-251,334-335,351,375,387-394,397,399-402,407
+  s_578116e23e11cc::t_ec7b37a24e8ad6 181-186,190,373
+  s_578116e23e11cc::t_6bc8c9b79f51df 137,280-282,302-304
+  s_578116e23e11cc::t_813439694ec248 13,378-379,410
+  s_578116e23e11cc::t_0f104f9f4ec503 5,27-28,36,39-45,51-57,62,65,67,70,72,75,77,80,82,85,88-91,93-97,99
+  s_578116e23e11cc::t_647652b2b778f4 283-301,313,332
+src/app/catalogo/[slug]/page.tsx
+  s_578116e23e11cc::t_0c978cc62ec6a1 122
+src/app/sitemap.test.ts
+  s_578116e23e11cc::t_3f77e7549dafbd 1-44
+src/app/api/voice-agent/tools/submit-quote/route.ts
+  s_578116e23e11cc::t_fc669f1b8bb232 7,65-79,86-88
+src/app/api/cron/cifra-sync/route.ts
+  s_578116e23e11cc::t_813439694ec248 7,28-29,42
+src/app/api/mockup/generate/route.ts
+  s_578116e23e11cc::t_fd314c8f7e3294 7,52-60
+src/lib/cron-lock.test.ts
+  s_578116e23e11cc::t_ae6c4a200eb12f 1-63
+src/app/api/admin/products/migrate-cifra-html-slugs/route.test.ts
+  s_578116e23e11cc::t_6c3d53b3e53b2c 186-187,255,299
+  s_578116e23e11cc::t_13c7a0c68a8773 63-64,68,70,140-141,145,147,179-184,281-289,294-295,329-348
+  s_578116e23e11cc::t_6999e967e2ab09 174
+  s_578116e23e11cc::t_ec7b37a24e8ad6 350-358
+  s_578116e23e11cc::t_6be3da58fd86dc 38-49
+  s_578116e23e11cc::t_edc354a3d673d3 15-35,59-62,65-67,69,71-89,137-139,142-144,146,150-155,164-170,236-245,290-293,309
+  s_578116e23e11cc::t_f9359050b67781 1-14,36-37,50-58,90-136,148-149,156-158,173,175,185,188-195,197-235,246-254,256-259,261-280,296-298,300-308,310-328,349,359
+  s_578116e23e11cc::t_79d42fce75a525 159-163,171-172,176-178,196,260
+src/app/api/track/product-event/route.ts
+  s_578116e23e11cc::t_fd314c8f7e3294 17,43-50
+src/lib/quote-server-pricing.ts
+  s_578116e23e11cc::t_fd314c8f7e3294 7,58-78,81-83
+src/app/comparar/page.tsx
+  s_578116e23e11cc::t_3484731e68c69c 16,42-47,49-64,66-68,71
+src/app/sitemap.ts
+  s_578116e23e11cc::t_3f77e7549dafbd 49
+src/app/api/mockup-request/route.ts
+  s_578116e23e11cc::t_fd314c8f7e3294 10,62-72,77
+src/app/api/voice-agent/tools/product-details/route.ts
+  s_578116e23e11cc::t_fc669f1b8bb232 11,32-43,45-52,55-57
+src/app/api/quote/calculate/route.ts
+  s_578116e23e11cc::t_fd314c8f7e3294 12,75-88,90-92
+src/lib/purchase-orders.ts
+  s_578116e23e11cc::t_f27df246a55431 4,73-78,84
+src/app/api/clientes/reorder/route.ts
+  s_578116e23e11cc::t_f27df246a55431 6,52-57,62-63,79
+src/app/api/admin/suppliers/cifra/sync-now/route.ts
+  s_578116e23e11cc::t_813439694ec248 15,30-31,43
+src/lib/cifra-html-slug-migration.ts
+  s_578116e23e11cc::t_e3eda6cc4b41e9 5-23,130-144,153
+  s_578116e23e11cc::t_ec7b37a24e8ad6 25-45,145-152
+  s_578116e23e11cc::t_00187d7195cf32 1-4,24,46-129,154
+src/lib/suppliers/cifra-sync.ts
+  s_578116e23e11cc::t_0c978cc62ec6a1 183-186
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "0669666a91d50bfbbd87104eac7c259a105f3209",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_66a2fa2b4f18f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "019f6a6a-8742-75d2-a24d-8cfbd2115d4b",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_f59d3da7d74d22": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "019f6747-46e3-7fd0-add4-2448593b5846",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
