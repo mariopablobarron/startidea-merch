@@ -175,6 +175,11 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
             ? await resolveRootCategory(head.category)
             : null;
 
+          // Una única fuente limpia para persistencia y slugs nuevos. Antes el
+          // nombre se saneaba al escribir, pero el slug nacía de head.name crudo
+          // y convertía <p>Nombre</p> en URLs pnombrep.
+          const cleanName = sanitizeSupplierName(head.name);
+
           // Slug limpio: si ya existe el producto y tiene slug "limpio"
           // (no empieza por cif-), lo reusamos; si no, generamos uno nuevo
           // a partir del nombre. Esto migra automáticamente los slugs
@@ -186,7 +191,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
           const needsNewSlug =
             !existing || existing.slug.startsWith(LEGACY_SLUG_PREFIX);
           const slug = needsNewSlug
-            ? await resolveCleanProductSlug(head.name.trim(), existing?.id ?? null)
+            ? await resolveCleanProductSlug(cleanName, existing?.id ?? null)
             : existing.slug;
 
           // Proxy de imágenes ANTES del upsert. ensureMediaAsset registra
@@ -206,7 +211,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 supplier: SUPPLIER,
                 supplierRef: rootmodel,
                 slug: slugToUse,
-                name: sanitizeSupplierName(head.name),
+                name: cleanName,
                 shortDescription: sanitizeSupplierText(head.description),
                 category: categoryId ? { connect: { id: categoryId } } : undefined,
                 supplierCategoryCode: head.category || null,
@@ -226,7 +231,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
               },
               update: {
                 ...(needsNewSlug ? { slug: slugToUse } : {}),
-                name: sanitizeSupplierName(head.name),
+                name: cleanName,
                 shortDescription: sanitizeSupplierText(head.description),
                 category: categoryId ? { connect: { id: categoryId } } : undefined,
                 supplierCategoryCode: head.category || null,

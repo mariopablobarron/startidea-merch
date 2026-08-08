@@ -13,6 +13,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { loadActivePromotions } from "@/lib/promotions";
 import { computeServerLinePricing, type ServerMarkingInput } from "@/lib/quote-server-pricing";
 import type { Prisma } from "@prisma/client";
+import { normalizeProductName } from "@/lib/product-name";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
@@ -35,7 +36,7 @@ const MarkingSchema = z.object({
 const ItemSchema = z.object({
   productSlug: z.string().min(1),
   productRef: z.string().min(1),
-  productName: z.string().min(1),
+  productName: z.string().min(1).max(500),
   primaryImageUrl: z.string().nullable().optional(),
   quantity: z.number().int().positive().max(1_000_000),
   variantSku: z.string().nullable().optional(),
@@ -306,7 +307,7 @@ export async function POST(req: Request) {
           return {
             productSlug: it.productSlug,
             productRef: it.productRef,
-            productName: it.productName,
+            productName: normalizeProductName(it.productName),
             primaryImageUrl: proxyImageUrl(it.primaryImageUrl), // nunca URL cruda de proveedor
             quantity: it.quantity,
             variantSku: it.variantSku ?? null,

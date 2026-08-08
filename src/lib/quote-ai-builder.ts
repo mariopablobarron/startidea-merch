@@ -16,6 +16,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { publicProductName } from "@/lib/product-name";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.OPENROUTER_MODEL_QUOTE_AI || "anthropic/claude-sonnet-4.5";
@@ -210,7 +211,7 @@ export async function matchProductByHint(
   return candidates.map((c) => ({
     id: c.id,
     slug: c.slug,
-    name: c.override?.customName || c.name,
+    name: publicProductName(c.name, c.override?.customName),
     // NUNCA supplierRef: este productRef acaba en CartQuoteItem y se muestra al
     // cliente en /clientes/[token]. Ref pública (STM-XXX) o slug.
     productRef: c.internalRef || c.slug,

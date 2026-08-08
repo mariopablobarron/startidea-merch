@@ -5,6 +5,7 @@ import { notifyAdmins } from "@/lib/notify-admin";
 import { getNotificationRules } from "@/lib/notification-rules";
 import { publicRef } from "@/lib/internal-ref";
 import { suggestProductsSafe } from "@/lib/search/meili";
+import { publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,7 +62,7 @@ export async function GET(req: Request) {
     meiliHits !== null
       ? meiliHits.map((h) => ({
           slug: h.slug,
-          name: h.name,
+          name: publicProductName(h.name),
           ref: h.ref, // ya es la STM pública (ver buildProductSearchDocument)
           // Meili ya indexa la URL proxificada, pero la reproxificamos al
           // emitir: proxyImageUrl es idempotente para rutas /… (coste cero) y
@@ -90,11 +91,12 @@ export async function GET(req: Request) {
               internalRef: true,
               primaryImageUrl: true,
               category: { select: { name: true } },
+              override: { select: { customName: true } },
             },
           })
         ).map((p) => ({
           slug: p.slug,
-          name: p.name,
+          name: publicProductName(p.name, p.override?.customName),
           ref: publicRef(p), // NUNCA supplierRef en endpoint público
           imageUrl: proxyImageUrl(p.primaryImageUrl), // nunca URL cruda de proveedor
           category: p.category?.name ?? null,

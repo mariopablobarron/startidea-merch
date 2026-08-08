@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
+import { publicProductName } from "@/lib/product-name";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -49,7 +50,12 @@ export async function GET() {
     productIds.length > 0
       ? prisma.product.findMany({
           where: { id: { in: productIds } },
-          select: { id: true, name: true, slug: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            override: { select: { customName: true } },
+          },
         })
       : Promise.resolve([]),
   ]);
@@ -79,7 +85,10 @@ export async function GET() {
         target_links = ["/promociones"];
         break;
       case "PRODUCT_LIST":
-        target_names = p.targetIds.map((id) => prodMap[id]?.name).filter(Boolean) as string[];
+        target_names = p.targetIds
+          .map((id) => prodMap[id])
+          .filter((target): target is NonNullable<typeof target> => Boolean(target))
+          .map((target) => publicProductName(target.name, target.override?.customName));
         target_links = p.targetIds
           .map((id) => prodMap[id]?.slug)
           .filter(Boolean)

@@ -19,6 +19,7 @@ import {
   getTopViewedProducts,
   getTopCategories,
 } from "@/lib/insights";
+import { normalizeProductName } from "@/lib/product-name";
 
 export const metadata: Metadata = {
   title: "TodoMerchandising · Snapshot",
@@ -187,7 +188,7 @@ export default async function SharedDashboardPage({
                 >
                   <span className="font-mono text-xs text-ink/40">{i + 1}.</span>
                   <span className="flex-1 truncate text-sm font-medium text-ink">
-                    {p.name}
+                    {normalizeProductName(p.name)}
                   </span>
                   <span className="shrink-0 text-xs text-ink/55">
                     {p.view30d}v · {p.cartAddCount} cart

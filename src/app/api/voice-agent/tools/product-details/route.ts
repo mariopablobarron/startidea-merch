@@ -5,6 +5,7 @@ import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
 import { positionOptionLabel } from "@/lib/marking-position-label";
+import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 import { displayFromPrice } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 
@@ -65,11 +66,11 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ref: publicRef(p),
     slug: p.slug,
-    name: p.override?.customName || p.name,
+    name: publicProductName(p.name, p.override?.customName),
     brand: publicBrand(p.brand),
-    short_description: p.shortDescription?.slice(0, 300) || null,
-    long_description: p.longDescription?.slice(0, 800) || null,
-    material: p.material || null,
+    short_description: legacyHtmlToText(p.shortDescription).slice(0, 300) || null,
+    long_description: legacyHtmlToText(p.longDescription).slice(0, 800) || null,
+    material: legacyHtmlToText(p.material) || null,
     dimensions_mm: {
       length: p.lengthMm,
       width: p.widthMm,

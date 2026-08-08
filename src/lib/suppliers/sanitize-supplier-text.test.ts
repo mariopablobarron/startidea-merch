@@ -2,6 +2,15 @@ import { describe, it, expect } from "vitest";
 import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
 
 describe("sanitizeSupplierText — fugas reales", () => {
+  it("convierte HTML y entidades heredadas de Cifra antes de sanear", () => {
+    expect(sanitizeSupplierText("<p>Poliéster &amp; algodón</p>")).toBe(
+      "Poliéster & algodón",
+    );
+    expect(sanitizeSupplierText("&lt;p&gt;Acero&amp;nbsp;inoxidable&lt;/p&gt;")).toBe(
+      "Acero inoxidable",
+    );
+  });
+
   it("borra el email interno del proveedor de la nota que se sirvió en producción", () => {
     // Texto EXACTO que el 28-jul-2026 se servía en 5 fichas de Cifra, dentro de
     // la meta description y la og:description.
@@ -100,8 +109,15 @@ describe("sanitizeSupplierName — Product.name es NOT NULL", () => {
     expect(sanitizeSupplierName("  Makito  ")).toBe("Makito");
   });
 
+  it("limpia la forma real del nombre heredado de Cifra", () => {
+    expect(sanitizeSupplierName("<p>BALÓN DE REGLAMENTO</p>")).toBe(
+      "BALÓN DE REGLAMENTO",
+    );
+    expect(sanitizeSupplierName("<p>BOLÍGRAFO SIN CIERRE")).toBe("BOLÍGRAFO SIN CIERRE");
+  });
+
   it("nunca devuelve null ni undefined", () => {
-    expect(sanitizeSupplierName(null)).toBe("");
-    expect(sanitizeSupplierName(undefined)).toBe("");
+    expect(sanitizeSupplierName(null)).toBe("Producto");
+    expect(sanitizeSupplierName(undefined)).toBe("Producto");
   });
 });

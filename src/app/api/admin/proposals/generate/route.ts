@@ -8,6 +8,7 @@ import { generateEmbedding, cosineSimilarity } from "@/lib/embeddings";
 import { defaultTiersFromBase, pickTier } from "@/lib/pricing";
 import { computeClientPricing } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
+import { publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -311,7 +312,12 @@ Devuelve la propuesta como JSON descrita arriba.`;
       primaryImageUrl: true,
       category: { select: { name: true } },
       override: {
-        select: { customFromPriceCents: true, marginPct: true, marketingTags: true },
+        select: {
+          customName: true,
+          customFromPriceCents: true,
+          marginPct: true,
+          marketingTags: true,
+        },
       },
       variants: {
         take: 1,
@@ -366,7 +372,7 @@ Devuelve la propuesta como JSON descrita arriba.`;
         // NUNCA supplierRef: este productRef se muestra al cliente en
         // /clientes/[token] (línea ~162). Usamos la ref pública (STM-XXX) o el slug.
         productRef: p.internalRef || p.slug,
-        productName: p.name,
+        productName: publicProductName(p.name, p.override?.customName),
         primaryImageUrl: p.primaryImageUrl,
         quantity: it.quantity,
         variantSku: variant?.sku || null,

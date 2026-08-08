@@ -6,6 +6,7 @@ import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { displayPositionId } from "@/lib/marking-position-display";
 import { standalonePositionLabel } from "@/lib/marking-position-label";
 import { rateLimit } from "@/lib/rate-limit";
+import { publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,7 +60,11 @@ export async function POST(req: Request) {
   // Producto (opcional pero útil para enlazar)
   const product = await prisma.product.findUnique({
     where: { slug: data.productSlug },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      override: { select: { customName: true } },
+    },
   });
 
   const created = await prisma.mockupRequest.create({
@@ -76,7 +81,9 @@ export async function POST(req: Request) {
     },
   });
 
-  const productName = product?.name || data.productSlug;
+  const productName = product
+    ? publicProductName(product.name, product.override?.customName)
+    : data.productSlug;
   // Dos etiquetas distintas a propósito. Dentro (Telegram, buzón de pedidos@) hace
   // falta que la zona salga SIEMPRE, aunque el código no diga nada: es con lo que
   // el equipo localiza el área para dibujar el mockup. Al cliente, en cambio,

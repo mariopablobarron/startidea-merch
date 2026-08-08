@@ -11,6 +11,7 @@ import type { Prisma } from "@prisma/client";
 import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
 import { collectionPageJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
+import { publicProductName } from "@/lib/product-name";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
@@ -114,7 +115,7 @@ export default async function CategoriaLandingPage({
     description: `Productos de la categoría ${category.name}, personalizables con tu logo y producción con impacto social.`,
     url: `${SITE_URL}/categorias/${slug}`,
     items: products.map((p) => ({
-      name: p.override?.customName || p.name,
+      name: publicProductName(p.name, p.override?.customName),
       url: `${SITE_URL}/catalogo/${p.slug}`,
       image: absoluteProxyImageUrl(p.primaryImageUrl),
     })),
@@ -193,7 +194,7 @@ export default async function CategoriaLandingPage({
                 <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                   {products.map((p) => {
                     const ov = p.override;
-                    const name = ov?.customName || p.name;
+                    const name = publicProductName(p.name, ov?.customName);
                     const priceCents =
                       ov?.customFromPriceCents != null
                         ? ov.customFromPriceCents

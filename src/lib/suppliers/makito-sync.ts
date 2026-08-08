@@ -302,6 +302,8 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
             "product-primary",
           );
 
+          const cleanName = sanitizeSupplierName(String(p.name));
+
           // Slug: lookup existing, generar limpio si nuevo o si legacy
           const existing = await prisma.product.findUnique({
             where: { supplier_supplierRef: { supplier: SUPPLIER, supplierRef: ref } },
@@ -310,7 +312,7 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
           const needsNewSlug =
             !existing || existing.slug.startsWith("mak-") || existing.slug.startsWith("mk-");
           const slug = needsNewSlug
-            ? await resolveCleanProductSlug(String(p.name).trim(), existing?.id ?? null)
+            ? await resolveCleanProductSlug(cleanName, existing?.id ?? null)
             : existing.slug;
 
           // Upsert con retry-on-collision
@@ -321,7 +323,7 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
                 supplier: SUPPLIER,
                 supplierRef: ref,
                 slug: slugToUse,
-                name: sanitizeSupplierName(String(p.name)),
+                name: cleanName,
                 shortDescription: sanitizeSupplierText(String(p.extendedinfo || p.otherinfo || "")),
                 category: categoryId ? { connect: { id: categoryId } } : undefined,
                 supplierCategoryCode: String(p.categories?.category_ref_1 || "") || null,
@@ -339,7 +341,7 @@ export async function runMakitoSync(): Promise<MakitoSyncResult> {
               },
               update: {
                 ...(needsNewSlug ? { slug: slugToUse } : {}),
-                name: sanitizeSupplierName(String(p.name)),
+                name: cleanName,
                 shortDescription: sanitizeSupplierText(String(p.extendedinfo || p.otherinfo || "")),
                 category: categoryId ? { connect: { id: categoryId } } : undefined,
                 supplierCategoryCode: String(p.categories?.category_ref_1 || "") || null,

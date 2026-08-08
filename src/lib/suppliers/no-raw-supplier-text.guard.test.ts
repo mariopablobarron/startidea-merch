@@ -73,7 +73,12 @@ describe("guard: los syncs de proveedor no escriben texto crudo del feed", () =>
       if (lines.length === 0) continue; // ese proveedor no aporta ese campo
 
       it(`${file} — ${field} (${lines.length} asignación/es) pasa por el saneador`, () => {
-        const sucias = lines.filter((l) => !SANITIZER.test(l.text));
+        const sucias = lines.filter((l) => {
+          if (SANITIZER.test(l.text)) return false;
+          // Cifra calcula una vez el nombre limpio para reutilizar exactamente
+          // el mismo valor en Product.name y en la creación de slugs.
+          return !/^name:\s*cleanName,?$/.test(l.text);
+        });
         expect(
           sucias.map((l) => `${file}:${l.line}  ${l.text}`),
           `Texto de proveedor sin sanear. Envuelve el valor en sanitizeSupplierText(...) ` +
@@ -95,5 +100,20 @@ describe("guard: los syncs de proveedor no escriben texto crudo del feed", () =>
       const total = TEXT_FIELDS.reduce((n, f) => n + assignmentLines(src, f).length, 0);
       expect(total, `${file}: el guard no detectó ninguna asignación de texto`).toBeGreaterThan(0);
     }
+  });
+
+  it.each([
+    ["src/lib/suppliers/cifra-sync.ts", /sanitizeSupplierName\(head\.name\)/, 2],
+    ["src/lib/suppliers/makito-sync.ts", /sanitizeSupplierName\(String\(p\.name\)\)/, 2],
+    ["src/lib/suppliers/midocean-sync.ts", /sanitizeSupplierName\(raw\.product_name\)/, 1],
+  ] as const)("%s usa el mismo cleanName saneado para Product.name y slugs nuevos", (
+    file,
+    sanitizer,
+    persistedNames,
+  ) => {
+    const src = read(file);
+    expect(src).toMatch(sanitizer);
+    expect(src).toMatch(/resolveCleanProductSlug\(cleanName, existing\?\.id \?\? null\)/);
+    expect(src.match(/name:\s*cleanName/g)).toHaveLength(persistedNames);
   });
 });

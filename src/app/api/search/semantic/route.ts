@@ -4,6 +4,7 @@ import { proxyImageUrl } from "@/lib/proxy-image";
 import { generateEmbedding, cosineSimilarity } from "@/lib/embeddings";
 import { publicRef } from "@/lib/internal-ref";
 import { rateLimit } from "@/lib/rate-limit";
+import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +52,7 @@ export async function GET(req: Request) {
           category: { select: { name: true } },
           enhancedShortDescription: true,
           shortDescription: true,
+          override: { select: { customName: true } },
         },
       },
     },
@@ -73,10 +75,13 @@ export async function GET(req: Request) {
     items: ranked.map((r) => ({
       slug: r.product!.slug,
       ref: publicRef(r.product!),
-      name: r.product!.name,
+      name: publicProductName(r.product!.name, r.product!.override?.customName),
       category: r.product!.category?.name,
       image: proxyImageUrl(r.product!.primaryImageUrl), // nunca URL cruda de proveedor
-      description: r.product!.enhancedShortDescription || r.product!.shortDescription,
+      description:
+        legacyHtmlToText(
+          r.product!.enhancedShortDescription || r.product!.shortDescription,
+        ) || null,
       score: Math.round(r.score * 1000) / 1000,
     })),
   });

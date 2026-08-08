@@ -8,6 +8,7 @@ import { loadActivePromotions } from "@/lib/promotions";
 import { computeClientPricing } from "@/lib/product-pricing";
 import { publicRef } from "@/lib/internal-ref";
 import { rateLimit } from "@/lib/rate-limit";
+import { publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -209,7 +210,7 @@ export async function POST(req: Request) {
     quantity: data.quantity,
     product: {
       slug: product.slug,
-      name: product.name,
+      name: publicProductName(product.name, product.override?.customName),
       ref: publicRef(product), // NUNCA supplierRef en endpoint público
       priceSource,
     },

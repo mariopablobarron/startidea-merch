@@ -3,6 +3,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { publicRef } from "@/lib/internal-ref";
+import { publicProductName } from "@/lib/product-name";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -46,6 +47,7 @@ export async function RelatedProducts({
     supplier: true,
     primaryImageUrl: true,
     fromPriceCents: true,
+    override: { select: { customName: true } },
   } as const;
 
   const TAKE = 6;
@@ -59,6 +61,7 @@ export async function RelatedProducts({
     supplier: string;
     primaryImageUrl: string | null;
     fromPriceCents: number | null;
+    override: { customName: string | null } | null;
   }> = [];
 
   try {
@@ -141,6 +144,7 @@ export async function RelatedProducts({
           {products.map((p) => {
             const ref = publicRef(p);
             const img = proxyImageUrl(p.primaryImageUrl);
+            const name = publicProductName(p.name, p.override?.customName);
             return (
               <li key={p.id}>
                 <Link
@@ -151,7 +155,7 @@ export async function RelatedProducts({
                     {img ? (
                       <Image
                         src={img}
-                        alt={p.name}
+                        alt={name}
                         fill
                         sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 16vw"
                         className="object-contain p-3 transition duration-500 group-hover:scale-105"
@@ -168,7 +172,7 @@ export async function RelatedProducts({
                       Ref. {ref}
                     </p>
                     <h3 className="mt-1 line-clamp-2 text-sm font-medium text-ink group-hover:text-accent">
-                      {p.name}
+                      {name}
                     </h3>
                     {p.fromPriceCents != null && p.fromPriceCents > 0 && (
                       <p className="mt-1.5 text-xs text-ink/60">

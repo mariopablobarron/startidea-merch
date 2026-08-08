@@ -6,6 +6,7 @@ import { createProposalFromCotizacion } from "@/lib/proposal-from-cotizacion";
 import { sendEmail } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
+import { publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
   let proposalNumber: string | null = null;
   let productName = d.slug;
   if (quote.ok && quote.pvp.baseTotal > 0) {
-    productName = quote.product.name;
+    productName = publicProductName(quote.product.name);
     const created = await createProposalFromCotizacion({
       quote,
       email: d.email,

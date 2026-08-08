@@ -29,6 +29,7 @@ import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
 import { JsonLd } from "@/components/JsonLd";
 import { productJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { ProductViewTracker } from "@/components/ProductViewTracker";
+import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 
 export const revalidate = 3600;
 
@@ -49,12 +50,15 @@ export async function generateMetadata({
     },
   });
   if (!p) return { title: "Producto no encontrado" };
-  const name = p.override?.customName || p.name;
+  const name = publicProductName(p.name, p.override?.customName);
   const visibleBrand = publicBrand(p.brand);
-  const title = p.override?.metaTitle || `${name}${visibleBrand ? ` · ${visibleBrand}` : ""}`;
+  const customMetaTitle = legacyHtmlToText(p.override?.metaTitle);
+  const title = customMetaTitle || `${name}${visibleBrand ? ` · ${visibleBrand}` : ""}`;
+  const customMetaDescription = legacyHtmlToText(p.override?.metaDescription);
+  const supplierDescription = legacyHtmlToText(p.shortDescription).slice(0, 160);
   const description =
-    p.override?.metaDescription ||
-    p.shortDescription?.slice(0, 160) ||
+    customMetaDescription ||
+    supplierDescription ||
     `${name} personalizable con tu logo.`;
   const productUrl = `https://merchandising.startidea.es/catalogo/${slug}`;
   const productImg = absoluteProxyImageUrl(p.primaryImageUrl);
@@ -131,10 +135,12 @@ export default async function ProductDetailPage({
 
   // Aplicar overrides admin (si existen) sobre los datos base
   const ov = product.override;
-  const displayName = ov?.customName || product.name;
-  const displayDescription = ov?.customDescription || product.longDescription;
-  const displayShortDescription =
-    ov?.customDescription || product.enhancedShortDescription || product.shortDescription;
+  const displayName = publicProductName(product.name, ov?.customName);
+  const displayDescription = legacyHtmlToText(ov?.customDescription || product.longDescription);
+  const displayShortDescription = legacyHtmlToText(
+    ov?.customDescription || product.enhancedShortDescription || product.shortDescription,
+  );
+  const displayMaterial = legacyHtmlToText(product.material);
   const extraImages = ov?.extraImages ?? [];
   const marketingTags = ov?.marketingTags ?? [];
   // Referencia pública Startidea — nunca exponer supplierRef al cliente
@@ -314,7 +320,7 @@ export default async function ProductDetailPage({
                   {publicBrand(product.brand) && (
                     <Spec label="Marca" value={publicBrand(product.brand)!} />
                   )}
-                  {product.material && <Spec label="Material" value={product.material} />}
+                  {displayMaterial && <Spec label="Material" value={displayMaterial} />}
                   {product.weightG && <Spec label="Peso" value={`${product.weightG} g`} />}
                   {product.lengthMm ? (
                     <Spec

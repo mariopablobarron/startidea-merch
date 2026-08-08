@@ -12,6 +12,7 @@ import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
+import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 
 export const metadata: Metadata = {
   title: "Comparar productos · Decide entre 2 ó 3 referencias",
@@ -173,7 +174,7 @@ function ComparatorTable({
             {proxyImageUrl(p.primaryImageUrl) ? (
               <Image
                 src={proxyImageUrl(p.primaryImageUrl)!}
-                alt={p.name}
+                alt={publicProductName(p.name, p.override?.customName)}
                 fill
                 sizes="33vw"
                 className="object-contain p-4"
@@ -192,7 +193,7 @@ function ComparatorTable({
             href={`/catalogo/${p.slug}`}
             className="font-display text-lg font-semibold text-ink transition hover:text-accent"
           >
-            {p.name}
+            {publicProductName(p.name, p.override?.customName)}
           </Link>
         ),
       },
@@ -210,7 +211,7 @@ function ComparatorTable({
       {
         key: "material",
         label: "Material",
-        render: (p) => p.material || "—",
+        render: (p) => legacyHtmlToText(p.material) || "—",
       },
       {
         key: "dim",

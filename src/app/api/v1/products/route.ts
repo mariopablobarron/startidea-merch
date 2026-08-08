@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateApiKey, requireScope } from "@/lib/api-auth";
 import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl } from "@/lib/proxy-image";
+import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +49,7 @@ export async function GET(req: Request) {
         widthMm: true,
         heightMm: true,
         category: { select: { name: true, slug: true } },
+        override: { select: { customName: true } },
         variants: {
           select: { sku: true, colorName: true, colorGroup: true, stockQty: true, gtin: true, size: true },
         },
@@ -72,10 +74,10 @@ export async function GET(req: Request) {
     items: items.map((p) => ({
       ref: publicRef(p),
       slug: p.slug,
-      name: p.name,
+      name: publicProductName(p.name, p.override?.customName),
       brand: p.brand,
-      description: p.enhancedShortDescription || p.shortDescription,
-      material: p.material,
+      description: legacyHtmlToText(p.enhancedShortDescription || p.shortDescription) || null,
+      material: legacyHtmlToText(p.material) || null,
       countryOfOrigin: p.countryOfOrigin,
       dimensions: { length_mm: p.lengthMm, width_mm: p.widthMm, height_mm: p.heightMm, weight_g: p.weightG },
       // Defensa en profundidad: NUNCA emitir la URL cruda del CDN (delata al

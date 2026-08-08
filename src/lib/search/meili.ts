@@ -17,6 +17,7 @@
 import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { publicRef } from "@/lib/internal-ref";
+import { legacyHtmlToText, normalizeProductName } from "@/lib/product-name";
 
 const HOST = process.env.MEILI_HOST || "http://merch-meili:7700";
 const KEY = process.env.MEILI_MASTER_KEY || "";
@@ -86,11 +87,11 @@ export function buildProductSearchDocument(p: ProductRow): ProductSearchDocument
   return {
     id: p.id,
     slug: p.slug,
-    name: p.name,
+    name: normalizeProductName(p.name),
     ref: publicRef(p),
     categoryPath: [p.category?.parent?.name, p.category?.name].filter(Boolean).join(" › "),
     tags: p.tags ?? [],
-    shortDescription: (p.shortDescription ?? "").slice(0, 300),
+    shortDescription: legacyHtmlToText(p.shortDescription).slice(0, 300),
     imageUrl: p.primaryImageUrl ? proxyImageUrl(p.primaryImageUrl) : null,
   };
 }

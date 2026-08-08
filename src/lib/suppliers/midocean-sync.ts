@@ -259,6 +259,8 @@ async function upsertProduct(
     }
   }
 
+  const cleanName = sanitizeSupplierName(raw.product_name);
+
   // Slug LIMPIO sin supplier SKU (no exponer "-mo9812" al cliente).
   // Si ya existe el producto con un slug que NO contiene el master_code,
   // lo mantenemos (estable). Si no, calculamos uno nuevo con resolución
@@ -271,13 +273,13 @@ async function upsertProduct(
   const currentSlugIsClean = existing && !existing.slug.toLowerCase().includes(masterToken);
   const slug = currentSlugIsClean
     ? existing!.slug
-    : await resolveCleanProductSlug(raw.product_name, existing?.id ?? null);
+    : await resolveCleanProductSlug(cleanName, existing?.id ?? null);
 
   const productData = {
     supplier: "midocean" as const,
     supplierRef: raw.master_code,
     slug,
-    name: sanitizeSupplierName(raw.product_name),
+    name: cleanName,
     brand: sanitizeSupplierText(raw.brand),
     shortDescription: sanitizeSupplierText(raw.short_description),
     longDescription: sanitizeSupplierText(raw.long_description),
