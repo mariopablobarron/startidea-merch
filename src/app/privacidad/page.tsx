@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function PrivacidadPage() {
   return (
-    <LegalLayout title="Política de privacidad" updatedAt="18 de mayo de 2026">
+    <LegalLayout title="Política de privacidad" updatedAt="8 de agosto de 2026">
       <p>
         En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y de la Ley Orgánica 3/2018, de
         Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD), se
@@ -32,6 +32,7 @@ export default function PrivacidadPage() {
         <li>Gestionar la relación comercial y, en su caso, los pedidos derivados (incluida pasarela de pago, generación de facturas y envío de tracking).</li>
         <li>Enviar comunicaciones transaccionales relacionadas con tu cotización o pedido (confirmaciones, recordatorios de carrito abandonado, certificados RSC, invitación a valorar el pedido).</li>
         <li>Medir uso agregado del sitio para mejorar producto y SEO (solo si aceptas cookies analíticas).</li>
+        <li>Medir y atribuir el rendimiento de campañas publicitarias (solo si aceptas cookies de marketing).</li>
         <li>Cumplir con las obligaciones legales aplicables (fiscales, contables, mercantiles).</li>
       </ul>
       <p>
@@ -102,6 +103,11 @@ export default function PrivacidadPage() {
           <strong>Google Analytics 4</strong> (Google Ireland Ltd.) — solo si aceptas
           cookies analíticas en el banner. Datos: visitas agregadas, recorrido por la
           web, tiempo en página. Sin perfilado individual.
+        </li>
+        <li>
+          <strong>Spotify</strong> — solo si aceptas cookies de marketing en el banner.
+          Spotify Pixel procesa datos de navegación y eventos de conversión para medir y
+          atribuir el rendimiento de campañas publicitarias.
         </li>
         <li>
           <strong>Proveedores de producción</strong>: Centros Especiales de Empleo,

@@ -10,9 +10,9 @@ import Link from "next/link";
  *  - Técnicas/sesión: siempre activas (auth, carrito), no requieren consent.
  *  - Analíticas: GA4 + Umami (Umami no usa cookies pero igual lo pedimos
  *    formalmente para coherencia). Default: denegadas.
- *  - Marketing: pixels Meta/Google Ads cuando se añadan. Default: denegadas.
+ *  - Marketing: pixels Meta/Google Ads/LinkedIn/Spotify. Default: denegadas.
  *
- * Persistencia: localStorage `merch:cookie-consent:v1` con value JSON:
+ * Persistencia: localStorage `merch:cookie-consent:v2` con value JSON:
  *   { analytics: bool, marketing: bool, ts: ISOString }
  *
  * Integración Google Consent Mode v2:
@@ -21,7 +21,7 @@ import Link from "next/link";
  *   eventos previos buffereados se envían retroactivamente.
  */
 
-const STORAGE_KEY = "merch:cookie-consent:v1";
+const STORAGE_KEY = "merch:cookie-consent:v2";
 
 type Consent = {
   analytics: boolean;
@@ -58,6 +58,7 @@ export function CookieBanner() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch {}
     applyGtagConsent(consent, false);
+    window.dispatchEvent(new CustomEvent("merch:cookie-consent", { detail: consent }));
     setVisible(false);
   }
 
@@ -153,8 +154,8 @@ export function CookieBanner() {
                 <div className="flex-1">
                   <p className="font-medium text-ink">Marketing</p>
                   <p className="mt-0.5 text-xs text-ink/60">
-                    Pixels de Meta Ads, Google Ads y LinkedIn (futuro) para mostrar nuestras
-                    campañas a usuarios interesados.
+                    Pixels de Meta Ads, Google Ads, LinkedIn y Spotify para medir campañas
+                    y mostrar contenidos relevantes.
                   </p>
                 </div>
               </label>
