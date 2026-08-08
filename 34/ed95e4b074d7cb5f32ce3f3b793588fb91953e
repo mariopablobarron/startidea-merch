@@ -1,0 +1,136 @@
+src/app/share/dashboard/[token]/page.tsx
+  s_578116e23e11cc::t_0b7f81e8996572 22,191
+src/app/api/v1/products/route.ts
+  s_578116e23e11cc::t_da243d3888bbb3 79
+  s_578116e23e11cc::t_7fb1c93c5a49fd 6,52,77,80
+src/lib/suppliers/sanitize-supplier-text.ts
+  s_578116e23e11cc::t_80a802e70855e4 20-21,64-65,79-81,84-85
+src/lib/product-name.ts
+  s_578116e23e11cc::t_818525534ad64d 134-150
+  s_578116e23e11cc::t_f55e2b7fb18fa1 24-49,93
+  s_578116e23e11cc::t_194d1ef71617a2 1-3,6,111-113,117-120,126-127,129-133,151-168
+  s_578116e23e11cc::t_433b957ad30bde 5,7-23,50-92,94-110
+  s_578116e23e11cc::t_f23bdcaef4ed9e 4,114-116,121-125,128
+src/app/api/promotions/active/route.ts
+  s_578116e23e11cc::t_4ae5cac3867fb9 3,53-58,88-91
+src/lib/cotizar-core.ts
+  s_578116e23e11cc::t_da243d3888bbb3 8,143
+  s_578116e23e11cc::t_a84f1a7460e0cf 114-119
+src/app/api/mockup-request/route.ts
+  s_578116e23e11cc::t_115d7bc122f7ea 9,63-67,84-86
+src/app/api/voice-agent/tools/list-promotions/route.ts
+  s_578116e23e11cc::t_6d514b25142d78 5,59-64,69-71
+src/lib/suppliers/cifra-sync.ts
+  s_578116e23e11cc::t_80a802e70855e4 178-182,194,214,234
+src/lib/suppliers/sanitize-supplier-text.test.ts
+  s_578116e23e11cc::t_80a802e70855e4 5-13,112-118,120-121
+src/app/api/cart-quote/route.ts
+  s_578116e23e11cc::t_27c57c8607bf9a 16,39,310
+src/app/catalogo/[slug]/page.tsx
+  s_578116e23e11cc::t_83abd7d59b136b 32,53,55-58,60-61,138-143,323
+src/lib/suppliers/no-raw-supplier-text.guard.test.ts
+  s_578116e23e11cc::t_a84f1a7460e0cf 80,105-115,117
+  s_578116e23e11cc::t_80a802e70855e4 76-79,81,104,116
+  s_f59d3da7d74d22::t_0b471e84b89cdf 118
+src/app/catalogo/page.tsx
+  s_578116e23e11cc::t_2254e5d85ec8ec 26,210,219-248,275,400-418
+  s_578116e23e11cc::t_da243d3888bbb3 398-399,419,642,658,660,666,676
+  s_578116e23e11cc::t_04bb414fecdeb7 672-675
+  s_578116e23e11cc::t_83abd7d59b136b 444,789,796
+src/app/promociones/page.tsx
+  s_578116e23e11cc::t_83abd7d59b136b 15,169-174,230
+  s_578116e23e11cc::t_28750dec03abbd 101-106
+src/app/api/quote/calculate/route.ts
+  s_578116e23e11cc::t_da243d3888bbb3 11
+  s_578116e23e11cc::t_6d514b25142d78 213
+src/components/RelatedProducts.tsx
+  s_578116e23e11cc::t_83abd7d59b136b 6,50,64,147,158,175
+src/lib/suppliers/makito-sync.ts
+  s_578116e23e11cc::t_a84f1a7460e0cf 305-306,315,326,344
+src/lib/suppliers/midocean-sync.ts
+  s_578116e23e11cc::t_a84f1a7460e0cf 262-263,276,282
+src/app/clientes/page.tsx
+  s_578116e23e11cc::t_0b7f81e8996572 13,103-108,554
+src/app/comparar/page.tsx
+  s_578116e23e11cc::t_83abd7d59b136b 177,196
+  s_578116e23e11cc::t_da243d3888bbb3 15,214
+src/lib/cart-item-schema.ts
+  s_578116e23e11cc::t_27c57c8607bf9a 2,27,73
+src/app/api/cart-quote/save-for-later/route.ts
+  s_578116e23e11cc::t_c99b476599f4c7 7,97-100
+src/app/api/voice-agent/tools/submit-quote/route.ts
+  s_578116e23e11cc::t_115d7bc122f7ea 6,66-74,107
+src/lib/search/meili.ts
+  s_578116e23e11cc::t_7fb1c93c5a49fd 20,90,94
+src/app/api/v1/quotes/route.ts
+  s_578116e23e11cc::t_115d7bc122f7ea 7,77-83,114
+src/app/api/search/semantic/route.ts
+  s_578116e23e11cc::t_da243d3888bbb3 7,55,78,81-84
+src/app/api/quote-request-product/route.ts
+  s_578116e23e11cc::t_228bb2235d808d 9,65
+src/app/api/voice-agent/tools/product-details/route.ts
+  s_578116e23e11cc::t_4ae5cac3867fb9 8,69,71-73
+src/app/api/recommend/route.ts
+  s_578116e23e11cc::t_7fb1c93c5a49fd 12,152,344,350,446-451,466
+src/app/api/products/cards/route.ts
+  s_578116e23e11cc::t_7fb1c93c5a49fd 8,74
+src/app/categorias/[slug]/page.tsx
+  s_578116e23e11cc::t_83abd7d59b136b 14,118,197
+src/app/api/search/suggest/route.ts
+  s_578116e23e11cc::t_7fb1c93c5a49fd 8,65,94,99
+src/app/api/voice-agent/tools/popular-products/route.ts
+  s_578116e23e11cc::t_4ae5cac3867fb9 18,92
+src/components/BestSellers.tsx
+  s_578116e23e11cc::t_83abd7d59b136b 6,69
+src/lib/quote-ai-builder.ts
+  s_578116e23e11cc::t_4cccf64b087ae2 19,214
+src/lib/product-name-public.guard.test.ts
+  s_578116e23e11cc::t_2254e5d85ec8ec 62,64
+  s_578116e23e11cc::t_6d514b25142d78 30
+  s_578116e23e11cc::t_6ed02c6130152d 34-35,81-86
+  s_578116e23e11cc::t_228bb2235d808d 21-29,31-32,59-61,63,65-74
+  s_578116e23e11cc::t_c99b476599f4c7 96-98
+  s_578116e23e11cc::t_ec4b985f8c3b5d 1-20,36-58,75-80,87,100
+  s_578116e23e11cc::t_27c57c8607bf9a 88-95,99
+  s_578116e23e11cc::t_0b7f81e8996572 33
+src/app/api/voice-agent/tools/search-products/route.ts
+  s_578116e23e11cc::t_4ae5cac3867fb9 9,133,135-137
+src/lib/product-name.test.ts
+  s_578116e23e11cc::t_818525534ad64d 2-7,82-92
+  s_578116e23e11cc::t_f55e2b7fb18fa1 30-39
+  s_578116e23e11cc::t_f23bdcaef4ed9e 51-58
+  s_578116e23e11cc::t_194d1ef71617a2 1,8-16,18-29,40-41,62-81,93-106
+  s_578116e23e11cc::t_433b957ad30bde 17,42-50,59-61
+src/lib/cart-item-schema.test.ts
+  s_578116e23e11cc::t_27c57c8607bf9a 26-33
+src/app/api/admin/proposals/generate/route.ts
+  s_578116e23e11cc::t_d3d9f203b1718e 11,315-320,375
+package.json
+  s_578116e23e11cc::t_ffd50d70e16754 33
+pnpm-lock.yaml
+  s_578116e23e11cc::t_603639a1528a84 44-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "34ed95e4b074d7cb5f32ce3f3b793588fb91953e",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_f59d3da7d74d22": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "019f6747-46e3-7fd0-add4-2448593b5846",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
