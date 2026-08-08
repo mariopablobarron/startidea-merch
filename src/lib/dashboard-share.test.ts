@@ -119,6 +119,8 @@ describe("dashboard-share · el secreto ya no puede salir del código", () => {
     const literalPublico = "dev-share-secret-do-not-use-in-prod";
     const expiry = Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
     const payload = `full.${expiry}`;
+    // La antigua clave era pública; se conserva literal para cubrir la regresión.
+    // nosemgrep: javascript.lang.security.audit.hardcoded-hmac-key.hardcoded-hmac-key
     const forjado = `${payload}.${crypto
       .createHmac("sha256", literalPublico)
       .update(payload)
