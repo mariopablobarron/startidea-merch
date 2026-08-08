@@ -12,7 +12,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-session";
 import { runCifraSync } from "@/lib/suppliers/cifra-sync";
-import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { acquireCronLockLease, releaseCronLockLease } from "@/lib/cron-lock";
 import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 
@@ -27,7 +27,8 @@ export async function POST() {
 
   // Lock ATÓMICO con la MISMA clave que el cron nocturno: botón admin y cron
   // solapados ya no pueden arrancar dos syncs a la vez (doble carga en la VPS).
-  if (!(await acquireCronLock("supplier-sync:cifra", 45 * 60 * 1000))) {
+  const lockToken = await acquireCronLockLease("supplier-sync:cifra", 45 * 60 * 1000);
+  if (!lockToken) {
     return NextResponse.json(
       { ok: false, status: "in_progress", message: "Ya hay un sync en curso. Espera unos minutos." },
       { status: 409 },
@@ -39,7 +40,7 @@ export async function POST() {
       await runCifraSync();
       await deactivateUnpricedProducts("cifra");
     } finally {
-      await releaseCronLock("supplier-sync:cifra");
+      await releaseCronLockLease("supplier-sync:cifra", lockToken);
     }
   })().catch((e) => {
     console.error("[cifra-sync-admin] async failure", e);

@@ -1,12 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const productFindUnique = vi.fn();
+const redirectFindUnique = vi.fn();
 const quoteMarkingNetMock = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     product: {
       findUnique: (...a: unknown[]) => productFindUnique(...a),
+    },
+    productSlugRedirect: {
+      findUnique: (...a: unknown[]) => redirectFindUnique(...a),
     },
   },
 }));
@@ -95,6 +99,7 @@ const lineNoMarking: ServerLineInput = {
 
 beforeEach(() => {
   productFindUnique.mockReset();
+  redirectFindUnique.mockReset().mockResolvedValue(null);
   quoteMarkingNetMock.mockReset();
 });
 
@@ -107,6 +112,21 @@ describe("computeServerLinePricing — rechazos autoritativos (seguridad económ
     );
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toMatch(/no encontrado/i);
+  });
+
+  it("una cesta persistida con oldSlug recalcula contra el producto canónico", async () => {
+    productFindUnique.mockImplementation(async ({ where }: { where: { slug: string } }) =>
+      where.slug === "gafas-de-sol-3" ? makeProduct({}) : null,
+    );
+    redirectFindUnique.mockResolvedValue({ product: { slug: "gafas-de-sol-3" } });
+    const result = await computeServerLinePricing(
+      { productSlug: "pgafas-de-sol", quantity: 100, markings: [] },
+      [],
+    );
+    expect(result.ok).toBe(true);
+    expect(productFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { slug: "gafas-de-sol-3" } }),
+    );
   });
 
   it("cantidad < 1 → ok:false 'Cantidad inválida' (no permite total 0/negativo)", async () => {

@@ -4,7 +4,7 @@ import { runCifraSync } from "@/lib/suppliers/cifra-sync";
 import { deactivateUnpricedProducts } from "@/lib/suppliers/sweep";
 import { prisma } from "@/lib/prisma";
 import { wrapCronHandler } from "@/lib/cron-tracking";
-import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { acquireCronLockLease, releaseCronLockLease } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,7 +25,8 @@ export const POST = wrapCronHandler("cifra-sync", async (req: Request) => {
 
   // Lock ATÓMICO compartido con el "Sync ahora" del admin (el check-then-act
   // anterior tenía carrera). Se libera al TERMINAR el trabajo de fondo.
-  if (!(await acquireCronLock("supplier-sync:cifra", 45 * 60 * 1000))) {
+  const lockToken = await acquireCronLockLease("supplier-sync:cifra", 45 * 60 * 1000);
+  if (!lockToken) {
     return NextResponse.json({ ok: false, status: "in_progress" }, { status: 409 });
   }
 
@@ -38,7 +39,7 @@ export const POST = wrapCronHandler("cifra-sync", async (req: Request) => {
       await runCifraSync();
       await deactivateUnpricedProducts("cifra");
     } finally {
-      await releaseCronLock("supplier-sync:cifra");
+      await releaseCronLockLease("supplier-sync:cifra", lockToken);
     }
   })().catch((e) => {
     console.error("[cifra-sync] async failure", e);

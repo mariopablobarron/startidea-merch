@@ -8,6 +8,7 @@ import { positionOptionLabel } from "@/lib/marking-position-label";
 import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 import { displayFromPrice } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
+import { resolveProductBySlug } from "@/lib/product-slug-resolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,29 +29,32 @@ export async function POST(req: Request) {
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "slug requerido" }, { status: 400 });
 
-  const p = await prisma.product.findUnique({
-    where: { slug: parsed.data.slug },
-    include: {
-      variants: { select: { stockQty: true } },
-      positions: {
-        select: {
-          positionId: true,
-          maxWidthMm: true,
-          maxHeightMm: true,
-          techniques: { include: { technique: true } },
+  const resolved = await resolveProductBySlug(parsed.data.slug, (slug) =>
+    prisma.product.findUnique({
+      where: { slug },
+      include: {
+        variants: { select: { stockQty: true } },
+        positions: {
+          select: {
+            positionId: true,
+            maxWidthMm: true,
+            maxHeightMm: true,
+            techniques: { include: { technique: true } },
+          },
+        },
+        override: {
+          select: {
+            hidden: true,
+            customName: true,
+            customFromPriceCents: true,
+            marginPct: true,
+            marketingTags: true,
+          },
         },
       },
-      override: {
-        select: {
-          hidden: true,
-          customName: true,
-          customFromPriceCents: true,
-          marginPct: true,
-          marketingTags: true,
-        },
-      },
-    },
-  });
+    }),
+  );
+  const p = resolved?.product;
 
   if (!p) return NextResponse.json({ error: "Producto no encontrado", slug: parsed.data.slug }, { status: 404 });
   if (p.override?.hidden) return NextResponse.json({ error: "Producto no disponible" }, { status: 404 });

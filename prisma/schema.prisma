@@ -748,7 +748,7 @@ enum MockupRequestStatus {
   CANCELLED
 }
 
-/// Redirects 301 de slugs antiguos (incluían supplier SKU como "-mo9812")
+/// Redirects permanentes 308 de slugs antiguos (incluían supplier SKU como "-mo9812")
 /// hacia el slug actual limpio del producto. Sirve para no romper SEO/links
 /// externos al migrar el formato.
 model ProductSlugRedirect {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { publicProductName } from "@/lib/product-name";
+import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,28 +62,30 @@ export async function POST(req: Request) {
 
   // 1) Resolver productos (cargar metadatos para componer CartQuoteItem)
   const slugs = data.items.map((i) => i.product_slug);
-  const products = await prisma.product.findMany({
-    where: { slug: { in: slugs } },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      internalRef: true,
-      primaryImageUrl: true,
-      fromPriceCents: true,
-      override: { select: { customName: true } },
-    },
-  });
-  if (products.length === 0) {
+  const resolvedProducts = await resolveProductsBySlugs(slugs, (candidateSlugs) =>
+    prisma.product.findMany({
+      where: { slug: { in: [...candidateSlugs] } },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        internalRef: true,
+        primaryImageUrl: true,
+        fromPriceCents: true,
+        override: { select: { customName: true } },
+      },
+    }),
+  );
+  if (resolvedProducts.size === 0) {
     return NextResponse.json({ error: "Ningún slug coincide con un producto activo" }, { status: 400 });
   }
-  const bySlug = new Map(products.map((p) => [p.slug, p]));
 
   // 2) Llamamos a /api/cart-quote (endpoint público existente) con shape compatible
   const itemsPayload = data.items
     .map((it) => {
-      const p = bySlug.get(it.product_slug);
-      if (!p) return null;
+      const resolved = resolvedProducts.get(it.product_slug);
+      if (!resolved) return null;
+      const p = resolved.product;
       // Resolver marcas: si vienen array, usarlo; si no, intentar reconstruirlo
       // desde campos planos (1 marca) para compat.
       const markings = it.markings && it.markings.length > 0

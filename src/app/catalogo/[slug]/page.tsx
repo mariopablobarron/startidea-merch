@@ -119,7 +119,7 @@ export default async function ProductDetailPage({
       override: true,
     },
   });
-  // Slug antiguo (contenía supplier SKU, p.ej. "-mo9812"): 301 al slug actual
+  // Slug antiguo: redirect permanente 308 de Next al slug actual.
   if (!product) {
     const redirectEntry = await prisma.productSlugRedirect.findUnique({
       where: { oldSlug: slug },

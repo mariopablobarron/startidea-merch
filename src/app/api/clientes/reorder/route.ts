@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { authenticateCustomerRequest } from "@/lib/customer-auth";
 import type { CartItem } from "@/lib/cart-storage";
+import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,16 +49,18 @@ export async function POST(req: Request) {
   // Solo líneas cuyo producto siga ACTIVO en catálogo; las retiradas se
   // devuelven aparte para avisar al cliente en vez de fallar en silencio.
   const slugs = [...new Set(cart.items.map((it) => it.productSlug))];
-  const activeProducts = await prisma.product.findMany({
-    where: { slug: { in: slugs }, active: true },
-    select: { slug: true },
-  });
-  const activeSlugs = new Set(activeProducts.map((p) => p.slug));
+  const activeProducts = await resolveProductsBySlugs(slugs, (candidateSlugs) =>
+    prisma.product.findMany({
+      where: { slug: { in: [...candidateSlugs] }, active: true },
+      select: { slug: true },
+    }),
+  );
 
   const items: CartItem[] = [];
   const unavailable: string[] = [];
   for (const it of cart.items) {
-    if (!activeSlugs.has(it.productSlug)) {
+    const resolved = activeProducts.get(it.productSlug);
+    if (!resolved) {
       unavailable.push(it.productName);
       continue;
     }
@@ -73,7 +76,7 @@ export async function POST(req: Request) {
     }));
     const first = markings[0];
     items.push({
-      productSlug: it.productSlug,
+      productSlug: resolved.canonicalSlug,
       productRef: it.productRef,
       productName: it.productName,
       primaryImageUrl: proxyImageUrl(it.primaryImageUrl), // nunca URL cruda de proveedor

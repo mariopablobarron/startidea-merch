@@ -1,6 +1,7 @@
 import type { PurchaseOrder, SupplierCode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
 
 /**
  * Divide un CartQuote en N PurchaseOrder, uno por supplier de los productos.
@@ -69,17 +70,18 @@ async function repartirCarritoEnPurchaseOrders(cartId: string): Promise<Purchase
 
   // Mapeo productSlug → supplier (1 query)
   const slugs = Array.from(new Set(items.map((it) => it.productSlug)));
-  const products = await prisma.product.findMany({
-    where: { slug: { in: slugs } },
-    select: { slug: true, supplier: true },
-  });
-  const supplierBySlug = new Map(products.map((p) => [p.slug, p.supplier]));
+  const products = await resolveProductsBySlugs(slugs, (candidateSlugs) =>
+    prisma.product.findMany({
+      where: { slug: { in: [...candidateSlugs] } },
+      select: { slug: true, supplier: true },
+    }),
+  );
 
   // Agrupar items por supplier (skip los que ya tienen PO asignado)
   const groups = new Map<SupplierCode, { itemIds: string[]; total: number }>();
   for (const it of items) {
     if (it.purchaseOrderId) continue; // ya asignado
-    const supplier = supplierBySlug.get(it.productSlug);
+    const supplier = products.get(it.productSlug)?.product.supplier;
     if (!supplier) continue; // producto desconocido (no debería pasar)
     const g = groups.get(supplier) || { itemIds: [], total: 0 };
     g.itemIds.push(it.id);

@@ -6,6 +6,7 @@ import { loadActivePromotions } from "@/lib/promotions";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { publicRef } from "@/lib/internal-ref";
 import { publicProductName } from "@/lib/product-name";
+import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,34 +29,40 @@ export async function GET(req: Request) {
     .slice(0, 6);
   if (slugs.length === 0) return NextResponse.json({ items: [] });
 
-  const [products, promos] = await Promise.all([
-    prisma.product.findMany({
-      where: { slug: { in: slugs }, active: true, NOT: { override: { is: { hidden: true } } } },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        brand: true,
-        internalRef: true,
-        primaryImageUrl: true,
-        fromPriceCents: true,
-        categoryId: true,
-        override: {
-          select: {
-            customName: true,
-            customFromPriceCents: true,
-            marginPct: true,
-            marketingTags: true,
+  const [resolvedProducts, promos] = await Promise.all([
+    resolveProductsBySlugs(slugs, (candidateSlugs) =>
+      prisma.product.findMany({
+        where: {
+          slug: { in: [...candidateSlugs] },
+          active: true,
+          NOT: { override: { is: { hidden: true } } },
+        },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          brand: true,
+          internalRef: true,
+          primaryImageUrl: true,
+          fromPriceCents: true,
+          categoryId: true,
+          override: {
+            select: {
+              customName: true,
+              customFromPriceCents: true,
+              marginPct: true,
+              marketingTags: true,
+            },
           },
         },
-      },
-    }),
+      }),
+    ),
     loadActivePromotions(),
   ]);
 
   // Conservamos el orden pedido (David los cita en un orden concreto).
   const items = slugs
-    .map((s) => products.find((p) => p.slug === s))
+    .map((s) => resolvedProducts.get(s)?.product)
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
     .map((p) => {
       const price = displayFromPrice(
