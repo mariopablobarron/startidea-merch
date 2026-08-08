@@ -1,6 +1,6 @@
 "use client";
 
-import { displayPositionId } from "@/lib/marking-position-display";
+import { positionOptionLabel } from "@/lib/marking-position-label";
 import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 
 export type ExtraMarking = {
@@ -103,11 +103,11 @@ export function ExtraMarkingsPanel({
                       onChange={(e) =>
                         updateAt(i, { positionIdx: parseInt(e.target.value, 10), techIdx: 0 })
                       }
-                      className="mt-0.5 w-full rounded-lg border border-line bg-bone-soft px-2 py-1.5 text-xs outline-none focus:border-accent"
+                      className="mt-0.5 min-h-[44px] w-full rounded-lg border border-line bg-bone-soft px-2 text-xs outline-none focus:border-accent"
                     >
                       {positionsAvailable.map((p, idx) => (
                         <option key={p.id} value={idx}>
-                          {displayPositionId(p.positionId)}
+                          {positionOptionLabel(p, idx)}
                         </option>
                       ))}
                     </select>
@@ -122,7 +122,7 @@ export function ExtraMarkingsPanel({
                       onChange={(e) =>
                         updateAt(i, { techIdx: parseInt(e.target.value, 10) })
                       }
-                      className="mt-0.5 w-full rounded-lg border border-line bg-bone-soft px-2 py-1.5 text-xs outline-none focus:border-accent"
+                      className="mt-0.5 min-h-[44px] w-full rounded-lg border border-line bg-bone-soft px-2 text-xs outline-none focus:border-accent"
                     >
                       {pos?.techniques.map((t, idx) => (
                         <option key={t.techniqueId} value={idx}>
@@ -141,7 +141,7 @@ export function ExtraMarkingsPanel({
                       onChange={(e) =>
                         updateAt(i, { colours: Math.max(1, Math.min(maxColors, parseInt(e.target.value, 10) || 1)) })
                       }
-                      className="mt-0.5 w-full rounded-lg border border-line bg-bone-soft px-2 py-1.5 text-xs outline-none focus:border-accent"
+                      className="mt-0.5 min-h-[44px] w-full rounded-lg border border-line bg-bone-soft px-2 text-xs outline-none focus:border-accent"
                     />
                   </label>
                 </div>

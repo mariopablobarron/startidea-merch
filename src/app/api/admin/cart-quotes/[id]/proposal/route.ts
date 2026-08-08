@@ -19,7 +19,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const cart = await prisma.cartQuote.findUnique({
     where: { id },
-    include: { items: true },
+    // markings: el PDF lista TODAS las posiciones de marca de cada línea
+    // (Área 1 + Área 7…), no solo la plana. Sin esto quedaban invisibles.
+    include: { items: { include: { markings: { orderBy: { order: "asc" } } } } },
   });
   if (!cart) return NextResponse.json({ error: "Carrito no encontrado" }, { status: 404 });
 

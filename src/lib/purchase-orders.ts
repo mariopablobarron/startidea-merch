@@ -1,11 +1,14 @@
 import type { PurchaseOrder, SupplierCode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 /**
  * Divide un CartQuote en N PurchaseOrder, uno por supplier de los productos.
  *
  * Idempotente: si el cart ya tiene POs creados, no crea nuevos. Asigna los
  * items que aún no tengan purchaseOrderId al PO de su supplier correspondiente.
+ * Esa idempotencia es post-hoc (mira si los items ya están asignados), así que
+ * no cubría las ejecuciones SOLAPADAS; de ahí el cerrojo por carrito de abajo.
  *
  * Devuelve la lista de POs del cart (los preexistentes + los creados).
  *
@@ -17,6 +20,41 @@ import { prisma } from "@/lib/prisma";
  * Cliente ve el plazo más tardío (o desglose por PO en el dashboard).
  */
 export async function createPurchaseOrdersFromCart(cartId: string): Promise<PurchaseOrder[]> {
+  // El reparto es idempotente entre llamadas SEGUIDAS (la segunda ve los items
+  // ya asignados y los salta), pero no entre llamadas SOLAPADAS: ambas leen los
+  // items todavía sin asignar, ninguna encuentra PO previo y las dos crean el
+  // suyo. Medido con dos ejecuciones a la vez sobre un carrito de 150 €: dos PO
+  // de MidOcean y un total de 300 €.
+  //
+  // Y el daño no se queda en una fila de más: cada `*-auto-order` busca EL PO
+  // de su proveedor y filtra los items por ese id, así que si los items acaban
+  // colgando del otro PO el pedido se queda sin items y NO SE CURSA. El cliente
+  // paga y no se pide nada, que es peor que duplicar.
+  //
+  // Puede pasar porque el webhook de Stripe llega por dos ramas del mismo pago
+  // y porque el panel tiene un botón «split» que llama aquí igual.
+  //
+  // Aquí sí se suelta el cerrojo en `finally`, al revés que al pedir a un
+  // proveedor: esto no tiene efectos fuera de nuestra base de datos, así que
+  // volver a intentarlo es gratis y bloquear reintentos sería lo caro.
+  const lockKey = `cart_split:${cartId}`;
+  if (!(await acquireCronLock(lockKey, SPLIT_LOCK_TTL_MS))) {
+    // Otro proceso está repartiendo este mismo carrito ahora mismo. Se devuelve
+    // lo que haya en este instante: quien llama solo lo usa para el log, y los
+    // `*-auto-order` releen de la BD cuando les toca.
+    return prisma.purchaseOrder.findMany({ where: { cartId } });
+  }
+  try {
+    return await repartirCarritoEnPurchaseOrders(cartId);
+  } finally {
+    await releaseCronLock(lockKey);
+  }
+}
+
+/** TTL corto: el reparto no hace llamadas externas, tarda milisegundos. */
+const SPLIT_LOCK_TTL_MS = 2 * 60 * 1000;
+
+async function repartirCarritoEnPurchaseOrders(cartId: string): Promise<PurchaseOrder[]> {
   // Cargar items con el supplier del producto subyacente
   const items = await prisma.cartQuoteItem.findMany({
     where: { cartId },

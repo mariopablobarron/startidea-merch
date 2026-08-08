@@ -33,6 +33,13 @@ const EUR = new Intl.NumberFormat("es-ES", {
  *  - genera link "recover" para que el cliente vuelva: /cotizar?recover={cartId}
  *
  * Cuerpo opcional: { customMessage?: string } — admin puede personalizar el body.
+ *
+ * El cooldown se RECLAMA antes de enviar, no se comprueba y luego se apunta:
+ * esto lo dispara un botón del panel, y dos clics seguidos leían los dos un
+ * `reminderSentAt` todavía vacío y mandaban dos recordatorios al MISMO cliente.
+ * Es la misma forma que ya se corrigió en los drips (`599a91e`) y en la
+ * publicación en redes (`8b0c615`): el efecto externo no puede vivir entre el
+ * «¿ya está hecho?» y el «apúntalo».
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireAdminSecret(req);
@@ -68,17 +75,41 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
-  // Anti-spam: cooldown de 48h
-  if (cart.reminderSentAt) {
-    const hoursSince = (Date.now() - cart.reminderSentAt.getTime()) / 3_600_000;
-    if (hoursSince < COOLDOWN_HOURS) {
+  // Anti-spam: cooldown de 48h, RECLAMADO de forma atómica. La condición viaja
+  // dentro del propio UPDATE, así que de dos clics solapados solo uno cuenta
+  // filas y solo ese llega a enviar.
+  const cooldownCutoff = new Date(Date.now() - COOLDOWN_HOURS * 3_600_000);
+  const claim = await prisma.cartQuote.updateMany({
+    where: {
+      id: cart.id,
+      status: { in: ["NEW", "IN_PROGRESS"] },
+      OR: [{ reminderSentAt: null }, { reminderSentAt: { lt: cooldownCutoff } }],
+    },
+    data: { reminderSentAt: new Date(), reminderCount: { increment: 1 } },
+  });
+
+  if (claim.count === 0) {
+    // Perdimos la reclamación: o hay cooldown vivo, o el otro clic acaba de
+    // enviarlo. Se relee para dar el motivo real en vez de adivinarlo.
+    const actual = await prisma.cartQuote.findUnique({
+      where: { id: cart.id },
+      select: { status: true, reminderSentAt: true },
+    });
+    if (actual && !(actual.status === "NEW" || actual.status === "IN_PROGRESS")) {
       return NextResponse.json(
-        {
-          error: `Cooldown activo. Ya enviado hace ${Math.floor(hoursSince)}h. Próximo envío disponible en ${Math.ceil(COOLDOWN_HOURS - hoursSince)}h.`,
-        },
-        { status: 429 },
+        { error: `No abandonado (status=${actual.status}). El recordatorio solo aplica a NEW/IN_PROGRESS.` },
+        { status: 409 },
       );
     }
+    const hoursSince = actual?.reminderSentAt
+      ? (Date.now() - actual.reminderSentAt.getTime()) / 3_600_000
+      : 0;
+    return NextResponse.json(
+      {
+        error: `Cooldown activo. Ya enviado hace ${Math.floor(hoursSince)}h. Próximo envío disponible en ${Math.ceil(COOLDOWN_HOURS - hoursSince)}h.`,
+      },
+      { status: 429 },
+    );
   }
 
   const recoverUrl = `${SITE_URL}/cotizar?recover=${cart.id}`;
@@ -142,19 +173,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   });
 
   if (!result.ok) {
+    // Resend contestó que NO lo ha enviado: se devuelve el cooldown a como
+    // estaba para que el admin pueda reintentar en el acto en vez de esperar
+    // 48h por un fallo que no es suyo. Solo se libera en este caso —si la
+    // llamada revienta a medias, el email pudo salir igual y el claim se queda
+    // puesto (más vale un recordatorio de menos que uno repetido).
+    await prisma.cartQuote.update({
+      where: { id: cart.id },
+      data: {
+        reminderSentAt: cart.reminderSentAt,
+        reminderCount: { decrement: 1 },
+      },
+    });
     return NextResponse.json(
       { error: result.error || "Resend no pudo enviar el recordatorio" },
       { status: 502 },
     );
   }
-
-  await prisma.cartQuote.update({
-    where: { id: cart.id },
-    data: {
-      reminderSentAt: new Date(),
-      reminderCount: { increment: 1 },
-    },
-  });
 
   return NextResponse.json({
     ok: true,

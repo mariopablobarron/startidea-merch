@@ -40,6 +40,46 @@ const SUPPLIER_HOSTS = [
 const ALL_LEAKS = [...SUPPLIER_LEAKS, ...SUPPLIER_HOSTS];
 
 /**
+ * Techo por petición. `fetch` no trae uno propio: undici corta la CONEXIÓN a
+ * los ~10 s, pero una vez conectado espera cabeceras hasta 300 s. Con 9
+ * peticiones y 3 intentos cada una, una red mala se comía de sobra los 3 min
+ * del job — y ahí es donde el guard moría (ver BUDGET_MS).
+ * 20 s deja holgura a `/api/recommend`, que tarda 8-12 s de forma legítima
+ * porque llama al LLM; bajarlo lo marcaría caído sin estarlo.
+ */
+const REQUEST_TIMEOUT_MS = Number(process.env.SMOKE_REQUEST_TIMEOUT_MS || 20_000);
+
+/**
+ * Presupuesto total del barrido, y la razón de ser de este bloque.
+ *
+ * El 2026-08-05 a las 03:32 UTC este job se quedó CANCELADO al tocar el
+ * `timeout-minutes: 3`. Un job cancelado NO es un job fallido: `if: failure()`
+ * no se ejecuta ⇒ **no salió la alerta de Telegram**, y en la lista de runs
+ * quedó un "cancelled" que se lee como algo manual y benigno. O sea: el guard
+ * que vigila el dinero y la fuga de proveedor se murió en silencio justo en el
+ * escenario para el que se le añadió la resiliencia de red.
+ *
+ * Con presupuesto, quien decide el resultado es el script y no GitHub: al
+ * agotarse, las superficies que falten se registran como NO COMPROBADAS
+ * (jamás como ok) y el barrido llega igual a clasificar y a avisar.
+ */
+const BUDGET_MS = Number(process.env.SMOKE_BUDGET_MS || 240_000);
+
+/**
+ * Cuánto se le concede al siguiente intento sin pasarse del presupuesto.
+ * Pura y exportada: es la que garantiza que el barrido TERMINA.
+ * 0 significa "no queda presupuesto" ⇒ ni se toca la red.
+ */
+export function timeoutParaIntento(deadline, ahora, maxPorPeticion = REQUEST_TIMEOUT_MS) {
+  const restante = deadline - ahora;
+  if (restante <= 0) return 0;
+  return Math.min(maxPorPeticion, restante);
+}
+
+/** Instante límite del barrido. Lo fija `main()`; importar el módulo no arranca el reloj. */
+let deadline = Number.POSITIVE_INFINITY;
+
+/**
  * Categorías de fallo. Las dos hacen fallar el job — esto NO relaja el guard.
  * Lo que cambia es lo que se le dice a quien recibe la alerta:
  *  - MONEY: una invariante de dinero o de exposición de proveedor se ha roto
@@ -111,8 +151,56 @@ function writeGithubOutput(classification, runUrl) {
   }
 }
 
+/**
+ * ¿El fallo prueba que la petición NUNCA llegó a salir? Mismo discriminante
+ * verificado para los workflows de cron en 9128f96: solo se reintenta lo que
+ * está probado que no se ejecutó. Un timeout DESPUÉS de conectar, o un 5xx,
+ * significan que el servidor sí recibió la petición — y /api/recommend gasta
+ * LLM de pago y tiene rate limit, así que repetirla sería trabajo duplicado.
+ */
+export function esFalloDeConexion(err) {
+  const codes = ["UND_ERR_CONNECT_TIMEOUT", "ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ECONNRESET"];
+  const vistos = new Set();
+  for (let e = err; e && !vistos.has(e); e = e.cause) {
+    vistos.add(e);
+    if (typeof e.code === "string" && codes.includes(e.code)) return true;
+  }
+  return false;
+}
+
+/**
+ * fetch que no tumba el barrido entero. Antes, un parpadeo de red dejaba el
+ * script en `main().catch` sin clasificar nada: el workflow caía al mensaje
+ * genérico y volvía a anunciar "una invariante de dinero se rompió" cuando lo
+ * único que había pasado es que no hubo conexión (visto en vivo el 29-jul
+ * 18:16, y el mismo cuadro que tumbó el cron de Makito a las 05:31).
+ */
+async function safeFetch(url, opts, intentos = 3) {
+  let ultimo;
+  for (let i = 1; i <= intentos; i++) {
+    const ms = timeoutParaIntento(deadline, Date.now());
+    if (ms === 0) {
+      // Sin presupuesto no se toca la red: se devuelve "no respondió" al
+      // instante para que el barrido llegue a clasificar y a avisar.
+      return { status: 0, text: async () => "", _networkError: "presupuesto de tiempo agotado" };
+    }
+    try {
+      // El abort NO se reintenta a propósito: la petición SÍ salió, y repetir
+      // /api/recommend gasta LLM de pago. `esFalloDeConexion` lo deja fuera
+      // porque un AbortError/TimeoutError no trae `code` de conexión.
+      return await fetch(url, { ...opts, signal: AbortSignal.timeout(ms) });
+    } catch (e) {
+      ultimo = e;
+      if (!esFalloDeConexion(e) || i === intentos) break;
+      await new Promise((r) => setTimeout(r, 2000 * i));
+    }
+  }
+  // Superficie inalcanzable: status 0 → se trata como "no respondió".
+  return { status: 0, text: async () => "", _networkError: ultimo?.message || String(ultimo) };
+}
+
 async function getJson(path, opts) {
-  const r = await fetch(BASE + path, { ...opts, headers: { "Content-Type": "application/json", ...(opts?.headers || {}) } });
+  const r = await safeFetch(BASE + path, { ...opts, headers: { "Content-Type": "application/json", ...(opts?.headers || {}) } });
   const text = await r.text();
   let json = null;
   try { json = JSON.parse(text); } catch { /* no-json */ }
@@ -120,6 +208,8 @@ async function getJson(path, opts) {
 }
 
 async function main() {
+  deadline = Date.now() + BUDGET_MS;
+
   // ── 1. Marcaje se cobra ──────────────────────────────────────────
   const bare = await getJson("/api/quote/calculate", {
     method: "POST",
@@ -182,19 +272,20 @@ async function main() {
   ];
   for (const surface of publicSurfaces) {
     const { path, method = "GET", body } = surface;
-    const r = await fetch(BASE + path, {
+    const r = await safeFetch(BASE + path, {
       method,
       ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
     });
     const text = (await r.text()).toLowerCase();
     const respondio = r.status === 200;
-    check(`${method} ${path} responde`, respondio, `status ${r.status}`, KIND_AVAILABILITY);
+    const motivo = r._networkError ? `sin conexión: ${r._networkError}` : `status ${r.status}`;
+    check(`${method} ${path} responde`, respondio, motivo, KIND_AVAILABILITY);
     if (!respondio) {
       // Barrer el cuerpo de un 500 (o de un 429) no prueba que la superficie
       // esté limpia: prueba que no había cuerpo que barrer. Marcarlo ✓ era un
       // falso verde en un check de FUGA — el mismo patrón que ya mordió con
       // el índice de búsqueda. Ahora se registra como no comprobado.
-      unchecked(`sin proveedor en ${method} ${path}`, `superficie devolvió ${r.status}`);
+      unchecked(`sin proveedor en ${method} ${path}`, r._networkError ? "no hubo conexión" : `superficie devolvió ${r.status}`);
       continue;
     }
     const leak = ALL_LEAKS.find((s) => text.includes(s));
@@ -216,7 +307,7 @@ async function main() {
   }
 
   // ── 4. /comparar con precio real ─────────────────────────────────
-  const cmp = await fetch(`${BASE}/comparar?slugs=${encodeURIComponent(SLUG)}`);
+  const cmp = await safeFetch(`${BASE}/comparar?slugs=${encodeURIComponent(SLUG)}`);
   const cmpBody = await cmp.text();
   if (cmp.status !== 200) {
     unchecked("/comparar muestra un precio con €", `status ${cmp.status}`);

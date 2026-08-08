@@ -45,20 +45,65 @@ export async function validateCoupon(code: string, totalCents: number): Promise<
 }
 
 /**
- * Aplica un cupón a un cart: registra CouponRedemption (única por cart),
- * incrementa usedCount. Si el carrito ya tiene cupón, lo sustituye.
+ * RESERVA un uso del cupón de forma atómica. Devuelve `true` sólo si el uso
+ * quedó reservado de verdad.
+ *
+ * Es un único `UPDATE ... WHERE usedCount < maxUses` en el motor de BD, así que
+ * dos peticiones concurrentes sobre el último uso disponible no pueden ganar
+ * las dos: la perdedora recibe `count = 0`.
+ *
+ * ⚠️ ORDEN OBLIGATORIO (2026-08-04): hay que reservar ANTES de restar el
+ * descuento del importe que se persiste. Hasta ahora el uso se reclamaba
+ * DESPUÉS de haber creado el CartQuote con `acceptedTotalCents` ya rebajado y
+ * su link de pago emitido, de modo que la perdedora de la carrera se quedaba
+ * igualmente con un carrito descontado y cobrable por Stripe: el cerrojo era
+ * atómico pero llegaba tarde. Con un cupón FIXED de −500 € y `maxUses: 1`, dos
+ * peticiones simultáneas cobraban 500 € de descuento cada una mientras
+ * `usedCount` marcaba 1 y el panel de admin no delataba nada.
  */
-export async function applyCoupon(
+export async function claimCouponUse(couponId: string): Promise<boolean> {
+  const claimed = await prisma.coupon.updateMany({
+    where: {
+      id: couponId,
+      OR: [{ maxUses: null }, { usedCount: { lt: prisma.coupon.fields.maxUses } }],
+    },
+    data: { usedCount: { increment: 1 } },
+  });
+  return claimed.count === 1;
+}
+
+/**
+ * Devuelve un uso reservado con `claimCouponUse` cuando la operación que lo
+ * motivó no llegó a completarse (p. ej. el CartQuote no se pudo crear). Sin
+ * esto, un fallo posterior quemaría el uso de un cupón que nadie disfrutó.
+ *
+ * El guard `usedCount > 0` evita dejar el contador en negativo si se llama dos
+ * veces.
+ */
+export async function releaseCouponUse(couponId: string): Promise<void> {
+  await prisma.coupon.updateMany({
+    where: { id: couponId, usedCount: { gt: 0 } },
+    data: { usedCount: { decrement: 1 } },
+  });
+}
+
+/**
+ * Registra la redención de un cupón YA reservado con `claimCouponUse`.
+ *
+ * NO incrementa `usedCount` — el uso se consumió al reservar. Esta función es
+ * sólo la contabilidad de qué carrito gastó qué cupón. Si el carrito ya tenía
+ * uno, se devuelve el uso del anterior y se sustituye.
+ */
+export async function recordCouponRedemption(
   cartId: string,
   couponId: string,
   discountCents: number,
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    // Si había uno previo, devolver el uso anterior
     const previous = await tx.couponRedemption.findUnique({ where: { cartId } });
     if (previous) {
-      await tx.coupon.update({
-        where: { id: previous.couponId },
+      await tx.coupon.updateMany({
+        where: { id: previous.couponId, usedCount: { gt: 0 } },
         data: { usedCount: { decrement: 1 } },
       });
       await tx.couponRedemption.delete({ where: { cartId } });
@@ -66,18 +111,5 @@ export async function applyCoupon(
     await tx.couponRedemption.create({
       data: { cartId, couponId, discountCents },
     });
-    // Incremento CONDICIONAL atómico: dos requests concurrentes podían pasar
-    // ambas validateCoupon (lectura aislada) y superar maxUses. Si el cupo se
-    // agotó entre la validación y aquí, count=0 → abortamos la transacción.
-    const claimed = await tx.coupon.updateMany({
-      where: {
-        id: couponId,
-        OR: [{ maxUses: null }, { usedCount: { lt: tx.coupon.fields.maxUses } }],
-      },
-      data: { usedCount: { increment: 1 } },
-    });
-    if (claimed.count === 0) {
-      throw new Error("Código sin usos disponibles");
-    }
   });
 }

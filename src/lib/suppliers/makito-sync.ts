@@ -20,6 +20,7 @@
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
 import { notifyTelegram } from "@/lib/telegram";
 import { XMLParser } from "fast-xml-parser";
+import { measureSyncBlocking } from "./blocking-timer";
 import { prisma } from "@/lib/prisma";
 import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
 import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
@@ -65,9 +66,28 @@ function safeSlug(s: string): string {
     .slice(0, 100);
 }
 
-function toNum(v: unknown): number | null {
+/**
+ * Makito manda los números como texto con coma decimal. Cuando además trae
+ * separador de millares ("1.234,56"), quitarle sólo la coma deja "1.234.56",
+ * que parseFloat corta en 1,234 → el precio queda dividido por mil.
+ *
+ * Se corrige SÓLO el caso inequívoco: si vienen los dos separadores, el último
+ * es el decimal y el otro son millares. Con un único punto no se toca nada
+ * ("1.5" sigue siendo uno y medio), porque ahí el feed es ambiguo y presumir
+ * millares rompería las medidas y los pesos, que pasan por esta misma función.
+ */
+export function toNum(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
-  const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
+  let n: number;
+  if (typeof v === "number") {
+    n = v;
+  } else {
+    const s = String(v);
+    const normalizado = s.includes(".") && s.includes(",")
+      ? s.replace(/\./g, "").replace(",", ".")
+      : s.replace(",", ".");
+    n = parseFloat(normalizado);
+  }
   if (!Number.isFinite(n)) return null;
   return n;
 }
@@ -79,7 +99,7 @@ function cmToMm(v: unknown): number | null {
   return n < 200 ? Math.round(n * 10) : Math.round(n);
 }
 
-function priceToCents(v: unknown): number {
+export function priceToCents(v: unknown): number {
   const n = toNum(v);
   if (n === null) return 0;
   return Math.round(n * 100);
@@ -128,7 +148,9 @@ type XmlVariant = {
 
 function parseXmlProducts(xml: string): XmlProduct[] {
   const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
-  const data = parser.parse(xml) as { catalog?: { product?: XmlProduct | XmlProduct[] } };
+  const data = measureSyncBlocking("makito · parse XML productos", () => parser.parse(xml)) as {
+    catalog?: { product?: XmlProduct | XmlProduct[] };
+  };
   const products = data?.catalog?.product;
   if (!products) return [];
   return Array.isArray(products) ? products : [products];
@@ -154,7 +176,9 @@ type XmlPrice = {
 
 function parseXmlPrices(xml: string): XmlPrice[] {
   const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
-  const data = parser.parse(xml) as { catalog?: { product?: XmlPrice | XmlPrice[] } };
+  const data = measureSyncBlocking("makito · parse XML precios", () => parser.parse(xml)) as {
+    catalog?: { product?: XmlPrice | XmlPrice[] };
+  };
   const items = data?.catalog?.product;
   if (!items) return [];
   return Array.isArray(items) ? items : [items];
@@ -171,7 +195,9 @@ type XmlStock = {
 
 function parseXmlStock(xml: string): XmlStock[] {
   const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
-  const data = parser.parse(xml) as { catalog?: { product?: XmlStock | XmlStock[] } };
+  const data = measureSyncBlocking("makito · parse XML stock", () => parser.parse(xml)) as {
+    catalog?: { product?: XmlStock | XmlStock[] };
+  };
   const items = data?.catalog?.product;
   if (!items) return [];
   return Array.isArray(items) ? items : [items];

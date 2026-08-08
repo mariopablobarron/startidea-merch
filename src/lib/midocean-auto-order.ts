@@ -20,6 +20,7 @@ import {
   type MidoceanOrderItem,
 } from "@/lib/suppliers/midocean-orders";
 import { notifyTelegram } from "@/lib/telegram";
+import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
@@ -40,11 +41,36 @@ function autoEnabled(): boolean {
   return true;
 }
 
+const SUPPLIER = "midocean";
+
 export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderResult> {
   if (!autoEnabled()) {
     return { skipped: true, reason: "MIDOCEAN_AUTO_PLACE_ON_PAYMENT=false" };
   }
 
+  // Reclamar ANTES de mirar nada. Comprobar "¿ya está pedido?" y después
+  // llamar al proveedor deja una ventana del tamaño de una llamada HTTP, y en
+  // esa ventana caben dos pedidos: el webhook de Stripe llega por dos ramas
+  // del mismo pago, y el panel tiene un botón «enviar» que hace lo mismo.
+  if (!(await claimSupplierOrder(SUPPLIER, cartId))) {
+    return { skipped: true, reason: "Ya hay otro proceso cursando este pedido" };
+  }
+
+  // El cerrojo solo se suelta si NO se llegó a hablar con el proveedor. Ver
+  // supplier-order-claim.ts: la dirección elegida del fallo es "como mucho una
+  // vez" — antes un pedido parado que uno duplicado.
+  const contacto = { hecho: false };
+  try {
+    return await cursarPedidoMidocean(cartId, contacto);
+  } finally {
+    if (!contacto.hecho) await releaseSupplierOrderClaim(SUPPLIER, cartId);
+  }
+}
+
+async function cursarPedidoMidocean(
+  cartId: string,
+  contacto: { hecho: boolean },
+): Promise<AutoOrderResult> {
   const cart = await prisma.cartQuote.findUnique({
     where: { id: cartId },
     include: {
@@ -62,9 +88,21 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
   }
 
   // Si hay PurchaseOrders (split aplicado), procesar SOLO el PO MidOcean.
-  // Si no hay POs, procesar todos los items del cart (caso legacy o cart
-  // que solo tiene MidOcean).
+  // Si no hay NINGÚN PO, procesar todos los items del cart (caso legacy:
+  // carts anteriores al split, que por definición eran solo de MidOcean).
   const midoceanPO = cart.purchaseOrders.find((po) => po.supplier === "midocean");
+
+  // Split hecho pero ningún PO es de MidOcean ⇒ este carrito no lleva
+  // productos suyos y no hay nada que pedirles. Sin este corte se caía al
+  // fallback de abajo y se les mandaba el carrito entero: un pedido a
+  // MidOcean con SKUs de otro proveedor. Es el mismo corte que ya hacen
+  // makito-auto-order y cifra-auto-order ("Sin PO X (no hay productos X en
+  // este cart)"); MidOcean se quedó sin él porque es el único que carga
+  // TODOS los POs del cart en vez de filtrar por su supplier.
+  if (!midoceanPO && cart.purchaseOrders.length > 0) {
+    return { skipped: true, reason: "El cart no tiene productos MidOcean" };
+  }
+
   const itemsToProcess = midoceanPO
     ? cart.items.filter((it) => it.purchaseOrderId === midoceanPO.id)
     : cart.items;
@@ -137,9 +175,14 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
     items,
   };
 
+  // A partir de aquí el pedido puede haber salido: el cerrojo ya no se suelta.
+  contacto.hecho = true;
   const result = await midoceanOrders.createOrder(payload);
 
   if (result.dryRun) {
+    // En simulación no se ha hablado con nadie: soltar el cerrojo para no
+    // dejar el carrito bloqueado una hora por una prueba.
+    contacto.hecho = false;
     await prisma.cartQuote.update({
       where: { id: cart.id },
       data: {

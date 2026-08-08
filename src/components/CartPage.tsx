@@ -522,14 +522,30 @@ export function CartPage() {
 
               {it.markingTechniqueCode && (
                 <p className="mt-2 flex flex-wrap gap-1.5">
-                  <span className="rounded-full bg-accent-wash px-2.5 py-0.5 text-[11px] font-medium text-accent-deep">
-                    {it.markingTechniqueName} en {it.markingPositionId}
-                  </span>
-                  {it.markingColours && it.markingColours > 1 && (
-                    <span className="rounded-full bg-accent-wash px-2.5 py-0.5 text-[11px] font-medium text-accent-deep">
-                      {it.markingColours} colores
+                  {/* Un chip por posición marcada (Área 1 + Área 7…), no solo la
+                      primera: todas están cotizadas y cobradas en la línea. */}
+                  {(it.markings && it.markings.length > 0
+                    ? it.markings.map((m) => ({
+                        key: `${m.positionId}-${m.techniqueCode}`,
+                        label: `${m.techniqueName ?? it.markingTechniqueName} en ${m.positionLabel ?? m.positionId}`,
+                        colours: m.numberOfColors,
+                      }))
+                    : [
+                        {
+                          key: "flat",
+                          label: `${it.markingTechniqueName} en ${it.markingPositionId}`,
+                          colours: it.markingColours ?? 1,
+                        },
+                      ]
+                  ).map((chip) => (
+                    <span
+                      key={chip.key}
+                      className="rounded-full bg-accent-wash px-2.5 py-0.5 text-[11px] font-medium text-accent-deep"
+                    >
+                      {chip.label}
+                      {chip.colours && chip.colours > 1 ? ` · ${chip.colours} col.` : ""}
                     </span>
-                  )}
+                  ))}
                 </p>
               )}
 

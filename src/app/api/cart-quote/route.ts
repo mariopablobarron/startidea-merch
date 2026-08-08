@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
-import { validateCoupon, applyCoupon } from "@/lib/coupons";
+import { validateCoupon, claimCouponUse, releaseCouponUse, recordCouponRedemption } from "@/lib/coupons";
 import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { readPartnerSlug, attachReferral } from "@/lib/referral";
 import { readAttribution } from "@/lib/attribution";
@@ -229,12 +229,25 @@ export async function POST(req: Request) {
     if (!validation.ok) {
       return NextResponse.json({ error: validation.reason }, { status: 400 });
     }
-    coupon = {
-      id: validation.coupon.id,
-      code: validation.coupon.code,
-      label: validation.coupon.label,
-      discountCents: validation.discountCents,
-    };
+    // RESERVA el uso ANTES de restar nada. validateCoupon es una lectura, no un
+    // cerrojo: dos peticiones concurrentes la pasan las dos. Si el descuento se
+    // horneara en acceptedTotalCents antes de reservar, la perdedora de la
+    // carrera se quedaría igualmente con un carrito rebajado y cobrable.
+    if (await claimCouponUse(validation.coupon.id)) {
+      coupon = {
+        id: validation.coupon.id,
+        code: validation.coupon.code,
+        label: validation.coupon.label,
+        discountCents: validation.discountCents,
+      };
+    } else {
+      // Cupo agotado entre validar y reservar. El carrito sigue adelante SIN
+      // descuento (y ahora es verdad, no sólo el comentario): mejor cobrar el
+      // precio íntegro que regalar un uso que ya no existe.
+      void notifyTelegram(
+        `⚠️ Cupón agotado en carrera: ${escapeTgHtml(validation.coupon.code)} no se aplicó a un carrito nuevo — el cliente pagó sin descuento, revisar si procede compensar`,
+      ).catch(() => {});
+    }
   }
   const payableTotal = Math.max(0, total - (coupon?.discountCents || 0));
 
@@ -329,6 +342,11 @@ export async function POST(req: Request) {
       },
     },
     include: { items: { include: { markings: { orderBy: { order: "asc" } } } } },
+  }).catch(async (e) => {
+    // El uso del cupón ya está reservado: si el carrito no llega a existir hay
+    // que devolverlo, o quemaríamos un uso que nadie disfrutó.
+    if (coupon) await releaseCouponUse(coupon.id).catch(() => {});
+    throw e;
   });
 
   // Si este email tenía un "carrito guardado" (captura temprana), archivarlo:
@@ -374,17 +392,16 @@ export async function POST(req: Request) {
     );
   }
 
-  // Aplicar cupón validado server-side. Esto consume uso y guarda el descuento
-  // exacto que ya se restó de estimatedTotalCents/acceptedTotalCents.
-  // Si el cupo se agotó entre validación y aquí (carrera), el carrito sigue
-  // adelante SIN descuento: mejor eso que un 500 con el carrito ya creado.
+  // Contabilidad de la redención. El uso YA se reservó antes de calcular el
+  // importe (claimCouponUse), así que aquí no se consume nada más: sólo se deja
+  // constancia de qué carrito gastó qué cupón y con cuánto descuento.
   if (coupon) {
     try {
-      await applyCoupon(cart.id, coupon.id, coupon.discountCents);
+      await recordCouponRedemption(cart.id, coupon.id, coupon.discountCents);
     } catch (e) {
-      console.error("[cart-quote] applyCoupon falló (cupo agotado en carrera):", e instanceof Error ? e.message : e);
+      console.error("[cart-quote] recordCouponRedemption falló:", e instanceof Error ? e.message : e);
       void notifyTelegram(
-        `⚠️ Cupón agotado en carrera: carrito ${cart.id} se creó SIN el descuento ${escapeTgHtml(coupon.code ?? coupon.id)} — revisar si procede compensar al cliente`,
+        `⚠️ Redención de cupón sin registrar: carrito ${cart.id} se cobró con el descuento ${escapeTgHtml(coupon.code ?? coupon.id)} pero no quedó anotado — revisar contabilidad`,
       ).catch(() => {});
     }
   }

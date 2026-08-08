@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { publicRef } from "@/lib/internal-ref";
 import { publicBrand } from "@/lib/brand-filter";
-import { displayPositionId } from "@/lib/marking-position-display";
+import { positionOptionLabel } from "@/lib/marking-position-label";
 import { displayFromPrice } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 
@@ -79,9 +79,13 @@ export async function POST(req: Request) {
     from_price_eur: price.finalCents != null ? price.finalCents / 100 : null,
     in_stock: totalStock > 0,
     total_stock: totalStock,
-    marking_positions: p.positions.map((pos) => ({
+    // `position_label` es lo que el agente le DICE al cliente por teléfono, así que
+    // pasa por la misma regla que la ficha: nunca «Default». Aquí sí hay lista, con
+    // lo que la zona sin nombre puede numerarse por orden y seguir siendo elegible.
+    // `position_id` sigue siendo el código crudo: es el que viaja a submit-quote.
+    marking_positions: p.positions.map((pos, posIdx) => ({
       position_id: pos.positionId,
-      position_label: displayPositionId(pos.positionId),
+      position_label: positionOptionLabel(pos, posIdx),
       max_width_mm: pos.maxWidthMm,
       max_height_mm: pos.maxHeightMm,
       techniques: pos.techniques.map((t) => ({

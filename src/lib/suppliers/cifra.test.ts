@@ -110,6 +110,10 @@ describe("diagnoseProducts()", () => {
       ok: true,
       status: 200,
       json: async () => fake,
+      // Una Response de verdad tiene las dos; el doble solo traía json() y se
+      // rompía en cuanto el cliente leyó el cuerpo como texto para medir el
+      // parse. El resto de este fichero ya mockeaba text().
+      text: async () => JSON.stringify(fake),
     });
     const { diagnoseProducts } = await import("./cifra");
     const r = await diagnoseProducts(3);
@@ -133,6 +137,10 @@ describe("diagnoseProducts()", () => {
       ok: true,
       status: 200,
       json: async () => fake,
+      // Una Response de verdad tiene las dos; el doble solo traía json() y se
+      // rompía en cuanto el cliente leyó el cuerpo como texto para medir el
+      // parse. El resto de este fichero ya mockeaba text().
+      text: async () => JSON.stringify(fake),
     });
     const { diagnoseProducts } = await import("./cifra");
     const r = await diagnoseProducts(5);
@@ -167,6 +175,10 @@ describe("diagnoseProducts()", () => {
       ok: true,
       status: 200,
       json: async () => fake,
+      // Una Response de verdad tiene las dos; el doble solo traía json() y se
+      // rompía en cuanto el cliente leyó el cuerpo como texto para medir el
+      // parse. El resto de este fichero ya mockeaba text().
+      text: async () => JSON.stringify(fake),
     });
     const { diagnoseProducts } = await import("./cifra");
     const r = await diagnoseProducts(10);

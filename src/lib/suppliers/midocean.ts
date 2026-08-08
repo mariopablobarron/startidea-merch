@@ -13,6 +13,8 @@
  * a un S3 firmado, así que `redirect: 'follow'` es obligatorio.
  */
 
+import { measuredJson } from "./blocking-timer";
+
 const BASE = process.env.MIDOCEAN_API_BASE || "https://api.midocean.com";
 const API_KEY = process.env.MIDOCEAN_API_KEY || "";
 
@@ -32,7 +34,11 @@ async function fetchJson<T>(path: string): Promise<T> {
   if (!res.ok) {
     throw new Error(`MidOcean ${path} HTTP ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
   }
-  return (await res.json()) as T;
+  // El catálogo son ~25 MB de JSON y convertirlo es síncrono: retiene el bucle
+  // de eventos igual que el XML de Makito (medido en 4,78 s el 6-ago). Aquí
+  // solo se mide — el `path` va en la etiqueta para saber cuál de los cuatro
+  // endpoints es el caro.
+  return measuredJson<T>(`midocean · parse JSON ${path.split("?")[0]}`, res);
 }
 
 // ============================================================================

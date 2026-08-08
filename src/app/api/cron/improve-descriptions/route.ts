@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { withCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,13 @@ export const maxDuration = 600;
  *   - Material y categoría
  *
  * Disparado externamente por cron-job.org cada noche o manualmente.
+ *
+ * Bajo cron-lock (2026-08-05): la selección es check-then-act —lee los N
+ * productos con `enhancedShortDescription: null` → bucle de llamadas de PAGO a
+ * OpenRouter → escribe uno a uno— así que dos ejecuciones solapadas leen el
+ * MISMO lote (todavía sin escribir) y pagan el mismo texto dos veces, además de
+ * pisarse la escritura. Aquí ni siquiera hay dedup de resultado que salve la
+ * factura. El lock serializa; la segunda ejecución sale con skipped.
  */
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
@@ -35,6 +43,11 @@ export const POST = wrapCronHandler("improve-descriptions", async (req: Request)
       { status: 503 },
     );
   }
+
+  // TTL 15 min: por encima de maxDuration (600 s) y sin cadencia automática que
+  // pueda bloquear (scheduleCron "—" en el catálogo: solo disparo externo o
+  // manual), así que un TTL holgado no le quita ningún tick legítimo.
+  return withCronLock("improve-descriptions", async () => {
 
   const url = new URL(req.url);
   const batchSize = Math.min(50, parseInt(url.searchParams.get("batch") || "30", 10) || 30);
@@ -97,6 +110,7 @@ export const POST = wrapCronHandler("improve-descriptions", async (req: Request)
     errors: errors.slice(0, 20),
     model: MODEL,
   });
+  }, 15 * 60 * 1000) as Promise<NextResponse>;
 });
 
 export async function GET(req: Request) {

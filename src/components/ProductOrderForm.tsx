@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { displayPositionId } from "@/lib/marking-position-display";
+import {
+  describeSinglePosition,
+  positionOptionLabel,
+} from "@/lib/marking-position-label";
 import {
   defaultTiersFromBase,
   formatMoney,
@@ -110,7 +113,13 @@ export function ProductOrderForm({
     return baseCentsForEstimate ? defaultTiersFromBase(baseCentsForEstimate) : [];
   }, [tiers, baseCentsForEstimate]);
 
-  const positionsAvailable = positions.filter((p) => p.techniques.length > 0);
+  // Memoizado a propósito: este array alimenta las dependencias del efecto de
+  // cálculo. Sin useMemo se recreaba en CADA render, el efecto se re-disparaba
+  // aunque no hubiera cambiado nada y el precio parpadeaba sin parar.
+  const positionsAvailable = useMemo(
+    () => positions.filter((p) => p.techniques.length > 0),
+    [positions],
+  );
   const canMark = positionsAvailable.length > 0;
 
   // Estado
@@ -219,6 +228,7 @@ export function ProductOrderForm({
       setCalc(null);
       return;
     }
+    const ctrl = new AbortController();
     const timer = setTimeout(async () => {
       setLoadingCalc(true);
       try {
@@ -256,24 +266,38 @@ export function ProductOrderForm({
             quantity: finalQty,
             markings: markingsPayload,
           }),
+          signal: ctrl.signal,
         });
         const data: CalcResponse = await res.json();
         setCalc(data);
+      } catch (e) {
+        // Petición abortada por una más reciente: no es un error, y sobre todo
+        // NO debe apagar el indicador de carga ni pisar el precio con un
+        // resultado viejo (dos respuestas fuera de orden hacían saltar la cifra).
+        if ((e as Error)?.name === "AbortError") return;
       } finally {
-        setLoadingCalc(false);
+        if (!ctrl.signal.aborted) setLoadingCalc(false);
       }
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+    // Dependencias por IDENTIFICADOR, no por objeto: `position` y `technique`
+    // se derivan de positionsAvailable en cada render, así que incluirlos
+    // re-disparaba el efecto constantemente. Sus valores relevantes ya están
+    // aquí como primitivas. El lint pide los objetos: NO se los damos a
+    // propósito — devolverlos reintroduce el parpadeo del precio.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     withMarking,
     productSlug,
     finalQty,
+    position?.positionId,
     technique?.techniqueCode,
     colours,
     manipulation,
     printAreaCm2,
-    position,
-    technique,
     maxColors,
     extraMarkings,
     positionsAvailable,
@@ -364,7 +388,7 @@ export function ProductOrderForm({
       ? [
           {
             positionId: position.positionId,
-            positionLabel: displayPositionId(position.positionId),
+            positionLabel: positionOptionLabel(position, positionIdx),
             techniqueCode: technique.techniqueCode,
             techniqueName: technique.techniqueName,
             numberOfColors: Math.min(colours, maxColors),
@@ -383,7 +407,7 @@ export function ProductOrderForm({
                 : null;
               return {
                 positionId: p.positionId,
-                positionLabel: displayPositionId(p.positionId),
+                positionLabel: positionOptionLabel(p, em.positionIdx),
                 techniqueCode: t.techniqueCode,
                 techniqueName: t.techniqueName,
                 numberOfColors: Math.min(em.colours, t.maxColors ?? 1),
@@ -459,7 +483,7 @@ export function ProductOrderForm({
   function onCotizar() {
     const markingTxt =
       withMarking && technique && position
-        ? ` · ${technique.techniqueName} en ${displayPositionId(position.positionId)}${
+        ? ` · ${technique.techniqueName} en ${positionOptionLabel(position, positionIdx)}${
             colours > 1 ? ` · ${colours} colores` : ""
           }`
         : " · sin marcaje";
@@ -717,65 +741,149 @@ export function ProductOrderForm({
           <p className="text-[11px] font-medium uppercase tracking-wider text-ink/50">
             Opciones de marcaje
           </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Zona">
-              <select
-                value={positionIdx}
-                onChange={(e) => {
-                  setPositionIdx(parseInt(e.target.value, 10));
-                  setTechIdx(0);
-                }}
-                className="w-full rounded-lg border border-line bg-bone px-2.5 py-1.5 text-sm outline-none focus:border-accent"
-              >
+          {/* Elegir marcaje era cuatro desplegables anidados: había que abrir cada
+              uno para saber qué había dentro, y en móvil cada uno lanza el picker
+              nativo. Medido sobre el catálogo: el 43% de los productos tiene UNA
+              sola zona (un desplegable de una única opción) y el 97% tiene 6
+              técnicas o menos, así que casi siempre caben a la vista. Se muestran
+              como opciones visibles y solo se degrada a <select> cuando de verdad
+              hay demasiadas. */}
+          <div className="grid gap-4">
+            {/* ── Zona ── */}
+            {positionsAvailable.length === 1 ? (
+              /* Con una sola zona no hay nada que elegir, así que esto es una
+                 frase, no un control. Y ahí el nombre genérico estorba: «Se
+                 marca en Default» no dice dónde va el logo. Cuando el código no
+                 informa se enuncia el área máxima, que sí; y si tampoco hay
+                 medidas (las 1.991 DEFAULT del catálogo) no se escribe nada. */
+              (() => {
+                const { zone, size } = describeSinglePosition(positionsAvailable[0]);
+                if (!zone && !size) return null;
+                return (
+                  <p className="text-xs text-ink/60">
+                    Se marca en{" "}
+                    <strong className="font-semibold text-ink">
+                      {zone ?? `un área de ${size}`}
+                    </strong>
+                    {zone && size ? ` · área máxima ${size}` : ""}
+                  </p>
+                );
+              })()
+            ) : positionsAvailable.length <= 5 ? (
+              <OptionGroup label="Zona del marcaje">
                 {positionsAvailable.map((p, i) => (
-                  <option key={p.id} value={i}>
-                    {displayPositionId(p.positionId)}
-                    {p.maxWidthMm && p.maxHeightMm
-                      ? ` · ${p.maxWidthMm}×${p.maxHeightMm}mm`
-                      : ""}
-                  </option>
+                  <ChoiceChip
+                    key={p.id}
+                    selected={i === positionIdx}
+                    onClick={() => {
+                      setPositionIdx(i);
+                      setTechIdx(0);
+                    }}
+                    sub={
+                      p.maxWidthMm && p.maxHeightMm
+                        ? `${p.maxWidthMm}×${p.maxHeightMm} mm`
+                        : undefined
+                    }
+                  >
+                    {positionOptionLabel(p, i)}
+                  </ChoiceChip>
                 ))}
-              </select>
-            </Field>
-            <Field
-              label="Técnica"
-              hint={technique && <MarkingTechniqueTooltip name={technique.techniqueName} />}
-            >
-              <select
-                value={techIdx}
-                onChange={(e) => setTechIdx(parseInt(e.target.value, 10))}
-                className="w-full rounded-lg border border-line bg-bone px-2.5 py-1.5 text-sm outline-none focus:border-accent"
-              >
-                {position?.techniques.map((t, i) => (
-                  <option key={t.techniqueId} value={i}>
-                    {t.techniqueName}
-                  </option>
+              </OptionGroup>
+            ) : (
+              <Field label="Zona del marcaje">
+                <select
+                  value={positionIdx}
+                  onChange={(e) => {
+                    setPositionIdx(parseInt(e.target.value, 10));
+                    setTechIdx(0);
+                  }}
+                  className="min-h-[44px] w-full rounded-lg border border-line bg-bone px-2.5 text-sm outline-none focus:border-accent"
+                >
+                  {positionsAvailable.map((p, i) => (
+                    <option key={p.id} value={i}>
+                      {positionOptionLabel(p, i)}
+                      {p.maxWidthMm && p.maxHeightMm
+                        ? ` · ${p.maxWidthMm}×${p.maxHeightMm}mm`
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+
+            {/* ── Técnica ── */}
+            {(position?.techniques.length ?? 0) > 1 &&
+              ((position?.techniques.length ?? 0) <= 6 ? (
+                <OptionGroup
+                  label="Técnica"
+                  hint={technique && <MarkingTechniqueTooltip name={technique.techniqueName} />}
+                >
+                  {position?.techniques.map((t, i) => (
+                    <ChoiceChip
+                      key={t.techniqueId}
+                      selected={i === techIdx}
+                      onClick={() => setTechIdx(i)}
+                    >
+                      {t.techniqueName}
+                    </ChoiceChip>
+                  ))}
+                </OptionGroup>
+              ) : (
+                <Field
+                  label="Técnica"
+                  hint={technique && <MarkingTechniqueTooltip name={technique.techniqueName} />}
+                >
+                  <select
+                    value={techIdx}
+                    onChange={(e) => setTechIdx(parseInt(e.target.value, 10))}
+                    className="min-h-[44px] w-full rounded-lg border border-line bg-bone px-2.5 text-sm outline-none focus:border-accent"
+                  >
+                    {position?.techniques.map((t, i) => (
+                      <option key={t.techniqueId} value={i}>
+                        {t.techniqueName}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              ))}
+            {position?.techniques.length === 1 && technique && (
+              <p className="text-xs text-ink/60">
+                Técnica: <strong className="font-semibold text-ink">{technique.techniqueName}</strong>{" "}
+                <MarkingTechniqueTooltip name={technique.techniqueName} />
+              </p>
+            )}
+
+            {/* ── Nº de tintas ── */}
+            {maxColors > 1 ? (
+              <OptionGroup label={`Nº de tintas del logo · máx. ${maxColors}`}>
+                {Array.from({ length: maxColors }, (_, i) => i + 1).map((n) => (
+                  <ChoiceChip key={n} selected={n === colours} onClick={() => setColours(n)} compact>
+                    {n}
+                  </ChoiceChip>
                 ))}
-              </select>
-            </Field>
-            <Field label="Nº de colores">
-              <input
-                type="number"
-                min={1}
-                max={maxColors}
-                value={colours}
-                onChange={(e) => setColours(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-full rounded-lg border border-line bg-bone px-2.5 py-1.5 text-sm outline-none focus:border-accent"
-              />
-            </Field>
-            <Field label="Complejidad del logo">
-              <select
-                value={manipulation}
-                onChange={(e) => setManipulation(e.target.value)}
-                className="w-full rounded-lg border border-line bg-bone px-2.5 py-1.5 text-sm outline-none focus:border-accent"
-              >
-                {MANIPULATIONS.map((m) => (
-                  <option key={m.code} value={m.code}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
+              </OptionGroup>
+            ) : (
+              <p className="text-xs text-ink/60">
+                Esta técnica se aplica a <strong className="font-semibold text-ink">1 tinta</strong>.
+              </p>
+            )}
+
+            {/* ── Complejidad ── */}
+            <OptionGroup label="Complejidad del arte">
+              {MANIPULATIONS.map((m) => (
+                <ChoiceChip
+                  key={m.code}
+                  selected={m.code === manipulation}
+                  onClick={() => setManipulation(m.code)}
+                >
+                  {m.label}
+                </ChoiceChip>
+              ))}
+            </OptionGroup>
+            <p className="-mt-2 text-[11px] text-ink/45">
+              Se refiere al detalle del dibujo que nos envíes, no a las tintas que has elegido
+              arriba. Si dudas, déjalo como está: lo ajustamos al revisar tu logo.
+            </p>
           </div>
           {calc && "error" in calc && (
             <p className="text-[11px] text-accent-deep">⚠ {calc.error}</p>
@@ -889,8 +997,17 @@ export function ProductOrderForm({
             Total · {finalQty.toLocaleString("es-ES")} uds
             {withMarking ? " · con marcaje" : " · sin marcaje"}
           </p>
-          <p className="mt-1 font-display text-3xl font-semibold tabular-nums text-ink">
-            {loadingCalc ? (
+          {/* Mientras recalcula NO se borra la cifra: se atenúa. Sustituirla por
+              "…" la hacía desaparecer y, al ser mucho más estrecho, además
+              saltaba el ancho de la línea en cada recálculo. Solo se muestra el
+              placeholder cuando todavía no hay ningún precio que enseñar. */}
+          <p
+            className={`mt-1 font-display text-3xl font-semibold tabular-nums text-ink transition-opacity duration-200 ${
+              loadingCalc ? "opacity-50" : "opacity-100"
+            }`}
+            aria-busy={loadingCalc}
+          >
+            {totalCents == null && loadingCalc ? (
               "…"
             ) : (
               <AnimatedPrice cents={totalCents} format={(c) => formatMoney(c).formatted} />
@@ -1061,6 +1178,69 @@ function Badge({ color, children }: { color: "accent" | "social"; children: Reac
     >
       {children}
     </span>
+  );
+}
+
+/**
+ * Grupo de opciones visibles. Reutiliza la misma etiqueta que `Field` para que
+ * un grupo de chips y un desplegable se lean igual cuando conviven (productos
+ * con muchas zonas o técnicas siguen usando `<select>`).
+ */
+function OptionGroup({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div role="group" aria-label={label}>
+      <span className="flex items-center text-[11px] font-medium uppercase tracking-wider text-ink/50">
+        {label}
+        {hint}
+      </span>
+      <div className="mt-2 flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Opción táctil. `min-h-[44px]` no es decorativo: es el objetivo táctil mínimo
+ * que ya se aplicó al footer por accesibilidad, y aquí importa más porque estos
+ * controles deciden el precio. `compact` es para las tintas, que son un dígito
+ * y necesitan ancho de botón, no de etiqueta.
+ */
+function ChoiceChip({
+  selected,
+  onClick,
+  children,
+  sub,
+  compact,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  sub?: string;
+  compact?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`min-h-[44px] rounded-xl border text-left text-sm transition-colors ${
+        compact ? "min-w-[44px] px-3 text-center tabular-nums" : "px-3.5"
+      } py-2 ${
+        selected
+          ? "border-accent bg-accent/10 font-semibold text-ink"
+          : "border-line bg-bone text-ink/75 hover:border-accent/60"
+      }`}
+    >
+      {children}
+      {sub && <span className="mt-0.5 block text-[11px] font-normal text-ink/50">{sub}</span>}
+    </button>
   );
 }
 

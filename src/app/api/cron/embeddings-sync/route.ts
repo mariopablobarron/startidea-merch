@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { generateEmbedding, embeddingTextForProduct } from "@/lib/embeddings";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { withCronLock } from "@/lib/cron-lock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,10 +17,23 @@ const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "openai/text-embedding-3-
  *
  * Llamar diariamente (idempotente). Tras unos días, todo el catálogo
  * tendrá embeddings y solo procesará productos nuevos del sync.
+ *
+ * Bajo cron-lock (2026-08-05): la selección de candidatos es check-then-act
+ * —LEFT JOIN de productos sin embedding → bucle de llamadas de PAGO a
+ * OpenRouter → upsert— así que dos ejecuciones solapadas (el tick de las 05:00
+ * UTC y un disparo manual desde /admin/system/crons, que el panel invita a
+ * hacer) leen el MISMO lote y pagan el embedding dos veces. El `@unique` de
+ * ProductEmbedding.productId deduplica el RESULTADO, no el TRABAJO: la factura
+ * se paga igual. El lock serializa; la segunda ejecución sale con skipped.
  */
 export const POST = wrapCronHandler("embeddings-sync", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
+
+  // TTL 15 min: por encima de maxDuration (600 s) para que un run que muera a
+  // medias no deje el lock activo más de lo que podría haber durado, y muy por
+  // debajo de la cadencia real (24 h) para no bloquear nunca un tick legítimo.
+  return withCronLock("embeddings-sync", async () => {
 
   const url = new URL(req.url);
   const batch = Math.min(100, parseInt(url.searchParams.get("batch") || "50", 10) || 50);
@@ -68,6 +82,7 @@ export const POST = wrapCronHandler("embeddings-sync", async (req: Request) => {
   }
 
   return NextResponse.json({ ok: true, processed, failed, batchSize: batch, candidates: candidates.length });
+  }, 15 * 60 * 1000) as Promise<NextResponse>;
 });
 
 export async function GET(req: Request) {

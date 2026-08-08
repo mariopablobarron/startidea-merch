@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/admin-auth";
 import { midoceanOrders, type MidoceanCreateOrderPayload, type MidoceanOrderItem } from "@/lib/suppliers/midocean-orders";
+import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
@@ -97,9 +98,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     items,
   };
 
+  // Mismo cerrojo que usa el pedido automático del webhook de Stripe, y con la
+  // MISMA clave a propósito: el peligro no es pulsar el botón dos veces, es
+  // pulsarlo mientras el webhook ya está cursando el pedido por su cuenta. El
+  // `midoceanOrderId` que se comprueba arriba no se escribe hasta DESPUÉS de
+  // hablar con el proveedor, así que solo un cerrojo compartido cierra esa
+  // ventana. Se reclama aquí, pegado a la llamada, para no tener que soltarlo
+  // en cada validación previa; a partir de este punto no se suelta (ver
+  // supplier-order-claim.ts: "como mucho una vez").
+  if (!(await claimSupplierOrder("midocean", cart.id))) {
+    return NextResponse.json(
+      { error: "Este carrito se está cursando ahora mismo. Espera unos segundos y recarga antes de reintentar." },
+      { status: 409 },
+    );
+  }
+
   const result = await midoceanOrders.createOrder(payload);
 
   if (result.dryRun) {
+    // Simulación: no se ha llegado a hablar con el proveedor, así que se
+    // suelta el cerrojo en vez de dejar el carrito bloqueado una hora.
+    await releaseSupplierOrderClaim("midocean", cart.id);
     // Persistimos snapshot del payload pero NO marcamos como ordered
     await prisma.cartQuote.update({
       where: { id: cart.id },

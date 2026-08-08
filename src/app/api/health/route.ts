@@ -10,6 +10,15 @@ export const dynamic = "force-dynamic";
  * y para el monitor del propio VPS (`/usr/local/bin/merch-health.sh`).
  *
  * 200 si Postgres responde, 503 si no. No expone secretos.
+ *
+ * Devuelve también `sha`: los 7 primeros del commit horneado en la imagen
+ * (`ENV GIT_SHA`, ver Dockerfile y scripts/deploy.sh). Hasta ahora la ÚNICA
+ * forma de saber qué código estaba vivo era `docker exec merch-app printenv
+ * GIT_SHA` por SSH, y el SSH a la VPS se cae a ratos (anti-abuso de Hostinger):
+ * cuando se cae, no hay manera de verificar un deploy, y "verificar el estado
+ * real, no la ausencia de error" es justo lo que evita dar por bueno un deploy
+ * que sirve código viejo (incidente del 2026-07-21). No es fingerprinting nuevo:
+ * Next.js ya publica su BUILD_ID en las rutas de `/_next/static/`.
  */
 export async function GET() {
   const startedAt = Date.now();
@@ -30,6 +39,7 @@ export async function GET() {
     {
       ok: dbOk,
       service: "startidea-merch",
+      sha: (process.env.GIT_SHA || "").slice(0, 7) || null,
       checks: { db: dbOk ? "ok" : dbError },
       elapsedMs,
       timestamp: new Date().toISOString(),

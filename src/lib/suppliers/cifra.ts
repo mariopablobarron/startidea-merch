@@ -19,6 +19,8 @@
  * un dominio que delate el proveedor. publicatalogue.com es identificable.
  */
 
+import { measuredJson } from "./blocking-timer";
+
 const BASE_URL = process.env.CIFRA_API_BASE || "https://api.cifrashop.com";
 const TOKEN = process.env.CIFRA_API_TOKEN || "";
 const DEFAULT_LANG = process.env.CIFRA_LANG || "es";
@@ -105,7 +107,10 @@ async function call<T>(path: string): Promise<T> {
     const body = await r.text().catch(() => "");
     throw new Error(`Cifra ${r.status} ${r.statusText} en ${path}: ${body.slice(0, 200)}`);
   }
-  return r.json() as Promise<T>;
+  // El catálogo completo (2.513 productos) se convierte de forma síncrona y
+  // retiene el bucle de eventos mientras dura. Solo se mide. La etiqueta lleva
+  // el endpoint sin el token, que va en el path y no debe acabar en un log.
+  return measuredJson<T>(`cifra · parse JSON ${path.split("/")[1] ?? "?"}`, r);
 }
 
 async function callPost<T>(path: string, body: unknown): Promise<T> {
@@ -120,7 +125,10 @@ async function callPost<T>(path: string, body: unknown): Promise<T> {
     const text = await r.text().catch(() => "");
     throw new Error(`Cifra POST ${r.status} en ${path}: ${text.slice(0, 300)}`);
   }
-  return r.json() as Promise<T>;
+  // Respuesta pequeña: no llegará al umbral y no escribirá nada. Se mide igual
+  // para que la regla del guard sea simple —en un cliente de catálogo, TODO
+  // `.json()` va medido— y nadie tenga que juzgar cuál merece cronómetro.
+  return measuredJson<T>(`cifra · parse JSON POST ${path.split("/")[1] ?? "?"}`, r);
 }
 
 /** Lista completa de productos a PVP. */
