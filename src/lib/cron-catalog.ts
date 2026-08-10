@@ -7,12 +7,31 @@
  * Si añades un cron nuevo a /api/cron/*, regístralo aquí.
  */
 
+/**
+ * ⚠️ ZONA HORARIA — la confusión que este comentario existe para impedir.
+ *
+ * Los crons viven en DOS sitios con husos DISTINTOS:
+ *   - **crontab del VPS** → hora **local del host, `Europe/Madrid`** (CEST = UTC+2
+ *     en verano, CET = UTC+1 en invierno). Son la mayoría.
+ *   - **GitHub Actions** (`.github/workflows/*.yml`) → **UTC** siempre.
+ *
+ * Hasta el 2026-08-11 este catálogo etiquetaba como "UTC" los del crontab, que
+ * son locales: **todas las horas de los crons del VPS estaban 2 h desviadas**.
+ * No es cosmético — se diagnostica con esto delante, y ya indujo al menos dos
+ * conclusiones equivocadas al investigar syncs que no habían corrido.
+ *
+ * Regla: en `schedule`, escribir SIEMPRE de dónde sale la hora. Los del VPS como
+ * `"diario 04:00 local VPS = 02:00 UTC"`; los de GitHub Actions, `"… UTC
+ * (GitHub Actions)"`. `scheduleCron` copia LITERAL la expresión de su origen
+ * (crontab o workflow), sin convertir a UTC: si no coincide carácter a carácter
+ * con lo que dispara de verdad, este fichero miente.
+ */
 export type CronEntry = {
   name: string;
   endpointPath: string; // ej. "/api/cron/backup-db"
   method: "GET" | "POST";
-  schedule: string; // cron expression en formato humano
-  scheduleCron: string; // cron expression real
+  schedule: string; // cron expression en formato humano (con huso explícito)
+  scheduleCron: string; // cron expression real, literal de su origen
   frequencyHours: number; // para clasificar STALE en cron-health
   description: string;
 };
@@ -22,7 +41,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "midocean-sync",
     endpointPath: "/api/cron/midocean-sync",
     method: "POST",
-    schedule: "diario 04:00 UTC",
+    schedule: "diario 04:00 local VPS = 02:00 UTC",
     scheduleCron: "0 4 * * *",
     frequencyHours: 24,
     description: "Sincroniza catálogo MidOcean (productos + stock + printdata)",
@@ -31,7 +50,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "midocean-print-pricelist-sync",
     endpointPath: "/api/cron/midocean-print-pricelist-sync",
     method: "POST",
-    schedule: "diario 04:30 UTC",
+    schedule: "diario 04:30 local VPS = 02:30 UTC",
     scheduleCron: "30 4 * * *",
     frequencyHours: 24,
     description: "Sync de tarifas (técnicas marcaje + precios producto)",
@@ -40,8 +59,11 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "cifra-sync",
     endpointPath: "/api/cron/cifra-sync",
     method: "POST",
-    schedule: "diario 05:00 UTC",
-    scheduleCron: "0 5 * * *",
+    // Minuto 12 y no 0: movido el 2026-08-05 porque en el minuto redondo se
+    // apilaban ~12 watchdogs `*/5` y el guard lo saltaba por carga (perdía 6 de
+    // cada 9 días). Aquí seguía puesto el `0 5` viejo.
+    schedule: "diario 05:12 local VPS = 03:12 UTC",
+    scheduleCron: "12 5 * * *",
     frequencyHours: 24,
     description: "Sincroniza catálogo Cifra (productos + variantes + pricelist)",
   },
@@ -49,7 +71,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "makito-sync",
     endpointPath: "/api/cron/makito-sync",
     method: "POST",
-    schedule: "diario 06:00 UTC",
+    schedule: "diario 06:00 local VPS = 04:00 UTC",
     scheduleCron: "0 6 * * *",
     frequencyHours: 24,
     description: "Sincroniza catálogo Makito (XML productos/precios/stock + API tarifa marcaje)",
@@ -78,7 +100,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "tariff-coverage-watchdog",
     endpointPath: "/api/cron/tariff-coverage-watchdog",
     method: "POST",
-    schedule: "diario 07:30 UTC",
+    schedule: "diario 07:30 local VPS = 05:30 UTC",
     scheduleCron: "30 7 * * *",
     frequencyHours: 24,
     description: "Vigila productos activos con técnica pero sin tarifa (cotización manual) y alerta si supera umbral",
@@ -96,8 +118,12 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "refresh-tracking",
     endpointPath: "/api/cron/refresh-tracking",
     method: "POST",
-    schedule: "cada 6h",
-    scheduleCron: "0 */6 * * *",
+    // Minuto 9: movido el 2026-08-05 para esquivar el minuto en que arranca
+    // makito-sync, que dejaba la app sin responder y le devolvía 502 (y con
+    // cada 6h de cadencia, un 502 costaba 6 horas de retraso en el tracking
+    // que ve el cliente). Aquí seguía puesto el `0 */6` viejo.
+    schedule: "cada 6h al minuto :09 (local VPS)",
+    scheduleCron: "9 */6 * * *",
     frequencyHours: 6,
     description: "Refresca tracking de pedidos en producción",
   },
@@ -131,7 +157,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "stock-alert",
     endpointPath: "/api/cron/stock-alert",
     method: "POST",
-    schedule: "diario 09:00 UTC",
+    schedule: "diario 09:00 local VPS = 07:00 UTC",
     scheduleCron: "0 9 * * *",
     frequencyHours: 24,
     description: "Alerta Telegram productos sin stock / críticos",
@@ -140,7 +166,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "voice-agent-health",
     endpointPath: "/api/cron/voice-agent-health",
     method: "POST",
-    schedule: "cada 6h",
+    schedule: "cada 6h al minuto :40 (local VPS)",
     scheduleCron: "40 */6 * * *",
     frequencyHours: 6,
     description: "Vigía de David (ElevenLabs): impago/cuota/fallos → alerta Telegram",
@@ -149,8 +175,12 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "abandoned-cart-drip",
     endpointPath: "/api/cron/abandoned-cart-drip",
     method: "POST",
-    schedule: "diario 05:30 UTC",
-    scheduleCron: "30 5 * * *",
+    // Minuto 37: movido el 2026-08-05 (perdía el 40% de sus corridas por
+    // carga). Aquí seguía puesto el `30 5` viejo. Importa: este drip
+    // selecciona por ventana deslizante, así que una noche saltada NO se
+    // recupera — esos carritos se quedan sin email para siempre.
+    schedule: "diario 05:37 local VPS = 03:37 UTC",
+    scheduleCron: "37 5 * * *",
     frequencyHours: 24,
     description: "Drip D1/D3/D7 + auto-archivo D30 carritos abandonados",
   },
@@ -158,7 +188,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "review-invite",
     endpointPath: "/api/cron/review-invite",
     method: "POST",
-    schedule: "diario 08:00 UTC",
+    schedule: "diario 08:00 local VPS = 06:00 UTC",
     scheduleCron: "0 8 * * *",
     frequencyHours: 24,
     description: "Invitación a dejar review 7 días tras entrega",
@@ -167,8 +197,11 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "backup-db",
     endpointPath: "/api/cron/backup-db",
     method: "POST",
-    schedule: "diario 03:00 UTC (vía /root/backup-merch.sh)",
-    scheduleCron: "0 3 * * *",
+    // Medido en el crontab 2026-08-11: `10 2 * * *` envuelto en
+    // with-backup-lock. Ni la hora ni el minuto que ponía aquí ("03:00 UTC")
+    // eran ciertos; el propio comentario del crontab también se quedó viejo.
+    schedule: "diario 02:10 local VPS = 00:10 UTC (vía /root/backup-merch.sh)",
+    scheduleCron: "10 2 * * *",
     frequencyHours: 24,
     description: "Backup completo Postgres (.sql.gz) — manejado por bash de root con retención 14d local + Telegram",
   },
@@ -176,8 +209,10 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "post-order-drip",
     endpointPath: "/api/cron/post-order-drip",
     method: "POST",
-    schedule: "diario 07:00 UTC",
-    scheduleCron: "0 7 * * *",
+    // Minuto 7: movido el 2026-08-05 (en el minuto redondo se apilaban DIEZ
+    // trabajos y perdía el 32% de sus corridas). Aquí seguía el `0 7` viejo.
+    schedule: "diario 07:07 local VPS = 05:07 UTC",
+    scheduleCron: "7 7 * * *",
     frequencyHours: 24,
     description: "Drip post-pedido D0/D14/D45 (gracias + informe + cupón)",
   },
@@ -194,7 +229,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "quote-followup",
     endpointPath: "/api/cron/quote-followup",
     method: "POST",
-    schedule: "diario 10:00 UTC",
+    schedule: "diario 10:00 local VPS = 08:00 UTC",
     scheduleCron: "0 10 * * *",
     frequencyHours: 24,
     description: "Seguimiento de cotizaciones con enlace de pago enviado sin pagar (D2/D5/D10)",
@@ -203,7 +238,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "proposal-followup",
     endpointPath: "/api/cron/proposal-followup",
     method: "POST",
-    schedule: "diario 11:00 UTC",
+    schedule: "diario 11:00 local VPS = 09:00 UTC",
     scheduleCron: "0 11 * * *",
     frequencyHours: 24,
     description: "Seguimiento de propuestas (PDF) enviadas sin responder (D3/D7)",
@@ -212,7 +247,15 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "override-price-drift",
     endpointPath: "/api/cron/override-price-drift",
     method: "POST",
-    schedule: "semanal lunes 09:00",
+    // ⚠️ DISPARADOR SIN IDENTIFICAR (buscado el 2026-08-11): no está en el
+    // crontab de root, ni en /etc/cron.d, ni en .github/workflows. Pero SÍ
+    // corre: `cron_runs_override-price-drift` registra lunes 3-ago y 10-ago,
+    // los dos a las 07:00 UTC — que es exactamente `0 9 * * 1` en hora local
+    // del VPS. La expresión de abajo describe bien CUÁNDO ocurre; lo que no se
+    // sabe es QUIÉN lo dispara. Importa porque es un guard de DINERO (avisa de
+    // overrides con margen <30% o bajo coste): hoy funciona, pero nadie
+    // controla su origen. Escalado a Mario.
+    schedule: "semanal lunes 09:00 local VPS = 07:00 UTC (disparador sin identificar)",
     scheduleCron: "0 9 * * 1",
     frequencyHours: 168,
     description:
