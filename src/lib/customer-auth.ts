@@ -35,11 +35,21 @@ export async function verifyCustomerSession(token: string): Promise<CustomerSess
   if (!secret) return null;
   try {
     const { payload } = await jwtVerify(token, secret);
-    return {
-      userId: String(payload.userId || ""),
-      email: String(payload.email || ""),
-      name: String(payload.name || ""),
-    };
+    const userId = String(payload.userId || "");
+    const email = String(payload.email || "");
+    // Fail-closed: un token bien FIRMADO pero sin estos claims no es una
+    // sesión de cliente. Importa porque, mientras no existan sus secretos
+    // propios, los tres tipos de token (admin, cliente, afiliado) se firman
+    // con el mismo ADMIN_SECRET ⇒ un token de otro tipo supera el jwtVerify.
+    // Sin este corte devolvía {userId:"", email:""}, que es TRUTHY y pasa
+    // cualquier `if (!session) return 401`. Hoy eso solo abre un portal
+    // vacío (todo se filtra por email y no hay fila con email ""), pero deja
+    // el control de /reorder y /invoice —que comparan cart.email con
+    // session.email— dependiendo de que ese vacío nunca ocurra.
+    // `name` NO se exige: CustomerUser.name es opcional y firmarlo vacío es
+    // legítimo. Solo se exige lo que identifica al cliente.
+    if (!userId || !email) return null;
+    return { userId, email, name: String(payload.name || "") };
   } catch {
     return null;
   }
