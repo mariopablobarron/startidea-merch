@@ -46,13 +46,57 @@ function read(rel: string): string {
 }
 
 /**
+ * Une las líneas de CONTINUACIÓN antes de analizar.
+ *
+ * ⚠️ Hasta el 2026-08-10 este guard miraba línea a línea, así que una
+ * asignación partida —justo lo que produce el formateador cuando la línea se
+ * pasa de ancho— era INVISIBLE para él:
+ *
+ *     shortDescription:
+ *       raw.description,
+ *
+ * La primera línea no casa (no hay nada tras los dos puntos) y la segunda
+ * tampoco (no hay clave). El campo quedaba sin auditar y, peor, si TODAS sus
+ * asignaciones estuvieran así, el `continue` de más abajo daba por hecho que
+ * ese proveedor "no aporta ese campo". Un guard ciego que además se declara
+ * satisfecho.
+ *
+ * Se conserva el número de línea de la CLAVE (que es donde hay que ir a
+ * mirar), en vez de colapsar el fichero entero.
+ */
+function logicalLines(src: string): { line: number; text: string }[] {
+  const fisicas = src.split("\n");
+  const out: { line: number; text: string }[] = [];
+
+  for (let i = 0; i < fisicas.length; i++) {
+    let texto = fisicas[i].trim();
+    // Una clave sin valor detrás continúa en las líneas siguientes.
+    if (/^[A-Za-z_$][\w$]*\s*:$/.test(texto)) {
+      let j = i + 1;
+      while (j < fisicas.length && fisicas[j].trim() === "") j++;
+      // Se absorben líneas hasta equilibrar paréntesis (p.ej. `String(\n x\n)`).
+      while (j < fisicas.length) {
+        texto += " " + fisicas[j].trim();
+        const abiertos = (texto.match(/\(/g) ?? []).length;
+        const cerrados = (texto.match(/\)/g) ?? []).length;
+        j++;
+        if (abiertos <= cerrados) break;
+      }
+    }
+    out.push({ line: i + 1, text: texto });
+  }
+  return out;
+}
+
+/**
  * Líneas que ASIGNAN un valor al campo (`campo: <algo>,`), descartando las
  * formas que no son escritura de datos: `campo: true` de un `select`, `campo:`
  * de un tipo/zod, y las claves de un `where`.
  */
 function assignmentLines(src: string, field: string): { line: number; text: string }[] {
   const out: { line: number; text: string }[] = [];
-  src.split("\n").forEach((text, i) => {
+  logicalLines(src).forEach(({ line: n, text }) => {
+    const i = n - 1;
     const m = text.match(ASSIGNMENT_LINE);
     if (!m || m[1] !== field) return;
     const value = m[2].trim();
@@ -100,6 +144,54 @@ describe("guard: los syncs de proveedor no escriben texto crudo del feed", () =>
       const total = TEXT_FIELDS.reduce((n, f) => n + assignmentLines(src, f).length, 0);
       expect(total, `${file}: el guard no detectó ninguna asignación de texto`).toBeGreaterThan(0);
     }
+  });
+
+  it("🛡️ el campo `name` se audita en LOS TRES syncs, no vale que falte", () => {
+    // El `continue` de arriba salta un campo cuando no encuentra asignaciones,
+    // y eso confunde dos cosas muy distintas: "este proveedor no aporta el
+    // campo" y "el guard no supo verlo". Para `name` —que es NOT NULL y sale
+    // en la ficha, el título y las meta— se exige explícitamente que aparezca.
+    for (const file of SYNC_FILES) {
+      expect(
+        assignmentLines(read(file), "name").length,
+        `${file}: el guard no ve ninguna asignación de \`name\`. O el sync dejó de ` +
+          `escribirlo, o el detector se quedó ciego — las dos cosas hay que mirarlas.`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  describe("🔬 anti-falso-verde del detector — ve las asignaciones PARTIDAS", () => {
+    it.each([
+      ["en una línea", "  shortDescription: raw.description,"],
+      ["partida en dos líneas", "  shortDescription:\n    raw.description,"],
+      ["partida con línea en blanco", "  shortDescription:\n\n    raw.description,"],
+      ["partida con paréntesis abiertos", "  shortDescription:\n    String(\n      raw.description,\n    ),"],
+    ])("ve la asignación %s", (_caso, codigo) => {
+      // Antes de 2026-08-10 las tres últimas eran INVISIBLES para el guard.
+      expect(assignmentLines(codigo, "shortDescription").length).toBeGreaterThan(0);
+    });
+
+    it("sigue descartando lo que no es escritura de datos (select, zod, tipos)", () => {
+      expect(assignmentLines("  shortDescription: true,", "shortDescription")).toEqual([]);
+      expect(assignmentLines("  shortDescription: z.string(),", "shortDescription")).toEqual([]);
+      expect(assignmentLines("  shortDescription: string;", "shortDescription")).toEqual([]);
+      expect(assignmentLines("  shortDescription:\n    true,", "shortDescription")).toEqual([]);
+    });
+
+    it("🔒 y una asignación partida SIN sanear se marca como sucia", () => {
+      // La prueba de que la corrección sirve de algo: el detector no solo la
+      // ve, sino que el guard la clasifica como infractora.
+      const partidaSucia = assignmentLines("  material:\n    raw.material,", "material");
+      expect(partidaSucia.length).toBe(1);
+      expect(SANITIZER.test(partidaSucia[0].text)).toBe(false);
+
+      const partidaLimpia = assignmentLines(
+        "  material:\n    sanitizeSupplierText(raw.material),",
+        "material",
+      );
+      expect(partidaLimpia.length).toBe(1);
+      expect(SANITIZER.test(partidaLimpia[0].text)).toBe(true);
+    });
   });
 
   it.each([

@@ -52,7 +52,16 @@ const CLIENTES_DE_CATALOGO = ["midocean.ts", "cifra.ts"];
 describe("guard · todo parse XML de proveedor está cronometrado", () => {
   it("hay al menos un fichero con parse XML (si no, el guard no vigila nada)", () => {
     // Sin esto el guard sería vacuamente verde el día que alguien renombre algo.
-    expect(ficherosConParseXml().length).toBeGreaterThan(0);
+    // ⚠️ `> 0` era el umbral más flojo de los guards del repo: con dos ficheros
+    // cronometrados, perder uno lo dejaba igual de verde. Se exige además que
+    // el sync que motivó la instrumentación (Makito, 4,78 s de bucle bloqueado
+    // medidos el 6-ago) siga estando en el barrido.
+    const ficheros = ficherosConParseXml();
+    expect(ficheros.length).toBeGreaterThan(0);
+    expect(
+      ficheros,
+      "makito-sync.ts salió del barrido: o cambió de nombre, o dejó de parsear XML",
+    ).toContain("makito-sync.ts");
   });
 
   it("ninguna llamada a parser.parse( queda fuera de measureSyncBlocking", () => {
@@ -62,14 +71,43 @@ describe("guard · todo parse XML de proveedor está cronometrado", () => {
       const lineas = readFileSync(join(DIR, fichero), "utf-8").split("\n");
       lineas.forEach((linea, i) => {
         if (!linea.includes("parser.parse(") || esComentario(linea)) return;
-        // El cableado correcto envuelve la llamada en la misma línea:
+        // ⚠️ Se mira una VENTANA (las 2 líneas anteriores), no solo la línea.
+        // El cableado habitual cabe en una:
         //   measureSyncBlocking("…", () => parser.parse(xml))
-        if (linea.includes("measureSyncBlocking")) return;
+        // pero en cuanto la etiqueta es larga, el formateador lo parte:
+        //   measureSyncBlocking("makito · parse XML productos", () =>
+        //     parser.parse(xml),
+        //   )
+        // Con la comprobación anterior, línea a línea, eso se marcaba como
+        // infractor: una FALSA ALARMA que además rompe el CI de quien no ha
+        // tocado nada malo. (Es el fallo espejo del que tenían los guards de
+        // imagen y de texto: allí el corte por líneas dejaba pasar el fallo,
+        // aquí acusa a código correcto.)
+        const ventana = lineas.slice(Math.max(0, i - 2), i + 1).join(" ");
+        if (ventana.includes("measureSyncBlocking")) return;
         sinCronometrar.push(`${fichero}:${i + 1} → ${linea.trim()}`);
       });
     }
 
     expect(sinCronometrar).toEqual([]);
+  });
+
+  it("🔬 anti-falso-verde — la ventana ve el cableado partido y sigue cazando el ausente", () => {
+    const partido = [
+      '  const datos = measureSyncBlocking("makito · parse XML productos", () =>',
+      "    parser.parse(xml),",
+      "  );",
+    ];
+    const ausente = ["  const datos = parser.parse(xml);"];
+
+    const evaluar = (lineas: string[]) =>
+      lineas.filter((linea, i) => {
+        if (!linea.includes("parser.parse(") || esComentario(linea)) return false;
+        return !lineas.slice(Math.max(0, i - 2), i + 1).join(" ").includes("measureSyncBlocking");
+      });
+
+    expect(evaluar(partido), "el cableado partido NO debe marcarse").toEqual([]);
+    expect(evaluar(ausente), "el parse sin cronometrar SÍ debe marcarse").toHaveLength(1);
   });
 });
 
