@@ -1,0 +1,28 @@
+src/lib/customer-auth.ts
+  s_486ca777b65118::t_b484ab4498e37b 38-52
+src/lib/voice-agent-auth.test.ts
+  s_486ca777b65118::t_3961113b38bc2e 96-98
+  s_486ca777b65118::t_b43840cf0903a1 1-95,99-100
+src/lib/api-auth.test.ts
+  s_486ca777b65118::t_8c247923a332ed 1-208
+src/lib/customer-auth.test.ts
+  s_486ca777b65118::t_e1b1e4f432c6a3 1-286
+src/lib/customer-portal-magic.test.ts
+  s_486ca777b65118::t_285199c7b4e220 1-122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "599350d9d61ed494dab723aa88ba401e25070f05",
+  "prompts": {},
+  "sessions": {
+    "s_486ca777b65118": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e851cfa2-6fe3-4bb3-ab32-9767159341d3",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
