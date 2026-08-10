@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { hasAdminClaims, hasCustomerClaims } from "@/lib/session-claims";
 
 /**
  * Gate /admin/* y /clientes/* en el edge: verifica la FIRMA del JWT de sesión
@@ -15,12 +16,18 @@ async function hasValidJwtCookie(
   req: NextRequest,
   cookieName: string,
   secretValue: string,
+  claimsOk: (payload: Record<string, unknown>) => boolean,
 ): Promise<boolean> {
   const token = req.cookies.get(cookieName)?.value;
   if (!token || !secretValue) return false;
   try {
-    await jwtVerify(token, new TextEncoder().encode(secretValue));
-    return true;
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secretValue));
+    // La firma sola NO distingue el tipo de token: mientras los tres tipos
+    // caigan al mismo ADMIN_SECRET, el JWT de un cliente valida en el gate de
+    // admin. Se comprueban además los claims, con el MISMO predicado que usa
+    // el servidor — si el borde y el servidor no comparten criterio, acaban
+    // divergiendo y el gate deja de significar nada.
+    return claimsOk(payload as Record<string, unknown>);
   } catch {
     return false;
   }
@@ -34,6 +41,7 @@ export async function middleware(req: NextRequest) {
       req,
       "merch_admin",
       process.env.ADMIN_JWT_SECRET || process.env.ADMIN_SECRET || "",
+      hasAdminClaims,
     );
     if (!hasSession) {
       const url = req.nextUrl.clone();
@@ -51,6 +59,7 @@ export async function middleware(req: NextRequest) {
         process.env.ADMIN_JWT_SECRET ||
         process.env.ADMIN_SECRET ||
         "",
+      hasCustomerClaims,
     );
     if (!hasSession) {
       const url = req.nextUrl.clone();

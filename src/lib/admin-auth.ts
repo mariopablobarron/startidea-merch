@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import type { AdminRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { hasAdminClaims } from "@/lib/session-claims";
 
 /**
  * Auth de panel admin con roles. JWT firmado HS256, expira en 8 horas.
@@ -42,9 +43,18 @@ export async function verifySession(token: string): Promise<AdminSession | null>
   if (!secret) return null;
   try {
     const { payload } = await jwtVerify(token, secret);
+    // `role` era un CAST, no una comprobación: un token de CLIENTE —que trae
+    // userId y email, y que cualquiera obtiene por magic-link a su propio
+    // email— superaba el jwtVerify (misma clave) y salía de aquí como
+    // {..., role: undefined}. Ese objeto es TRUTHY ⇒ `isAdmin()` daba true y
+    // los ~80 endpoints admin que solo comprueban que HAYA sesión lo
+    // aceptaban. Los 16 que usan requireRole sí lo rechazaban.
+    // Exigir un rol del enum no echa fuera ninguna sesión legítima: los tres
+    // sitios que firman sesión admin pasan siempre AdminUser.role.
+    if (!hasAdminClaims(payload)) return null;
     return {
-      userId: String(payload.userId || ""),
-      email: String(payload.email || ""),
+      userId: String(payload.userId),
+      email: String(payload.email),
       name: String(payload.name || ""),
       role: payload.role as AdminRole,
     };

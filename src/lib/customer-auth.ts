@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { hasCustomerClaims } from "@/lib/session-claims";
 
 const COOKIE = "merch_customer";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -35,8 +36,12 @@ export async function verifyCustomerSession(token: string): Promise<CustomerSess
   if (!secret) return null;
   try {
     const { payload } = await jwtVerify(token, secret);
-    const userId = String(payload.userId || "");
-    const email = String(payload.email || "");
+    // El predicado vive en session-claims.ts junto al de admin: si la forma
+    // "qué claims hacen una sesión" se escribe en dos sitios, acaban
+    // divergiendo (y ese hueco es justo el que se cerró aquí el 10-ago).
+    if (!hasCustomerClaims(payload)) return null;
+    const userId = String(payload.userId);
+    const email = String(payload.email);
     // Fail-closed: un token bien FIRMADO pero sin estos claims no es una
     // sesión de cliente. Importa porque, mientras no existan sus secretos
     // propios, los tres tipos de token (admin, cliente, afiliado) se firman
@@ -48,7 +53,6 @@ export async function verifyCustomerSession(token: string): Promise<CustomerSess
     // session.email— dependiendo de que ese vacío nunca ocurra.
     // `name` NO se exige: CustomerUser.name es opcional y firmarlo vacío es
     // legítimo. Solo se exige lo que identifica al cliente.
-    if (!userId || !email) return null;
     return { userId, email, name: String(payload.name || "") };
   } catch {
     return null;
