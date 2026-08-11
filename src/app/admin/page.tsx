@@ -131,6 +131,12 @@ export default function AdminDashboardPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <nav className="flex gap-2 text-xs">
+              <Link href="/admin/cotizar" className="rounded-full bg-social px-3 py-1.5 font-medium text-bone hover:opacity-90">
+                💸 Cotizar
+              </Link>
+              <Link href="/admin/products" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
+                🔎 Productos
+              </Link>
               <Link href="/admin/cart-quotes" className="rounded-full border border-line bg-bone px-3 py-1.5 hover:border-accent">
                 Carritos
               </Link>
