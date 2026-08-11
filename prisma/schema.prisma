@@ -472,6 +472,22 @@ model SupplierMarkingRule {
   // Setup fijo opcional (fee único por pedido, EUR cents). Para gastos
   // de cliché/film/láser. Puede ser null si la técnica no aplica setup.
   setupCents     Int?
+  // Tarifa ABSOLUTA escalonada (EUR cents/ud), opcional — cuando está
+  // rellena (tier1UnitCents != null) tiene PRIORIDAD sobre markupPct: el
+  // coste real de marcaje NO escala con el precio del producto (un cliché
+  // de tampografía cuesta lo mismo en un boli de 0,09€ que en uno de 5€),
+  // así que markupPct (% del producto) era estructuralmente incorrecto
+  // para tarifas reales de proveedor. Incidente 2026-08-11: PROP-2026-0006
+  // salió por debajo de coste porque el % aproximado no reflejaba la
+  // tarifa real de Cifra. 4 tramos por cantidad, igual que ProductMarkingPrice.
+  tier1MinQty    Int?
+  tier1UnitCents Int?
+  tier2MinQty    Int?
+  tier2UnitCents Int?
+  tier3MinQty    Int?
+  tier3UnitCents Int?
+  tier4MinQty    Int?
+  tier4UnitCents Int?
   active         Boolean      @default(true)
   notes          String?      @db.Text
   createdAt      DateTime     @default(now())

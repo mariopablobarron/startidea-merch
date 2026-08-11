@@ -28,6 +28,17 @@ export async function GET(req: Request) {
   return NextResponse.json({ ok: true, rules, hints });
 }
 
+const TierFields = {
+  tier1MinQty: z.number().int().min(1).max(1_000_000).nullable().optional(),
+  tier1UnitCents: z.number().int().min(0).max(100_000_000).nullable().optional(),
+  tier2MinQty: z.number().int().min(1).max(1_000_000).nullable().optional(),
+  tier2UnitCents: z.number().int().min(0).max(100_000_000).nullable().optional(),
+  tier3MinQty: z.number().int().min(1).max(1_000_000).nullable().optional(),
+  tier3UnitCents: z.number().int().min(0).max(100_000_000).nullable().optional(),
+  tier4MinQty: z.number().int().min(1).max(1_000_000).nullable().optional(),
+  tier4UnitCents: z.number().int().min(0).max(100_000_000).nullable().optional(),
+};
+
 const CreateSchema = z.object({
   techniqueCode: z
     .string()
@@ -39,6 +50,7 @@ const CreateSchema = z.object({
   setupCents: z.number().int().min(0).max(100_000_000).nullable().optional(),
   active: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
+  ...TierFields,
 });
 
 export async function POST(req: Request) {
@@ -66,6 +78,14 @@ export async function POST(req: Request) {
         setupCents: d.setupCents ?? null,
         active: d.active ?? true,
         notes: d.notes ?? null,
+        tier1MinQty: d.tier1MinQty ?? null,
+        tier1UnitCents: d.tier1UnitCents ?? null,
+        tier2MinQty: d.tier2MinQty ?? null,
+        tier2UnitCents: d.tier2UnitCents ?? null,
+        tier3MinQty: d.tier3MinQty ?? null,
+        tier3UnitCents: d.tier3UnitCents ?? null,
+        tier4MinQty: d.tier4MinQty ?? null,
+        tier4UnitCents: d.tier4UnitCents ?? null,
       },
     });
     return NextResponse.json({ ok: true, rule });
@@ -87,6 +107,7 @@ const PatchSchema = z.object({
   setupCents: z.number().int().min(0).max(100_000_000).nullable().optional(),
   active: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
+  ...TierFields,
 });
 
 export async function PATCH(req: Request) {

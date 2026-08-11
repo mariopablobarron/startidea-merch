@@ -110,14 +110,35 @@ export async function quoteMarkingForRule(opts: {
     }
   }
 
-  // 2) Fallback % aproximado
+  // 2) Regla del proveedor: tarifa ABSOLUTA por tramos (prioridad) o % aproximado
   const rule = await prisma.supplierMarkingRule.findUnique({
     where: { supplier_techniqueCode: { supplier: opts.supplier, techniqueCode: opts.techniqueCode } },
   });
   if (!rule || !rule.active) return null;
 
-  const unitMarkupCents = Math.round((opts.productUnitPriceCents * rule.markupPct) / 100);
   const setupCents = rule.setupCents ?? 0;
+
+  if (rule.tier1UnitCents != null) {
+    const tramos = [
+      { minQty: rule.tier4MinQty, cents: rule.tier4UnitCents },
+      { minQty: rule.tier3MinQty, cents: rule.tier3UnitCents },
+      { minQty: rule.tier2MinQty, cents: rule.tier2UnitCents },
+      { minQty: rule.tier1MinQty ?? 1, cents: rule.tier1UnitCents },
+    ].filter((t): t is { minQty: number; cents: number } => t.minQty != null && t.cents != null);
+    const tramo = tramos.find((t) => qty >= t.minQty) ?? tramos[tramos.length - 1];
+    const unitMarkupCents = tramo.cents;
+    return {
+      techniqueCode: rule.techniqueCode,
+      techniqueLabel: rule.techniqueLabel,
+      markupPct: 0, // tarifa absoluta, no %
+      unitMarkupCents,
+      setupCents,
+      totalMarkingCents: setupCents + unitMarkupCents * qty,
+    };
+  }
+
+  // Fallback % aproximado (sin tarifa real cargada todavía)
+  const unitMarkupCents = Math.round((opts.productUnitPriceCents * rule.markupPct) / 100);
   const totalMarkingCents = setupCents + unitMarkupCents * qty;
 
   return {

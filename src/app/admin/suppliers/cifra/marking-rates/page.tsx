@@ -14,7 +14,7 @@
  *   - Form simple inline para añadir + edit inline en cada fila.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 
 type Rule = {
   id: string;
@@ -25,7 +25,17 @@ type Rule = {
   setupCents: number | null;
   active: boolean;
   notes: string | null;
+  tier1MinQty: number | null;
+  tier1UnitCents: number | null;
+  tier2MinQty: number | null;
+  tier2UnitCents: number | null;
+  tier3MinQty: number | null;
+  tier3UnitCents: number | null;
+  tier4MinQty: number | null;
+  tier4UnitCents: number | null;
 };
+
+const TIER_KEYS = [1, 2, 3, 4] as const;
 
 type Hint = { techniqueCode: string; productCount: number };
 
@@ -41,6 +51,8 @@ export default function CifraMarkingRatesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [tierDraft, setTierDraft] = useState<Record<string, string>>({});
 
   // Form state
   const [code, setCode] = useState("");
@@ -109,6 +121,36 @@ export default function CifraMarkingRatesPage() {
     await load();
   }
 
+  function openTierEditor(r: Rule) {
+    if (expandedId === r.id) {
+      setExpandedId(null);
+      return;
+    }
+    const draft: Record<string, string> = {};
+    for (const n of TIER_KEYS) {
+      const minQty = r[`tier${n}MinQty` as const];
+      const cents = r[`tier${n}UnitCents` as const];
+      draft[`minQty${n}`] = minQty != null ? String(minQty) : "";
+      draft[`price${n}`] = cents != null ? (cents / 100).toString().replace(".", ",") : "";
+    }
+    setTierDraft(draft);
+    setExpandedId(r.id);
+  }
+
+  async function saveTiers(id: string) {
+    const patch: Record<string, number | null> = {};
+    for (const n of TIER_KEYS) {
+      const minQtyStr = tierDraft[`minQty${n}`]?.trim();
+      const priceStr = tierDraft[`price${n}`]?.trim();
+      patch[`tier${n}MinQty`] = minQtyStr ? parseInt(minQtyStr, 10) : null;
+      patch[`tier${n}UnitCents`] = priceStr
+        ? Math.round(parseFloat(priceStr.replace(",", ".")) * 100)
+        : null;
+    }
+    await updateRule(id, patch as Partial<Rule>);
+    setExpandedId(null);
+  }
+
   async function deleteRule(id: string) {
     if (!confirm("¿Borrar esta regla? No se puede deshacer.")) return;
     await fetch(`/api/admin/suppliers/cifra/marking-rules?id=${id}`, {
@@ -159,43 +201,123 @@ export default function CifraMarkingRatesPage() {
                   <tr>
                     <th className="p-3">Código</th>
                     <th className="p-3">Etiqueta legible (cliente)</th>
-                    <th className="p-3 text-right">Markup %</th>
-                    <th className="p-3 text-right">Setup</th>
+                    <th className="p-3">Tarifa</th>
+                    <th className="p-3 text-right">Setup / cliché</th>
                     <th className="p-3 text-center">Activa</th>
                     <th className="p-3 text-right">—</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rules.map((r) => (
-                    <tr key={r.id} className="border-t border-line">
-                      <td className="p-3">
-                        <code className="rounded-md bg-accent-wash px-2 py-0.5 font-mono text-xs text-accent-deep">
-                          {r.techniqueCode}
-                        </code>
-                      </td>
-                      <td className="p-3 text-ink/80">{r.techniqueLabel}</td>
-                      <td className="p-3 text-right font-mono tabular-nums">+{r.markupPct}%</td>
-                      <td className="p-3 text-right font-mono tabular-nums text-ink/65">
-                        {r.setupCents ? EUR.format(r.setupCents / 100) : "—"}
-                      </td>
-                      <td className="p-3 text-center">
-                        <input
-                          type="checkbox"
-                          checked={r.active}
-                          onChange={(e) => updateRule(r.id, { active: e.target.checked })}
-                          className="h-4 w-4 cursor-pointer accent-accent"
-                        />
-                      </td>
-                      <td className="p-3 text-right">
-                        <button
-                          onClick={() => deleteRule(r.id)}
-                          className="text-[11px] text-ink/50 hover:text-accent"
-                        >
-                          Borrar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {rules.map((r) => {
+                    const hasTiers = r.tier1UnitCents != null;
+                    return (
+                      <Fragment key={r.id}>
+                        <tr className="border-t border-line">
+                          <td className="p-3">
+                            <code className="rounded-md bg-accent-wash px-2 py-0.5 font-mono text-xs text-accent-deep">
+                              {r.techniqueCode}
+                            </code>
+                          </td>
+                          <td className="p-3 text-ink/80">{r.techniqueLabel}</td>
+                          <td className="p-3">
+                            {hasTiers ? (
+                              <button
+                                onClick={() => openTierEditor(r)}
+                                className="rounded-full bg-social/15 px-2.5 py-1 text-[11px] font-medium text-social hover:opacity-80"
+                                title="Tarifa real por tramos — clic para editar"
+                              >
+                                ✓ Real: {EUR.format((r.tier1UnitCents ?? 0) / 100)}/ud →{" "}
+                                {EUR.format((r.tier4UnitCents ?? r.tier1UnitCents ?? 0) / 100)}/ud
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => openTierEditor(r)}
+                                className="rounded-full bg-accent-wash px-2.5 py-1 text-[11px] font-medium text-accent-deep hover:opacity-80"
+                                title="Sin tarifa real — usando % aproximado. Clic para cargar tramos reales."
+                              >
+                                ⚠ Aprox. +{r.markupPct}% — cargar tramos reales
+                              </button>
+                            )}
+                          </td>
+                          <td className="p-3 text-right font-mono tabular-nums text-ink/65">
+                            {r.setupCents ? EUR.format(r.setupCents / 100) : "—"}
+                          </td>
+                          <td className="p-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={r.active}
+                              onChange={(e) => updateRule(r.id, { active: e.target.checked })}
+                              className="h-4 w-4 cursor-pointer accent-accent"
+                            />
+                          </td>
+                          <td className="p-3 text-right">
+                            <button
+                              onClick={() => deleteRule(r.id)}
+                              className="text-[11px] text-ink/50 hover:text-accent"
+                            >
+                              Borrar
+                            </button>
+                          </td>
+                        </tr>
+                        {expandedId === r.id && (
+                          <tr className="border-t border-line bg-bone-soft/60">
+                            <td colSpan={6} className="p-4">
+                              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-ink/55">
+                                Tramos por cantidad — precio ABSOLUTO por unidad (€/ud), no % del
+                                producto. Deja un tramo en blanco para borrarlo.
+                              </p>
+                              <div className="grid grid-cols-4 gap-3">
+                                {TIER_KEYS.map((n) => (
+                                  <div key={n}>
+                                    <label className="mb-1 block text-[10px] text-ink/55">
+                                      Desde (uds)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      value={tierDraft[`minQty${n}`] ?? ""}
+                                      onChange={(e) =>
+                                        setTierDraft((d) => ({ ...d, [`minQty${n}`]: e.target.value }))
+                                      }
+                                      placeholder={n === 1 ? "1" : "—"}
+                                      className="w-full rounded-lg border border-line bg-bone px-2 py-1.5 text-right font-mono text-xs outline-none focus:border-accent"
+                                    />
+                                    <label className="mb-1 mt-2 block text-[10px] text-ink/55">
+                                      €/ud
+                                    </label>
+                                    <input
+                                      type="text"
+                                      inputMode="decimal"
+                                      value={tierDraft[`price${n}`] ?? ""}
+                                      onChange={(e) =>
+                                        setTierDraft((d) => ({ ...d, [`price${n}`]: e.target.value }))
+                                      }
+                                      placeholder="0,00"
+                                      className="w-full rounded-lg border border-line bg-bone px-2 py-1.5 text-right font-mono text-xs outline-none focus:border-accent"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="mt-3 flex gap-2">
+                                <button
+                                  onClick={() => saveTiers(r.id)}
+                                  className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-bone hover:bg-accent-dark"
+                                >
+                                  Guardar tramos
+                                </button>
+                                <button
+                                  onClick={() => setExpandedId(null)}
+                                  className="rounded-full border border-line px-4 py-1.5 text-xs hover:border-accent"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
