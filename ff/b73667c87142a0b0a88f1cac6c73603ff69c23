@@ -1,0 +1,24 @@
+src/app/admin/cotizar/page.tsx
+  s_4c8c4c050709e7::t_3f3321ca57f6bf 522-535
+  s_4c8c4c050709e7::t_5d6289203847f3 37-44
+src/lib/cotizar-core.ts
+  s_4c8c4c050709e7::t_f2ea3374842721 64-65
+  s_4c8c4c050709e7::t_78b68c4748e1a1 161-168
+  s_4c8c4c050709e7::t_c6ae55d9174822 235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ffb73667c87142a0b0a88f1cac6c73603ff69c23",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
