@@ -32,6 +32,33 @@ export type MarkingNetQuote = {
   warning?: string;
 };
 
+/**
+ * Último cerrojo del invariante de dinero que promete la cabecera de este módulo:
+ * una cotización de marcaje que sale con `ok:true` vale MÁS de 0 €.
+ *
+ * Hasta ahora el invariante lo sostenían las fuentes de tarifa una por una, y el
+ * consumidor (`quote-server-pricing`) solo miraba `ok`. Con la tarifa por tramos
+ * (`73f5518`) el importe pasa a teclearse en el admin, así que un 0 —o un NaN por
+ * un tramo a medio rellenar— llegaría al cobro como marcaje gratis. Aquí se
+ * degrada a "sin tarifa fiable", que es el camino que ya existe y que convierte
+ * el pago directo en presupuesto: dirección conservadora, nunca cobrar de menos.
+ *
+ * Puro y exportado para poder testearlo sin Prisma.
+ */
+export function guardNonZeroMarking(q: MarkingNetQuote): MarkingNetQuote {
+  if (!q.ok) return q;
+  if (Number.isFinite(q.netTotalCents) && q.netTotalCents > 0) return q;
+  return {
+    ok: false,
+    netTotalCents: 0,
+    techniqueLabel: q.techniqueLabel,
+    setupCents: 0,
+    source: "none",
+    warning:
+      "Tarifa de marcaje incompleta (importe 0) — revisar los tramos de la técnica; pedir cotización manual.",
+  };
+}
+
 export async function quoteMarkingNet(opts: {
   productId: string;
   supplier: SupplierCode;
@@ -56,13 +83,13 @@ export async function quoteMarkingNet(opts: {
       qty: opts.quantity,
     });
     if (m) {
-      return {
+      return guardNonZeroMarking({
         ok: true,
         netTotalCents: m.totalMarkingCents,
         techniqueLabel: m.techniqueLabel,
         setupCents: m.setupCents,
         source: m.markupPct > 0 ? "rule" : "product-tariff",
-      };
+      });
     }
     const tech = await prisma.markingTechnique.findUnique({
       where: { code },
@@ -99,11 +126,11 @@ export async function quoteMarkingNet(opts: {
       warning: br.warning,
     };
   }
-  return {
+  return guardNonZeroMarking({
     ok: true,
     netTotalCents: br.totalCostCents,
     techniqueLabel: br.techniqueName,
     setupCents: br.setupCents,
     source: "scales",
-  };
+  });
 }

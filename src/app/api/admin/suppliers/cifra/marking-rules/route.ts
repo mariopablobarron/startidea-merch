@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { listDistinctMarkingHintsForSupplier } from "@/lib/supplier-marking-rules";
+import { validateMarkingTiers } from "@/lib/marking-tiers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,6 +69,10 @@ export async function POST(req: Request) {
     );
   }
   const d = parsed.data;
+  const tiersError = validateMarkingTiers(d);
+  if (tiersError) {
+    return NextResponse.json({ error: tiersError }, { status: 400 });
+  }
   try {
     const rule = await prisma.supplierMarkingRule.create({
       data: {
@@ -125,6 +130,25 @@ export async function PATCH(req: Request) {
     );
   }
   const { id, ...data } = parsed.data;
+  // PATCH es parcial: los tramos hay que validarlos sobre el estado RESULTANTE.
+  // Validar solo lo enviado dejaría pasar un cambio de una sola casilla que
+  // desordena la tabla o deja un tramo huérfano.
+  const actual = await prisma.supplierMarkingRule.findUnique({ where: { id } });
+  if (!actual) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  const resultante = {
+    tier1MinQty: data.tier1MinQty !== undefined ? data.tier1MinQty : actual.tier1MinQty,
+    tier1UnitCents: data.tier1UnitCents !== undefined ? data.tier1UnitCents : actual.tier1UnitCents,
+    tier2MinQty: data.tier2MinQty !== undefined ? data.tier2MinQty : actual.tier2MinQty,
+    tier2UnitCents: data.tier2UnitCents !== undefined ? data.tier2UnitCents : actual.tier2UnitCents,
+    tier3MinQty: data.tier3MinQty !== undefined ? data.tier3MinQty : actual.tier3MinQty,
+    tier3UnitCents: data.tier3UnitCents !== undefined ? data.tier3UnitCents : actual.tier3UnitCents,
+    tier4MinQty: data.tier4MinQty !== undefined ? data.tier4MinQty : actual.tier4MinQty,
+    tier4UnitCents: data.tier4UnitCents !== undefined ? data.tier4UnitCents : actual.tier4UnitCents,
+  };
+  const tiersError = validateMarkingTiers(resultante);
+  if (tiersError) {
+    return NextResponse.json({ error: tiersError }, { status: 400 });
+  }
   try {
     const rule = await prisma.supplierMarkingRule.update({ where: { id }, data });
     return NextResponse.json({ ok: true, rule });

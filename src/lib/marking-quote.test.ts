@@ -229,6 +229,47 @@ describe("quoteMarkingNet — rama Cifra (CIF_*)", () => {
     expect(r.techniqueLabel).toBe("Serigrafía Cifra");
   });
 
+  it("REGRESIÓN tarifa por tramos: la regla RESUELVE pero con importe 0 → ok:false, no se cobra gratis", async () => {
+    // El agujero que abrió la tarifa por tramos (73f5518): aquí la fuente no
+    // falla —devuelve una cotización estructuralmente válida— pero el importe
+    // es 0 porque el €/ud del tramo se tecleó a 0 en el admin. Los dos tests
+    // de regresión anteriores no lo cubrían: probaban que la fuente FALLARA.
+    quoteMarkingForRuleMock.mockResolvedValueOnce({
+      techniqueLabel: "Serigrafía Cifra",
+      totalMarkingCents: 0,
+      setupCents: 0,
+      markupPct: 0,
+    });
+    const r = await quoteMarkingNet({ ...baseOpts, techniqueCode: "CIF_SER" });
+    expect(r.ok).toBe(false);
+    expect(r.netTotalCents).toBe(0);
+    expect(r.source).toBe("none");
+    expect(r.techniqueLabel).toBe("Serigrafía Cifra");
+  });
+
+  it("REGRESIÓN tarifa por tramos: NaN por un tramo a medio rellenar → ok:false", async () => {
+    quoteMarkingForRuleMock.mockResolvedValueOnce({
+      techniqueLabel: "Serigrafía Cifra",
+      totalMarkingCents: Number.NaN,
+      setupCents: 0,
+      markupPct: 0,
+    });
+    const r = await quoteMarkingNet({ ...baseOpts, techniqueCode: "CIF_SER" });
+    expect(r.ok).toBe(false);
+    expect(r.netTotalCents).toBe(0);
+  });
+
+  it("REGRESIÓN motor de escalas: coste 0 SIN warning → ok:false (mismo invariante por la otra rama)", async () => {
+    calculateMarkingCostMock.mockResolvedValueOnce({
+      techniqueName: "Tampografía",
+      totalCostCents: 0,
+      setupCents: 0,
+    });
+    const r = await quoteMarkingNet({ ...baseOpts });
+    expect(r.ok).toBe(false);
+    expect(r.netTotalCents).toBe(0);
+  });
+
   it("sin tarifa/regla y SIN técnica en BD → usa el código original (con prefijo CIF_) como label", async () => {
     quoteMarkingForRuleMock.mockResolvedValueOnce(null);
     markingTechniqueFindUnique.mockResolvedValueOnce(null);
