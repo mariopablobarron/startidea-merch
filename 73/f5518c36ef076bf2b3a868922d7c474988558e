@@ -1,0 +1,38 @@
+prisma/migrations/20260811_supplier_marking_rule_tiers/migration.sql
+  s_4c8c4c050709e7::t_8907bdd3f50977 1-11
+src/app/admin/suppliers/cifra/marking-rates/page.tsx
+  s_4c8c4c050709e7::t_f720e9f5653056 28-35,38
+  s_4c8c4c050709e7::t_8758784c4c37f1 124-153
+  s_4c8c4c050709e7::t_28add586822825 204-205,211-213,216-317,319-320
+  s_4c8c4c050709e7::t_642e8850f7d1dd 318
+  s_4c8c4c050709e7::t_3df07ae3672f80 54-55
+  s_4c8c4c050709e7::t_9bfb0e3f9897c2 17
+  s_4c8c4c050709e7::t_d06149ee5832c9 214-215
+  s_4c8c4c050709e7::t_6722a8f4f3ce55 39
+src/lib/supplier-marking-rules.ts
+  s_4c8c4c050709e7::t_635e6c3a520159 113,120-141
+src/lib/supplier-marking-rules.test.ts
+  s_4c8c4c050709e7::t_ec1b43a390de99 1-151
+src/app/api/admin/suppliers/cifra/marking-rules/route.ts
+  s_4c8c4c050709e7::t_285c7209cc86de 110
+  s_4c8c4c050709e7::t_a909ad8c6d7926 31-41,53
+  s_4c8c4c050709e7::t_5779a19ceae11d 81-88
+prisma/schema.prisma
+  s_4c8c4c050709e7::t_58a9179f94ceaa 475-490
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "73f5518c36ef076bf2b3a868922d7c474988558e",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
