@@ -1,0 +1,26 @@
+src/lib/proposal-types.ts
+  s_4c8c4c050709e7::t_7c4c6c91f1353f 32-48
+  s_4c8c4c050709e7::t_957d242cc67a2e 120-121,124
+  s_4c8c4c050709e7::t_a024e256d96c39 96-98,100-102
+  s_4c8c4c050709e7::t_43d2ed284ae999 82-95,99,103-104
+src/lib/recommender-proposal-pdf.tsx
+  s_4c8c4c050709e7::t_56709702648a78 249-308,310
+src/lib/proposal-types.test.ts
+  s_4c8c4c050709e7::t_d980423b50ae94 158-189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "98a02c0933b0972b60edf79252ac2bfd84c2b62f",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
