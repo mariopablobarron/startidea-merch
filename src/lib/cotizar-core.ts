@@ -61,6 +61,8 @@ export type CotizarOk = {
     setupCents: number;
     totalMarkingCents: number;
     warning?: string;
+    /** Origen de la tarifa: "rule" = aproximada (contrastar con proveedor). */
+    source?: "scales" | "product-tariff" | "rule" | "none";
   };
   coste: { productoTotal: number; marcajeTotal: number; portesTotal: number; total: number };
   margenEfectivoPct: number;
@@ -156,7 +158,14 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
   // ── Marcaje ──
   let techniques: TechniqueOpt[] | null = null;
   let marking:
-    | { techniqueCode: string; techniqueLabel: string; setupCents: number; totalMarkingCents: number; warning?: string }
+    | {
+        techniqueCode: string;
+        techniqueLabel: string;
+        setupCents: number;
+        totalMarkingCents: number;
+        warning?: string;
+        source?: "scales" | "product-tariff" | "rule" | "none";
+      }
     | null = null;
   let costeMarcajeTotal = 0;
 
@@ -223,6 +232,7 @@ export async function computeCotizacion(input: CotizarInput): Promise<CotizarRes
       setupCents: q.setupCents,
       totalMarkingCents: q.netTotalCents,
       warning: q.warning,
+      source: q.source,
     };
   }
 

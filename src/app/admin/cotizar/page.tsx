@@ -34,7 +34,14 @@ type Result = {
   qty: number;
   portesCents: number;
   techniques?: Technique[];
-  marking?: { techniqueCode: string; techniqueLabel: string; setupCents: number; totalMarkingCents: number; warning?: string };
+  marking?: {
+    techniqueCode: string;
+    techniqueLabel: string;
+    setupCents: number;
+    totalMarkingCents: number;
+    warning?: string;
+    source?: "scales" | "product-tariff" | "rule" | "none";
+  };
   coste: { productoTotal: number; marcajeTotal: number; portesTotal: number; total: number };
   margenEfectivoPct: number;
   cupon: { code: string; label: string; tipo: string; discountCents?: number } | null;
@@ -510,6 +517,20 @@ export default function CotizarPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Tarifa APROXIMADA (regla % del admin, no tarifa real del proveedor):
+                  avisar en rojo para que el comercial contraste antes de enviar.
+                  Incidente PROP-2026-0006 (2026-08-11): cliché Cifra real 60 € vs
+                  30 € aproximado → propuesta por debajo de coste. */}
+              {res.marking?.source === "rule" && (
+                <div className="mt-4 rounded-2xl border-2 border-accent bg-accent-wash p-4 text-sm text-accent-deep" data-noprint>
+                  <p className="font-semibold">⚠️ Tarifa de marcaje APROXIMADA — no es la tarifa real del proveedor</p>
+                  <p className="mt-1">
+                    El coste de marcaje (incl. cliché) es una estimación configurada a mano y puede quedarse corta.
+                    <strong> Contrasta el coste real en el presupuestador del proveedor antes de enviar esta propuesta al cliente.</strong>
+                  </p>
                 </div>
               )}
             </section>
