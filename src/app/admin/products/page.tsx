@@ -605,12 +605,21 @@ export default function AdminProductsPage() {
                           />
                         </td>
                         <td className="p-3 text-right">
-                          <Link
-                            href={`/admin/products/${p.id}`}
-                            className="text-xs font-medium text-accent hover:underline"
-                          >
-                            Editar →
-                          </Link>
+                          <div className="flex items-center justify-end gap-3">
+                            <Link
+                              href={`/admin/cotizar?ref=${encodeURIComponent(p.internalRef || p.supplierRef)}`}
+                              className="text-xs font-medium text-social hover:underline"
+                              title="Cotizar este producto (abre el cotizador con la referencia puesta)"
+                            >
+                              💸 Cotizar
+                            </Link>
+                            <Link
+                              href={`/admin/products/${p.id}`}
+                              className="text-xs font-medium text-accent hover:underline"
+                            >
+                              Editar →
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );

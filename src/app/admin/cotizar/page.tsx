@@ -11,7 +11,7 @@
  * sale a 0 en su presupuesto.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const EUR = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 2 });
 
@@ -103,7 +103,18 @@ export default function CotizarPage() {
     { cartId: string; itemCount: number; estimatedTotalCents: number } | null
   >(null);
 
-  async function cotizar(techniqueCode?: string) {
+  // Prefill desde /admin/products (botón 💸 por fila): /admin/cotizar?ref=STM-XXX
+  // Lee la query a mano (sin useSearchParams → sin Suspense) y auto-busca.
+  useEffect(() => {
+    const v = new URLSearchParams(window.location.search).get("ref")?.trim();
+    if (v) {
+      setRef(v);
+      void cotizar(undefined, v);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar
+  }, []);
+
+  async function cotizar(techniqueCode?: string, refOverride?: string) {
     setLoading(true);
     setError(null);
     if (!techniqueCode) setRes(null);
@@ -114,7 +125,7 @@ export default function CotizarPage() {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ref: ref.trim(),
+          ref: (refOverride ?? ref).trim(),
           qty: parseInt(qty, 10) || 1,
           marginPct: marginPct ? Number(marginPct) : undefined,
           techniqueCode,
