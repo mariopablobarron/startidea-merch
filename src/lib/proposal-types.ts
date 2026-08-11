@@ -29,6 +29,23 @@ export type ProposalQuoteItem = {
   markingSetupCents: number;
   totalCents: number | null;
   priceSource: "tier" | "estimate" | null;
+  /**
+   * Desglose PVP para el PDF (petición Mario 2026-08-11): el cliente ve
+   * SIEMPRE producto / marcaje / cliché / envío como líneas separadas, con
+   * 0,00 € cuando el concepto no aplica. Opcional: propuestas antiguas
+   * persistidas sin breakdown siguen renderizando la línea todo-incluido.
+   * Todos los importes son PVP (margen aplicado), nunca coste.
+   */
+  breakdown?: {
+    productUnitCents: number;
+    productTotalCents: number;
+    markingUnitCents: number;
+    markingTotalCents: number;
+    /** Cliché / fotolito / pantalla (setup fijo del pedido). */
+    setupCents: number;
+    shippingCents: number;
+    discountCents: number;
+  };
 };
 
 export const IVA_RATE = 0.21;
@@ -62,6 +79,29 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.star
  * NUNCA supplierRef. Función pura — fácil de testear.
  */
 export function cotizacionToProposalItem(quote: CotizarOk): ProposalQuoteItem {
+  // Desglose PVP: el cliché (setup) se separa del marcaje variable repartiendo
+  // el PVP de marcaje en la misma proporción que el coste neto (setup/total).
+  const marcajePvp = quote.pvp.marcajeTotal;
+  const netMarking = quote.marking?.totalMarkingCents ?? 0;
+  const netSetup = quote.marking?.setupCents ?? 0;
+  const setupPvp =
+    netMarking > 0 && netSetup > 0 ? Math.round((marcajePvp * netSetup) / netMarking) : 0;
+  const markingRestPvp = Math.max(0, marcajePvp - setupPvp);
+  const breakdown: NonNullable<ProposalQuoteItem["breakdown"]> = {
+    productUnitCents: Math.round(quote.pvp.productoTotal / quote.qty),
+    productTotalCents: quote.pvp.productoTotal,
+    markingUnitCents: Math.round(markingRestPvp / quote.qty),
+    markingTotalCents: markingRestPvp,
+    setupCents: setupPvp,
+    // Envío gratis: el descuento de cotizar-core ES el envío (baseTotal =
+    // producto+marcaje). Aquí se muestra envío 0,00 € y se descuenta esa
+    // parte del descuento para que las filas sumen exactamente totalCents.
+    shippingCents: quote.envioGratis ? 0 : quote.pvp.envioTotal,
+    discountCents: quote.envioGratis
+      ? Math.max(0, quote.pvp.descuentoCents - quote.pvp.envioTotal)
+      : quote.pvp.descuentoCents,
+  };
+
   return {
     description: quote.product.name,
     notFound: false,
@@ -77,10 +117,11 @@ export function cotizacionToProposalItem(quote: CotizarOk): ProposalQuoteItem {
       primaryImageUrl: quote.product.imageUrl,
     },
     unitPriceCents: Math.round(quote.pvp.baseTotal / quote.qty),
-    markingPerUnitCents: 0,
-    markingSetupCents: 0,
+    markingPerUnitCents: breakdown.markingUnitCents,
+    markingSetupCents: breakdown.setupCents,
     totalCents: quote.pvp.baseTotal,
     priceSource: quote.product.hasRealPricing ? "tier" : "estimate",
+    breakdown,
   };
 }
 

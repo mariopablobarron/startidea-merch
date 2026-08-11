@@ -155,4 +155,36 @@ describe("cotizacionToProposalItem", () => {
     expect(totals.subtotalCents).toBe(q.pvp.baseTotal);
     expect(totals.totalCents).toBe(q.pvp.totalConIva);
   });
+
+  it("breakdown: producto+marcaje+cliché+envío−descuento suman baseTotal y el cliché sale proporcional al setup neto", () => {
+    // Caso PROP-2026-0008: marcaje PVP 120 € con setup neto 60 € de 75 € netos
+    const base = quote({ baseTotal: 38400, qty: 500 });
+    const q: CotizarOk = {
+      ...base,
+      marking: { techniqueCode: "CIF_A", techniqueLabel: "Tampografía", setupCents: 6000, totalMarkingCents: 7500 },
+      pvp: { ...base.pvp, productoTotal: 24720, marcajeTotal: 12000, envioTotal: 1680, descuentoCents: 0 },
+    };
+    const b = cotizacionToProposalItem(q).breakdown!;
+    expect(b.setupCents).toBe(Math.round((12000 * 6000) / 7500)); // 9600
+    expect(b.markingTotalCents).toBe(12000 - b.setupCents);
+    expect(b.productTotalCents + b.markingTotalCents + b.setupCents + b.shippingCents - b.discountCents).toBe(
+      q.pvp.baseTotal,
+    );
+  });
+
+  it("breakdown con envío gratis: shipping 0,00 € y el descuento del envío no se duplica", () => {
+    const base = quote({ baseTotal: 10000, qty: 100 });
+    const q: CotizarOk = {
+      ...base,
+      envioGratis: true,
+      pvp: { ...base.pvp, productoTotal: 10000, marcajeTotal: 0, envioTotal: 1280, descuentoCents: 1280 },
+    };
+    const b = cotizacionToProposalItem(q).breakdown!;
+    expect(b.shippingCents).toBe(0);
+    expect(b.discountCents).toBe(0);
+    expect(b.setupCents).toBe(0); // sin marcaje → cliché 0,00 €
+    expect(b.productTotalCents + b.markingTotalCents + b.setupCents + b.shippingCents - b.discountCents).toBe(
+      q.pvp.baseTotal,
+    );
+  });
 });

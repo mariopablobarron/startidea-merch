@@ -246,8 +246,68 @@ export function RecommenderProposalPdf({
             idx % 2 === 0 ? styles.tableRowAlt : {},
             it.notFound ? styles.tableRowMissing : {},
           ];
+          const b = it.breakdown;
+
+          // Con breakdown: SIEMPRE producto / marcaje / cliché / envío como
+          // filas propias, con 0,00 € cuando el concepto no aplica.
+          if (b && !it.notFound) {
+            const subRows: Array<{ label: string; qty: string; unit: string; total: number }> = [
+              {
+                label: "Marcaje" + (it.technique ? ` — ${formatTechnique(it.technique)}` : ""),
+                qty: String(it.quantity),
+                unit: fmt(b.markingUnitCents),
+                total: b.markingTotalCents,
+              },
+              {
+                label: "Cliché / fotolito",
+                qty: b.setupCents > 0 ? "1" : "—",
+                unit: fmt(b.setupCents),
+                total: b.setupCents,
+              },
+              {
+                label: "Envío",
+                qty: b.shippingCents > 0 ? "1" : "—",
+                unit: b.shippingCents > 0 ? fmt(b.shippingCents) : "Incluido",
+                total: b.shippingCents,
+              },
+              ...(b.discountCents > 0
+                ? [{ label: "Descuento", qty: "—", unit: "", total: -b.discountCents }]
+                : []),
+            ];
+            return (
+              <View key={idx}>
+                <View style={rowStyle}>
+                  <View style={styles.colProduct}>
+                    <Text style={styles.td}>{it.product?.name ?? it.description}</Text>
+                    {it.product?.ref ? (
+                      <Text style={styles.tdMuted}>Ref: {it.product.ref}</Text>
+                    ) : null}
+                  </View>
+                  <Text style={[styles.td, styles.colTech]}> </Text>
+                  <Text style={[styles.td, styles.colQty]}>{it.quantity}</Text>
+                  <Text style={[styles.tdMuted, styles.colSizes]}>{formatSizes(it.sizes)}</Text>
+                  <Text style={[styles.td, styles.colUnit]}>{fmt(b.productUnitCents)}</Text>
+                  <Text style={[styles.td, styles.colSubtotal]}>{fmt(b.productTotalCents)}</Text>
+                </View>
+                {subRows.map((r, j) => (
+                  <View style={styles.tableRow} key={`${idx}-${j}`}>
+                    <View style={styles.colProduct}>
+                      <Text style={[styles.tdMuted, { paddingLeft: 10 }]}>{r.label}</Text>
+                    </View>
+                    <Text style={[styles.td, styles.colTech]}> </Text>
+                    <Text style={[styles.tdMuted, styles.colQty]}>{r.qty}</Text>
+                    <Text style={[styles.tdMuted, styles.colSizes]}> </Text>
+                    <Text style={[styles.tdMuted, styles.colUnit]}>{r.unit}</Text>
+                    <Text style={[styles.td, styles.colSubtotal]}>{fmt(r.total)}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          }
+
+          // Sin breakdown (propuestas antiguas): línea única todo-incluido.
           const unitPrice = it.unitPriceCents
-            ? fmt(it.unitPriceCents + (it.markingPerUnitCents ?? 0))
+            ? fmt(it.unitPriceCents + (b ? 0 : it.markingPerUnitCents ?? 0))
             : "—";
           return (
             <View style={rowStyle} key={idx}>
