@@ -1,0 +1,33 @@
+src/lib/marking-quote-guard.test.ts
+  s_d1aa99891fd736::t_f26b815e1b6adf 1-69
+src/lib/marking-tiers.test.ts
+  s_d1aa99891fd736::t_81712cae194eff 1-89
+src/lib/marking-quote.test.ts
+  s_d1aa99891fd736::t_615783b8bf450b 232-272
+src/lib/marking-tiers.ts
+  s_d1aa99891fd736::t_e1192b25350009 1-75
+src/lib/marking-quote.ts
+  s_d1aa99891fd736::t_dab22f6f244cea 86,92
+  s_d1aa99891fd736::t_d5bb68807a7b19 129,135
+  s_d1aa99891fd736::t_0c8668682e3f07 35-61
+src/app/api/admin/suppliers/cifra/marking-rules/route.ts
+  s_d1aa99891fd736::t_afd3eaf59a13c9 6
+  s_d1aa99891fd736::t_bc5129411a6d9a 72-75
+  s_d1aa99891fd736::t_2a9e030a5f3191 133-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "5e678307bf1e29b6a0975dcc117699929167ddd8",
+  "prompts": {},
+  "sessions": {
+    "s_d1aa99891fd736": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b853ed71-aac6-431c-aba2-917970d4f09e",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
