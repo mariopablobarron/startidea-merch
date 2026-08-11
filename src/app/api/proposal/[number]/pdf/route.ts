@@ -12,6 +12,8 @@ import { createElement, type ReactElement } from "react";
 import { NextResponse } from "next/server";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { prisma } from "@/lib/prisma";
+import { authenticateAdminRequest } from "@/lib/admin-auth";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { verifyProposalToken } from "@/lib/proposal-token";
 import {
   computeProposalTotals,
@@ -52,18 +54,28 @@ export async function GET(
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
 
-  // Marcar openedAt si no estaba
+  // Marcar openedAt si no estaba — salvo que la descarga venga de un admin
+  // (David previsualizando desde /admin/propuestas no cuenta como apertura
+  // del cliente; sin esta exclusión el tracking daba falsos "Abierta").
   if (!proposal.openedAt) {
-    try {
-      await prisma.proposal.update({
-        where: { id: proposal.id },
-        data: {
-          openedAt: new Date(),
-          status: proposal.status === "sent" ? "opened" : proposal.status,
-        },
-      });
-    } catch {
-      // No crítico
+    const adminSession = await authenticateAdminRequest(req).catch(() => null);
+    if (!adminSession) {
+      try {
+        await prisma.proposal.update({
+          where: { id: proposal.id },
+          data: {
+            openedAt: new Date(),
+            status: proposal.status === "sent" ? "opened" : proposal.status,
+          },
+        });
+        void notifyTelegram(
+          `👀 <b>Propuesta abierta</b>\n${proposal.proposalNumber} · ${escapeTgHtml(proposal.email)}` +
+            (proposal.company ? ` (${escapeTgHtml(proposal.company)})` : "") +
+            `\nTotal: ${(proposal.totalCents / 100).toFixed(2)} €`,
+        ).catch(() => {});
+      } catch {
+        // No crítico
+      }
     }
   }
 
