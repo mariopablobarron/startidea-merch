@@ -1,0 +1,31 @@
+src/app/admin/layout.tsx
+  s_4c8c4c050709e7::t_0a119267392f03 149
+prisma/migrations/20260811_supplier_entity/migration.sql
+  s_4c8c4c050709e7::t_8aed3f2a5a7af2 1-22
+src/app/api/admin/suppliers/route.ts
+  s_4c8c4c050709e7::t_cf723e4f360149 1-108
+src/app/admin/suppliers/page.tsx
+  s_4c8c4c050709e7::t_35cceeb08b0f95 1-40
+src/app/admin/suppliers/SuppliersClient.tsx
+  s_4c8c4c050709e7::t_44e20e9d7dbb66 1-266
+docs/spec-proveedores-admin.md
+  s_4c8c4c050709e7::t_df1cd9d0b5b01f 1-98
+prisma/schema.prisma
+  s_4c8c4c050709e7::t_ed3c2698808c27 338-364
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "a6deb3525f6300a9455e09783a3120d5348b35eb",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
