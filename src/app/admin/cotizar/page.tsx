@@ -11,7 +11,13 @@
  * sale a 0 en su presupuesto.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  buildSupplierShippingMap,
+  decidePortesPreload,
+  portesCentsAInput,
+  type SupplierShippingMap,
+} from "@/lib/cotizar-portes-default";
 
 const EUR = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 2 });
 
@@ -84,9 +90,18 @@ export default function CotizarPage() {
   const [qty, setQty] = useState("250");
   const [marginPct, setMarginPct] = useState("60");
   const [portes, setPortes] = useState("8"); // portes del proveedor (coste), en €
-  const [portesTouched, setPortesTouched] = useState(false); // true en cuanto el admin edita el campo a mano
   const [portesFromSupplier, setPortesFromSupplier] = useState<string | null>(null); // nombre del proveedor si el valor viene precargado
-  const [supplierShipping, setSupplierShipping] = useState<Record<string, { cents: number; name: string }>>({});
+  // Estas dos van en refs, NO en estado: `cotizar` es `async` y lee su valor
+  // DESPUÉS del await. Una variable de estado dentro de esa función es la foto
+  // del render en que se creó, así que si el admin teclea portes mientras la
+  // petición está en vuelo, el estado ya vale `true` pero la foto sigue en
+  // `false` y la precarga pisa el importe recién tecleado — justo lo que este
+  // código promete no hacer, y encima cotizando de menos si el default es más
+  // barato. Por lo mismo el mapa: con estado, el prefill `?ref=` (el botón 💸
+  // de /admin/products) leía siempre el mapa vacío del primer render y la
+  // precarga no disparaba nunca en su vía de entrada principal.
+  const portesTouchedRef = useRef(false); // true en cuanto el admin edita el campo a mano
+  const supplierShippingRef = useRef<SupplierShippingMap>({});
   const [couponCode, setCouponCode] = useState("");
   const [res, setRes] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
@@ -131,11 +146,7 @@ export default function CotizarPage() {
     fetch("/api/admin/suppliers", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => {
-        const map: Record<string, { cents: number; name: string }> = {};
-        for (const s of d.items || []) {
-          if (s.defaultShippingCents != null) map[s.code] = { cents: s.defaultShippingCents, name: s.name };
-        }
-        setSupplierShipping(map);
+        supplierShippingRef.current = buildSupplierShippingMap(d?.items);
       })
       .catch(() => {});
   }, []);
@@ -171,15 +182,20 @@ export default function CotizarPage() {
 
       // Primera búsqueda de este producto (no reselección de técnica) sin que
       // el admin haya tocado portes a mano → precargar el default del
-      // proveedor y recalcular una vez con el valor correcto.
-      if (!techniqueCode && !portesTouched) {
-        const dflt = supplierShipping[d.product.supplier];
-        if (dflt && dflt.cents !== d.portesCents) {
-          setPortes((dflt.cents / 100).toString().replace(".", ","));
-          setPortesFromSupplier(dflt.name);
-          void cotizar(undefined, refOverride ?? ref, dflt.cents);
-          return;
-        }
+      // proveedor y recalcular una vez con el valor correcto. La decisión vive
+      // en lib/ porque es dinero y tiene que poder testearse.
+      const decision = decidePortesPreload({
+        techniqueCode,
+        portesTouched: portesTouchedRef.current,
+        supplierCode: d.product?.supplier,
+        currentPortesCents: d.portesCents,
+        map: supplierShippingRef.current,
+      });
+      if (decision.preload) {
+        setPortes(portesCentsAInput(decision.cents));
+        setPortesFromSupplier(decision.name);
+        void cotizar(undefined, refOverride ?? ref, decision.cents);
+        return;
       }
     } catch {
       setError("Error de red");
@@ -365,7 +381,7 @@ export default function CotizarPage() {
             <div>
               <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">
                 Portes proveedor (coste €)
-                {portesFromSupplier && !portesTouched && (
+                {portesFromSupplier && (
                   <span className="ml-1 normal-case text-social">· por defecto {portesFromSupplier}</span>
                 )}
               </label>
@@ -375,7 +391,7 @@ export default function CotizarPage() {
                 value={portes}
                 onChange={(e) => {
                   setPortes(e.target.value);
-                  setPortesTouched(true);
+                  portesTouchedRef.current = true;
                   setPortesFromSupplier(null);
                 }}
                 placeholder="8"

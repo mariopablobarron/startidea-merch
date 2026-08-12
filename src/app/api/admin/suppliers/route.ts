@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
+import {
+  SUPPLIER_CODES,
+  SUPPLIER_DEFAULT_NAMES,
+  SupplierProfileSchema,
+} from "@/lib/supplier-profile-schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,13 +19,8 @@ export const dynamic = "force-dynamic";
  * de SupplierCode aparecen SIEMPRE, tengan o no fila en Supplier todavía
  * (ficha vacía = "sin rellenar", no "no existe").
  */
-const ALL_CODES = ["midocean", "makito", "cifra", "adivin"] as const;
-const DEFAULT_NAMES: Record<(typeof ALL_CODES)[number], string> = {
-  midocean: "MidOcean",
-  makito: "Makito",
-  cifra: "Cifra",
-  adivin: "Adivin",
-};
+const ALL_CODES = SUPPLIER_CODES;
+const DEFAULT_NAMES = SUPPLIER_DEFAULT_NAMES;
 
 export async function GET(req: Request) {
   const session = await authenticateAdminRequest(req);
@@ -68,21 +67,6 @@ export async function GET(req: Request) {
   return NextResponse.json({ ok: true, items });
 }
 
-const UpsertSchema = z.object({
-  code: z.enum(ALL_CODES),
-  name: z.string().min(1).max(80).optional(),
-  active: z.boolean().optional(),
-  hasAutoSync: z.boolean().optional(),
-  contactName: z.string().max(120).nullable().optional(),
-  contactEmail: z.string().max(200).nullable().optional(),
-  contactPhone: z.string().max(60).nullable().optional(),
-  paymentTerms: z.string().max(500).nullable().optional(),
-  minOrderNotes: z.string().max(500).nullable().optional(),
-  leadTimeDays: z.number().int().min(0).max(365).nullable().optional(),
-  defaultShippingCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
-  notes: z.string().max(2000).nullable().optional(),
-});
-
 /** PATCH crea la ficha si no existe (primera edición) o actualiza la existente. */
 export async function PATCH(req: Request) {
   const session = await authenticateAdminRequest(req);
@@ -91,7 +75,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
   const body = await req.json().catch(() => ({}));
-  const parsed = UpsertSchema.safeParse(body);
+  const parsed = SupplierProfileSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Datos inválidos", issues: parsed.error.flatten() },
