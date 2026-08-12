@@ -1,0 +1,22 @@
+src/app/admin/cotizar/page.tsx
+  s_4c8c4c050709e7::t_3cec4b6bd0fd7b 87-89
+  s_4c8c4c050709e7::t_e2b22b142b52e9 143,148-149,171-183
+  s_4c8c4c050709e7::t_167c4e06b7c670 127-142
+  s_4c8c4c050709e7::t_ba339b59b917d5 366-371,376-380
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "7ddd93684db96c4865b4e12c05ed4972605cc8b9",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
