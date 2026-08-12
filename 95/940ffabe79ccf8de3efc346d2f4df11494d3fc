@@ -1,0 +1,43 @@
+src/lib/supplier-credentials.ts
+  s_4c8c4c050709e7::t_289b74d1839b18 1-71
+src/lib/secret-box.ts
+  s_4c8c4c050709e7::t_61b3d8c6b13cb8 1-51
+src/lib/secret-box.test.ts
+  s_4c8c4c050709e7::t_bd1e56504e9c69 1-43
+src/app/admin/suppliers/SuppliersClient.tsx
+  s_4c8c4c050709e7::t_158eb3ca92d40e 235-302
+  s_4c8c4c050709e7::t_98fbaf2d2e17ee 66-71,76-79,82-85,95-136
+  s_4c8c4c050709e7::t_d6337e058c548c 25-39
+  s_4c8c4c050709e7::t_cb9770a10c69e7 137
+src/lib/supplier-credentials.test.ts
+  s_4c8c4c050709e7::t_06c5e5fad6ec42 27-30,48,51,57,60,67-68,73
+  s_4c8c4c050709e7::t_a76edb633cf7d0 1-26,31-47,49-50,52-56,58-59,61-66,69-72,74-80
+prisma/migrations/20260812_supplier_credential/migration.sql
+  s_4c8c4c050709e7::t_362d09a5b6f75e 1-16
+src/lib/suppliers/cifra.ts
+  s_4c8c4c050709e7::t_c463a332aad0ed 23,28-35
+  s_4c8c4c050709e7::t_25a79a908116b2 153-154,156
+  s_4c8c4c050709e7::t_96e9a10f7121ca 138-141
+  s_4c8c4c050709e7::t_3192ee8878661e 196-197,205
+  s_4c8c4c050709e7::t_4f08696f9d7436 237-240,244-247
+src/app/api/admin/suppliers/credentials/route.ts
+  s_4c8c4c050709e7::t_50ff99a00ffe61 1-89
+prisma/schema.prisma
+  s_4c8c4c050709e7::t_5c4dfc72052de7 365-385
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "95940ffabe79ccf8de3efc346d2f4df11494d3fc",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
