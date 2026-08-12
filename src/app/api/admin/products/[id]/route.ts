@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
+import { ProductOverrideSchema } from "@/lib/product-override-schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,22 +31,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json({ ok: true, product });
 }
 
-const OverrideSchema = z
-  .object({
-    customName: z.string().min(1).max(220).nullable().optional(),
-    customDescription: z.string().max(5000).nullable().optional(),
-    customFromPriceCents: z.number().int().min(0).max(10_000_000).nullable().optional(),
-    marginPct: z.number().int().min(-50).max(500).nullable().optional(),
-    extraImages: z.array(z.string().url()).max(10).optional(),
-    featured: z.boolean().optional(),
-    hidden: z.boolean().optional(),
-    marketingTags: z.array(z.string().min(1).max(40)).max(10).optional(),
-    metaTitle: z.string().max(160).nullable().optional(),
-    metaDescription: z.string().max(320).nullable().optional(),
-    internalNotes: z.string().max(2000).nullable().optional(),
-  })
-  .strict();
-
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await authenticateAdminRequest(req);
   if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
@@ -59,7 +43,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!product) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
   const body = await req.json().catch(() => ({}));
-  const parsed = OverrideSchema.safeParse(body);
+  const parsed = ProductOverrideSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Datos inválidos", issues: parsed.error.flatten() },

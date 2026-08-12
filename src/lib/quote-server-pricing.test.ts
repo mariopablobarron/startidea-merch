@@ -382,3 +382,65 @@ describe("computeServerLinePricing — composición del precio cliente (camino f
     expect(r.totalClientCents).toBeGreaterThan(0);
   });
 });
+
+describe("computeServerLinePricing — REGRESIÓN producto a 0 € por override corrupto", () => {
+  /**
+   * El vector real, hallado el 12-ago: `ProductOverride.customFromPriceCents`
+   * lo teclea un humano en el admin y su Zod aceptaba `.min(0)`. Con un 0:
+   *   1. `clientFromPriceCents` devolvía 0 tal cual,
+   *   2. `computeClientPricing` lo metía por la rama de "tarifa plana" y dejaba
+   *      `clientTiers` vacío (porque `0` es falsy),
+   *   3. aquí, `productTier?.unitPriceCents ?? baseCentsForEstimate ?? 0` caía
+   *      al `0` final → el producto se facturaba a 0 € en Stripe, regalando el
+   *      coste de proveedor, mientras el marcaje sí se cobraba (total > 0, así
+   *      que el cobro NO se bloqueaba por el `payableTotal > 0` de cart-quote).
+   *
+   * Es el mismo fallo que el marcaje a 0 € del 11-ago, en otra casilla: testear
+   * la función pura no basta, hace falta comprobarlo DONDE SE COBRA.
+   */
+  it("override con customFromPriceCents = 0 → NO se cobra el producto a 0 €, vuelve al precio con margen", async () => {
+    productFindUnique.mockResolvedValueOnce(
+      makeProduct({
+        override: { customFromPriceCents: 0, marginPct: null, marketingTags: [] },
+      }),
+    );
+    const r = await computeServerLinePricing(lineNoMarking, []);
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.productClientCents).toBeGreaterThan(0);
+    expect(r.unitClientCents).toBeGreaterThan(0);
+    // Precio sano: el del tramo NETO del proveedor a qty=100 (60) con margen.
+    expect(r.unitClientCents).toBe(applyMargin(60));
+    expect(r.totalClientCents).toBe(applyMargin(60) * 100);
+  });
+
+  it("override con customFromPriceCents negativo → tampoco produce un cobro ≤ 0", async () => {
+    productFindUnique.mockResolvedValueOnce(
+      makeProduct({
+        override: { customFromPriceCents: -5000, marginPct: null, marketingTags: [] },
+      }),
+    );
+    const r = await computeServerLinePricing(lineNoMarking, []);
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.unitClientCents).toBe(applyMargin(60));
+    expect(r.totalClientCents).toBeGreaterThan(0);
+  });
+
+  it("un customFromPriceCents legítimo SIGUE mandando (el cerrojo no rompe la tarifa plana)", async () => {
+    productFindUnique.mockResolvedValueOnce(
+      makeProduct({
+        override: { customFromPriceCents: 999, marginPct: null, marketingTags: [] },
+      }),
+    );
+    const r = await computeServerLinePricing(lineNoMarking, []);
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // Tarifa PLANA: 999 por unidad a cualquier cantidad, sin curva sintética.
+    expect(r.unitClientCents).toBe(999);
+    expect(r.totalClientCents).toBe(999 * 100);
+  });
+});

@@ -71,9 +71,38 @@ export type ClientPricing = {
   baseCentsForEstimate: number | undefined;
 };
 
+/**
+ * CERROJO: un override de precio que valga 0 € (o menos, o no sea finito) NO es
+ * un precio, es un dato corrupto — y se cobra.
+ *
+ * `customFromPriceCents` lo teclea un humano en el admin y salía de aquí TAL
+ * CUAL: con un 0, `computeClientPricing` dejaba `clientTiers` vacío (porque
+ * `0` es falsy) y `quote-server-pricing` caía a su `?? 0`, así que el producto
+ * se facturaba a 0 € por Stripe — regalando el coste de proveedor. El Zod que
+ * lo guardaba lo permitía (`.min(0)`), igual que la tarifa de marcaje permitía
+ * un €/ud a 0 hasta el cerrojo del 11-ago: el mismo fallo, otra casilla.
+ *
+ * Aquí se normaliza a "sin override": el precio vuelve a la vía sana (tramos
+ * NETOS del proveedor × margen global), que nunca es 0 si el coste no lo es.
+ * Dirección conservadora: ante un dato imposible, nunca cobrar de menos.
+ */
+export function normalizePriceOverride(override: PriceOverride): PriceOverride {
+  if (!override) return override;
+  const { customFromPriceCents: custom, marginPct: margen } = override;
+  const customCorrupto = custom != null && (!Number.isFinite(custom) || custom <= 0);
+  const margenCorrupto = margen != null && !Number.isFinite(margen);
+  if (!customCorrupto && !margenCorrupto) return override;
+  return {
+    ...override,
+    customFromPriceCents: customCorrupto ? null : custom,
+    marginPct: margenCorrupto ? null : margen,
+  };
+}
+
 /** ¿El admin fijó el precio explícitamente (descarta tiers de proveedor)? */
 export function adminOverridesPrice(override: PriceOverride): boolean {
-  return override?.customFromPriceCents != null || override?.marginPct != null;
+  const ov = normalizePriceOverride(override);
+  return ov?.customFromPriceCents != null || ov?.marginPct != null;
 }
 
 /**
@@ -81,15 +110,22 @@ export function adminOverridesPrice(override: PriceOverride): boolean {
  *   - customFromPriceCents → precio cliente absoluto (ya con margen del admin).
  *   - marginPct            → neto × (1 + marginPct/100).
  *   - sin override         → neto × margen global (1,6×).
+ *
+ * Un override corrupto (0 €, negativo, no finito) se ignora — ver
+ * `normalizePriceOverride`. Si el margen manual hunde el precio a 0 o menos,
+ * se degrada al margen global en vez de publicar/cobrar un precio imposible.
  */
 export function clientFromPriceCents(
   netFromPriceCents: number | null,
   override: PriceOverride,
 ): number | null {
-  if (override?.customFromPriceCents != null) return override.customFromPriceCents;
+  const ov = normalizePriceOverride(override);
+  if (ov?.customFromPriceCents != null) return ov.customFromPriceCents;
   if (netFromPriceCents == null) return null;
-  if (override?.marginPct != null) {
-    return Math.round((netFromPriceCents * (100 + override.marginPct)) / 100);
+  if (ov?.marginPct != null) {
+    const conMargen = Math.round((netFromPriceCents * (100 + ov.marginPct)) / 100);
+    if (Number.isFinite(conMargen) && conMargen > 0) return conMargen;
+    return applyMargin(netFromPriceCents);
   }
   return applyMargin(netFromPriceCents);
 }
@@ -154,7 +190,11 @@ export function computeClientPricing(opts: {
   providerNetTiers: Array<{ minQty: number; unitPriceCents: number }> | undefined;
   activePromos: Promotion[];
 }): ClientPricing {
-  const { product, override, providerNetTiers, activePromos } = opts;
+  const { product, providerNetTiers, activePromos } = opts;
+  // Un override corrupto (0 €/negativo) se descarta ANTES de ramificar: si no,
+  // el `0` entraba por la rama de "tarifa plana", dejaba `clientTiers` vacío
+  // (0 es falsy) y el checkout acababa facturando el producto a 0 €.
+  const override = normalizePriceOverride(opts.override);
   const promoInput = promoInputFor(product, override);
 
   const originalFromPriceCents = clientFromPriceCents(product.fromPriceCents, override);

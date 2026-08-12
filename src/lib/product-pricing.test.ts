@@ -192,10 +192,19 @@ describe("adminOverridesPrice — ¿el admin fijó el precio?", () => {
       adminOverridesPrice({ customFromPriceCents: null, marginPct: 40, marketingTags: [] }),
     ).toBe(true);
   });
-  it("caso borde: customFromPriceCents = 0 cuenta como fijado (0 ≠ null)", () => {
+  // Este test decía antes «caso borde: 0 cuenta como fijado (0 ≠ null)» y
+  // esperaba `true`. Era el BUG escrito como intención: tratar el 0 como un
+  // precio fijado descartaba los tramos NETOS del proveedor y el producto
+  // acababa facturándose a 0 € en el checkout. 0 € no es un precio.
+  it("customFromPriceCents = 0 NO cuenta como precio fijado (se ignora, no se regala el producto)", () => {
     expect(
       adminOverridesPrice({ customFromPriceCents: 0, marginPct: null, marketingTags: [] }),
-    ).toBe(true);
+    ).toBe(false);
+  });
+  it("customFromPriceCents negativo tampoco cuenta como precio fijado", () => {
+    expect(
+      adminOverridesPrice({ customFromPriceCents: -500, marginPct: null, marketingTags: [] }),
+    ).toBe(false);
   });
 });
 
@@ -221,10 +230,54 @@ describe("clientFromPriceCents — neto → precio cliente (pre-promo)", () => {
     ).toBe(250);
   });
 
-  it("caso borde: customFromPriceCents = 0 → devuelve 0 (gratis explícito del admin, no null)", () => {
+  // Antes este test esperaba `0` y lo llamaba «gratis explícito del admin».
+  // No lo era: ese 0 se COBRABA (el producto entraba a 0 € en el checkout de
+  // pago directo y solo se facturaba el marcaje). Un 0 € tecleado en el admin
+  // es un error de dedo, no una decisión comercial — para regalar algo está el
+  // cupón, y para quitar el precio fijo está `null`.
+  it("customFromPriceCents = 0 se IGNORA → vuelve al margen global sobre el neto", () => {
     expect(
       clientFromPriceCents(500, { customFromPriceCents: 0, marginPct: null, marketingTags: [] }),
-    ).toBe(0);
+    ).toBe(applyMargin(500));
+  });
+
+  it("customFromPriceCents negativo se ignora igual", () => {
+    expect(
+      clientFromPriceCents(500, { customFromPriceCents: -100, marginPct: null, marketingTags: [] }),
+    ).toBe(applyMargin(500));
+  });
+
+  it("customFromPriceCents = 0 SIN neto → null (presupuesto), nunca 0 € cobrable", () => {
+    expect(
+      clientFromPriceCents(null, { customFromPriceCents: 0, marginPct: null, marketingTags: [] }),
+    ).toBeNull();
+  });
+
+  it("margen manual que hunde el precio a 0 o menos → degrada al margen global", () => {
+    // −100% dejaría el precio en 0 €; −150% lo dejaría NEGATIVO.
+    expect(
+      clientFromPriceCents(500, { customFromPriceCents: null, marginPct: -100, marketingTags: [] }),
+    ).toBe(applyMargin(500));
+    expect(
+      clientFromPriceCents(500, { customFromPriceCents: null, marginPct: -150, marketingTags: [] }),
+    ).toBe(applyMargin(500));
+  });
+
+  it("valores no finitos en el override no se propagan al precio", () => {
+    expect(
+      clientFromPriceCents(500, {
+        customFromPriceCents: Number.NaN,
+        marginPct: null,
+        marketingTags: [],
+      }),
+    ).toBe(applyMargin(500));
+    expect(
+      clientFromPriceCents(500, {
+        customFromPriceCents: null,
+        marginPct: Number.POSITIVE_INFINITY,
+        marketingTags: [],
+      }),
+    ).toBe(applyMargin(500));
   });
 
   it("marginPct aplica su propio margen y redondea", () => {
