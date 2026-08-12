@@ -22,6 +22,21 @@ type SupplierItem = {
   lastSyncOk: boolean | null;
 };
 
+type CredItem = {
+  code: string;
+  hasStoredCredential: boolean;
+  configKeys: string[];
+  lastTestAt: string | null;
+  lastTestOk: boolean | null;
+  lastTestError: string | null;
+};
+
+// Fase C solo cablea Cifra de extremo a extremo (token único, bajo riesgo).
+// Makito (OAuth sandbox/prod + feed legacy) y MidOcean (puede autocolocar
+// pedidos reales) se dejan documentados para un siguiente paso, no se tocan
+// a la vez — ver docs/spec-proveedores-admin.md.
+const CREDENTIAL_EDITABLE = new Set(["cifra"]);
+
 const OPERATIONAL_LINKS: Record<SupplierItem["code"], { href: string; label: string }[]> = {
   midocean: [{ href: "/admin/suppliers/midocean", label: "Sync e integración →" }],
   makito: [{ href: "/admin/suppliers/makito", label: "Sync e integración →" }],
@@ -48,13 +63,26 @@ export function SuppliersClient() {
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [credItems, setCredItems] = useState<CredItem[]>([]);
+  const [credEditingCode, setCredEditingCode] = useState<string | null>(null);
+  const [credDraft, setCredDraft] = useState("");
+  const [credSaving, setCredSaving] = useState(false);
+  const [credTesting, setCredTesting] = useState(false);
+  const [credTestMsg, setCredTestMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch("/api/admin/suppliers", { credentials: "include" });
+      const [r, rc] = await Promise.all([
+        fetch("/api/admin/suppliers", { credentials: "include" }),
+        fetch("/api/admin/suppliers/credentials", { credentials: "include" }),
+      ]);
       const d = await r.json();
       setItems(d.items || []);
+      if (rc.ok) {
+        const dc = await rc.json();
+        setCredItems(dc.items || []);
+      }
     } finally {
       setLoading(false);
     }
@@ -63,6 +91,49 @@ export function SuppliersClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  function openCredEdit(code: string) {
+    if (credEditingCode === code) {
+      setCredEditingCode(null);
+      return;
+    }
+    setCredDraft("");
+    setCredTestMsg(null);
+    setCredEditingCode(code);
+  }
+
+  async function saveCred(code: string) {
+    setCredSaving(true);
+    try {
+      await fetch("/api/admin/suppliers/credentials", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ code, config: { token: credDraft.trim() } }),
+      });
+      setCredEditingCode(null);
+      setCredDraft("");
+      await load();
+    } finally {
+      setCredSaving(false);
+    }
+  }
+
+  async function testCred(code: string) {
+    setCredTesting(true);
+    setCredTestMsg(null);
+    try {
+      const r = await fetch(`/api/admin/suppliers/credentials?code=${code}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const d = await r.json();
+      setCredTestMsg(d.ok ? "✓ Conexión OK" : `⚠ ${d.reason || d.error || "Falló"}`);
+      await load();
+    } finally {
+      setCredTesting(false);
+    }
+  }
 
   function openEdit(s: SupplierItem) {
     if (editingCode === s.code) {
@@ -160,6 +231,74 @@ export function SuppliersClient() {
               ))}
             </div>
           )}
+
+          {(() => {
+            const cred = credItems.find((c) => c.code === s.code);
+            const editable = CREDENTIAL_EDITABLE.has(s.code);
+            return (
+              <div className="mt-3 rounded-xl border border-line/60 bg-bone-soft/50 p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-ink/55">
+                    🔐 Credencial API
+                  </p>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase ${
+                      cred?.hasStoredCredential ? "bg-social/15 text-social" : "bg-ink/5 text-ink/50"
+                    }`}
+                  >
+                    {cred?.hasStoredCredential ? "En BD (cifrada)" : "En .env"}
+                  </span>
+                </div>
+                {cred?.lastTestAt && (
+                  <p className="mt-1 text-[10px] text-ink/50">
+                    Último test: {fmtDate(cred.lastTestAt)} · {cred.lastTestOk ? "✓ OK" : `⚠ ${cred.lastTestError}`}
+                  </p>
+                )}
+                {editable ? (
+                  <>
+                    <button
+                      onClick={() => openCredEdit(s.code)}
+                      className="mt-2 text-[11px] font-medium text-accent hover:underline"
+                    >
+                      {credEditingCode === s.code ? "Cerrar" : "Rotar credencial →"}
+                    </button>
+                    {credEditingCode === s.code && (
+                      <div className="mt-2 space-y-2">
+                        <input
+                          type="password"
+                          value={credDraft}
+                          onChange={(e) => setCredDraft(e.target.value)}
+                          placeholder="Nuevo token — vacío + guardar = volver a usar .env"
+                          className="w-full rounded-lg border border-line bg-bone px-2 py-1.5 text-xs outline-none focus:border-accent"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => saveCred(s.code)}
+                            disabled={credSaving}
+                            className="rounded-full bg-accent px-3 py-1 text-[11px] font-semibold text-bone hover:bg-accent-dark disabled:opacity-40"
+                          >
+                            {credSaving ? "…" : "Guardar cifrado"}
+                          </button>
+                          <button
+                            onClick={() => testCred(s.code)}
+                            disabled={credTesting}
+                            className="rounded-full border border-line px-3 py-1 text-[11px] hover:border-accent disabled:opacity-40"
+                          >
+                            {credTesting ? "…" : "Probar conexión"}
+                          </button>
+                        </div>
+                        {credTestMsg && <p className="text-[11px] text-ink/70">{credTestMsg}</p>}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-1.5 text-[10px] text-ink/45">
+                    Aún gestionada por variable de entorno — pendiente de cablear en el admin.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           <button
             onClick={() => openEdit(s)}

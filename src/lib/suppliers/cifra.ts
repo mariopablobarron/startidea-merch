@@ -20,14 +20,19 @@
  */
 
 import { measuredJson } from "./blocking-timer";
+import { resolveCredentialField } from "@/lib/supplier-credentials";
 
 const BASE_URL = process.env.CIFRA_API_BASE || "https://api.cifrashop.com";
-const TOKEN = process.env.CIFRA_API_TOKEN || "";
 const DEFAULT_LANG = process.env.CIFRA_LANG || "es";
 
-if (!TOKEN && typeof process !== "undefined") {
-  // No lanzar en import (Next.js puede import en build sin env); solo log
-  // y dejar que el sync falle con error claro al ejecutarse.
+/**
+ * Token: BD (SupplierCredential, Fase C módulo Proveedores) si está
+ * configurado desde /admin/suppliers, si no `process.env.CIFRA_API_TOKEN`
+ * de siempre. Async porque la BD es async — todo caller pasa a `await`
+ * esto antes de construir la URL.
+ */
+async function resolveToken(): Promise<string> {
+  return resolveCredentialField("cifra", "token", process.env.CIFRA_API_TOKEN || "");
 }
 
 export type CifraProduct = {
@@ -100,7 +105,6 @@ export type CifraOrderResponse = {
 };
 
 async function call<T>(path: string): Promise<T> {
-  if (!TOKEN) throw new Error("CIFRA_API_TOKEN no configurado en env");
   const url = `${BASE_URL}${path}`;
   const r = await fetch(url, { headers: { "Accept": "application/json" } });
   if (!r.ok) {
@@ -114,7 +118,6 @@ async function call<T>(path: string): Promise<T> {
 }
 
 async function callPost<T>(path: string, body: unknown): Promise<T> {
-  if (!TOKEN) throw new Error("CIFRA_API_TOKEN no configurado en env");
   const url = `${BASE_URL}${path}`;
   const r = await fetch(url, {
     method: "POST",
@@ -132,8 +135,10 @@ async function callPost<T>(path: string, body: unknown): Promise<T> {
 }
 
 /** Lista completa de productos a PVP. */
-export function fetchProducts(lang: string = DEFAULT_LANG): Promise<CifraProduct[]> {
-  return call<CifraProduct[]>(`/products/${TOKEN}/${lang}`);
+export async function fetchProducts(lang: string = DEFAULT_LANG): Promise<CifraProduct[]> {
+  const token = await resolveToken();
+  if (!token) throw new Error("CIFRA_API_TOKEN no configurado (ni en .env ni en /admin/suppliers)");
+  return call<CifraProduct[]>(`/products/${token}/${lang}`);
 }
 
 /**
@@ -145,9 +150,10 @@ export function fetchProducts(lang: string = DEFAULT_LANG): Promise<CifraProduct
 export async function ping(): Promise<
   { ok: true; itemsSampled: number } | { ok: false; reason: string }
 > {
-  if (!TOKEN) return { ok: false, reason: "CIFRA_API_TOKEN no configurado" };
+  const token = await resolveToken();
+  if (!token) return { ok: false, reason: "CIFRA_API_TOKEN no configurado (ni en .env ni en /admin/suppliers)" };
   try {
-    const res = await fetch(`${BASE_URL}/products/${TOKEN}/${DEFAULT_LANG}`, {
+    const res = await fetch(`${BASE_URL}/products/${token}/${DEFAULT_LANG}`, {
       method: "GET",
       cache: "no-store",
     });
@@ -187,7 +193,8 @@ export async function diagnoseProducts(sampleSize = 5): Promise<{
   sample: CifraProduct[];
   message?: string;
 }> {
-  if (!TOKEN) {
+  const token = await resolveToken();
+  if (!token) {
     return {
       ok: false,
       totalCount: 0,
@@ -195,7 +202,7 @@ export async function diagnoseProducts(sampleSize = 5): Promise<{
       withZeroStock: 0,
       withPrice: 0,
       sample: [],
-      message: "CIFRA_API_TOKEN no configurado",
+      message: "CIFRA_API_TOKEN no configurado (ni en .env ni en /admin/suppliers)",
     };
   }
   try {
@@ -227,13 +234,17 @@ export async function diagnoseProducts(sampleSize = 5): Promise<{
 }
 
 /** Precios escalonados por cantidad (pricelist distribuidor). */
-export function fetchPriceTiers(): Promise<CifraPriceTier[]> {
-  return call<CifraPriceTier[]>(`/prices/${TOKEN}`);
+export async function fetchPriceTiers(): Promise<CifraPriceTier[]> {
+  const token = await resolveToken();
+  if (!token) throw new Error("CIFRA_API_TOKEN no configurado (ni en .env ni en /admin/suppliers)");
+  return call<CifraPriceTier[]>(`/prices/${token}`);
 }
 
 /** Crear pedido. Pass `commit: false` para validar sin crear. */
-export function createOrder(payload: CifraOrderPayload): Promise<CifraOrderResponse> {
-  return callPost<CifraOrderResponse>(`/order/${TOKEN}/create`, {
+export async function createOrder(payload: CifraOrderPayload): Promise<CifraOrderResponse> {
+  const token = await resolveToken();
+  if (!token) throw new Error("CIFRA_API_TOKEN no configurado (ni en .env ni en /admin/suppliers)");
+  return callPost<CifraOrderResponse>(`/order/${token}/create`, {
     commit: payload.commit ?? false,
     ...payload,
   });

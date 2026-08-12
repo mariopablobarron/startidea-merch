@@ -362,6 +362,27 @@ model Supplier {
   createdAt           DateTime     @default(now())
 }
 
+/// SupplierCredential — API keys/tokens de proveedor cifrados en BD (Fase C
+/// del módulo Proveedores). Blob único cifrado (AES-256-GCM, lib/secret-box)
+/// con TODOS los campos del proveedor como JSON antes de cifrar — evita una
+/// columna por campo cuando cada proveedor tiene forma distinta (Cifra: 1
+/// token; Makito: user+pass+email+password+client_id/secret×2; MidOcean: key
+/// + customer number). Si no hay fila o falla el descifrado, el código sigue
+/// leyendo `process.env.*` — migración sin downtime, nunca rompe un sync vivo.
+model SupplierCredential {
+  code             SupplierCode @id
+  encryptedConfig  String       @db.Text
+  // Nombres de campo presentes (NO los valores) — para que la UI sepa qué
+  // mostrar sin tener que descifrar en cada carga de página.
+  configKeys       String[]
+  lastTestAt       DateTime?
+  lastTestOk       Boolean?
+  lastTestError    String?      @db.Text
+  updatedAt        DateTime     @updatedAt
+  updatedBy        String?
+  createdAt        DateTime     @default(now())
+}
+
 model AdminSetting {
   key       String   @id
   value     Json
