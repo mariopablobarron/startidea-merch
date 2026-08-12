@@ -84,6 +84,9 @@ export default function CotizarPage() {
   const [qty, setQty] = useState("250");
   const [marginPct, setMarginPct] = useState("60");
   const [portes, setPortes] = useState("8"); // portes del proveedor (coste), en €
+  const [portesTouched, setPortesTouched] = useState(false); // true en cuanto el admin edita el campo a mano
+  const [portesFromSupplier, setPortesFromSupplier] = useState<string | null>(null); // nombre del proveedor si el valor viene precargado
+  const [supplierShipping, setSupplierShipping] = useState<Record<string, { cents: number; name: string }>>({});
   const [couponCode, setCouponCode] = useState("");
   const [res, setRes] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
@@ -121,12 +124,29 @@ export default function CotizarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar
   }, []);
 
-  async function cotizar(techniqueCode?: string, refOverride?: string) {
+  // Portes por defecto de cada proveedor (Fase B módulo Proveedores) — se
+  // cargan una vez y se usan para precargar el campo de portes sin pisar lo
+  // que el admin haya tecleado a mano.
+  useEffect(() => {
+    fetch("/api/admin/suppliers", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => {
+        const map: Record<string, { cents: number; name: string }> = {};
+        for (const s of d.items || []) {
+          if (s.defaultShippingCents != null) map[s.code] = { cents: s.defaultShippingCents, name: s.name };
+        }
+        setSupplierShipping(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function cotizar(techniqueCode?: string, refOverride?: string, portesCentsOverride?: number) {
     setLoading(true);
     setError(null);
     if (!techniqueCode) setRes(null);
     try {
-      const portesCents = Math.max(0, Math.round((parseFloat(portes.replace(",", ".")) || 0) * 100));
+      const portesCents =
+        portesCentsOverride ?? Math.max(0, Math.round((parseFloat(portes.replace(",", ".")) || 0) * 100));
       const r = await fetch("/api/admin/cotizar", {
         method: "POST",
         credentials: "include",
@@ -148,6 +168,19 @@ export default function CotizarPage() {
       }
       setRes(d);
       setShowDoc(false);
+
+      // Primera búsqueda de este producto (no reselección de técnica) sin que
+      // el admin haya tocado portes a mano → precargar el default del
+      // proveedor y recalcular una vez con el valor correcto.
+      if (!techniqueCode && !portesTouched) {
+        const dflt = supplierShipping[d.product.supplier];
+        if (dflt && dflt.cents !== d.portesCents) {
+          setPortes((dflt.cents / 100).toString().replace(".", ","));
+          setPortesFromSupplier(dflt.name);
+          void cotizar(undefined, refOverride ?? ref, dflt.cents);
+          return;
+        }
+      }
     } catch {
       setError("Error de red");
     } finally {
@@ -330,12 +363,21 @@ export default function CotizarPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">Portes proveedor (coste €)</label>
+              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-ink/55">
+                Portes proveedor (coste €)
+                {portesFromSupplier && !portesTouched && (
+                  <span className="ml-1 normal-case text-social">· por defecto {portesFromSupplier}</span>
+                )}
+              </label>
               <input
                 type="text"
                 inputMode="decimal"
                 value={portes}
-                onChange={(e) => setPortes(e.target.value)}
+                onChange={(e) => {
+                  setPortes(e.target.value);
+                  setPortesTouched(true);
+                  setPortesFromSupplier(null);
+                }}
                 placeholder="8"
                 className="w-full rounded-xl border border-line bg-bone-soft px-3 py-2 text-right font-mono text-sm outline-none focus:border-accent"
                 onKeyDown={(e) => e.key === "Enter" && cotizar()}
