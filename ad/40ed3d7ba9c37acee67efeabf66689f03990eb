@@ -1,0 +1,40 @@
+src/lib/proposal-types.ts
+  s_4c8c4c050709e7::t_bf7cfa402bd2da 33-39
+  s_4c8c4c050709e7::t_432b0607566fec 32
+src/lib/proposal-from-cotizacion.test.ts
+  s_4c8c4c050709e7::t_a0435ae6637ae9 1-144
+src/lib/proposal-item-override.ts
+  s_4c8c4c050709e7::t_71820b57900924 1-33
+src/lib/proposal-item-override.test.ts
+  s_4c8c4c050709e7::t_d587d1cadff930 1-37
+src/lib/proposal-from-cotizacion.ts
+  s_4c8c4c050709e7::t_351828d4071e7b 6,11
+  s_4c8c4c050709e7::t_0dfad5ecc15a63 36-42,53-64,70-75
+  s_4c8c4c050709e7::t_7aee44667e385c 65-69
+src/app/admin/cotizar/page.tsx
+  s_4c8c4c050709e7::t_b28331ba0027f2 188-194
+  s_4c8c4c050709e7::t_c8858f43e775a9 230-238,254
+  s_4c8c4c050709e7::t_b5a26e7cc83864 699-748
+  s_4c8c4c050709e7::t_631b91cd0574a1 123-128
+src/app/api/admin/cotizar/proposal/route.ts
+  s_4c8c4c050709e7::t_262ef331d2edc9 37-46
+  s_4c8c4c050709e7::t_e4d44da4386ca3 87
+  s_4c8c4c050709e7::t_4648b0314be375 7
+  s_4c8c4c050709e7::t_8d64b6c93b4f89 91-93,97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ad40ed3d7ba9c37acee67efeabf66689f03990eb",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
