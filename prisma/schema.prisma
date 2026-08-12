@@ -335,6 +335,33 @@ model ErrorEvent {
 /// 1 fila cada una.
 ///
 /// Convención de keys: snake_case. Value siempre JSON serializable.
+/// Supplier — ficha de proveedor de catálogo. Complementa (no sustituye) al
+/// enum SupplierCode disperso en Product/SupplierMarkingRule/PriceTier: aquí
+/// vive todo lo que NO es catálogo (contacto, condiciones comerciales,
+/// integración). Módulo Proveedores, Fase A (docs/spec-proveedores-admin.md).
+model Supplier {
+  code                SupplierCode @id
+  name                String
+  active              Boolean      @default(true)
+  // Sync automático (midocean/makito/cifra) vs carga manual (adivin, sin API).
+  hasAutoSync         Boolean      @default(false)
+  contactName         String?
+  contactEmail        String?
+  contactPhone        String?
+  // Condiciones comerciales — texto libre por ahora (plazo de pago, mínimo
+  // de pedido…); estructurar en campos propios si hace falta filtrar/ordenar.
+  paymentTerms        String?
+  minOrderNotes       String?
+  leadTimeDays        Int?
+  // Portes por defecto (EUR cents) — precarga el campo manual del cotizador
+  // rápido (Fase B). Null = sin valor por defecto, se sigue tecleando a mano.
+  defaultShippingCents Int?
+  notes               String?      @db.Text
+  updatedAt           DateTime     @updatedAt
+  updatedBy           String?
+  createdAt           DateTime     @default(now())
+}
+
 model AdminSetting {
   key       String   @id
   value     Json

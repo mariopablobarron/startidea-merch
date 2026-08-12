@@ -146,6 +146,7 @@ function buildNav(role: string): MobileNavEntry[] {
     nav.push({
       label: "Admin",
       items: [
+        { href: "/admin/suppliers", label: "Proveedores 🏭", title: "Contacto, condiciones comerciales y estado del catálogo por proveedor" },
         { href: "/admin/users", label: "Usuarios" },
         { href: "/admin/coupons", label: "Cupones" },
         { href: "/admin/integrations", label: "Integraciones", title: "Metricool, Magnific, Replicate, Meta Ads, etc." },
