@@ -1,0 +1,30 @@
+src/lib/product-override-schema.ts
+  s_117894df8c0bbd::t_40aef2befc2593 1-39
+src/lib/product-override-schema.test.ts
+  s_117894df8c0bbd::t_dd14627c240543 1-53
+  s_117894df8c0bbd::t_06569a3f9bf303 54-78
+src/app/api/admin/products/[id]/route.ts
+  s_117894df8c0bbd::t_9864402d130437 4,46
+src/lib/product-pricing.test.ts
+  s_117894df8c0bbd::t_709daa0ccc6692 195-199,202-207,233-238,241-280
+src/lib/product-pricing.ts
+  s_117894df8c0bbd::t_0ba44bec2d98ca 74-101,104-105,113-116,122-123,125-128,193-197
+src/lib/quote-server-pricing.test.ts
+  s_117894df8c0bbd::t_9c358502141efb 385-446
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "8f77ab028f362150a15a9b078d5fd51051f5cdfd",
+  "prompts": {},
+  "sessions": {
+    "s_117894df8c0bbd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4ac3c842-58da-424b-8363-afb4bf548db7",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
