@@ -4,6 +4,7 @@ import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { computeCotizacion, type CotizarInput } from "@/lib/cotizar-core";
 import { createProposalFromCotizacion } from "@/lib/proposal-from-cotizacion";
 import { notifyTelegram } from "@/lib/telegram";
+import { withIva } from "@/lib/iva";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,6 +34,16 @@ const Schema = z.object({
   name: z.string().max(120).optional().nullable(),
   company: z.string().max(160).optional().nullable(),
   send: z.boolean().optional().default(true),
+  // Excepción comercial: sustituye concepto/precio de la línea calculada.
+  // El CONJUNTO se valida en lib/proposal-item-override.ts (no aquí con
+  // .min/.max sueltos) — un total inválido tiene que rechazarse entero, no
+  // colarse con una combinación que Zod no cubra campo a campo.
+  itemOverride: z
+    .object({
+      description: z.string().min(1).max(200),
+      totalCents: z.number(),
+    })
+    .optional(),
 });
 
 export async function POST(req: Request) {
@@ -73,13 +84,17 @@ export async function POST(req: Request) {
     send: d.send,
     ip,
     ua,
+    itemOverride: d.itemOverride,
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
+  // Con itemOverride el total real es el editado a mano, no el calculado —
+  // avisar del importe equivocado en Telegram sería peor que no avisar.
+  const totalConIva = d.itemOverride ? withIva(d.itemOverride.totalCents) : quote.pvp.totalConIva;
   void notifyTelegram(
     `📄 <b>Propuesta ${result.proposalNumber}</b> creada desde el cotizador\n` +
       `Cliente: ${d.name || d.company || d.email}\n` +
-      `Total: ${(quote.pvp.totalConIva / 100).toFixed(2)} € (IVA inc.)\n` +
+      `Total: ${(totalConIva / 100).toFixed(2)} € (IVA inc.)${d.itemOverride ? " · precio editado a mano" : ""}\n` +
       `${d.send ? (result.emailed ? "✉️ Enviada por email" : "⚠️ Email FALLÓ — guardada igualmente") : "💾 Borrador (revisar y enviar en /admin/propuestas)"}`,
   ).catch((e) =>
     console.error("[admin-cotizar-proposal] notifyTelegram falló:", e instanceof Error ? e.message : e),

@@ -3,11 +3,12 @@ import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { type CotizarOk } from "./cotizar-core";
-import { computeProposalTotals, cotizacionToProposalItem, type ProposalQuoteItem } from "./proposal-types";
+import { computeProposalTotals, cotizacionToProposalItem } from "./proposal-types";
 import { generateProposalNumber } from "./proposal-number";
 import { RecommenderProposalPdf } from "./recommender-proposal-pdf";
 import { sendProposalEmail } from "./proposal-mailer";
 import { signProposalToken } from "./proposal-token";
+import { validateProposalOverride, type ProposalItemOverrideInput } from "./proposal-item-override";
 
 /**
  * Puente cotización → Proposal formal. Fuente ÚNICA de la conversión de una
@@ -32,6 +33,13 @@ export type CreateProposalArgs = {
   send?: boolean;
   ip?: string | null;
   ua?: string | null;
+  /**
+   * Excepción comercial desde /admin/cotizar: sustituye concepto y/o precio
+   * de la línea auto-calculada. Se valida como CONJUNTO (ver
+   * proposal-item-override.ts) antes de tocar nada — un total roto aquí
+   * facturaría gratis o mal en silencio.
+   */
+  itemOverride?: ProposalItemOverrideInput;
 };
 
 export type CreateProposalResult =
@@ -42,7 +50,29 @@ export async function createProposalFromCotizacion(args: CreateProposalArgs): Pr
   const { quote } = args;
   if (quote.pvp.baseTotal <= 0) return { ok: false, error: "El producto no tiene precio válido para cotizar." };
 
-  const items = [cotizacionToProposalItem(quote)];
+  const baseItem = cotizacionToProposalItem(quote);
+  let items = [baseItem];
+  if (args.itemOverride) {
+    const overrideError = validateProposalOverride(args.itemOverride);
+    if (overrideError) return { ok: false, error: overrideError };
+    items = [
+      {
+        ...baseItem,
+        description: args.itemOverride.description.trim(),
+        totalCents: args.itemOverride.totalCents,
+        unitPriceCents: Math.round(args.itemOverride.totalCents / quote.qty),
+        manualOverride: true,
+        // El PDF sin breakdown suma unitPriceCents + markingPerUnitCents
+        // (línea única todo-incluido) — a 0 porque unitPriceCents YA es el
+        // precio final editado; si no, el marcaje se contaría dos veces.
+        markingPerUnitCents: 0,
+        markingSetupCents: 0,
+        // El desglose producto/marcaje/cliché/envío ya no cuadra con un
+        // total editado a mano — se omite y el PDF cae a la línea única.
+        breakdown: undefined,
+      },
+    ];
+  }
   const totals = computeProposalTotals(items);
 
   let proposalNumber: string;

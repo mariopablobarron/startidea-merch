@@ -120,6 +120,12 @@ export default function CotizarPage() {
   const [propResult, setPropResult] = useState<
     { proposalNumber: string; downloadUrl: string; emailed: boolean; emailError?: string } | null
   >(null);
+  // editor de la línea de propuesta — excepción comercial (concepto/precio a
+  // mano). Se resetea con cada cotización nueva; si el admin no toca nada,
+  // el envío sigue exactamente igual que siempre (sin override).
+  const [itemDescription, setItemDescription] = useState("");
+  const [itemTotalEur, setItemTotalEur] = useState("");
+  const [itemEdited, setItemEdited] = useState(false);
   // presupuesto MULTILÍNEA → CartQuote
   const [lines, setLines] = useState<BasketLine[]>([]);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -179,6 +185,13 @@ export default function CotizarPage() {
       }
       setRes(d);
       setShowDoc(false);
+      // Cada cotización nueva (producto o técnica distinta) invalida un
+      // override anterior — estaba calculado sobre otro precio. Se
+      // reinicia a los valores calculados; el admin decide si lo vuelve a
+      // tocar para esta línea.
+      setItemDescription(d.product.name);
+      setItemTotalEur((d.pvp.baseTotal / 100).toFixed(2).replace(".", ","));
+      setItemEdited(false);
 
       // Primera búsqueda de este producto (no reselección de técnica) sin que
       // el admin haya tocado portes a mano → precargar el default del
@@ -214,6 +227,15 @@ export default function CotizarPage() {
     setPropResult(null);
     try {
       const portesCents = Math.max(0, Math.round((parseFloat(portes.replace(",", ".")) || 0) * 100));
+      // Solo se manda itemOverride si el admin realmente editó algo — sin
+      // tocar el editor, el envío es idéntico al de siempre (el servidor
+      // recalcula desde ref/qty/técnica, no desde lo que pinta la pantalla).
+      const itemOverride = itemEdited
+        ? {
+            description: itemDescription,
+            totalCents: Math.round((parseFloat(itemTotalEur.replace(",", ".")) || 0) * 100),
+          }
+        : undefined;
       const r = await fetch("/api/admin/cotizar/proposal", {
         method: "POST",
         credentials: "include",
@@ -229,6 +251,7 @@ export default function CotizarPage() {
           name: clienteNombre.trim() || undefined,
           company: clienteEmpresa.trim() || undefined,
           send,
+          itemOverride,
         }),
       });
       const d = await r.json();
@@ -673,6 +696,56 @@ export default function CotizarPage() {
                   <p className="mt-1 text-[12px] text-ink/60">
                     Genera una propuesta <strong>PROP-AÑO-NNNN</strong> guardada en el sistema, con PDF de marca, y opcionalmente la envía al email del cliente. Aparece en <code className="font-mono">/admin/propuestas</code>. El envío va incluido en el precio.
                   </p>
+
+                  {/* Vista previa editable de la línea — excepción comercial:
+                      concepto y precio se pueden tocar a mano antes de enviar. */}
+                  <div className="mt-4 rounded-2xl border border-line bg-bone-soft p-4">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ink/55">
+                      Vista previa de la línea{itemEdited && <span className="ml-1.5 text-accent">· editada a mano</span>}
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-[1fr,140px]">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-wider text-ink/55">Concepto (lo que ve el cliente)</label>
+                        <input
+                          value={itemDescription}
+                          onChange={(e) => {
+                            setItemDescription(e.target.value);
+                            setItemEdited(true);
+                          }}
+                          className="mt-1 w-full rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-wider text-ink/55">Precio línea sin IVA (€)</label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={itemTotalEur}
+                          onChange={(e) => {
+                            setItemTotalEur(e.target.value);
+                            setItemEdited(true);
+                          }}
+                          className="mt-1 w-full rounded-xl border border-line bg-bone px-3 py-2 text-right font-mono text-sm outline-none focus:border-accent"
+                        />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] text-ink/55">
+                      {qty} uds · {EUR.format((parseFloat(itemTotalEur.replace(",", ".")) || 0) * 1.21)} con IVA
+                      {itemEdited && (
+                        <button
+                          onClick={() => {
+                            setItemDescription(res.product.name);
+                            setItemTotalEur((res.pvp.baseTotal / 100).toFixed(2).replace(".", ","));
+                            setItemEdited(false);
+                          }}
+                          className="ml-2 text-accent hover:underline"
+                        >
+                          restaurar calculado ({EUR.format(res.pvp.baseTotal / 100)})
+                        </button>
+                      )}
+                    </p>
+                  </div>
+
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div>
                       <label className="text-[10px] uppercase tracking-wider text-ink/55">Email del cliente *</label>

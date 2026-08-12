@@ -30,6 +30,14 @@ export type ProposalQuoteItem = {
   totalCents: number | null;
   priceSource: "tier" | "estimate" | null;
   /**
+   * true si el concepto y/o el precio de esta línea vienen editados a mano
+   * desde /admin/cotizar (excepción comercial) en vez de calculados. Cuando
+   * es true, `breakdown` se omite — el precio editado ya no cuadra con el
+   * desglose producto/marcaje/cliché/envío calculado, así que el PDF
+   * renderiza la línea única en vez de un desglose que mentiría.
+   */
+  manualOverride?: boolean;
+  /**
    * Desglose PVP para el PDF (petición Mario 2026-08-11): el cliente ve
    * SIEMPRE producto / marcaje / cliché / envío como líneas separadas, con
    * 0,00 € cuando el concepto no aplica. Opcional: propuestas antiguas
