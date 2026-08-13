@@ -1,0 +1,33 @@
+src/lib/concepto-propuesta-cableado.guard.test.ts
+  s_b53ca71fa2294e::t_d109a05ba23c58 122-125,132-158,160,171,177-178
+  s_b53ca71fa2294e::t_75723721f9a018 161-170,172-176
+  s_b53ca71fa2294e::t_26457ebbc86606 22-27
+src/lib/supplier-leak-paridad.test.ts
+  s_b53ca71fa2294e::t_df02923b14595b 1-76
+src/lib/supplier-leak-terms.ts
+  s_b53ca71fa2294e::t_5705e8368b528e 81-93,97-100
+  s_b53ca71fa2294e::t_10e80b07f3af48 15-18,20-24,26,33-56
+  s_b53ca71fa2294e::t_4fc0e87d87bb42 57-58,101
+scripts/money-smoke-test.mjs
+  s_b53ca71fa2294e::t_2fd0fefc282226 57-61,71-78
+  s_b53ca71fa2294e::t_c2a965a55a322d 62-66
+  s_b53ca71fa2294e::t_3dacc69813cea5 30-45
+src/lib/supplier-leak-terms.test.ts
+  s_b53ca71fa2294e::t_62bfd4a6424ec8 40-43,45,47-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "594fc46840b8d843fe0a43ae777b70741258f496",
+  "prompts": {},
+  "sessions": {
+    "s_b53ca71fa2294e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "02e8fb39-a1df-4430-82e0-2bd231a98752",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
