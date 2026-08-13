@@ -23,6 +23,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { colapsar, importaDesde } from "./guard-import-cableado";
 
 const RAIZ = process.cwd();
 
@@ -35,34 +36,7 @@ function leer(fichero: string): string {
   return readFileSync(join(RAIZ, fichero), "utf-8");
 }
 
-/** Texto sin comentarios y en una sola línea: una fuga partida en dos no se escapa. */
-function colapsar(fuente: string): string {
-  return fuente
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .split("\n")
-    .filter((l) => !/^\s*\/\//.test(l))
-    .join(" ")
-    .replace(/\s+/g, " ");
-}
 
-/**
- * ¿Importa `fichero` el símbolo `nombre` DESDE `modulo`?
- *
- * Mirar si el nombre aparece «en algún sitio» no vale: la propia llamada
- * `decidePortesPreload({…})` del cuerpo ya contiene el nombre, así que quitar
- * el import dejaría el guard verde con el fichero sin compilar siquiera. Se
- * exige el símbolo DENTRO de la lista de importación de ese módulo, que es lo
- * que de verdad significa «está cableado y no reimplementado».
- */
-function importaDesde(texto: string, nombre: string, modulo: string): boolean {
-  const re = new RegExp(`import\\s*\\{([^}]*)\\}\\s*from\\s*"${modulo.replace(/\//g, "\\/")}"`);
-  const m = texto.match(re);
-  if (!m) return false;
-  return m[1]
-    .split(",")
-    .map((s) => s.replace(/^\s*type\s+/, "").trim())
-    .includes(nombre);
-}
 
 describe("guard · cableado de los portes por defecto del proveedor", () => {
   it("los ficheros vigilados existen (si esto falla, el guard no mira nada)", () => {

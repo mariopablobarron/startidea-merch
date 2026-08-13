@@ -30,7 +30,7 @@ function getKey(): Buffer {
 export function encryptSecret(plaintext: string): string {
   const key = getKey();
   const iv = randomBytes(IV_LEN);
-  const cipher = createCipheriv(ALGO, key, iv);
+  const cipher = createCipheriv(ALGO, key, iv, { authTagLength: TAG_LEN });
   const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return Buffer.concat([iv, tag, ciphertext]).toString("base64url");
@@ -45,7 +45,13 @@ export function decryptSecret(blob: string): string {
   const iv = raw.subarray(0, IV_LEN);
   const tag = raw.subarray(IV_LEN, IV_LEN + TAG_LEN);
   const ciphertext = raw.subarray(IV_LEN + TAG_LEN);
-  const decipher = createDecipheriv(ALGO, key, iv);
+  // `authTagLength` explícito: GCM admite tags de 16 a 12 bytes, y sin declararlo
+  // el descifrado aceptaría uno más corto del previsto (menos bits que forzar).
+  // Aquí no era alcanzable —el formato es fijo y `tag` se recorta siempre a 16
+  // bytes—, pero decir la longitud en voz alta cuesta nada, sostiene la promesa
+  // de la cabecera aunque el formato cambie, y quita el aviso de semgrep que
+  // bloqueaba el workflow «Security audit».
+  const decipher = createDecipheriv(ALGO, key, iv, { authTagLength: TAG_LEN });
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
 }

@@ -20,6 +20,7 @@ import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { SUPPLIER_LEAK_TERMS, SUPPLIER_LEAK_HOSTS } from "./supplier-leak-terms";
+import { colapsar, importaDesde } from "./guard-import-cableado";
 
 const RAIZ = process.cwd();
 
@@ -33,30 +34,7 @@ function leer(fichero: string): string {
   return readFileSync(join(RAIZ, fichero), "utf-8");
 }
 
-function colapsar(fuente: string): string {
-  return fuente
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .split("\n")
-    .filter((l) => !/^\s*\/\//.test(l))
-    .join(" ")
-    .replace(/\s+/g, " ");
-}
 
-/**
- * ¿Importa `fichero` el símbolo `nombre` DESDE `modulo`? Se exige dentro de la
- * lista de importación y no «en algún sitio del fichero»: la propia llamada
- * del cuerpo contiene el nombre, así que buscarlo suelto deja el guard verde
- * aunque el import desaparezca (ya pasó el 12-ago).
- */
-function importaDesde(texto: string, nombre: string, modulo: string): boolean {
-  const re = new RegExp(`import\\s*\\{([^}]*)\\}\\s*from\\s*"${modulo.replace(/\//g, "\\/")}"`);
-  const m = texto.match(re);
-  if (!m) return false;
-  return m[1]
-    .split(",")
-    .map((s) => s.replace(/^\s*type\s+/, "").trim())
-    .includes(nombre);
-}
 
 describe("guard · concepto editable de la línea de propuesta", () => {
   it("los ficheros vigilados existen (si esto falla, el guard no mira nada)", () => {
