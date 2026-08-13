@@ -40,7 +40,7 @@ ${productCount ? `Catálogo activo: **${productCount.toLocaleString("es-ES")}+ p
 
 ## Cómo funcionamos
 
-- **Catálogo curado** con productos de 3 proveedores europeos (MidOcean, Makito, Cifra). Stock europeo real, no dropshipping.
+- **Catálogo curado** con productos de fabricantes europeos con stock en Europa, no dropshipping.
 - **Precios desde**: visibles en cada ficha. Calculadora de marcaje (serigrafía, bordado, DTF, láser, tampografía, doming).
 - **Producción**: prioritariamente en CEE (Centros Especiales de Empleo) y talleres locales. Materiales reciclados / orgánicos cuando es posible.
 - **Plazos**: 7-15 días laborables según producto y técnica. Urgencias 48-72 h consultables.

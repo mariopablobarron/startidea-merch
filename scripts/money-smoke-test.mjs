@@ -269,6 +269,16 @@ async function main() {
       method: "POST",
       body: { productSlug: SLUG, quantity: 100, techniqueCode: TECH, numberOfColours: 1, positionCount: 1 },
     },
+    // Superficies de CONTENIDO, no de producto. Se añaden el 13-ago tras
+    // encontrarlas filtrando: llms.txt llegó a listar a los tres proveedores
+    // por su nombre («productos de 3 proveedores europeos (…)») y es
+    // justamente el fichero que los LLM leen y repiten; /docs/api enseñaba el
+    // campo `midoceanOrderId` del contrato público; /privacidad los citaba
+    // como destinatarios de datos. Ninguna devuelve productos, así que el
+    // barrido anterior —pensado para fichas— no las miraba.
+    { path: "/llms.txt" },
+    { path: "/docs/api" },
+    { path: "/privacidad" },
   ];
   for (const surface of publicSurfaces) {
     const { path, method = "GET", body } = surface;

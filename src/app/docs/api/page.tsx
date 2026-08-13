@@ -169,8 +169,8 @@ export default function ApiDocsPage() {
     "paymentUrl": "${SITE}/pay/pay_XXXX..."
   },
   "fulfillment": {
-    "midoceanOrderId": null,
-    "midoceanOrderStatus": null,
+    "supplierOrderId": null,
+    "supplierOrderStatus": null,
     "confirmedAt": null,
     "orderedAt": null
   },

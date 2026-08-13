@@ -111,7 +111,7 @@ export default function PrivacidadPage() {
         </li>
         <li>
           <strong>Proveedores de producción</strong>: Centros Especiales de Empleo,
-          talleres locales y mayoristas europeos certificados (p.ej. MidOcean), únicamente
+          talleres locales y mayoristas europeos certificados, únicamente
           cuando sea imprescindible para ejecutar un pedido. Datos compartidos:
           referencia, cantidad, marcaje, dirección de envío.
         </li>
