@@ -33,7 +33,7 @@
     "entities": "4.5.0",
     "exceljs": "^4.4.0",
     "fast-xml-parser": "^5.8.0",
-    "framer-motion": "^11.18.0",
+    "framer-motion": "^12.40.0",
     "jose": "^6.2.3",
     "lucide-react": "^0.469.0",
     "marked": "^18.0.3",
