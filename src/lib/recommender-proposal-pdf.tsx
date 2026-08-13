@@ -22,6 +22,7 @@ import {
   type ProposalTotals,
   formatSizes,
   formatTechnique,
+  proposalLineLabel,
 } from "./proposal-types";
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -278,7 +279,7 @@ export function RecommenderProposalPdf({
               <View key={idx}>
                 <View style={rowStyle}>
                   <View style={styles.colProduct}>
-                    <Text style={styles.td}>{it.product?.name ?? it.description}</Text>
+                    <Text style={styles.td}>{proposalLineLabel(it)}</Text>
                     {it.product?.ref ? (
                       <Text style={styles.tdMuted}>Ref: {it.product.ref}</Text>
                     ) : null}
@@ -312,7 +313,7 @@ export function RecommenderProposalPdf({
           return (
             <View style={rowStyle} key={idx}>
               <View style={styles.colProduct}>
-                <Text style={styles.td}>{it.product?.name ?? it.description}</Text>
+                <Text style={styles.td}>{proposalLineLabel(it)}</Text>
                 {it.product?.ref ? (
                   <Text style={styles.tdMuted}>Ref: {it.product.ref}</Text>
                 ) : null}

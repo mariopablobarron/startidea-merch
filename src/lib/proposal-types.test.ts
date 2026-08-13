@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { computeProposalTotals, cotizacionToProposalItem, type ProposalQuoteItem } from "./proposal-types";
+import {
+  computeProposalTotals,
+  cotizacionToProposalItem,
+  proposalLineLabel,
+  type ProposalQuoteItem,
+} from "./proposal-types";
 import { ivaPart, withIva } from "./iva";
 import type { CotizarOk } from "./cotizar-core";
 
@@ -186,5 +191,28 @@ describe("cotizacionToProposalItem", () => {
     expect(b.productTotalCents + b.markingTotalCents + b.setupCents + b.shippingCents - b.discountCents).toBe(
       q.pvp.baseTotal,
     );
+  });
+});
+
+describe("proposalLineLabel", () => {
+  it("sin override: manda el nombre de catálogo", () => {
+    const line = item({ description: "texto viejo", product: { slug: "x", name: "Sudadera orgánica", ref: "STM-X", url: "u", primaryImageUrl: null } });
+    expect(proposalLineLabel(line)).toBe("Sudadera orgánica");
+  });
+
+  it("REGRESIÓN: con override manual manda el concepto tecleado, no el de catálogo", () => {
+    // El fallo original: `product?.name ?? description`. Como el override deja
+    // `product` intacto, el ?? nunca caía a la derecha y lo que el comercial
+    // escribía en «Concepto (lo que ve el cliente)» se perdía sin un error.
+    const line = item({
+      description: "Pack promocional Navidad 2026 (precio cerrado)",
+      product: { slug: "x", name: "Sudadera orgánica", ref: "STM-X", url: "u", primaryImageUrl: null },
+      manualOverride: true,
+    });
+    expect(proposalLineLabel(line)).toBe("Pack promocional Navidad 2026 (precio cerrado)");
+  });
+
+  it("sin product (propuesta antigua o no localizado): cae a la descripción", () => {
+    expect(proposalLineLabel(item({ description: "Artículo suelto", product: null }))).toBe("Artículo suelto");
   });
 });

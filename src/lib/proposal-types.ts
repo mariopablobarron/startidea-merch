@@ -146,6 +146,24 @@ export function formatTechnique(t: string | null | undefined): string {
   return TECHNIQUE_LABEL[t] ?? t;
 }
 
+/**
+ * Texto de la primera columna de la línea en el PDF del cliente.
+ *
+ * El caso que obliga a que esto sea una función y no un `??` suelto: cuando
+ * el comercial edita el concepto en /admin/cotizar (`manualOverride`), el
+ * objeto `product` sigue ahí intacto — solo cambia `description`. Un
+ * `it.product?.name ?? it.description` imprime entonces el nombre de catálogo
+ * y **tira lo tecleado**, que es justo lo que la etiqueta del campo promete
+ * que el cliente verá ("Concepto (lo que ve el cliente)").
+ *
+ * Con `manualOverride` manda `description`; sin él, el nombre de catálogo,
+ * que es más fiable que la descripción libre de propuestas antiguas.
+ */
+export function proposalLineLabel(item: ProposalQuoteItem): string {
+  if (item.manualOverride) return item.description;
+  return item.product?.name ?? item.description;
+}
+
 export function formatSizes(sizes: Record<string, number> | null | undefined): string {
   if (!sizes) return "—";
   const entries = Object.entries(sizes).filter(([, n]) => n > 0);

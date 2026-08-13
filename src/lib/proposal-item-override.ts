@@ -9,6 +9,8 @@
  * 0€/negativo/NaN aquí facturaría gratis o rompería el PDF en silencio.
  */
 
+import { findSupplierLeak } from "./supplier-leak-terms";
+
 export type ProposalItemOverrideInput = {
   description: string;
   totalCents: number;
@@ -23,6 +25,14 @@ export function validateProposalOverride(o: ProposalItemOverrideInput): string |
   const desc = o.description.trim();
   if (!desc) return "El concepto no puede estar vacío.";
   if (desc.length > 200) return "El concepto es demasiado largo (máx. 200 caracteres).";
+  // El concepto es el ÚNICO texto libre del admin que se imprime tal cual en
+  // el PDF del cliente (ver proposalLineLabel). Un nombre de proveedor aquí
+  // rompe la regla dura del negocio, así que se corta al guardar y no al
+  // renderizar: fallar pronto y con el comercial delante.
+  const leak = findSupplierLeak(desc);
+  if (leak) {
+    return `El concepto no puede mencionar al proveedor («${leak}») — el cliente ve este texto en el PDF.`;
+  }
   if (!Number.isFinite(o.totalCents)) return "El precio de la línea no es un número válido.";
   if (!Number.isInteger(o.totalCents)) return "El precio de la línea debe ser un importe exacto en céntimos.";
   if (o.totalCents <= 0) return "El precio de la línea tiene que ser mayor que 0 €.";

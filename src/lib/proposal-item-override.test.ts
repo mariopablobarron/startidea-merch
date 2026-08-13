@@ -34,4 +34,33 @@ describe("validateProposalOverride", () => {
     expect(validateProposalOverride({ description: "X", totalCents: 10_000_000 })).toBeNull();
     expect(validateProposalOverride({ description: "X", totalCents: 1 })).toBeNull();
   });
+
+  // Desde que proposalLineLabel() imprime el concepto editado en el PDF, este
+  // campo es la única superficie por la que un texto libre del admin llega al
+  // cliente. Antes daba igual lo que se escribiera: no se renderizaba.
+  it("rechaza un concepto que menciona al proveedor — el cliente lee este texto", () => {
+    expect(
+      validateProposalOverride({ description: "Sudadera MidOcean ref 1234", totalCents: 15000 }),
+    ).toBeTruthy();
+    expect(validateProposalOverride({ description: "Pack Makito", totalCents: 15000 })).toBeTruthy();
+    expect(
+      validateProposalOverride({ description: "Foto: https://cdn1.midocean.com/x.jpg", totalCents: 15000 }),
+    ).toBeTruthy();
+  });
+
+  it("el error del concepto con proveedor dice CUÁL es el término", () => {
+    // Un «no válido» a secas hace que el comercial borre el campo entero o
+    // reintente a ciegas; el mensaje tiene que ser accionable.
+    const err = validateProposalOverride({ description: "Bolsa de Makito", totalCents: 15000 });
+    expect(err).toContain("makito");
+  });
+
+  it("no molesta a un concepto comercial normal", () => {
+    expect(
+      validateProposalOverride({
+        description: "250 sudaderas orgánicas negras · logo bordado 1 color",
+        totalCents: 480000,
+      }),
+    ).toBeNull();
+  });
 });
