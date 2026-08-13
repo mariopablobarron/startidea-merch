@@ -19,7 +19,12 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { SUPPLIER_LEAK_TERMS, SUPPLIER_LEAK_HOSTS } from "./supplier-leak-terms";
+import {
+  SUPPLIER_LEAK_TERMS,
+  SUPPLIER_LEAK_HOSTS,
+  SUPPLIER_LEAK_TERMS_IDENTIFIER,
+  SUPPLIER_LEAK_TERMS_WORDLIKE,
+} from "./supplier-leak-terms";
 
 const RAIZ = process.cwd();
 
@@ -114,13 +119,60 @@ describe("guard · concepto editable de la línea de propuesta", () => {
     // Y la dirección contraria: un término nuevo en el smoke que aquí falte
     // dejaría el concepto sin sanear contra él.
     const enSmoke = [
-      ...(smoke.match(/const SUPPLIER_LEAKS = \[([^\]]*)\]/)?.[1] ?? "").matchAll(/"([^"]+)"/g),
-      ...(smoke.match(/const SUPPLIER_HOSTS = \[([^\]]*)\]/)?.[1] ?? "").matchAll(/"([^"]+)"/g),
-    ].map((m) => m[1]);
+      ...listaDelSmoke(smoke, "SUPPLIER_LEAKS_IDENTIFIER"),
+      ...listaDelSmoke(smoke, "SUPPLIER_LEAKS_WORDLIKE"),
+      ...listaDelSmoke(smoke, "SUPPLIER_HOSTS"),
+    ];
     expect(enSmoke.length, `no se pudieron leer las listas de ${SMOKE}`).toBeGreaterThanOrEqual(10);
     const aqui = new Set<string>([...SUPPLIER_LEAK_TERMS, ...SUPPLIER_LEAK_HOSTS]);
     for (const term of enSmoke) {
       expect(aqui.has(term), `"${term}" está en ${SMOKE} pero falta en ${LIB_TERMINOS}`).toBe(true);
     }
   });
+
+  it("cada término está en el MISMO grupo aquí y en el smoke (la ESTRATEGIA, no solo la lista)", () => {
+    // La comprobación de arriba solo mira QUÉ se busca. El 13-ago las dos
+    // listas seguían idénticas y aun así divergieron en CÓMO comparaban: el
+    // smoke pasó a buscarlo todo por palabra completa y dejó de ver
+    // `midoceanOrderId` —el campo cuya fuga se había cerrado la víspera—
+    // mientras el guard de sincronía seguía en verde. Un término en el grupo
+    // equivocado es una fuga silenciosa, así que el grupo se compara también.
+    const smoke = leer(SMOKE);
+    const grupos: Array<[string, readonly string[]]> = [
+      ["SUPPLIER_LEAKS_IDENTIFIER", SUPPLIER_LEAK_TERMS_IDENTIFIER],
+      ["SUPPLIER_LEAKS_WORDLIKE", SUPPLIER_LEAK_TERMS_WORDLIKE],
+    ];
+    for (const [nombreEnSmoke, aqui] of grupos) {
+      const alli = listaDelSmoke(smoke, nombreEnSmoke);
+      expect(
+        alli.length,
+        `no se pudo leer ${nombreEnSmoke} de ${SMOKE}: si el guard no lee nada, aprueba cualquier cosa.`,
+      ).toBeGreaterThan(0);
+      expect(
+        [...alli].sort(),
+        `${nombreEnSmoke} no coincide con su lista de ${LIB_TERMINOS}. Mover un término de grupo cambia ` +
+          `CÓMO se busca: los de identificador van por subcadena (cazan «midoceanOrderId»), los wordlike ` +
+          `por palabra completa (no marcan «cifrado»). Cambiar uno solo de los dos ficheros abre una fuga.`,
+      ).toEqual([...aqui].sort());
+    }
+  });
 });
+
+/**
+ * Lee `const NOMBRE = ["a", "b"]` del smoke (Node suelto, no importable).
+ *
+ * Se recorta a mano en vez de construir un `new RegExp` con el nombre
+ * interpolado: esa forma la bloquea la regla `detect-non-literal-regexp` de
+ * semgrep y dejaría el workflow «Security audit» en rojo. Aquí el argumento es
+ * siempre un literal del propio fichero, pero un hallazgo que se justifica
+ * «porque yo sé que no aplica» es el que mañana tapa al que sí aplica — y este
+ * repo ya pasó 5 commits con ese workflow en rojo sin que nadie lo viera.
+ */
+function listaDelSmoke(smoke: string, nombre: string): string[] {
+  const inicio = smoke.indexOf(`const ${nombre} = [`);
+  if (inicio === -1) return [];
+  const fin = smoke.indexOf("]", inicio);
+  if (fin === -1) return [];
+  const bloque = smoke.slice(inicio, fin);
+  return [...bloque.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+}

@@ -27,13 +27,22 @@ import { appendFileSync } from "node:fs";
 const BASE = process.env.BASE || "https://merchandising.startidea.es";
 const SLUG = process.env.SLUG || "taza";
 const TECH = process.env.TECH || "P5"; // técnica de marcaje válida para SLUG
-// PALABRA COMPLETA, no subcadena: "cifra" es además palabra corriente en
-// español ("cifras concretas", "cifrado en tránsito") y por subcadena
-// marcaba esas frases como fuga — falso positivo real en CI 2026-08-13
-// (/llms.txt y /privacidad). Mismo criterio que lib/supplier-leak-terms.ts
-// (fuente TS que este script no puede importar — Node suelto); mantener las
-// DOS listas Y la estrategia de matching sincronizadas, no solo los strings.
-const SUPPLIER_LEAKS = ["midocean", "makito", "cifra", "adivin", "supplierref", "supplier_ref"];
+// DOS grupos, porque los términos no son de la misma naturaleza. Réplica
+// literal de lib/supplier-leak-terms.ts (fuente TS que este script no puede
+// importar — Node suelto); el guard de concepto-propuesta-cableado compara las
+// listas Y la estrategia, que es justo lo que se desincronizó el 13-ago.
+//
+// SUBCADENA: ninguno existe dentro de una palabra española, así que no hay
+// falso positivo posible y así se cazan pegados dentro de un identificador
+// (`midoceanOrderId`, `makito_sku`) — que es como un nombre de proveedor llega
+// de verdad a un JSON servido. Buscarlos por palabra completa dejó pasar
+// exactamente el campo cuya fuga se cerró el 13-ago.
+const SUPPLIER_LEAKS_IDENTIFIER = ["midocean", "makito", "supplierref", "supplier_ref"];
+// PALABRA COMPLETA (+ frontera de identificador): "cifra" está dentro de
+// "cifrado"/"cifras" y "adivin" dentro de "adivinanza"; por subcadena marcaban
+// texto legítimo y tumbaron el CI el 13-ago (/llms.txt, /privacidad).
+const SUPPLIER_LEAKS_WORDLIKE = ["cifra", "adivin"];
+const SUPPLIER_LEAKS = [...SUPPLIER_LEAKS_IDENTIFIER, ...SUPPLIER_LEAKS_WORDLIKE];
 // Hosts de CDN de proveedor. Van APARTE y SÍ por subcadena porque varios NO
 // contienen el nombre del proveedor y los puntos no son límite de palabra:
 // así es como la fuga del 2026-07-20 en /api/recommend pasó el guard. Ver
@@ -45,16 +54,28 @@ const SUPPLIER_HOSTS = [
   "adivin.com",
 ];
 
-function findLeak(text) {
+/** "cifra" → "[cC][iI][fF][rR][aA]": insensible a mayúsculas sin el flag `i`. */
+function anyCase(term) {
+  return term.replace(/[a-z]/g, (c) => `[${c}${c.toUpperCase()}]`);
+}
+
+// Exportada a propósito: `supplier-leak-paridad.test.ts` la EJECUTA con los
+// mismos casos que findSupplierLeak() de lib/. Comparar el texto de las dos
+// listas —lo que ya hace el guard— no habría cazado el fallo del 13-ago, en
+// que las listas eran idénticas y lo que divergió fue el comportamiento.
+export function findLeak(text) {
   const haystack = text.toLowerCase();
   for (const host of SUPPLIER_HOSTS) {
     if (haystack.includes(host)) return host;
   }
-  for (const term of SUPPLIER_LEAKS) {
-    // \b no sirve con "supplier_ref": en JS el guion bajo es carácter de
-    // palabra, \bsupplier_ref\b nunca casaría dentro de "x_supplier_ref".
-    const re = new RegExp(`(^|[^a-z0-9_])${term}($|[^a-z0-9_])`, "i");
-    if (re.test(haystack)) return term;
+  for (const term of SUPPLIER_LEAKS_IDENTIFIER) {
+    if (haystack.includes(term)) return term;
+  }
+  for (const term of SUPPLIER_LEAKS_WORDLIKE) {
+    if (new RegExp(`(^|[^a-z0-9_])${term}($|[^a-z0-9_])`).test(haystack)) return term;
+    // Sobre el ORIGINAL y sin flag `i`: la mayúscula siguiente ES la señal de
+    // que es un identificador (`cifraOrderId`) y no la palabra española.
+    if (new RegExp(`(^|[^A-Za-z0-9_])${anyCase(term)}(?=[A-Z_])`).test(text)) return term;
   }
   return null;
 }

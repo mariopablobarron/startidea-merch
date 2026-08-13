@@ -12,24 +12,48 @@
  */
 
 /**
- * Nombres de proveedor. Se buscan como PALABRA COMPLETA, no como subcadena:
+ * Los términos NO son todos de la misma naturaleza, y por eso no se pueden
+ * buscar todos igual. Repartirlos en dos grupos es el arreglo del 14-ago:
+ * durante un día se buscaron TODOS por palabra completa y eso dejó pasar
+ * `midoceanOrderId` — justo el campo cuya fuga se había cerrado la víspera.
  *
- *  - "cifra" es además una palabra corriente en español, y buscarla como
- *    subcadena marcaría "descifrar" o "cifrado" — ruido que acabaría con
- *    alguien desactivando el saneador.
- *  - Como palabra suelta SÍ se bloquea ("precio según cifra acordada"), y es
- *    deliberado: en un concepto de línea de propuesta —que describe un
- *    producto— esa frase es rarísima, mientras que dejar pasar "Cifra" como
- *    proveedor imprime su nombre en el PDF del cliente. El falso positivo
- *    cuesta reescribir una palabra; el falso negativo cuesta la regla.
+ * Nombres que NO existen dentro de ninguna palabra española. Se buscan como
+ * SUBCADENA porque no tienen ningún falso positivo posible en castellano, y
+ * porque así se cazan también pegados dentro de un IDENTIFICADOR
+ * (`midoceanOrderId`, `makito_sku`, `data-midocean`), que es la forma en que
+ * un nombre de proveedor llega de verdad a un JSON o a un HTML servido.
  */
-export const SUPPLIER_LEAK_TERMS = [
+export const SUPPLIER_LEAK_TERMS_IDENTIFIER = [
   "midocean",
   "makito",
-  "cifra",
-  "adivin",
   "supplierref",
   "supplier_ref",
+] as const;
+
+/**
+ * Nombres que SÍ son —o empiezan— una palabra corriente en español: "cifra"
+ * está dentro de "cifrado" y "descifrar"; "adivin", dentro de "adivinanza".
+ * Por subcadena marcarían texto legítimo, y un saneador ruidoso acaba
+ * desactivado (pasó el 13-ago: «cifras concretas» en /llms.txt y «cifrado en
+ * tránsito» en /privacidad tumbaron el CI sin que hubiera fuga alguna).
+ *
+ * Se buscan por PALABRA COMPLETA **y además** pegados a una frontera de
+ * identificador —mayúscula siguiente o guion bajo—, que no ocurre nunca en
+ * prosa española pero sí en `cifraOrderId` o `cifra_ref`. Así se conserva la
+ * cobertura sobre nombres de campo sin recuperar el ruido.
+ *
+ * Como palabra suelta SÍ se bloquea ("precio según cifra acordada"), y es
+ * deliberado: en un concepto de línea de propuesta —que describe un producto—
+ * esa frase es rarísima, mientras que dejar pasar "Cifra" como proveedor
+ * imprime su nombre en el PDF del cliente. El falso positivo cuesta reescribir
+ * una palabra; el falso negativo cuesta la regla.
+ */
+export const SUPPLIER_LEAK_TERMS_WORDLIKE = ["cifra", "adivin"] as const;
+
+/** Todos los nombres de proveedor. El orden es el de comprobación. */
+export const SUPPLIER_LEAK_TERMS = [
+  ...SUPPLIER_LEAK_TERMS_IDENTIFIER,
+  ...SUPPLIER_LEAK_TERMS_WORDLIKE,
 ] as const;
 
 /**
@@ -54,12 +78,24 @@ export function findSupplierLeak(text: string): string | null {
   for (const host of SUPPLIER_LEAK_HOSTS) {
     if (haystack.includes(host)) return host;
   }
-  for (const term of SUPPLIER_LEAK_TERMS) {
-    // \b no sirve con "supplier_ref": en JS el guion bajo es carácter de
-    // palabra, así que \bsupplier_ref\b nunca casaría dentro de "x_supplier_ref".
-    // Se delimita a mano con lo que NO puede formar parte del término.
-    const re = new RegExp(`(^|[^a-z0-9_])${term}($|[^a-z0-9_])`, "i");
-    if (re.test(haystack)) return term;
+  for (const term of SUPPLIER_LEAK_TERMS_IDENTIFIER) {
+    if (haystack.includes(term)) return term;
+  }
+  for (const term of SUPPLIER_LEAK_TERMS_WORDLIKE) {
+    // Palabra completa. \b no serviría con un término que llevara guion bajo:
+    // en JS es carácter de palabra. Se delimita a mano con lo que NO puede
+    // formar parte del término.
+    if (new RegExp(`(^|[^a-z0-9_])${term}($|[^a-z0-9_])`).test(haystack)) return term;
+    // Frontera de IDENTIFICADOR sobre el texto original: `cifraOrderId`,
+    // `Cifra_ref`. Se mira el original —no `haystack`— porque la mayúscula ES
+    // la señal, y por eso la regex no puede llevar el flag `i`: con él, [A-Z]
+    // casaría también minúsculas y volvería el falso positivo de "cifrado".
+    if (new RegExp(`(^|[^A-Za-z0-9_])${anyCase(term)}(?=[A-Z_])`).test(text)) return term;
   }
   return null;
+}
+
+/** "cifra" → "[cC][iI][fF][rR][aA]": insensible a mayúsculas sin el flag `i`. */
+function anyCase(term: string): string {
+  return term.replace(/[a-z]/g, (c) => `[${c}${c.toUpperCase()}]`);
 }
