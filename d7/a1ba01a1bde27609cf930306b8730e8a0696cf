@@ -1,0 +1,32 @@
+src/lib/supplier-leak-terms.ts
+  s_33f30a656377ba::t_d6659469db98f4 1-65
+src/lib/proposal-item-override.ts
+  s_33f30a656377ba::t_f12a8c97463382 12-13
+  s_33f30a656377ba::t_6511b683b5b962 28-35
+src/lib/supplier-leak-terms.test.ts
+  s_33f30a656377ba::t_cdc1a709aa613c 1-52
+src/lib/concepto-propuesta-cableado.guard.test.ts
+  s_33f30a656377ba::t_cfa781aad95f5b 1-122
+src/lib/proposal-types.ts
+  s_33f30a656377ba::t_5477c1f8278d19 149-166
+src/lib/proposal-item-override.test.ts
+  s_33f30a656377ba::t_45d2463916c253 37-65
+src/lib/proposal-types.test.ts
+  s_33f30a656377ba::t_3ccbf9f520fc6e 2-7,196-218
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "d7a1ba01a1bde27609cf930306b8730e8a0696cf",
+  "prompts": {},
+  "sessions": {
+    "s_33f30a656377ba": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dff0264d-2137-4e05-a0de-4eb812cd047c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
