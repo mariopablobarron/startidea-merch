@@ -1,0 +1,34 @@
+src/lib/public-quote-view.ts
+  s_33f30a656377ba::t_33d415535a923c 1-76
+src/lib/superficies-publicas-sin-proveedor.guard.test.ts
+  s_33f30a656377ba::t_21e912b43ea87e 1-94
+scripts/money-smoke-test.mjs
+  s_33f30a656377ba::t_5cc584c8620d5c 272-281
+src/app/privacidad/page.tsx
+  s_33f30a656377ba::t_91758a383ccb31 114
+src/app/llms.txt/route.ts
+  s_33f30a656377ba::t_1971cace6bc21b 43
+src/lib/public-quote-view.test.ts
+  s_33f30a656377ba::t_1ac57def7154d7 58
+  s_33f30a656377ba::t_4a8f58fac45c5f 1-57,59-89
+src/app/api/v1/quotes/[id]/route.ts
+  s_33f30a656377ba::t_d1ea24ae83a3d4 4,48
+src/app/docs/api/page.tsx
+  s_33f30a656377ba::t_680effdf8c5445 172-173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "61341c0fb226238d14aad22f1bef967eb8f3452f",
+  "prompts": {},
+  "sessions": {
+    "s_33f30a656377ba": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dff0264d-2137-4e05-a0de-4eb812cd047c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
