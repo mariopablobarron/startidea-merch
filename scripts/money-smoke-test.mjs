@@ -27,17 +27,37 @@ import { appendFileSync } from "node:fs";
 const BASE = process.env.BASE || "https://merchandising.startidea.es";
 const SLUG = process.env.SLUG || "taza";
 const TECH = process.env.TECH || "P5"; // técnica de marcaje válida para SLUG
+// PALABRA COMPLETA, no subcadena: "cifra" es además palabra corriente en
+// español ("cifras concretas", "cifrado en tránsito") y por subcadena
+// marcaba esas frases como fuga — falso positivo real en CI 2026-08-13
+// (/llms.txt y /privacidad). Mismo criterio que lib/supplier-leak-terms.ts
+// (fuente TS que este script no puede importar — Node suelto); mantener las
+// DOS listas Y la estrategia de matching sincronizadas, no solo los strings.
 const SUPPLIER_LEAKS = ["midocean", "makito", "cifra", "adivin", "supplierref", "supplier_ref"];
-// Hosts de CDN de proveedor. Van APARTE porque varios NO contienen el nombre
-// del proveedor y la lista de arriba no los atrapaba: así es como la fuga del
-// 2026-07-20 en /api/recommend pasó el guard. Ver incident_midocean_image_leak.
+// Hosts de CDN de proveedor. Van APARTE y SÍ por subcadena porque varios NO
+// contienen el nombre del proveedor y los puntos no son límite de palabra:
+// así es como la fuga del 2026-07-20 en /api/recommend pasó el guard. Ver
+// incident_midocean_image_leak.
 const SUPPLIER_HOSTS = [
   "cdn1.midocean.com",
   "publicatalogue.com",
   "imgresources.makito.es",
   "adivin.com",
 ];
-const ALL_LEAKS = [...SUPPLIER_LEAKS, ...SUPPLIER_HOSTS];
+
+function findLeak(text) {
+  const haystack = text.toLowerCase();
+  for (const host of SUPPLIER_HOSTS) {
+    if (haystack.includes(host)) return host;
+  }
+  for (const term of SUPPLIER_LEAKS) {
+    // \b no sirve con "supplier_ref": en JS el guion bajo es carácter de
+    // palabra, \bsupplier_ref\b nunca casaría dentro de "x_supplier_ref".
+    const re = new RegExp(`(^|[^a-z0-9_])${term}($|[^a-z0-9_])`, "i");
+    if (re.test(haystack)) return term;
+  }
+  return null;
+}
 
 /**
  * Techo por petición. `fetch` no trae uno propio: undici corta la CONEXIÓN a
@@ -298,7 +318,7 @@ async function main() {
       unchecked(`sin proveedor en ${method} ${path}`, r._networkError ? "no hubo conexión" : `superficie devolvió ${r.status}`);
       continue;
     }
-    const leak = ALL_LEAKS.find((s) => text.includes(s));
+    const leak = findLeak(text);
     check(`sin proveedor en ${method} ${path}`, !leak, leak ? `contiene "${leak}"` : "");
   }
 
