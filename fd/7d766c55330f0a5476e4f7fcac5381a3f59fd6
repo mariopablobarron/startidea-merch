@@ -1,0 +1,27 @@
+src/lib/review-invite-eligibility.test.ts
+  s_4c8c4c050709e7::t_0208d7c281e0dc 1-88
+src/app/api/cron/review-invite/route.ts
+  s_4c8c4c050709e7::t_5edf13aca51034 141-144
+  s_4c8c4c050709e7::t_958db7cc647d86 82-93,110
+  s_4c8c4c050709e7::t_1a4f226c508c77 16-18,20-28,34,39,45-53,55-58
+  s_4c8c4c050709e7::t_0630cc1885238d 35-38,42
+  s_4c8c4c050709e7::t_b5e2afcff1048e 7
+src/lib/review-invite-eligibility.ts
+  s_4c8c4c050709e7::t_bdb43ed3b62efa 1-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "fd7d766c55330f0a5476e4f7fcac5381a3f59fd6",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
