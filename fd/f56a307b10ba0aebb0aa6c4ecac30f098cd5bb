@@ -1,0 +1,23 @@
+src/lib/portes-proveedor-cableado.guard.test.ts
+  s_4c8c4c050709e7::t_ec4feaea6f9604 58-61
+src/lib/secret-box.ts
+  s_4c8c4c050709e7::t_ca2366ce58112e 33-37,52
+src/lib/concepto-propuesta-cableado.guard.test.ts
+  s_4c8c4c050709e7::t_0c28efbe92a6d8 52-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "fdf56a307b10ba0aebb0aa6c4ecac30f098cd5bb",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
