@@ -4,6 +4,7 @@ import { requireCronSecret } from "@/lib/auth";
 import { sendEmail } from "@/lib/resend";
 import { withCronLock } from "@/lib/cron-lock";
 import { wrapCronHandler } from "@/lib/cron-tracking";
+import { reviewInviteEligibility } from "@/lib/review-invite-eligibility";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,26 +13,49 @@ export const maxDuration = 120;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
 /**
- * Envía invitaciones de review a clientes con pedido entregado hace ≥7 días
- * que aún no tienen Review creada. Crea Review PENDING con token y dispara
- * email transaccional.
+ * Envía invitaciones de review a clientes cuyo pedido ya debería haber
+ * llegado y aún no tienen Review creada. Crea Review PENDING con token y
+ * dispara email transaccional.
  *
- * Llamar diariamente desde cron-job.org.
+ * Elegibilidad en lib/review-invite-eligibility.ts — prioriza la entrega
+ * REAL confirmada (PurchaseOrder.deliveredAt, marcada a mano por un admin)
+ * y cae a un plazo por tiempo desde el pago cuando no hay esa señal, para
+ * que la campaña nunca se quede en cero por un olvido de marcar entregas.
+ * Antes invitaba a los 7 días de PAGAR (no de recibir) — demasiado agresivo
+ * para merchandising personalizado y la causa más probable de que nadie
+ * respondiera. Fix 2026-08-13.
+ *
+ * Llamado diariamente desde el crontab del VPS (ver docs/OPERATIONS.md).
  */
 export const POST = wrapCronHandler("review-invite", async (req: Request) => {
   const auth = requireCronSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
   return withCronLock("review-invite", async () => {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const carts = await prisma.cartQuote.findMany({
+  const now = new Date();
+  // Suelo laxo en la query (5 días = el fallback MÁS CORTO posible, entrega
+  // confirmada); el filtro fino por señal de entrega/tiempo real se hace en
+  // JS con reviewInviteEligibility, que necesita los PurchaseOrder del cart.
+  const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+  const candidates = await prisma.cartQuote.findMany({
     where: {
       status: "ORDERED",
-      orderedAt: { lte: sevenDaysAgo, not: null },
+      orderedAt: { lte: fiveDaysAgo, not: null },
       reviews: { none: {} }, // sin review previa
     },
-    take: 50,
-    select: { id: true, name: true, email: true, company: true },
+    take: 200,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      company: true,
+      orderedAt: true,
+      purchaseOrders: { select: { status: true, deliveredAt: true } },
+    },
   });
+  const carts = candidates
+    .filter((c) => c.orderedAt != null)
+    .filter((c) => reviewInviteEligibility({ orderedAt: c.orderedAt!, purchaseOrders: c.purchaseOrders }, now).eligible)
+    .slice(0, 50);
 
   // Cerrojo atómico namespaced en EmailDripSent (drips usan 1/3/7/30, followup
   // 102/105/110; 200 = "review invitada"). Review.cartId NO es @unique, así que
@@ -55,6 +79,18 @@ export const POST = wrapCronHandler("review-invite", async (req: Request) => {
     });
     const reviewUrl = `${SITE_URL}/review/${review.token}`;
     const firstName = cart.name.split(" ")[0];
+    // El copy afirmaba SIEMPRE "hace una semana entregamos tu pedido" — con
+    // el fallback por tiempo (sin PurchaseOrder.deliveredAt confirmado) eso
+    // podía ser falso si seguía en producción. Solo afirma entrega cuando la
+    // señal es real (reviewInviteEligibility ya filtró que sea ≥5 días).
+    const eligibility = reviewInviteEligibility(
+      { orderedAt: cart.orderedAt!, purchaseOrders: cart.purchaseOrders },
+      now,
+    );
+    const openingLine =
+      eligibility.eligible && eligibility.signal === "delivered"
+        ? "Hace unos días entregamos tu pedido."
+        : "Tu pedido ya debería haber llegado.";
 
     // sendEmail dispara alerta Telegram automática si Resend falla.
     const result = await sendEmail({
@@ -71,7 +107,7 @@ export const POST = wrapCronHandler("review-invite", async (req: Request) => {
             <span style="color:#E63E73;">¿Cómo lo hemos hecho?</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
-            Hace una semana entregamos tu pedido. Tu opinión nos ayuda a mejorar
+            ${openingLine} Tu opinión nos ayuda a mejorar
             y, sobre todo, anima a otras empresas a producir merchandising con
             impacto social. Es un click + una frase.
           </p>
@@ -102,6 +138,9 @@ export const POST = wrapCronHandler("review-invite", async (req: Request) => {
     if (result.ok) invited++;
   }
 
-  return NextResponse.json({ ok: true, invited, candidates: carts.length });
+  // scanned = pedidos ORDERED sin review en la ventana de 5+ días (pool bruto);
+  // eligible = de esos, los que pasaron el filtro real de entrega/tiempo.
+  // Distingue "el cron no corre" de "corre pero nadie es elegible todavía".
+  return NextResponse.json({ ok: true, invited, scanned: candidates.length, eligible: carts.length });
   }) as Promise<NextResponse>;
 });
