@@ -1,0 +1,20 @@
+scripts/money-smoke-test.mjs
+  s_4c8c4c050709e7::t_a626f6661ecb24 321
+  s_4c8c4c050709e7::t_eb381a86a1f58e 30-35,37-40,47-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "b026897b2e0d5a249cbc2febe41e1e921a789a2a",
+  "prompts": {},
+  "sessions": {
+    "s_4c8c4c050709e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba2a4b09-01bd-4fcb-a8d7-401ce349582b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
