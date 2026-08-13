@@ -49,6 +49,10 @@ function colapsar(fuente: string): string {
  * aunque el import desaparezca (ya pasó el 12-ago).
  */
 function importaDesde(texto: string, nombre: string, modulo: string): boolean {
+  // `modulo` es siempre un literal hardcoded en las llamadas de este propio
+  // fichero de test (ej. "./proposal-types") — nunca input externo, corre
+  // solo contra el código fuente del repo en CI. Falso positivo ReDoS.
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
   const re = new RegExp(`import\\s*\\{([^}]*)\\}\\s*from\\s*"${modulo.replace(/\//g, "\\/")}"`);
   const m = texto.match(re);
   if (!m) return false;

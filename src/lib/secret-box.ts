@@ -30,7 +30,11 @@ function getKey(): Buffer {
 export function encryptSecret(plaintext: string): string {
   const key = getKey();
   const iv = randomBytes(IV_LEN);
-  const cipher = createCipheriv(ALGO, key, iv);
+  // authTagLength EXPLÍCITO (Semgrep gcm-no-tag-length): sin él, Node acepta
+  // en descifrado cualquier tag GCM válido de 12-16 bytes — un atacante que
+  // lograra manipular el blob podría intentar forjar uno truncado. Fijarlo a
+  // 16 (el máximo, el que ya generábamos) lo rechaza a nivel de crypto.
+  const cipher = createCipheriv(ALGO, key, iv, { authTagLength: TAG_LEN });
   const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return Buffer.concat([iv, tag, ciphertext]).toString("base64url");
@@ -45,7 +49,7 @@ export function decryptSecret(blob: string): string {
   const iv = raw.subarray(0, IV_LEN);
   const tag = raw.subarray(IV_LEN, IV_LEN + TAG_LEN);
   const ciphertext = raw.subarray(IV_LEN + TAG_LEN);
-  const decipher = createDecipheriv(ALGO, key, iv);
+  const decipher = createDecipheriv(ALGO, key, iv, { authTagLength: TAG_LEN });
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
 }
