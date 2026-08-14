@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { positionOptionLabel } from "@/lib/marking-position-label";
+import { decideMockupPanelMode, mockupPanelHeading } from "@/lib/mockup-panel-mode";
 
 type Position = { id: string; positionId: string };
 
@@ -111,7 +112,13 @@ export function MockupGenerator({
     }
   }
 
-  if (positions.length === 0) return null;
+  // Sin zonas de marcaje NO se devuelve null: la ficha promete «boceto con tu
+  // logo gratis» sin condición, así que quedarse en blanco deja la promesa sin
+  // ningún sitio donde cumplirse (613 fichas activas el 14-ago-2026). Lo que se
+  // cae es la simulación automática, no la petición al equipo.
+  const modo = decideMockupPanelMode(positions.length);
+  const soloPeticion = modo === "solo-peticion";
+  const cabecera = mockupPanelHeading(modo);
 
   return (
     <div className="mt-6 rounded-3xl border border-line bg-bone p-6 lg:p-8">
@@ -122,16 +129,12 @@ export function MockupGenerator({
       >
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
-            — Previsualización rápida
+            {cabecera.kicker}
           </p>
           <p className="mt-1 font-display text-xl font-semibold text-ink">
-            Sube tu logo y mira cómo encaja.
+            {cabecera.title}
           </p>
-          <p className="mt-1 text-sm text-ink/60">
-            Es una <strong>simulación visual aproximada</strong> — el mockup técnico
-            final lo prepara el fabricante con dimensiones exactas y se valida
-            contigo antes de producir.
-          </p>
+          <p className="mt-1 text-sm text-ink/60">{cabecera.body}</p>
         </div>
         <svg
           className={`h-5 w-5 text-ink/50 transition ${open ? "rotate-180" : ""}`}
@@ -165,16 +168,21 @@ export function MockupGenerator({
             </label>
           )}
 
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-bone-soft px-6 py-8 text-center transition hover:border-accent">
-            <svg className="h-8 w-8 text-ink/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            <span className="text-sm font-medium text-ink">Subir logo (PNG, JPG, SVG)</span>
-            <span className="text-xs text-ink/50">Máx 5 MB · Recomendado fondo transparente</span>
-            <input type="file" accept="image/*" onChange={onFile} className="hidden" />
-          </label>
+          {/* Sin zonas de marcaje no hay dónde colocar el logo: el subidor se cae
+              (y con él, por construcción, el loading, el error y la preview, que
+              solo pueden existir tras un archivo). La Capa D de abajo se queda. */}
+          {!soloPeticion && (
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-bone-soft px-6 py-8 text-center transition hover:border-accent">
+              <svg className="h-8 w-8 text-ink/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span className="text-sm font-medium text-ink">Subir logo (PNG, JPG, SVG)</span>
+              <span className="text-xs text-ink/50">Máx 5 MB · Recomendado fondo transparente</span>
+              <input type="file" accept="image/*" onChange={onFile} className="hidden" />
+            </label>
+          )}
 
           {loading && (
             <div className="rounded-2xl bg-bone-soft p-5 text-center text-sm text-ink/60">
@@ -255,10 +263,12 @@ export function MockupGenerator({
                 className="flex w-full flex-col items-start gap-1 text-left"
               >
                 <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
-                  — Mejor con mockup técnico real
+                  {soloPeticion ? "— Mockup técnico real" : "— Mejor con mockup técnico real"}
                 </p>
                 <p className="font-display text-base font-semibold text-ink">
-                  ¿Prefieres que te lo hagamos nosotros? Te lo mandamos en 4h laborables.
+                  {soloPeticion
+                    ? "Pídenos el boceto: te lo mandamos en 4h laborables."
+                    : "¿Prefieres que te lo hagamos nosotros? Te lo mandamos en 4h laborables."}
                 </p>
                 <p className="text-[13px] text-ink/65 leading-relaxed">
                   Mockup técnico con medidas exactas, técnica correcta y validación
