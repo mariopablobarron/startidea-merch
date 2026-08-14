@@ -12,7 +12,8 @@
 | B | `startidea.es` | Solo si el objetivo es la autoridad de marca del dominio raíz. El trasvase al subdominio es indirecto y más lento |
 | C | Ambos | Dos proyectos separados en Getalink, con presupuesto y anchors distintos. Más caro, útil solo si se trabaja también la web corporativa |
 
-**Pendiente de Mario**: confirmar A, B o C. El resto de la ficha asume **A**.
+**Decidido: A** — el proyecto se da de alta sobre `merchandising.startidea.es`. Si más adelante se
+quiere trabajar también la web corporativa, se crea un segundo proyecto en vez de mezclar anchors.
 
 ## 2 · Datos de alta
 
@@ -74,9 +75,29 @@ Nunca usar como anchor ni mencionar en el contenido patrocinado a los proveedore
 - Guardar de cada compra: medio, URL publicada, URL objetivo, anchor, fecha y coste — para poder
   medir después contra Search Console.
 
-## 6 · Qué falta para ejecutarlo
+## 6 · Ejecutar el alta
 
-El alta del proyecto no se puede hacer desde una sesión no interactiva de Claude Code: el
-servidor MCP de Getalink exige credencial y aquí no hay ninguna. Con la credencial puesta
-(`GETALINK_API_KEY` o `/mcp` → *Authenticate*), el flujo es: listar herramientas del servidor,
-crear el proyecto con los datos de §2 y cargar las URLs objetivo de §3.
+El alta no se puede lanzar desde una sesión no interactiva de Claude Code: el servidor MCP exige
+credencial y ahí no hay forma de abrir el OAuth. Con la key en el entorno, `scripts/getalink-mcp.mjs`
+hace el handshake MCP completo y evita depender del cliente:
+
+```bash
+export GETALINK_API_KEY="glk_..."          # panel de Getalink; nunca en el repo
+
+# 1 · ver qué expone el servidor en tu plan (nombres y parámetros reales)
+node scripts/getalink-mcp.mjs tools
+
+# 2 · crear el proyecto con la herramienta que corresponda del listado anterior
+node scripts/getalink-mcp.mjs call <tool-de-alta> '{
+  "name": "TodoMerchandising",
+  "url": "https://merchandising.startidea.es",
+  "country": "ES",
+  "language": "es"
+}'
+```
+
+Los nombres de herramienta no están fijados aquí a propósito: dependen del plan contratado, y
+escribirlos a ciegas solo sirve para fallar con un error confuso. Sale el paso 1, se completa el 2.
+
+En Claude Code interactivo el mismo trabajo se hace por `/mcp` → `getalink` → *Authenticate*, sin
+tocar la key.
