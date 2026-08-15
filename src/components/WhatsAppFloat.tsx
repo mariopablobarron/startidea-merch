@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { waLink, waWebMessage, trackWaClick } from "@/lib/whatsapp";
+import {
+  FLOATING_SURFACES,
+  isFloatingSurfaceAllowedOnPath,
+} from "@/lib/floating-surfaces";
 
 export function WhatsAppFloat() {
   const [visible, setVisible] = useState(false);
+  const pathname = usePathname() || "";
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 400);
@@ -17,6 +23,13 @@ export function WhatsAppFloat() {
     waWebMessage("General", "Hola, vengo de la web de todomerchandising y me gustaría pedir una cotización."),
   );
 
+  if (
+    !visible ||
+    !isFloatingSurfaceAllowedOnPath(FLOATING_SURFACES.whatsapp, pathname)
+  ) {
+    return null;
+  }
+
   return (
     <a
       href={href}
@@ -24,9 +37,7 @@ export function WhatsAppFloat() {
       rel="noopener noreferrer"
       onClick={() => trackWaClick("flotante")}
       aria-label="Abrir WhatsApp para cotización"
-      className={`fixed bottom-6 right-6 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-2xl shadow-black/20 transition-all duration-300 hover:scale-110 hover:bg-[#1DA851] sm:h-16 sm:w-16 ${
-        visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0 pointer-events-none"
-      }`}
+      className="fixed bottom-6 right-6 z-50 hidden size-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-2xl shadow-black/20 transition-transform duration-200 motion-reduce:transition-none hover:scale-110 hover:bg-[#1DA851] md:inline-flex"
     >
       <svg
         viewBox="0 0 32 32"

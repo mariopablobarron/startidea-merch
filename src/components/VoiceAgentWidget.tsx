@@ -4,7 +4,14 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { usePathname } from "next/navigation";
 import { trackLead } from "@/lib/ads-events";
-import { addItem } from "@/lib/cart-storage";
+import { addItem, readCart } from "@/lib/cart-storage";
+import { cn } from "@/lib/cn";
+import {
+  FLOATING_SURFACES,
+  isFloatingSurfaceAllowedOnPath,
+  mobileFloatingOwner,
+} from "@/lib/floating-surfaces";
+import { useModalFocus } from "@/lib/use-modal-focus";
 
 /**
  * Widget flotante del agente de voz David (ElevenLabs Conversational AI).
@@ -68,6 +75,7 @@ type Message =
 type HoldMusic = { ctx: AudioContext; master: GainNode; timer: number };
 
 const LEAD_STORAGE_KEY = "merch:diego-lead";
+const COMPARE_STORAGE_KEY = "merch:compare";
 
 function startHoldMusic(ref: MutableRefObject<HoldMusic | null>) {
   if (ref.current) return;
@@ -222,12 +230,35 @@ function VoiceAgentInner() {
       setLeadCollapsed(window.matchMedia("(max-width: 639px)").matches);
     } catch {}
   }, []);
+  const [floatingCounts, setFloatingCounts] = useState({ cart: 0, compare: 0 });
+  useEffect(() => {
+    function refreshFloatingCounts() {
+      let compare = 0;
+      try {
+        const raw = localStorage.getItem(COMPARE_STORAGE_KEY);
+        const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+        compare = Array.isArray(parsed) ? parsed.length : 0;
+      } catch {}
+      setFloatingCounts({ cart: readCart().length, compare });
+    }
+    refreshFloatingCounts();
+    window.addEventListener("merch:cart-change", refreshFloatingCounts);
+    window.addEventListener("merch:compare-change", refreshFloatingCounts);
+    window.addEventListener("storage", refreshFloatingCounts);
+    return () => {
+      window.removeEventListener("merch:cart-change", refreshFloatingCounts);
+      window.removeEventListener("merch:compare-change", refreshFloatingCounts);
+      window.removeEventListener("storage", refreshFloatingCounts);
+    };
+  }, []);
   // Contexto pendiente de enviar a David cuando conecte (viene de AskDiego).
   const pendingContextRef = useRef<string | null>(null);
   const [productSlugsDiscussed, setProductSlugsDiscussed] = useState<Set<string>>(new Set());
   // Tarjeta elegida por el cliente (toque directo) y ficha abierta en popup.
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [fichaUrl, setFichaUrl] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const productSheetRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number | null>(null);
   const toolsCalledRef = useRef<Array<{ tool: string; ok: boolean; at: string }>>([]);
   // true mientras la desconexión es intencionada (Terminar/watchdog): no
@@ -943,20 +974,48 @@ function VoiceAgentInner() {
     return () => cancelAnimationFrame(raf);
   }, [isActive, c]);
 
+  const mobileOwner = mobileFloatingOwner({
+    pathname,
+    cartCount: floatingCounts.cart,
+    compareCount: floatingCounts.compare,
+  });
+  const launcherAllowed = isFloatingSurfaceAllowedOnPath(
+    FLOATING_SURFACES.assistantLauncher,
+    pathname,
+  );
+  const dialogOpen = open || isActive || isConnecting;
+  const closeVoiceDialog = useCallback(() => {
+    if (isActive || isConnecting) stop();
+    setOpen(false);
+  }, [isActive, isConnecting, stop]);
+  const closeProductSheet = useCallback(() => setFichaUrl(null), []);
+
+  useModalFocus({
+    active: dialogOpen && fichaUrl === null,
+    containerRef: dialogRef,
+    onEscape: closeVoiceDialog,
+    restoreFallbackSelector: "[data-voice-agent-launcher]",
+  });
+  useModalFocus({
+    active: fichaUrl !== null,
+    containerRef: productSheetRef,
+    onEscape: closeProductSheet,
+  });
+
   return (
     <>
       {/* Burbuja de invitación (nudge) — explica qué es David e incita a abrir.
           Transparencia IA (AI Act art. 50): se presenta como asistente de IA. */}
-      {nudge && !suppressAutomaticNudge && !open && !isActive && !isConnecting && (
+      {launcherAllowed && nudge && !suppressAutomaticNudge && !open && !isActive && !isConnecting && (
         <div
-          className="diego-nudge-motion fixed bottom-40 right-6 z-40 hidden w-64 rounded-2xl border border-line bg-white p-3.5 shadow-xl sm:block"
+          className="diego-nudge-motion fixed bottom-40 right-6 z-40 hidden w-64 rounded-2xl border border-line bg-white p-3.5 shadow-xl md:block"
         >
           <style>{`
             @keyframes diego-nudge-in {
               from { opacity: 0; transform: translateY(8px); }
               to { opacity: 1; transform: translateY(0); }
             }
-            .diego-nudge-motion { animation: diego-nudge-in 0.35s ease-out; }
+            .diego-nudge-motion { animation: diego-nudge-in 0.2s ease-out; }
             @media (prefers-reduced-motion: reduce) {
               .diego-nudge-motion { animation: none; }
             }
@@ -995,8 +1054,10 @@ function VoiceAgentInner() {
       )}
 
       {/* Botón flotante */}
-      {!isActive && !isConnecting && (
+      {launcherAllowed && !isActive && !isConnecting && (
         <button
+          data-voice-agent-launcher
+          data-floating-surface={FLOATING_SURFACES.assistantLauncher}
           type="button"
           onClick={() => {
             setOpen(true);
@@ -1005,23 +1066,30 @@ function VoiceAgentInner() {
           aria-label={`Hablar o escribir con ${agentName}, asistente virtual con IA`}
           aria-controls="voice-agent-dialog"
           aria-expanded={open}
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)_+_6rem)] right-3 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-ink text-bone shadow-lg hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:bottom-24 sm:right-6 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-semibold"
+          className={cn(
+            "fixed bottom-[calc(env(safe-area-inset-bottom)_+_0.75rem)] right-3 z-40 flex size-12 items-center justify-center rounded-full bg-ink text-bone shadow-lg hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:bottom-24 md:right-6 md:h-auto md:w-auto md:gap-2 md:px-4 md:py-3 md:text-sm md:font-semibold",
+            mobileOwner !== FLOATING_SURFACES.assistantLauncher && "hidden md:flex",
+          )}
         >
-          <MicIcon className="h-5 w-5 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Habla o escribe a {agentName}</span>
-          <span className="absolute -right-1 -top-1 rounded-full border border-bone bg-accent px-1.5 py-0.5 text-[8px] font-bold tracking-wider sm:static sm:border-0 sm:bg-white/20 sm:text-[9px]">
+          <MicIcon className="size-5 md:size-4" />
+          <span className="hidden md:inline">Habla o escribe a {agentName}</span>
+          <span className="absolute -right-1 -top-1 rounded-full border border-bone bg-accent px-1.5 py-0.5 text-[8px] font-bold tracking-wider md:static md:border-0 md:bg-white/20 md:text-[9px]">
             IA
           </span>
         </button>
       )}
 
       {/* Panel conversación activa */}
-      {(open || isActive || isConnecting) && (
+      {dialogOpen && (
         <div
+          ref={dialogRef}
+          data-floating-surface={FLOATING_SURFACES.assistantDialog}
           id="voice-agent-dialog"
           role="dialog"
+          aria-modal="true"
           aria-label={`${agentName}, asistente virtual con IA`}
-          className="fixed bottom-6 left-6 right-6 z-50 max-w-md rounded-2xl border border-line bg-white shadow-2xl sm:left-auto"
+          tabIndex={-1}
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)_+_0.75rem)] left-3 right-3 z-50 max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_1.5rem)] max-w-md overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl md:bottom-6 md:left-auto md:right-6"
         >
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
             <div className="flex items-center gap-2">
@@ -1055,10 +1123,8 @@ function VoiceAgentInner() {
             </div>
             <button
               type="button"
-              onClick={() => {
-                if (isActive || isConnecting) stop();
-                setOpen(false);
-              }}
+              onClick={closeVoiceDialog}
+              data-modal-initial-focus
               className="text-xs text-ink/55 hover:text-ink"
             >
               {isActive ? "Terminar" : "Cerrar"}
@@ -1367,8 +1433,14 @@ function VoiceAgentInner() {
           guard inIframe). En móvil ocupa casi toda la pantalla, tipo sheet. */}
       {fichaUrl && (
         <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/50 sm:items-center sm:p-6"
-          onClick={() => setFichaUrl(null)}
+          ref={productSheetRef}
+          data-floating-surface={FLOATING_SURFACES.assistantSheet}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Ficha de producto recomendada por David"
+          tabIndex={-1}
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/50 px-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] pt-[calc(0.75rem_+_env(safe-area-inset-top))] sm:items-center sm:p-6"
+          onClick={closeProductSheet}
         >
           <div
             className="relative flex h-[88vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:h-[85vh] sm:max-w-3xl sm:rounded-2xl"
@@ -1389,7 +1461,8 @@ function VoiceAgentInner() {
                 </a>
                 <button
                   type="button"
-                  onClick={() => setFichaUrl(null)}
+                  onClick={closeProductSheet}
+                  data-modal-initial-focus
                   className="rounded-full bg-ink px-3 py-1 text-[11px] font-semibold text-bone hover:bg-accent"
                 >
                   Cerrar ✕

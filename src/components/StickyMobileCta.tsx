@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FLOATING_SURFACES } from "@/lib/floating-surfaces";
 
 export function StickyMobileCta() {
   const [visible, setVisible] = useState(false);
@@ -20,11 +21,12 @@ export function StickyMobileCta() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  if (!visible) return null;
+
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bone/95 px-4 py-3 backdrop-blur transition-transform duration-300 sm:hidden ${
-        visible ? "translate-y-0" : "translate-y-full"
-      }`}
+      data-floating-surface={FLOATING_SURFACES.transactional}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bone/95 px-4 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] pt-3 backdrop-blur md:hidden"
     >
       <div className="mx-auto flex max-w-md items-center gap-3">
         <a

@@ -22,6 +22,10 @@ import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 import { ExtraMarkingsPanel, type ExtraMarking } from "./ExtraMarkingsPanel";
 import { useProductColor } from "./product-color-context";
 import type { ColorOption } from "@/lib/variant-grouping";
+import {
+  FLOATING_SURFACES,
+  shouldShowStickyActions,
+} from "@/lib/floating-surfaces";
 
 /**
  * Formulario unificado de pedido en ficha de producto.
@@ -340,12 +344,18 @@ export function ProductOrderForm({
   // a hacer scroll-up para encontrar "Añadir al pedido". El sticky resuelve
   // ese punto de fricción detectado en el audit Marina.
   const actionsRef = useRef<HTMLDivElement | null>(null);
-  const [actionsInView, setActionsInView] = useState(true);
+  const [showStickyActions, setShowStickyActions] = useState(false);
   useEffect(() => {
     const el = actionsRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(
-      ([entry]) => setActionsInView(entry.isIntersecting),
+      ([entry]) =>
+        setShowStickyActions(
+          shouldShowStickyActions({
+            isIntersecting: entry.isIntersecting,
+            top: entry.boundingClientRect.top,
+          }),
+        ),
       { threshold: 0.1 },
     );
     io.observe(el);
@@ -1119,8 +1129,11 @@ export function ProductOrderForm({
       {/* Sticky CTA mobile — solo visible cuando los botones principales
           quedan fuera de la viewport. Resuelve el scroll de 7.500 px en
           mobile (fricción detectada en audit). */}
-      {!actionsInView && totalCents != null && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bone/95 px-3 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden">
+      {showStickyActions && totalCents != null && (
+        <div
+          data-floating-surface={FLOATING_SURFACES.transactional}
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bone/95 px-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
+        >
           <div className="mx-auto flex max-w-3xl items-center gap-3">
             <div className="flex-1">
               <p className="text-[10px] uppercase tracking-wider text-ink/50">

@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { readCart, cartTotalCents, type CartItem } from "@/lib/cart-storage";
+import { cn } from "@/lib/cn";
+import {
+  FLOATING_SURFACES,
+  isFloatingSurfaceAllowedOnPath,
+  mobileFloatingOwner,
+} from "@/lib/floating-surfaces";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -29,28 +35,44 @@ export function CartBanner() {
     };
   }, []);
 
-  // No mostrar en páginas donde el carrito YA es contexto principal:
-  // /carrito (estás ahí), /pay/* (estás pagando), /clientes/* (portal cliente)
-  // En mobile además el banner se solapaba con la imagen del producto.
-  const HIDDEN_ON = ["/carrito", "/pay", "/clientes"];
-  if (pathname && HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
+  // El contrato central excluye funnels y rutas privadas. En portada y ficha
+  // se conserva solo en escritorio; el CTA transaccional posee el móvil.
+  if (
+    !isFloatingSurfaceAllowedOnPath(
+      FLOATING_SURFACES.cart,
+      pathname || "",
+    )
+  ) {
+    return null;
+  }
 
   if (items.length === 0) return null;
 
   const total = cartTotalCents(items);
+  const mobileOwner = mobileFloatingOwner({
+    pathname: pathname || "",
+    cartCount: items.length,
+    compareCount: 0,
+  });
 
   return (
-    <div className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 transform">
+    <div
+      data-floating-surface={FLOATING_SURFACES.cart}
+      className={cn(
+        "fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)_+_0.75rem)] z-40 flex justify-center md:inset-x-auto md:bottom-24 md:left-1/2 md:-translate-x-1/2 md:transform",
+        mobileOwner !== FLOATING_SURFACES.cart && "hidden md:flex",
+      )}
+    >
       <Link
         href="/carrito"
-        className="flex items-center gap-3 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-bone shadow-2xl transition hover:bg-accent-dark"
+        className="flex min-h-11 max-w-full items-center gap-3 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-bone shadow-2xl transition-colors duration-200 motion-reduce:transition-none hover:bg-accent-dark"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="9" cy="21" r="1" />
           <circle cx="20" cy="21" r="1" />
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
         </svg>
-        <span>
+        <span className="truncate">
           {items.length} producto{items.length === 1 ? "" : "s"} · {EUR.format(total / 100)}
         </span>
         <span className="text-bone/70">·</span>

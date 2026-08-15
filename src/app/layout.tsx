@@ -18,6 +18,8 @@ import { SpotifyPixel } from "@/components/SpotifyPixel";
 import { EntryPopupAB } from "@/components/EntryPopupAB";
 import { AttributionTracker } from "@/components/AttributionTracker";
 import { VoiceAgentGate } from "@/components/VoiceAgentGate";
+import { FloatingSurfaceCoordinator } from "@/components/FloatingSurfaceCoordinator";
+import { floatingSurfacePriorityCss } from "@/lib/floating-surfaces";
 
 // Tipografía oficial Manual de identidad Startidea v1.0
 // Montserrat para todo el sistema · Alternates solo display (h1, citas).
@@ -89,12 +91,14 @@ export const metadata: Metadata = {
 // Antes vivía en `metadata.themeColor` (deprecated en 14, warning en 15).
 export const viewport: Viewport = {
   themeColor: "#F4EFE6", // crema — fondo por defecto manual Startidea
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${montserrat.variable} ${montserratAlt.variable}`}>
       <head>
+        <style>{floatingSurfacePriorityCss()}</style>
         {/* Performance: preconnect a orígenes críticos que cargamos en el
             primer paint. Reduce LCP eliminando handshake TCP/TLS. Solo
             los críticos — los de ads van con dns-prefetch (más barato). */}
@@ -140,6 +144,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CookieBanner />
         <EntryPopupAB />
         <VoiceAgentGate />
+        <FloatingSurfaceCoordinator />
       </body>
     </html>
   );

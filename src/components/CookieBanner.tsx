@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { FLOATING_SURFACES } from "@/lib/floating-surfaces";
 
 /**
  * Cookie banner GDPR.
@@ -66,9 +67,10 @@ export function CookieBanner() {
 
   return (
     <div
+      data-floating-surface={FLOATING_SURFACES.consent}
       role="dialog"
       aria-label="Preferencias de cookies"
-      className="fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-3xl rounded-2xl border border-line bg-bone shadow-xl"
+      className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)_+_0.75rem)] z-[60] mx-auto max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_1.5rem)] max-w-3xl overflow-y-auto rounded-2xl border border-line bg-bone shadow-xl"
     >
       <div className="p-5 lg:p-6">
         {!expanded ? (

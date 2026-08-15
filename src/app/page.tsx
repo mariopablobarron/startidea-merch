@@ -20,7 +20,6 @@ import { Faq } from "@/components/Faq";
 import { ClosingStatement } from "@/components/ClosingStatement";
 import { QuoteSection } from "@/components/QuoteSection";
 import { Footer } from "@/components/Footer";
-import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { StickyMobileCta } from "@/components/StickyMobileCta";
 import { JsonLd } from "@/components/JsonLd";
 import { ORGANIZATION_JSONLD, WEBSITE_JSONLD, FAQ_JSONLD } from "@/lib/jsonld";
@@ -103,7 +102,6 @@ export default async function HomePage() {
         <QuoteSection />
       </main>
       <Footer />
-      <WhatsAppFloat />
       <StickyMobileCta />
     </>
   );
