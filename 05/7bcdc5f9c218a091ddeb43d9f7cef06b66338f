@@ -1,0 +1,122 @@
+src/lib/public-supplier-leak-patterns.test.ts
+  s_578116e23e11cc::t_42eb3073c7b667 1-28,30-34,36,45,57-58
+  s_578116e23e11cc::t_a0c28d192f64b6 29,35,37-44,46-56
+src/app/api/cart-quote/save-for-later/route.ts
+  s_578116e23e11cc::t_34bda85c4747a9 65,67
+  s_578116e23e11cc::t_50e47361009974 8,50-64,66,68-72,89-94
+src/lib/cart-item-schema.ts
+  s_578116e23e11cc::t_0b385eb463f64e 30-31,48-50
+  s_578116e23e11cc::t_2baf993c95d17d 54-56,59
+scripts/deploy.sh
+  s_578116e23e11cc::t_f01433e8a9aba2 201-213,216-219,221-226
+  s_578116e23e11cc::t_42eb3073c7b667 214
+  s_578116e23e11cc::t_a0c28d192f64b6 215,220
+src/lib/variant-grouping.ts
+  s_578116e23e11cc::t_afa0e5134605b6 33-34,53,67,78,86,139-140,146,163,178,233,253
+  s_578116e23e11cc::t_4d135ddb84ff9b 103
+  s_578116e23e11cc::t_8d4af9ce79e510 66
+src/components/ProductGallery.tsx
+  s_578116e23e11cc::t_3bb14e14f18c6b 18,20,57-58,81-82,84,95,157,200,203,207
+src/lib/quote-request-variant.test.ts
+  s_578116e23e11cc::t_d7e0a47a224fad 52,56,71-72,76-77,90
+  s_578116e23e11cc::t_acfbe32b2a2eb3 9,11-13,20-21,25-26,30-32,39,42
+src/lib/supplier-order-variant.test.ts
+  s_578116e23e11cc::t_d9b1209d8cc0d9 211-235
+  s_578116e23e11cc::t_714944452819f5 11-18,39-46,72,81,105-125,179-186,192,195-196
+  s_578116e23e11cc::t_6da5495c33d54d 126-139
+src/lib/cart-item-schema.test.ts
+  s_578116e23e11cc::t_3d13ebe0665d7a 230-241
+  s_578116e23e11cc::t_8739632093b1e4 6,18
+src/app/clientes/[token]/page.tsx
+  s_578116e23e11cc::t_b2942c5d8c9529 5,60,64,88-98,186-190
+src/components/ProductVariantSelection.guard.test.ts
+  s_578116e23e11cc::t_0d6f943a1ad755 21-22,45,58-68
+  s_578116e23e11cc::t_4819ccfe14c241 69
+scripts/audit-supplier-leaks.ts
+  s_578116e23e11cc::t_3b706fddd2c6cf 26,42-43,48-49,92-93
+  s_578116e23e11cc::t_42eb3073c7b667 15,17,53
+src/lib/SupplierVariantBoundary.guard.test.ts
+  s_578116e23e11cc::t_8b6fbe38af3c9b 109-125
+  s_578116e23e11cc::t_48308e99e31b21 62-98
+  s_578116e23e11cc::t_e36e91137883f4 99,126-133
+  s_578116e23e11cc::t_aa44a9fca03d88 100-108
+src/app/api/quote-request-product/route.ts
+  s_578116e23e11cc::t_d496b7b49c1fbb 31-40,47,52,60-62,76,87-92,95,100,102-112,114,124
+src/app/api/v1/quotes/route.ts
+  s_578116e23e11cc::t_698b198c00dd53 8,16-17,27-29,100-113,129,131,133,138-139
+src/lib/public-variant-reference.test.ts
+  s_578116e23e11cc::t_a87fc11f2f9db1 1-37,63-91,107-108
+  s_578116e23e11cc::t_aa44a9fca03d88 38-62,92-106
+src/lib/suppliers/cifra.ts
+  s_578116e23e11cc::t_5159ac4663807c 24-27,289,297
+src/app/docs/api/page.tsx
+  s_578116e23e11cc::t_05e63fd645bfc1 72-76,95-96,143
+src/components/ProductOrderForm.tsx
+  s_578116e23e11cc::t_ad8d3e9a0a6bd1 163,167,519,547,619,627,697,717,722
+src/components/VoiceAgentWidget.tsx
+  s_578116e23e11cc::t_38f5811387a2bb 70-71,427-429,459
+  s_578116e23e11cc::t_eba77fbce70018 460-463
+  s_578116e23e11cc::t_ea5ff895662fc4 487
+src/lib/suppliers/cifra-variant.test.ts
+  s_578116e23e11cc::t_a32a81351202f9 1-10,14-15,17-71
+  s_578116e23e11cc::t_6da5495c33d54d 11-13,16
+src/app/api/products/cards/route.ts
+  s_578116e23e11cc::t_369ec7748dedfa 49-50,89-90
+src/lib/cart-storage.ts
+  s_578116e23e11cc::t_cbfe3a92a9352f 33-35,86-87
+  s_578116e23e11cc::t_0d2733c026617a 37
+src/components/VoiceAgentWidget.guard.test.ts
+  s_578116e23e11cc::t_8b6fbe38af3c9b 42-59
+src/lib/suppliers/cifra-sync.ts
+  s_578116e23e11cc::t_8980924ac26228 27,37,293,302,307-309,315,320-322
+src/lib/supplier-order-variant.ts
+  s_578116e23e11cc::t_6da5495c33d54d 142
+  s_578116e23e11cc::t_0512f413f98aa1 8,13-14,23-30,36,66-75,116-124,129-136,138,140-141,148,151,163-166,170,172-174
+src/lib/public-supplier-leak-patterns.ts
+  s_578116e23e11cc::t_42eb3073c7b667 1-17,24
+  s_578116e23e11cc::t_a0c28d192f64b6 18-23
+src/app/api/v1/products/route.ts
+  s_578116e23e11cc::t_05e63fd645bfc1 7,47-48,57-66,101-117
+src/app/api/cart-quote/[id]/route.ts
+  s_578116e23e11cc::t_ef6ff20454ab99 5,80-81,87-90
+src/lib/variant-grouping.test.ts
+  s_578116e23e11cc::t_8a6e80e620e9d6 69,81,110,146,154
+  s_578116e23e11cc::t_eeb28a4179a8f6 129-140
+  s_578116e23e11cc::t_d4eea7f16b3b47 169,177,189,203,215-216,226-227,235,247,259,266,287,295,315-316,319,324-325,335,338,342,349,359-360,364,368
+src/lib/public-variant-reference.ts
+  s_578116e23e11cc::t_8c47b8091aba5e 1,3-8,10-97
+  s_578116e23e11cc::t_0ef5acbe8d68f8 2,9
+src/lib/quote-request-variant.ts
+  s_578116e23e11cc::t_a149b8cb380d4c 4-5,10,15-16,24,33-34,37-40,53-60,79-83,109-110,115-116
+src/components/CartPage.tsx
+  s_578116e23e11cc::t_8065b758a9a081 263-266,497-504
+  s_578116e23e11cc::t_76850afbc18def 387-390
+  s_578116e23e11cc::t_35cb60abb0c45e 472
+  s_578116e23e11cc::t_7b8c2af22c2d97 505
+src/app/api/cart-quote/route.ts
+  s_578116e23e11cc::t_6b3a06a8da2899 17,43-44,60-62,160-167,169-186
+src/app/catalogo/[slug]/page.tsx
+  s_578116e23e11cc::t_66392175ca7052 14,153-158,165
+src/lib/suppliers/cifra-variant.ts
+  s_578116e23e11cc::t_f031cd3d857548 5-20,23-47,64,75,88,105
+  s_578116e23e11cc::t_6da5495c33d54d 21-22
+  s_578116e23e11cc::t_584e8770d60b1b 1-4,48-63,65-74,76-87,89-104,106-127
+src/app/api/clientes/reorder/route.ts
+  s_578116e23e11cc::t_a337941ca634c3 7,62-63,65-66,87-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "057bcdc5f9c218a091ddeb43d9f7cef06b66338f",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
