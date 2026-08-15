@@ -77,7 +77,7 @@ export function NavCartBadge() {
         <>
           <span className="tabular-nums">{count} ud</span>
           {totalCents > 0 && (
-            <span className="hidden sm:inline tabular-nums">· {EUR.format(totalCents / 100)}</span>
+            <span className="hidden xl:inline tabular-nums">· {EUR.format(totalCents / 100)}</span>
           )}
         </>
       )}
