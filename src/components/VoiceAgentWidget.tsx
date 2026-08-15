@@ -11,7 +11,10 @@ import {
   isFloatingSurfaceAllowedOnPath,
   mobileFloatingOwner,
 } from "@/lib/floating-surfaces";
-import { useModalFocus } from "@/lib/use-modal-focus";
+import {
+  useModalFocus,
+  useModelessDialogFocus,
+} from "@/lib/use-modal-focus";
 
 /**
  * Widget flotante del agente de voz David (ElevenLabs Conversational AI).
@@ -990,10 +993,11 @@ function VoiceAgentInner() {
   }, [isActive, isConnecting, stop]);
   const closeProductSheet = useCallback(() => setFichaUrl(null), []);
 
-  useModalFocus({
-    active: dialogOpen && fichaUrl === null,
+  useModelessDialogFocus({
+    active: dialogOpen,
     containerRef: dialogRef,
     onEscape: closeVoiceDialog,
+    suspended: fichaUrl !== null,
     restoreFallbackSelector: "[data-voice-agent-launcher]",
   });
   useModalFocus({
@@ -1086,7 +1090,6 @@ function VoiceAgentInner() {
           data-floating-surface={FLOATING_SURFACES.assistantDialog}
           id="voice-agent-dialog"
           role="dialog"
-          aria-modal="true"
           aria-label={`${agentName}, asistente virtual con IA`}
           tabIndex={-1}
           className="fixed bottom-[calc(env(safe-area-inset-bottom)_+_0.75rem)] left-3 right-3 z-50 max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_1.5rem)] max-w-md overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl md:bottom-6 md:left-auto md:right-6"
