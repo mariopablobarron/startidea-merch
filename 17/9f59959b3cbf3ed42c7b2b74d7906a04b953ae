@@ -1,0 +1,39 @@
+src/app/api/clientes/me/route.ts
+  s_578116e23e11cc::t_f466a1d15abc42 29-33,36-41,55-64
+src/lib/customer-favorites-response.test.ts
+  s_578116e23e11cc::t_90676b33725bcc 1-22,25-26
+  s_578116e23e11cc::t_961a5d5d72ae3d 23-24
+src/components/portal/FavoriteHeart.tsx
+  s_578116e23e11cc::t_90676b33725bcc 4,22
+  s_578116e23e11cc::t_f466a1d15abc42 21
+src/app/api/clientes/favorites/route.test.ts
+  s_578116e23e11cc::t_90676b33725bcc 82-83,99
+  s_578116e23e11cc::t_f466a1d15abc42 1-81,84-98,100-101
+src/lib/customer-favorites-response.ts
+  s_578116e23e11cc::t_90676b33725bcc 1-13,23
+  s_578116e23e11cc::t_961a5d5d72ae3d 14-22
+src/app/api/clientes/favorites/route.ts
+  s_578116e23e11cc::t_f466a1d15abc42 9-13,26-31,37-40
+src/components/portal/FavoriteHeart.guard.test.ts
+  s_578116e23e11cc::t_f466a1d15abc42 1-8,13-15,18-21,29-31
+  s_578116e23e11cc::t_90676b33725bcc 9-12,16-17,22-28
+src/app/api/clientes/me/route.test.ts
+  s_578116e23e11cc::t_f466a1d15abc42 1-77,80-82,99-108
+  s_578116e23e11cc::t_90676b33725bcc 78-79,83-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "179f59959b3cbf3ed42c7b2b74d7906a04b953ae",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
