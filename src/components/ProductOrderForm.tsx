@@ -21,7 +21,12 @@ import { AnimatedPrice } from "@/lib/spells/animated-price";
 import { MarkingTechniqueTooltip } from "./MarkingTechniqueTooltip";
 import { ExtraMarkingsPanel, type ExtraMarking } from "./ExtraMarkingsPanel";
 import { useProductColor } from "./product-color-context";
-import type { ColorOption } from "@/lib/variant-grouping";
+import {
+  resolveOrderVariantSelection,
+  currentVariantQuantityLines,
+  type ColorOption,
+  type VariantSelectionPrompt,
+} from "@/lib/variant-grouping";
 import {
   FLOATING_SURFACES,
   shouldShowStickyActionsForRect,
@@ -138,22 +143,46 @@ export function ProductOrderForm({
   // marcaje vía API, promos) funciona sin cambios.
   const activeColorOpt = useMemo(() => {
     if (!colorOptions || colorOptions.length === 0) return undefined;
-    if (colorOptions.length === 1) return colorOptions[0];
-    return colorOptions.find((o) => o.colorName === selectedColor?.colorName);
-  }, [colorOptions, selectedColor?.colorName]);
+    const productHasStock = colorOptions.some((option) => option.totalStock > 0);
+    const eligibleOptions = productHasStock
+      ? colorOptions.filter((option) => option.totalStock > 0)
+      : colorOptions;
+    const selectedOption = eligibleOptions.find(
+      (option) =>
+        option.key === selectedColor?.optionKey ||
+        (selectedColor?.optionKey == null &&
+          selectedColor?.colorName != null &&
+          option.colorName === selectedColor.colorName),
+    );
+    return selectedOption ?? (eligibleOptions.length === 1 ? eligibleOptions[0] : undefined);
+  }, [colorOptions, selectedColor?.colorName, selectedColor?.optionKey]);
   const matrixSizes = activeColorOpt?.sizes ?? [];
-  const canMultiSize = matrixSizes.length > 1;
+  const canMultiSize = matrixSizes.length > 1 && !activeColorOpt?.ambiguous;
   const [multiSize, setMultiSize] = useState(false);
   const [sizesQty, setSizesQty] = useState<Record<string, number>>({});
   // Cambiar de color reinicia la matriz (los SKUs por talla son otros)
   useEffect(() => {
     setSizesQty({});
   }, [activeColorOpt?.key]);
-  const matrixTotal = Object.values(sizesQty).reduce((s, n) => s + (n || 0), 0);
+  // Solo cuentan los SKU del color ACTUAL. El efecto de arriba limpia el
+  // estado después del render; este filtro evita que durante ese intervalo
+  // una cantidad del color anterior habilite el CTA o altere el precio.
+  const currentVariantLines = currentVariantQuantityLines(matrixSizes, sizesQty);
+  const matrixTotal = currentVariantLines.reduce((sum, line) => sum + line.quantity, 0);
   const matrixActive = multiSize && canMultiSize && !!activeColorOpt;
+  const { variant: orderVariant, prompt: variantSelectionPrompt } = useMemo(
+    () => resolveOrderVariantSelection(colorOptions, selectedColor),
+    [colorOptions, selectedColor],
+  );
+  const addRequirement: VariantSelectionPrompt | "Indica cantidades" | null =
+    matrixActive
+      ? matrixTotal > 0
+        ? null
+        : "Indica cantidades"
+      : variantSelectionPrompt;
 
   const finalQty = matrixActive
-    ? Math.max(1, matrixTotal)
+    ? matrixTotal
     : usingCustom
       ? Math.max(1, parseInt(customQty, 10) || 0)
       : qty;
@@ -228,6 +257,11 @@ export function ProductOrderForm({
   const [loadingCalc, setLoadingCalc] = useState(false);
 
   useEffect(() => {
+    if (finalQty < 1) {
+      setCalc(null);
+      setLoadingCalc(false);
+      return;
+    }
     if (!withMarking || !position || !technique) {
       setCalc(null);
       return;
@@ -390,9 +424,33 @@ export function ProductOrderForm({
   }, [addedAt]);
   const recentlyAdded = addedAt != null && Date.now() - addedAt < 2500;
 
+  function focusVariantRequirement(
+    requirement: NonNullable<typeof addRequirement>,
+  ) {
+    const selector =
+      requirement === "Elige un color"
+        ? "[data-color-option]"
+        : requirement === "Elige una talla"
+          ? "[data-size-option]"
+          : requirement === "Indica cantidades"
+            ? "[data-matrix-quantity]"
+            : "[data-variant-review]";
+    const scope =
+      requirement === "Elige un color" || requirement === "Elige una talla"
+        ? '[data-product-region="gallery"] '
+        : "";
+    const variantControl = document.querySelector<HTMLElement>(
+      `${scope}${selector}:not(:disabled)`,
+    );
+    variantControl?.scrollIntoView({ block: "center" });
+    variantControl?.focus({ preventScroll: true });
+  }
+
   function onAddToCart(e?: React.MouseEvent<HTMLButtonElement>) {
-    // Multi-talla sin cantidades: nada que añadir
-    if (matrixActive && matrixTotal <= 0) return;
+    if (addRequirement) {
+      focusVariantRequirement(addRequirement);
+      return;
+    }
 
     // Spell A1 — confetti desde el botón pulsado (desktop o sticky mobile)
     const btn = e?.currentTarget;
@@ -452,18 +510,16 @@ export function ProductOrderForm({
     // Multi-talla: una línea de carrito POR TALLA, todas al precio unitario
     // del tramo de la tirada total (unitCents ya se calculó con finalQty=suma).
     if (matrixActive && activeColorOpt) {
-      for (const s of matrixSizes) {
-        const q = sizesQty[s.sku] ?? 0;
-        if (q <= 0) continue;
+      for (const line of currentVariantLines) {
         addItem({
           productSlug,
           productRef,
           productName,
           primaryImageUrl: activeColorOpt.imageUrl ?? primaryImageUrl,
-          variantSku: s.sku,
+          variantSku: line.sku,
           colorName: activeColorOpt.colorName,
-          size: s.size,
-          quantity: q,
+          size: line.size,
+          quantity: line.quantity,
           markingTechniqueCode: allMarkings[0]?.techniqueCode ?? null,
           markingTechniqueName: allMarkings[0]?.techniqueName ?? null,
           markingPositionId: allMarkings[0]?.positionId ?? null,
@@ -471,7 +527,7 @@ export function ProductOrderForm({
           markingComplexity: withMarking ? manipulation : null,
           markings: allMarkings.length > 0 ? allMarkings : undefined,
           unitPriceClientCents: unitCents,
-          totalClientCents: unitCents != null ? unitCents * q : null,
+          totalClientCents: unitCents != null ? unitCents * line.quantity : null,
           customerLogoUrl: withMarking ? logo?.url ?? null : null,
           customerLogoFilename: withMarking ? logo?.filename ?? null : null,
           customerLogoSize: withMarking ? logo?.size ?? null : null,
@@ -487,10 +543,10 @@ export function ProductOrderForm({
       productRef,
       productName,
       // Si el cliente eligió una variante de color, usamos su imagen y datos
-      primaryImageUrl: selectedColor?.imageUrl ?? primaryImageUrl,
-      variantSku: selectedColor?.sku ?? null,
-      colorName: selectedColor?.colorName ?? null,
-      size: selectedColor?.size ?? null,
+      primaryImageUrl: orderVariant?.imageUrl ?? primaryImageUrl,
+      variantSku: orderVariant?.sku ?? null,
+      colorName: orderVariant?.colorName ?? null,
+      size: orderVariant?.size ?? null,
       quantity: finalQty,
       // Shape plano (compatibilidad): primer marcaje
       markingTechniqueCode: allMarkings[0]?.techniqueCode ?? null,
@@ -512,6 +568,10 @@ export function ProductOrderForm({
   }
 
   function onCotizar() {
+    if (matrixActive && matrixTotal === 0) {
+      focusVariantRequirement("Indica cantidades");
+      return;
+    }
     const markingTxt =
       withMarking && technique && position
         ? ` · ${technique.techniqueName} en ${positionOptionLabel(position, positionIdx)}${
@@ -520,12 +580,11 @@ export function ProductOrderForm({
         : " · sin marcaje";
     const colorTxt =
       matrixActive && activeColorOpt
-        ? ` · ${activeColorOpt.colorName ?? ""} tallas ${matrixSizes
-            .filter((s) => (sizesQty[s.sku] ?? 0) > 0)
-            .map((s) => `${s.size}:${sizesQty[s.sku]}`)
+        ? ` · ${activeColorOpt.colorName ?? ""} tallas ${currentVariantLines
+            .map((line) => `${line.size}:${line.quantity}`)
             .join(" ")}`
-        : selectedColor?.colorName
-          ? ` · ${selectedColor.colorName}${selectedColor.size ? ` talla ${selectedColor.size}` : ""}`
+        : orderVariant?.colorName
+          ? ` · ${orderVariant.colorName}${orderVariant.size ? ` talla ${orderVariant.size}` : ""}`
           : "";
     const detail = `${productName} (ref. ${productRef}) · ${finalQty} uds${colorTxt}${markingTxt}`;
     try {
@@ -538,6 +597,10 @@ export function ProductOrderForm({
   }
 
   async function submitQuoteRequest() {
+    if (matrixActive && matrixTotal === 0) {
+      focusVariantRequirement("Indica cantidades");
+      return;
+    }
     if (!qrEmail.trim()) return;
     setQrState("sending");
     setQrError(null);
@@ -550,6 +613,22 @@ export function ProductOrderForm({
           qty: finalQty,
           email: qrEmail.trim(),
           name: qrName.trim() || undefined,
+          ...(matrixActive
+            ? {
+                variantLines: currentVariantLines.map((line) => ({
+                    sku: line.sku,
+                    colorName: activeColorOpt?.colorName ?? null,
+                    size: line.size,
+                    quantity: line.quantity,
+                  })),
+              }
+            : orderVariant
+              ? {
+                  variantSku: orderVariant.sku,
+                  colorName: orderVariant.colorName,
+                  size: orderVariant.size,
+                }
+              : {}),
           ...(withMarking && technique
             ? {
                 techniqueCode: technique.techniqueCode,
@@ -630,6 +709,7 @@ export function ProductOrderForm({
                       </span>
                       <input
                         type="number"
+                        data-matrix-quantity
                         min={0}
                         max={1_000_000}
                         disabled={outOfStock}
@@ -1064,9 +1144,29 @@ export function ProductOrderForm({
 
       {/* 5. Botones */}
       <div ref={actionsRef} className="mt-5 grid gap-2">
+        {addRequirement && (
+          <p
+            id="product-variant-required"
+            role="alert"
+            aria-live="polite"
+            className="rounded-xl border border-accent/30 bg-accent-wash px-3 py-2 text-sm text-accent-deep"
+          >
+            {addRequirement === "Indica cantidades"
+              ? "Indica al menos una cantidad en la matriz de tallas."
+              : addRequirement === "Solicita revisión de variante"
+                ? "Las variantes de este producto necesitan revisión. Solicita un presupuesto y las confirmamos contigo."
+                : `${addRequirement} en la galería antes de añadir el producto.`}
+          </p>
+        )}
         <button
           type="button"
           onClick={onCotizar}
+          data-variant-review
+          aria-describedby={
+            matrixActive && matrixTotal === 0
+              ? "product-variant-required"
+              : undefined
+          }
           className="w-full rounded-full bg-ink px-6 py-3.5 text-base font-semibold text-bone shadow-lg transition hover:bg-accent"
         >
           Configurar y cotizar
@@ -1075,13 +1175,15 @@ export function ProductOrderForm({
           type="button"
           onClick={onAddToCart}
           disabled={!totalCents}
+          aria-describedby={addRequirement ? "product-variant-required" : undefined}
           className={`w-full rounded-full border px-6 py-3 text-sm font-medium transition disabled:opacity-40 ${
-            recentlyAdded
+            recentlyAdded && !addRequirement
               ? "border-social bg-social/10 text-social"
               : "border-line bg-bone-soft text-ink hover:border-accent"
           }`}
         >
-          {recentlyAdded ? "✓ Añadido al pedido" : "+ Añadir al pedido"}
+          {addRequirement ??
+            (recentlyAdded ? "✓ Añadido al pedido" : "+ Añadir al pedido")}
         </button>
 
         {/* Solicitar presupuesto formal por email (lo revisamos y enviamos) */}
@@ -1130,6 +1232,11 @@ export function ProductOrderForm({
                   type="button"
                   onClick={submitQuoteRequest}
                   disabled={qrState === "sending" || !qrEmail.trim()}
+                  aria-describedby={
+                    matrixActive && matrixTotal === 0
+                      ? "product-variant-required"
+                      : undefined
+                  }
                   className="flex-1 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-bone shadow transition hover:bg-accent-dark disabled:opacity-40"
                 >
                   {qrState === "sending" ? "Enviando…" : "Enviar solicitud"}
@@ -1167,13 +1274,15 @@ export function ProductOrderForm({
             <button
               type="button"
               onClick={onAddToCart}
+              aria-describedby={addRequirement ? "product-variant-required" : undefined}
               className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
-                recentlyAdded
+                recentlyAdded && !addRequirement
                   ? "bg-social/15 text-social"
                   : "bg-accent text-bone hover:bg-accent-dark"
               }`}
             >
-              {recentlyAdded ? "✓ Añadido" : "+ Añadir"}
+              {addRequirement ??
+                (recentlyAdded ? "✓ Añadido" : "+ Añadir")}
             </button>
           </div>
         </div>

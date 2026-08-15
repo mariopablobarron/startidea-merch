@@ -21,6 +21,7 @@ import {
 } from "@/lib/suppliers/midocean-orders";
 import { notifyTelegram } from "@/lib/telegram";
 import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
+import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
@@ -111,6 +112,14 @@ async function cursarPedidoMidocean(
     return { skipped: true, reason: "No hay items MidOcean en este cart" };
   }
 
+  const supplierVariants = await resolveSupplierOrderVariants(
+    itemsToProcess,
+    "midocean",
+  );
+  if (!supplierVariants.ok) {
+    return { ok: false, error: supplierVariants.error };
+  }
+
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
     // Notificar admin para revisión manual
     await notifyTelegram(
@@ -121,7 +130,8 @@ async function cursarPedidoMidocean(
 
   const customerOrderRef = `merch-${cart.id.slice(0, 8)}`;
 
-  const items: MidoceanOrderItem[] = itemsToProcess.map((it) => {
+  const items: MidoceanOrderItem[] = itemsToProcess.map((it, index) => {
+    const supplierVariant = supplierVariants.items[index];
     // Si el cliente subió logo, lo enviamos a MidOcean como URL pública
     // absoluta para que ellos puedan descargarlo y producir con el artwork
     // correcto. Si la URL ya es absoluta (http/https), la usamos tal cual;
@@ -151,8 +161,8 @@ async function cursarPedidoMidocean(
         : undefined;
 
     return {
-      master_code: it.productRef,
-      sku: it.variantSku || it.productRef,
+      master_code: supplierVariant.supplierRef,
+      sku: supplierVariant.sku,
       quantity: it.quantity,
       print_positions: printPositions,
     };

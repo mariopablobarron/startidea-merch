@@ -8,6 +8,22 @@ import type { CotizarOk } from "./cotizar-core";
  * persistido en RecommenderQuery.quoteItems.
  */
 
+export type ProposalVariantLine = {
+  sku: string;
+  colorName: string | null;
+  size: string | null;
+  quantity: number;
+};
+
+export type ProposalVariantSelection = {
+  /** Texto canónico interno, con SKU, para revisión comercial. */
+  summary: string;
+  variantSku?: string | null;
+  colorName?: string | null;
+  size?: string | null;
+  variantLines?: ProposalVariantLine[];
+};
+
 export type ProposalQuoteItem = {
   description: string;
   notFound: boolean;
@@ -29,6 +45,8 @@ export type ProposalQuoteItem = {
   markingSetupCents: number;
   totalCents: number | null;
   priceSource: "tier" | "estimate" | null;
+  /** Variante exacta solicitada desde la ficha pública, si la había. */
+  variantSelection?: ProposalVariantSelection;
   /**
    * true si el concepto y/o el precio de esta línea vienen editados a mano
    * desde /admin/cotizar (excepción comercial) en vez de calculados. Cuando
@@ -162,6 +180,52 @@ export function formatTechnique(t: string | null | undefined): string {
 export function proposalLineLabel(item: ProposalQuoteItem): string {
   if (item.manualOverride) return item.description;
   return item.product?.name ?? item.description;
+}
+
+/** Texto de variante visible para revisión y PDF; tolera propuestas antiguas. */
+export function proposalVariantSummary(
+  item: ProposalQuoteItem,
+): string | null {
+  const summary = item.variantSelection?.summary?.trim();
+  return summary || null;
+}
+
+/** Etiqueta interna: el equipo comercial sí necesita SKU para cursar el pedido. */
+export function proposalVariantAdminLabel(
+  item: ProposalQuoteItem,
+): string | null {
+  const summary = proposalVariantSummary(item);
+  return summary ? `Variante: ${summary}` : null;
+}
+
+/**
+ * Etiqueta pública: solo atributos que el cliente reconoce. Nunca expone el
+ * SKU del proveedor aunque forme parte del resumen interno.
+ */
+export function proposalVariantCustomerLabel(
+  item: ProposalQuoteItem,
+): string | null {
+  const selection = item.variantSelection;
+  if (!selection) return null;
+
+  if (selection.variantLines?.length) {
+    const distribution = selection.variantLines
+      .map((line) => {
+        const attributes = [
+          line.colorName,
+          line.size ? `talla ${line.size}` : null,
+        ].filter((value): value is string => Boolean(value));
+        return `${line.quantity}× ${attributes.join(" · ") || "variante seleccionada"}`;
+      })
+      .join(" · ");
+    return `Variante: ${distribution}`;
+  }
+
+  const attributes = [
+    selection.colorName,
+    selection.size ? `talla ${selection.size}` : null,
+  ].filter((value): value is string => Boolean(value));
+  return `Variante: ${attributes.join(" · ") || "seleccionada"}`;
 }
 
 export function formatSizes(sizes: Record<string, number> | null | undefined): string {

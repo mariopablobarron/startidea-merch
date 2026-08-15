@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
+import type { VariantSelection } from "@/lib/variant-grouping";
 
 /**
  * Estado compartido de la variante de color elegida en la ficha de producto.
@@ -10,12 +11,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
  * estado por props. Este Context los conecta: la galería lo escribe al clicar
  * un swatch; el formulario lo lee para meter el color en el carrito/cotización.
  */
-export type SelectedColorVariant = {
-  sku: string;
-  colorName: string | null;
-  size: string | null; // talla elegida (null si el color no tiene tallas)
-  imageUrl: string | null; // ya pasada por proxyImageUrl en el servidor
-};
+export type SelectedColorVariant = VariantSelection;
 
 type ColorContextValue = {
   selected: SelectedColorVariant | null;

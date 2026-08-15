@@ -7,6 +7,11 @@ import { sendEmail } from "@/lib/resend";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { publicProductName } from "@/lib/product-name";
+import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
+import {
+  canonicalizeQuoteRequestVariantSelection,
+  validateQuoteRequestVariantDistribution,
+} from "@/lib/quote-request-variant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +34,20 @@ const Schema = z.object({
   email: z.string().email().max(200),
   name: z.string().max(120).optional().nullable(),
   company: z.string().max(160).optional().nullable(),
+  variantSku: z.string().min(1).max(160).optional().nullable(),
+  colorName: z.string().max(160).optional().nullable(),
+  size: z.string().max(80).optional().nullable(),
+  variantLines: z
+    .array(
+      z.object({
+        sku: z.string().min(1).max(160),
+        colorName: z.string().max(160).optional().nullable(),
+        size: z.string().min(1).max(80),
+        quantity: z.number().int().min(1).max(100_000),
+      }),
+    )
+    .max(40)
+    .optional(),
   // marcaje opcional (si el visitante lo configuró en la ficha)
   techniqueCode: z.string().min(1).max(20).optional(),
   numberOfColours: z.number().int().min(1).max(12).optional(),
@@ -44,6 +63,62 @@ export async function POST(req: Request) {
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const d = parsed.data;
+
+  const distributionError = validateQuoteRequestVariantDistribution(
+    d.qty,
+    d.variantSku,
+    d.variantLines,
+  );
+  if (distributionError) {
+    return NextResponse.json(
+      { error: distributionError },
+      { status: 400 },
+    );
+  }
+
+  const requestedSkus = d.variantLines?.length
+    ? d.variantLines.map((line) => line.sku)
+    : d.variantSku
+      ? [d.variantSku]
+      : [];
+  let canonicalVariants: Array<{
+    sku: string;
+    colorName: string | null;
+    size: string | null;
+  }> = [];
+  if (requestedSkus.length > 0) {
+    const checked = await resolveSupplierOrderVariants(
+      requestedSkus.map((variantSku) => ({ productSlug: d.slug, variantSku })),
+    );
+    if (
+      !checked.ok ||
+      checked.items.some((item, index) => item.sku !== requestedSkus[index])
+    ) {
+      return NextResponse.json(
+        {
+          error: "La variante solicitada no pertenece al producto.",
+          ...(!checked.ok ? { code: checked.code, detail: checked.error } : {}),
+        },
+        { status: 422 },
+      );
+    }
+    canonicalVariants = checked.items.map((item) => ({
+      sku: item.sku,
+      colorName: item.colorName,
+      size: item.size,
+    }));
+  }
+
+  const variantSelection = canonicalizeQuoteRequestVariantSelection(
+    d,
+    canonicalVariants,
+  );
+  if (!variantSelection) {
+    return NextResponse.json(
+      { error: "No se pudo reconstruir la variante solicitada." },
+      { status: 422 },
+    );
+  }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
   const ua = req.headers.get("user-agent") || null;
@@ -61,6 +136,7 @@ export async function POST(req: Request) {
 
   let proposalNumber: string | null = null;
   let productName = d.slug;
+  const variantSummary = variantSelection.summary;
   if (quote.ok && quote.pvp.baseTotal > 0) {
     productName = publicProductName(quote.product.name);
     const created = await createProposalFromCotizacion({
@@ -72,6 +148,7 @@ export async function POST(req: Request) {
       send: false,
       ip,
       ua,
+      variantSelection,
     });
     if (created.ok) proposalNumber = created.proposalNumber;
   }
@@ -91,8 +168,9 @@ export async function POST(req: Request) {
 
   // Aviso al admin con el borrador (o para gestión manual si no se pudo tarificar)
   void notifyTelegram(
-    `🧾 <b>Solicitud de presupuesto web</b>\n` +
+      `🧾 <b>Solicitud de presupuesto web</b>\n` +
       `Producto: ${escapeTgHtml(productName)} ×${d.qty}\n` +
+      `Variante: ${escapeTgHtml(variantSummary)}\n` +
       `Cliente: ${escapeTgHtml(d.name || d.email)}${d.company ? ` (${escapeTgHtml(d.company)})` : ""}\n` +
       (proposalNumber
         ? `📄 Borrador ${proposalNumber} listo — revisa y envía en /admin/propuestas`
@@ -102,7 +180,7 @@ export async function POST(req: Request) {
   );
   void notifyAdmins({
     title: "Nueva solicitud de presupuesto",
-    body: `${productName} ×${d.qty} · ${d.email}${proposalNumber ? ` · borrador ${proposalNumber}` : ""}`,
+    body: `${productName} ×${d.qty} · ${variantSummary} · ${d.email}${proposalNumber ? ` · borrador ${proposalNumber}` : ""}`,
     url: `${SITE_URL}/admin/propuestas`,
   }).catch((e) =>
     console.error("[quote-request-product] notifyAdmins falló:", e instanceof Error ? e.message : e),

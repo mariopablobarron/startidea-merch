@@ -11,7 +11,10 @@ import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { signProposalToken } from "@/lib/proposal-token";
-import type { ProposalQuoteItem } from "@/lib/proposal-types";
+import {
+  proposalVariantAdminLabel,
+  type ProposalQuoteItem,
+} from "@/lib/proposal-types";
 import { predictProposalsBatch } from "@/lib/insights/proposal-prediction";
 import { SendProposalDraftButton } from "@/components/SendProposalDraftButton";
 import { ResendProposalButton } from "@/components/ResendProposalButton";
@@ -179,6 +182,9 @@ export default async function PropuestasListPage({
               {proposals.map((p) => {
                 const itemsArr = (p.quoteItems as unknown as ProposalQuoteItem[]) ?? [];
                 const itemsLabel = `${itemsArr.length}`;
+                const variantLabels = itemsArr
+                  .map((item) => proposalVariantAdminLabel(item))
+                  .filter((label): label is string => Boolean(label));
                 const token = signProposalToken(p.id);
                 const pdfUrl = `/api/proposal/${encodeURIComponent(p.proposalNumber)}/pdf?token=${encodeURIComponent(token)}`;
                 return (
@@ -194,7 +200,17 @@ export default async function PropuestasListPage({
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-ink/70">{itemsLabel}</td>
+                    <td className="max-w-xs px-4 py-3 text-ink/70">
+                      <div>{itemsLabel}</div>
+                      {variantLabels.length > 0 && (
+                        <div
+                          className="mt-1 text-[11px] leading-snug text-ink/60"
+                          title={variantLabels.join(" · ")}
+                        >
+                          {variantLabels.join(" · ")}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right tabular-nums text-ink/70">
                       {EUR.format(p.subtotalCents / 100)}
                     </td>

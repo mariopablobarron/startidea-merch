@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { extractSize, groupColorOptions, colorGroupFromName, canonicalColorGroup, type VariantInput } from "./variant-grouping";
+import {
+  canonicalColorGroup,
+  colorGroupFromName,
+  currentVariantQuantityLines,
+  extractSize,
+  groupColorOptions,
+  resolveOrderVariantSelection,
+  selectableSizesForOption,
+  type ColorOption,
+  type VariantInput,
+} from "./variant-grouping";
 
 function v(partial: Partial<VariantInput> & { sku: string }): VariantInput {
   return {
@@ -81,6 +91,272 @@ describe("groupColorOptions", () => {
     expect(opts).toHaveLength(1);
     expect(opts[0].sizes.map((s) => s.size)).toEqual(["S", "M", "XL"]);
     expect(opts[0].totalStock).toBe(65);
+  });
+
+  it("conserva variantes solo-talla sin color en una opción neutra", () => {
+    const opts = groupColorOptions([
+      v({ sku: "CAM-S", size: "S", stockQty: 10 }),
+      v({ sku: "CAM-M", size: "M", stockQty: 12 }),
+    ]);
+
+    expect(opts).toHaveLength(1);
+    expect(opts[0]).toMatchObject({
+      key: "__no_color__",
+      colorName: null,
+      variantCount: 2,
+      untaggedVariantCount: 0,
+      ambiguous: false,
+    });
+    expect(opts[0].sizes.map((size) => [size.size, size.sku])).toEqual([
+      ["S", "CAM-S"],
+      ["M", "CAM-M"],
+    ]);
+  });
+
+  it("marca como ambiguos los SKU sin discriminante o con color+talla duplicado", () => {
+    const noDiscriminant = groupColorOptions([
+      v({ sku: "ROOT-A" }),
+      v({ sku: "ROOT-B" }),
+    ]);
+    expect(noDiscriminant[0].ambiguous).toBe(true);
+
+    const duplicateSize = groupColorOptions([
+      v({ sku: "BLUE-M-1", colorName: "AZUL", size: "M" }),
+      v({ sku: "BLUE-M-2", colorName: "AZUL", size: "M" }),
+    ]);
+    expect(duplicateSize[0].ambiguous).toBe(true);
+  });
+});
+
+describe("resolveOrderVariantSelection", () => {
+  const color = (
+    colorName: string,
+    primarySku: string,
+    sizes: ColorOption["sizes"] = [],
+  ): ColorOption => ({
+    key: colorName.toLowerCase(),
+    colorName,
+    colorHex: null,
+    imageUrl: `/${colorName.toLowerCase()}.jpg`,
+    sizes,
+    primarySku,
+    totalStock: 10,
+    variantCount: sizes.length || 1,
+    untaggedVariantCount: sizes.length > 0 ? 0 : 1,
+    ambiguous: false,
+  });
+
+  it("exige color cuando hay varias opciones", () => {
+    const options = [color("AZUL", "azul"), color("ROJO", "rojo")];
+    expect(resolveOrderVariantSelection(options, null)).toEqual({
+      variant: null,
+      prompt: "Elige un color",
+    });
+    expect(
+      resolveOrderVariantSelection(options, {
+        sku: "rojo",
+        optionKey: "rojo",
+        colorName: "ROJO",
+        size: null,
+        imageUrl: "/rojo.jpg",
+      }),
+    ).toEqual({
+      variant: {
+        sku: "rojo",
+        optionKey: "rojo",
+        colorName: "ROJO",
+        size: null,
+        imageUrl: "/rojo.jpg",
+      },
+      prompt: null,
+    });
+  });
+
+  it("descarta estado obsoleto y reconstruye la variante canónica", () => {
+    const stale = {
+      sku: "sku-producto-anterior",
+      optionKey: "azul",
+      colorName: "AZUL",
+      size: null,
+      imageUrl: "/anterior.jpg",
+    };
+    expect(resolveOrderVariantSelection([], stale)).toEqual({
+      variant: null,
+      prompt: null,
+    });
+    expect(
+      resolveOrderVariantSelection([color("AZUL", "azul-canonico")], stale),
+    ).toEqual({
+      variant: {
+        sku: "azul-canonico",
+        optionKey: "azul",
+        colorName: "AZUL",
+        size: null,
+        imageUrl: "/azul.jpg",
+      },
+      prompt: null,
+    });
+    expect(
+      resolveOrderVariantSelection(
+        [
+          color("AZUL", "azul-m", [
+            { sku: "azul-m", size: "M", stockQty: 5 },
+            { sku: "azul-l", size: "L", stockQty: 5 },
+          ]),
+        ],
+        stale,
+      ),
+    ).toEqual({ variant: null, prompt: "Elige una talla" });
+  });
+
+  it("exige talla solo cuando existe una elección real", () => {
+    const option = color("AZUL", "azul-m", [
+      { sku: "azul-s", size: "S", stockQty: 5 },
+      { sku: "azul-m", size: "M", stockQty: 5 },
+    ]);
+    expect(resolveOrderVariantSelection([option], null)).toEqual({
+      variant: null,
+      prompt: "Elige una talla",
+    });
+    expect(
+      resolveOrderVariantSelection([option], {
+        sku: null,
+        optionKey: "azul",
+        colorName: "AZUL",
+        size: null,
+        imageUrl: "/azul.jpg",
+      }),
+    ).toEqual({ variant: null, prompt: "Elige una talla" });
+  });
+
+  it("resuelve automáticamente una variante única", () => {
+    expect(resolveOrderVariantSelection([color("AZUL", "azul")], null)).toEqual({
+      variant: {
+        sku: "azul",
+        optionKey: "azul",
+        colorName: "AZUL",
+        size: null,
+        imageUrl: "/azul.jpg",
+      },
+      prompt: null,
+    });
+    expect(
+      resolveOrderVariantSelection(
+        [
+          color("AZUL", "azul-m", [
+            { sku: "azul-m", size: "M", stockQty: 5 },
+          ]),
+        ],
+        null,
+      ),
+    ).toEqual({
+      variant: {
+        sku: "azul-m",
+        optionKey: "azul",
+        colorName: "AZUL",
+        size: "M",
+        imageUrl: "/azul.jpg",
+      },
+      prompt: null,
+    });
+  });
+
+  it("resuelve talla neutra exacta y nunca pierde variantes sin color", () => {
+    const options = groupColorOptions([
+      v({ sku: "CAM-S", size: "S", stockQty: 5 }),
+      v({ sku: "CAM-M", size: "M", stockQty: 5 }),
+    ]);
+    expect(resolveOrderVariantSelection(options, null)).toEqual({
+      variant: null,
+      prompt: "Elige una talla",
+    });
+    expect(
+      resolveOrderVariantSelection(options, {
+        sku: "CAM-M",
+        optionKey: "__no_color__",
+        colorName: null,
+        size: "M",
+        imageUrl: null,
+      }),
+    ).toEqual({
+      variant: {
+        sku: "CAM-M",
+        optionKey: "__no_color__",
+        colorName: null,
+        size: "M",
+        imageUrl: null,
+      },
+      prompt: null,
+    });
+  });
+
+  it("bloquea grupos ambiguos en vez de elegir un SKU arbitrario", () => {
+    const options = groupColorOptions([v({ sku: "A" }), v({ sku: "B" })]);
+    expect(resolveOrderVariantSelection(options, null)).toEqual({
+      variant: null,
+      prompt: "Solicita revisión de variante",
+    });
+  });
+
+  it("usa stock solo para excluir, nunca para escoger entre tallas elegibles", () => {
+    const option = color("AZUL", "azul-s", [
+      { sku: "azul-s", size: "S", stockQty: 0 },
+      { sku: "azul-m", size: "M", stockQty: 8 },
+    ]);
+    expect(resolveOrderVariantSelection([option], null)).toMatchObject({
+      variant: { sku: "azul-m", size: "M" },
+      prompt: null,
+    });
+
+    const underOrder = color("AZUL", "azul-s", [
+      { sku: "azul-s", size: "S", stockQty: 0 },
+      { sku: "azul-m", size: "M", stockQty: 0 },
+    ]);
+    expect(resolveOrderVariantSelection([underOrder], null)).toEqual({
+      variant: null,
+      prompt: "Elige una talla",
+    });
+  });
+
+  it("ignora una talla stale aunque coincida la clave de color", () => {
+    const current = color("AZUL", "actual-l", [
+      { sku: "actual-l", size: "L", stockQty: 5 },
+    ]);
+    expect(
+      selectableSizesForOption(current).find((size) => size.sku === "anterior-m"),
+    ).toBeUndefined();
+    expect(
+      resolveOrderVariantSelection([current], {
+        sku: "anterior-m",
+        optionKey: "azul",
+        colorName: "AZUL",
+        size: "M",
+        imageUrl: "/anterior.jpg",
+      }),
+    ).toMatchObject({
+      variant: { sku: "actual-l", size: "L", imageUrl: "/azul.jpg" },
+      prompt: null,
+    });
+  });
+});
+
+describe("currentVariantQuantityLines", () => {
+  it("ignora cantidades del color anterior durante el render previo al efecto", () => {
+    const quantities = { "AZUL-S": 20, "ROJO-M": 5, "ROJO-L": 0 };
+    const currentSizes = [
+      { sku: "ROJO-M", size: "M", stockQty: 10 },
+      { sku: "ROJO-L", size: "L", stockQty: 10 },
+    ];
+
+    expect(currentVariantQuantityLines(currentSizes, quantities)).toEqual([
+      { sku: "ROJO-M", size: "M", stockQty: 10, quantity: 5 },
+    ]);
+    expect(
+      currentVariantQuantityLines(
+        [{ sku: "VERDE-XL", size: "XL", stockQty: 10 }],
+        quantities,
+      ),
+    ).toEqual([]);
   });
 });
 

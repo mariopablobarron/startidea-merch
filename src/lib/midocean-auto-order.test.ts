@@ -5,6 +5,7 @@ const cartUpdate = vi.fn();
 const poUpdate = vi.fn();
 const createOrderMock = vi.fn();
 const notifyTelegramMock = vi.fn();
+const productFindMany = vi.fn();
 
 /**
  * AdminSetting falso que modela el índice único de Postgres. El cerrojo de
@@ -24,6 +25,9 @@ vi.mock("@/lib/prisma", () => ({
     },
     purchaseOrder: {
       update: (...a: unknown[]) => poUpdate(...a),
+    },
+    product: {
+      findMany: (...a: unknown[]) => productFindMany(...a),
     },
     adminSetting: {
       create: ({ data }: { data: { key: string; value: number } }) => {
@@ -112,7 +116,8 @@ function cart(overrides: CartOverrides = {}) {
     items: [
       {
         id: "it_1",
-        productRef: "MO1234",
+        productSlug: "mo1234",
+        productRef: "STM-TEST",
         variantSku: "MO1234-05",
         quantity: 100,
         purchaseOrderId: null,
@@ -145,6 +150,20 @@ beforeEach(() => {
   poUpdate.mockResolvedValue({});
   notifyTelegramMock.mockResolvedValue(undefined);
   createOrderMock.mockResolvedValue({ dryRun: false, ok: true, orderId: "MO-ORDER-1", raw: {} });
+  productFindMany.mockImplementation(
+    async ({ where }: { where: { slug: { in: string[] } } }) =>
+      where.slug.in.map((slug) => ({
+        slug,
+        supplier: "midocean",
+        supplierRef: slug === "mk9999" ? "MK9999" : "MO1234",
+        _count: { variants: 3 },
+        variants: [
+          { sku: "MO1234-05" },
+          { sku: "MO1234-07" },
+          { sku: "MK9999-01" },
+        ],
+      })),
+  );
 });
 
 describe("autoPlaceMidoceanOrder · cuándo NO se llama al proveedor", () => {
@@ -211,8 +230,8 @@ describe("autoPlaceMidoceanOrder · qué se pide exactamente", () => {
           { id: "po_mak", supplier: "makito" },
         ],
         items: [
-          { ...cart().items[0], id: "it_mid", productRef: "MO1234", purchaseOrderId: "po_mid" },
-          { ...cart().items[0], id: "it_mak", productRef: "MK9999", purchaseOrderId: "po_mak" },
+          { ...cart().items[0], id: "it_mid", productSlug: "mo1234", purchaseOrderId: "po_mid" },
+          { ...cart().items[0], id: "it_mak", productSlug: "mk9999", purchaseOrderId: "po_mak" },
         ],
       }),
     );
@@ -252,14 +271,43 @@ describe("autoPlaceMidoceanOrder · qué se pide exactamente", () => {
     });
   });
 
-  it("sin variantSku cae al productRef en vez de mandar un SKU vacío", async () => {
+  it("sin variantSku y sin variantes usa supplierRef, nunca la referencia STM", async () => {
     cartFindUnique.mockResolvedValue(
       cart({ items: [{ ...cart().items[0], variantSku: null }] }),
     );
+    productFindMany.mockResolvedValue([
+      {
+        slug: "mo1234",
+        supplier: "midocean",
+        supplierRef: "MO1234",
+        _count: { variants: 0 },
+        variants: [],
+      },
+    ]);
 
     await autoPlaceMidoceanOrder("cart_abcdef123456");
 
     expect(payloadEnviado().items[0].sku).toBe("MO1234");
+  });
+
+  it("sin variantSku y con varias variantes corta antes de llamar al proveedor", async () => {
+    cartFindUnique.mockResolvedValue(
+      cart({ items: [{ ...cart().items[0], variantSku: null }] }),
+    );
+    productFindMany.mockResolvedValue([
+      {
+        slug: "mo1234",
+        supplier: "midocean",
+        supplierRef: "MO1234",
+        _count: { variants: 2 },
+        variants: [{ sku: "MO1234-01" }],
+      },
+    ]);
+
+    const result = await autoPlaceMidoceanOrder("cart_abcdef123456");
+
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("variante exacta") });
+    expect(createOrderMock).not.toHaveBeenCalled();
   });
 
   it("la dirección de envío del pedido es la del cliente, no un valor por defecto", async () => {
@@ -347,7 +395,7 @@ describe("autoPlaceMidoceanOrder · carrito que no es de MidOcean", () => {
       cart({
         purchaseOrders: [{ id: "po_mak", supplier: "makito" }],
         items: [
-          { ...cart().items[0], productRef: "MK9999", variantSku: "MK9999-01", purchaseOrderId: "po_mak" },
+          { ...cart().items[0], productSlug: "mk9999", variantSku: "MK9999-01", purchaseOrderId: "po_mak" },
         ],
       }),
     );

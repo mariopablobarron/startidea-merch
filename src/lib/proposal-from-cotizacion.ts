@@ -3,7 +3,11 @@ import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { type CotizarOk } from "./cotizar-core";
-import { computeProposalTotals, cotizacionToProposalItem } from "./proposal-types";
+import {
+  computeProposalTotals,
+  cotizacionToProposalItem,
+  type ProposalVariantSelection,
+} from "./proposal-types";
 import { generateProposalNumber } from "./proposal-number";
 import { RecommenderProposalPdf } from "./recommender-proposal-pdf";
 import { sendProposalEmail } from "./proposal-mailer";
@@ -40,6 +44,8 @@ export type CreateProposalArgs = {
    * facturaría gratis o mal en silencio.
    */
   itemOverride?: ProposalItemOverrideInput;
+  /** Selección exacta solicitada en ficha; se conserva en quoteItems para revisión. */
+  variantSelection?: ProposalVariantSelection;
 };
 
 export type CreateProposalResult =
@@ -50,7 +56,10 @@ export async function createProposalFromCotizacion(args: CreateProposalArgs): Pr
   const { quote } = args;
   if (quote.pvp.baseTotal <= 0) return { ok: false, error: "El producto no tiene precio válido para cotizar." };
 
-  const baseItem = cotizacionToProposalItem(quote);
+  const calculatedItem = cotizacionToProposalItem(quote);
+  const baseItem = args.variantSelection
+    ? { ...calculatedItem, variantSelection: args.variantSelection }
+    : calculatedItem;
   let items = [baseItem];
   if (args.itemOverride) {
     const overrideError = validateProposalOverride(args.itemOverride);

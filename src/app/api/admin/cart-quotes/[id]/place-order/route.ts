@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/admin-auth";
 import { midoceanOrders, type MidoceanCreateOrderPayload, type MidoceanOrderItem } from "@/lib/suppliers/midocean-orders";
 import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
+import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
@@ -45,6 +46,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Carrito vacío" }, { status: 400 });
   }
 
+  const supplierVariants = await resolveSupplierOrderVariants(cart.items, "midocean");
+  if (!supplierVariants.ok) {
+    return NextResponse.json(
+      { error: supplierVariants.error, code: supplierVariants.code },
+      { status: 422 },
+    );
+  }
+
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
     return NextResponse.json(
       { error: "Falta dirección de envío. Edita el carrito antes de crear el pedido." },
@@ -54,7 +63,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const customerOrderRef = `merch-${cart.id.slice(0, 8)}`;
 
-  const items: MidoceanOrderItem[] = cart.items.map((it) => {
+  const items: MidoceanOrderItem[] = cart.items.map((it, index) => {
+    const supplierVariant = supplierVariants.items[index];
     // Si hay logo subido por el cliente lo enviamos como print_artwork_url
     // absoluto, así MidOcean lo descarga y produce con el arte correcto
     // (sin necesidad de proof manual ni biblioteca de logotipos).
@@ -65,8 +75,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         : `${SITE_URL}${it.customerLogoUrl}`;
     }
     return {
-      master_code: it.productRef,
-      sku: it.variantSku || it.productRef, // fallback al ref si no hay variante específica
+      master_code: supplierVariant.supplierRef,
+      sku: supplierVariant.sku,
       quantity: it.quantity,
       print_positions: it.markingTechniqueCode && it.markingPositionId
         ? [

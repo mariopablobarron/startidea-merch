@@ -14,6 +14,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { notifyTelegram } from "@/lib/telegram";
+import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 export type MakitoAutoOrderResult =
   | { ok: true; notified: true; poId: string }
@@ -54,6 +55,11 @@ export async function autoPlaceMakitoOrder(cartId: string): Promise<MakitoAutoOr
     return { skipped: true, reason: "PO Makito sin items" };
   }
 
+  const supplierVariants = await resolveSupplierOrderVariants(makitoItems, "makito");
+  if (!supplierVariants.ok) {
+    return { ok: false, error: supplierVariants.error };
+  }
+
   // Validación dirección
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
     await notifyTelegram(
@@ -75,8 +81,8 @@ export async function autoPlaceMakitoOrder(cartId: string): Promise<MakitoAutoOr
     ``,
     `<b>Items (${makitoItems.length}):</b>`,
   ];
-  for (const it of makitoItems) {
-    const ref = it.variantSku || it.productRef;
+  for (const [index, it] of makitoItems.entries()) {
+    const ref = supplierVariants.items[index].sku;
     const marking = it.markingTechniqueName ? ` · marcaje ${it.markingTechniqueName}` : "";
     lines.push(`  · ${it.quantity}× <code>${ref}</code> — ${it.productName}${marking}`);
   }
@@ -97,8 +103,8 @@ export async function autoPlaceMakitoOrder(cartId: string): Promise<MakitoAutoOr
     ``,
     `Desglose:`,
     ...makitoItems.map(
-      (it) =>
-        `  · ${it.quantity}× ${it.variantSku || it.productRef} — ${it.productName}${it.markingTechniqueName ? " · " + it.markingTechniqueName : ""}`,
+      (it, index) =>
+        `  · ${it.quantity}× ${supplierVariants.items[index].sku} — ${it.productName}${it.markingTechniqueName ? " · " + it.markingTechniqueName : ""}`,
     ),
   ].join("\n");
 

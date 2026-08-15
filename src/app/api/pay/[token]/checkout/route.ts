@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { stripe, STRIPE_MODE } from "@/lib/stripe";
 import { withIva } from "@/lib/iva";
+import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   const { token } = await params;
   const cart = await prisma.cartQuote.findUnique({
     where: { paymentLinkToken: token },
-    include: { payments: { where: { status: "PAID" } }, items: { select: { id: true } } },
+    include: {
+      payments: { where: { status: "PAID" } },
+      items: {
+        select: {
+          id: true,
+          productSlug: true,
+          productRef: true,
+          variantSku: true,
+        },
+      },
+    },
   });
   if (!cart) return NextResponse.json({ error: "Token no encontrado" }, { status: 404 });
   if (!cart.acceptedTotalCents || !cart.depositPercent) {
@@ -37,6 +48,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     return NextResponse.json(
       { error: "Este enlace de pago ha caducado. Contáctanos para renovar tu cotización." },
       { status: 410 },
+    );
+  }
+
+  // Preflight antes de crear una sesión Stripe: una línea con varias
+  // variantes y sin SKU exacto no se puede cursar de forma segura.
+  const supplierVariants = await resolveSupplierOrderVariants(cart.items);
+  if (!supplierVariants.ok) {
+    return NextResponse.json(
+      {
+        error: "Hay un producto cuya variante debe revisarse antes del pago.",
+        detail: supplierVariants.error,
+        code: supplierVariants.code,
+      },
+      { status: 422 },
     );
   }
 

@@ -141,4 +141,26 @@ describe("createProposalFromCotizacion — itemOverride", () => {
     expect(items[0].manualOverride).toBeUndefined();
     expect(items[0].totalCents).toBe(23324);
   });
+
+  it("persiste SKU/color/tallas de la solicitud pública para revisión", async () => {
+    const variantSelection = {
+      summary: "10× CAM-S · 20× CAM-M",
+      variantLines: [
+        { sku: "CAM-S", colorName: "AZUL", size: "S", quantity: 10 },
+        { sku: "CAM-M", colorName: "AZUL", size: "M", quantity: 20 },
+      ],
+    };
+
+    const result = await createProposalFromCotizacion({
+      quote: quote({ baseTotal: 23324, qty: 30 }),
+      email: "cliente@empresa.com",
+      variantSelection,
+      status: "draft",
+      send: false,
+    });
+
+    expect(result.ok).toBe(true);
+    const items = proposalCreate.mock.calls[0][0].data.quoteItems;
+    expect(items[0].variantSelection).toEqual(variantSelection);
+  });
 });
