@@ -1,0 +1,22 @@
+src/app/catalogo/[slug]/page.tsx
+  s_578116e23e11cc::t_d81227407a3cad 268-271,285-313,315-429,431
+  s_578116e23e11cc::t_086da4f32f4c6b 267,272,280-284,314,430,432
+src/app/catalogo/product-detail-layout.guard.test.ts
+  s_578116e23e11cc::t_7059b63690916a 1-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "81514e2e32f253195278afcf6803262393de8c31",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
