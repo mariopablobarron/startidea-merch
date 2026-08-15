@@ -3,12 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { SECTORS } from "@/lib/sectors";
 import { tagToSlug } from "@/lib/blog-tags";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
+const BASE =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
 // Renderizar en request time, no en build. Sin esto, el sitemap se prerender
 // con BD vacía y queda cacheado para siempre (solo 12 URLs estáticas).
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
+
+function uniqueByUrl(entries: MetadataRoute.Sitemap): MetadataRoute.Sitemap {
+  const unique = new Map<string, MetadataRoute.Sitemap[number]>();
+  for (const entry of entries) {
+    if (!unique.has(entry.url)) unique.set(entry.url, entry);
+  }
+  return [...unique.values()];
+}
 
 /**
  * Sitemap dinámico:
@@ -20,55 +29,65 @@ export const revalidate = 3600;
  * Si la BD está caída en build, devuelve solo las estáticas (degradación).
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
   const staticPages: MetadataRoute.Sitemap = [
-    { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${BASE}/catalogo`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${BASE}/categorias`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${BASE}/promociones`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${BASE}/trabajos`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${BASE}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
-    { url: `${BASE}/recursos`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${BASE}/recomendador`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/comparar`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${BASE}/sectores`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/`, changeFrequency: "weekly", priority: 1 },
+    { url: `${BASE}/catalogo`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE}/categorias`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE}/promociones`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE}/trabajos`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${BASE}/blog`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE}/recursos`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE}/recomendador`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/comparar`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/sectores`, changeFrequency: "monthly", priority: 0.8 },
     // /clientes NO va en sitemap — es portal privado con robots: noindex
-    { url: `${BASE}/sobre`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${BASE}/ayuda`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${BASE}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/aviso-legal`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${BASE}/privacidad`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${BASE}/cookies`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/sobre`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/ayuda`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/faq`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/aviso-legal`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/privacidad`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/cookies`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   try {
     const [products, categories, posts, magnets] = await Promise.all([
       prisma.product.findMany({
         where: { active: true, NOT: { override: { is: { hidden: true } } } },
-        select: { slug: true, syncedAt: true },
+        select: { slug: true },
         orderBy: { slug: "asc" },
       }),
-      prisma.category.findMany({ select: { slug: true } }),
+      prisma.category.findMany({
+        select: { slug: true },
+        orderBy: [{ slug: "asc" }, { id: "asc" }],
+      }),
       prisma.blogPost.findMany({
         where: { status: "PUBLISHED" },
-        select: { slug: true, updatedAt: true },
+        select: { slug: true, updatedAt: true, tags: true },
+        orderBy: { slug: "asc" },
       }),
       prisma.leadMagnet.findMany({
         where: { active: true },
-        select: { slug: true, updatedAt: true },
+        select: { slug: true },
+        orderBy: { slug: "asc" },
       }),
     ]);
 
+    // Product.syncedAt registra cada consulta al proveedor aunque el contenido
+    // no haya cambiado. No es un lastmod editorial fiable: es preferible
+    // omitirlo a decir a buscadores que miles de fichas cambian en cada sync.
     const productPages: MetadataRoute.Sitemap = products.map((p) => ({
       url: `${BASE}/catalogo/${p.slug}`,
-      lastModified: p.syncedAt,
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }));
 
-    const categoryPages: MetadataRoute.Sitemap = categories.map((c) => ({
-      url: `${BASE}/categorias/${c.slug}`,
-      lastModified: now,
+    // Category.slug solo es único dentro de su padre. La URL pública, en
+    // cambio, usa únicamente el slug, así que varios nodos "otros" o
+    // "mochilas" representan la MISMA URL y deben aparecer una sola vez.
+    const categoryPages: MetadataRoute.Sitemap = [
+      ...new Set(categories.map((c) => c.slug)),
+    ].map((slug) => ({
+      url: `${BASE}/categorias/${slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }));
@@ -80,26 +99,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    // Páginas por tag del blog (clúster temático). Re-query con tags ya que
-    // arriba el select no los incluyó.
-    const postsWithTags = await prisma.blogPost.findMany({
-      where: { status: "PUBLISHED" },
-      select: { tags: true },
-    });
-    const uniqueTagSlugs = new Set<string>();
-    postsWithTags.forEach((p) =>
-      p.tags.forEach((t) => uniqueTagSlugs.add(tagToSlug(t))),
-    );
-    const tagPages: MetadataRoute.Sitemap = Array.from(uniqueTagSlugs).map((slug) => ({
-      url: `${BASE}/blog/tag/${slug}`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    }));
+    // Un tag sí puede heredar una fecha real: la última edición de cualquiera
+    // de los posts publicados que alimentan su landing.
+    const tagUpdatedAt = new Map<string, Date>();
+    for (const post of posts) {
+      for (const tag of post.tags) {
+        const slug = tagToSlug(tag);
+        if (!slug) continue;
+        const previous = tagUpdatedAt.get(slug);
+        if (!previous || post.updatedAt > previous)
+          tagUpdatedAt.set(slug, post.updatedAt);
+      }
+    }
+    const tagPages: MetadataRoute.Sitemap = [...tagUpdatedAt.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, "es"))
+      .map(([slug, updatedAt]) => ({
+        url: `${BASE}/blog/tag/${slug}`,
+        lastModified: updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      }));
 
+    // LeadMagnet.updatedAt también cambia al incrementar downloadCount. Hasta
+    // disponer de una fecha editorial separada, no se publica como lastmod.
     const magnetPages: MetadataRoute.Sitemap = magnets.map((m) => ({
       url: `${BASE}/recursos/${m.slug}`,
-      lastModified: m.updatedAt,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     }));
@@ -107,12 +131,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // 6 landings dinámicas de sectores — programmatic SEO real
     const sectorPages: MetadataRoute.Sitemap = SECTORS.map((s) => ({
       url: `${BASE}/sectores/${s.slug}`,
-      lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     }));
 
-    return [
+    return uniqueByUrl([
       ...staticPages,
       ...sectorPages,
       ...productPages,
@@ -120,15 +143,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...blogPages,
       ...tagPages,
       ...magnetPages,
-    ];
+    ]);
   } catch {
     // Mismo fallback pero incluyendo sectores (estáticos en /lib/sectors)
     const sectorPages: MetadataRoute.Sitemap = SECTORS.map((s) => ({
       url: `${BASE}/sectores/${s.slug}`,
-      lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     }));
-    return [...staticPages, ...sectorPages];
+    return uniqueByUrl([...staticPages, ...sectorPages]);
   }
 }
