@@ -1,0 +1,25 @@
+src/components/VoiceAgentWidget.tsx
+  s_578116e23e11cc::t_b7db1beec320e1 14-17,996-997,1000
+src/lib/use-modal-focus.ts
+  s_578116e23e11cc::t_e68b0f4fc592b5 192-194
+  s_578116e23e11cc::t_b7db1beec320e1 146-191,195-219
+src/components/FloatingSurfaces.guard.test.ts
+  s_578116e23e11cc::t_1b8df27b41a7a3 76-77
+  s_578116e23e11cc::t_e68b0f4fc592b5 79-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "cd3b5c7040d5b8899e168567c17778b2923b3a4c",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
