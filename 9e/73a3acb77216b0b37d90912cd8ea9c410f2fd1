@@ -1,0 +1,21 @@
+src/components/NavCartBadge.tsx
+  s_578116e23e11cc::t_768e9011ab4b24 80
+src/components/NavResponsive.guard.test.ts
+  s_578116e23e11cc::t_768e9011ab4b24 1-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "9e73a3acb77216b0b37d90912cd8ea9c410f2fd1",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
