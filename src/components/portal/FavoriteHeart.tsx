@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { favoriteIdsForSession } from "@/lib/customer-favorites-response";
 
 /**
  * Corazón de favoritos en la ficha de producto. Solo funciona con sesión del
@@ -17,9 +18,8 @@ function loadFavorites(): Promise<Set<string> | null> {
   if (!favsPromise) {
     favsPromise = fetch("/api/clientes/favorites")
       .then(async (r) => {
-        if (r.status === 401) return null; // sin sesión
-        const j = (await r.json()) as { ids?: string[] };
-        return new Set(j.ids ?? []);
+        if (!r.ok) return null;
+        return favoriteIdsForSession(await r.json());
       })
       .catch(() => null);
   }

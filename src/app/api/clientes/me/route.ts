@@ -26,9 +26,19 @@ const PatchSchema = z.object({
   shippingAddress: z.string().max(600).nullable().optional(),
 });
 
+const PRIVATE_NO_STORE = {
+  "Cache-Control": "private, no-store, max-age=0",
+  Vary: "Cookie",
+};
+
 export async function GET(req: Request) {
   const session = await authenticateCustomerRequest(req);
-  if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  if (!session) {
+    return NextResponse.json(
+      { ok: true, authenticated: false, profile: null },
+      { headers: PRIVATE_NO_STORE },
+    );
+  }
 
   const user = await prisma.customerUser.findUnique({
     where: { email: session.email },
@@ -42,8 +52,16 @@ export async function GET(req: Request) {
       shippingAddress: true,
     },
   });
-  if (!user) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-  return NextResponse.json({ ok: true, profile: user });
+  if (!user) {
+    return NextResponse.json(
+      { error: "No encontrado" },
+      { status: 404, headers: PRIVATE_NO_STORE },
+    );
+  }
+  return NextResponse.json(
+    { ok: true, authenticated: true, profile: user },
+    { headers: PRIVATE_NO_STORE },
+  );
 }
 
 export async function PATCH(req: Request) {

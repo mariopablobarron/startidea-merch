@@ -6,6 +6,11 @@ import { rateLimit } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const PRIVATE_NO_STORE = {
+  "Cache-Control": "private, no-store, max-age=0",
+  Vary: "Cookie",
+};
+
 /**
  * Favoritos del portal cliente.
  *
@@ -18,13 +23,21 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const session = await authenticateCustomerRequest(req);
-  if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  if (!session) {
+    return NextResponse.json(
+      { ok: true, authenticated: false, ids: [] },
+      { headers: PRIVATE_NO_STORE },
+    );
+  }
 
   const favs = await prisma.customerFavorite.findMany({
     where: { email: session.email.toLowerCase() },
     select: { productId: true },
   });
-  return NextResponse.json({ ok: true, ids: favs.map((f) => f.productId) });
+  return NextResponse.json(
+    { ok: true, authenticated: true, ids: favs.map((f) => f.productId) },
+    { headers: PRIVATE_NO_STORE },
+  );
 }
 
 async function parseProductId(req: Request): Promise<string | null> {
