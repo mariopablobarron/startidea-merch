@@ -11,6 +11,7 @@ import { ProductOrderForm } from "@/components/ProductOrderForm";
 import { ProductColorProvider } from "@/components/product-color-context";
 import { ProductGallery } from "@/components/ProductGallery";
 import { groupColorOptions } from "@/lib/variant-grouping";
+import { normalizeLegacyCifraVariant } from "@/lib/suppliers/cifra-variant";
 import { CompareToggle } from "@/components/CompareToggle";
 // ProductOrderForm fusiona PriceTierTable + QuantityConfigurator + MarkingCalculator
 // en un único flujo: cantidad → toggle marcaje → opciones → total + CTAs.
@@ -149,14 +150,19 @@ export default async function ProductDetailPage({
   // Agrupamos TODAS las variantes. Las filas sin color forman una opción
   // neutra para que productos solo-talla o de variante única conserven su SKU.
   // Las imágenes se pasan por proxyImageUrl al ser cliente el receptor.
-  const colorOptions = groupColorOptions(product.variants).map((o) => ({
+  const publicVariants = product.variants.map((variant) =>
+    product.supplier === "cifra"
+      ? normalizeLegacyCifraVariant(variant, product.supplierRef)
+      : variant,
+  );
+  const colorOptions = groupColorOptions(publicVariants).map((o) => ({
     ...o,
     imageUrl: proxyImageUrl(o.imageUrl),
   }));
 
   // Tabla de tallas — agrupar variantes únicas por size si existe
   const sizes = Array.from(
-    new Set(product.variants.map((v) => v.size).filter((s): s is string => !!s)),
+    new Set(colorOptions.flatMap((option) => option.sizes.map((size) => size.size))),
   ).sort(naturalSizeOrder);
 
   // Precio cliente — FUENTE ÚNICA (coste neto → margen/override → promo).

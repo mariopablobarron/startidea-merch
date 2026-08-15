@@ -14,7 +14,7 @@ import { loadActivePromotions } from "@/lib/promotions";
 import { computeServerLinePricing, type ServerMarkingInput } from "@/lib/quote-server-pricing";
 import type { Prisma } from "@prisma/client";
 import { normalizeProductName } from "@/lib/product-name";
-import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
+import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
@@ -40,7 +40,8 @@ const ItemSchema = z.object({
   productName: z.string().min(1).max(500),
   primaryImageUrl: z.string().nullable().optional(),
   quantity: z.number().int().positive().max(1_000_000),
-  variantSku: z.string().nullable().optional(),
+  variantId: z.string().nullable().optional(),
+  variantSku: z.string().nullable().optional(), // pestañas legacy
   colorName: z.string().nullable().optional(),
   // Shape plano (deprecated, mantenido por compat)
   markingTechniqueCode: z.string().nullable().optional(),
@@ -56,6 +57,9 @@ const ItemSchema = z.object({
   customerLogoUrl: z.string().max(500).nullable().optional(),
   customerLogoFilename: z.string().max(200).nullable().optional(),
   customerLogoSize: z.number().int().nullable().optional(),
+}).refine((item) => !(item.variantId && item.variantSku), {
+  message: "Usa variantId o variantSku legacy, no ambos",
+  path: ["variantId"],
 });
 
 const Schema = z.object({
@@ -153,18 +157,33 @@ export async function POST(req: Request) {
     );
   }
   const data = parsed.data;
-  const resolvedProducts = await resolveProductsBySlugs(
-    data.items.map((item) => item.productSlug),
-    (slugs) =>
-      prisma.product.findMany({
-        where: { slug: { in: [...slugs] } },
-        select: { slug: true },
-      }),
+  // Frontera navegador → servidor: los IDs públicos se validan contra el
+  // producto y se convierten a SKU internos antes de precio, cupón o escritura.
+  const canonicalVariants = await resolveSupplierOrderVariants(
+    data.items.map((item) => ({
+      productSlug: item.productSlug,
+      variantId: item.variantId,
+      variantSku: item.variantSku,
+    })),
   );
-  const items = data.items.map((item) => ({
-    ...item,
-    productSlug: resolvedProducts.get(item.productSlug)?.canonicalSlug ?? item.productSlug,
-  }));
+  if (!canonicalVariants.ok) {
+    return NextResponse.json(
+      {
+        error: "Hay un producto cuya variante no es válida.",
+        code: canonicalVariants.code,
+      },
+      { status: 422 },
+    );
+  }
+  const items = data.items.map((item, index) => {
+    const canonical = canonicalVariants.items[index];
+    return {
+      ...item,
+      productSlug: canonical.canonicalSlug,
+      variantSku: canonical.variantId ? canonical.sku : null,
+      colorName: canonical.colorName,
+    };
+  });
   const clientTotal = items.reduce((sum, it) => sum + (it.totalClientCents || 0), 0);
 
   // Pago directo: SOLO si el cliente lo pide y todos los items traen precio.

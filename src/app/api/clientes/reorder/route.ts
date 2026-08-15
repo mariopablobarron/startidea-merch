@@ -4,6 +4,7 @@ import { proxyImageUrl } from "@/lib/proxy-image";
 import { authenticateCustomerRequest } from "@/lib/customer-auth";
 import type { CartItem } from "@/lib/cart-storage";
 import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
+import { resolvePublicVariantReferences } from "@/lib/public-variant-reference";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,9 +59,11 @@ export async function POST(req: Request) {
 
   const items: CartItem[] = [];
   const unavailable: string[] = [];
-  for (const it of cart.items) {
+  const publicVariants = await resolvePublicVariantReferences(cart.items);
+  for (const [index, it] of cart.items.entries()) {
     const resolved = activeProducts.get(it.productSlug);
-    if (!resolved) {
+    const publicVariant = publicVariants[index];
+    if (!resolved || publicVariant?.requiresVariantReview) {
       unavailable.push(it.productName);
       continue;
     }
@@ -81,8 +84,9 @@ export async function POST(req: Request) {
       productName: it.productName,
       primaryImageUrl: proxyImageUrl(it.primaryImageUrl), // nunca URL cruda de proveedor
       quantity: it.quantity,
-      variantSku: it.variantSku,
-      colorName: it.colorName,
+      variantId: publicVariant?.variantId ?? null,
+      colorName: publicVariant?.colorName ?? it.colorName,
+      size: publicVariant?.size ?? null,
       markingTechniqueCode: first?.techniqueCode ?? null,
       markingTechniqueName: first?.techniqueName ?? null,
       markingPositionId: first?.positionId ?? null,

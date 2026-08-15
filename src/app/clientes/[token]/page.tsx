@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { extractSize } from "@/lib/variant-grouping";
+import { resolvePublicVariantReferences } from "@/lib/public-variant-reference";
 
 export const metadata: Metadata = {
   title: "Tu impacto · TodoMerchandising",
@@ -57,9 +57,11 @@ export default async function CustomerDashboardPage({
     include: {
       items: {
         select: {
+          id: true,
           quantity: true,
           productName: true,
           productRef: true,
+          productSlug: true,
           colorName: true,
           variantSku: true,
         },
@@ -82,6 +84,17 @@ export default async function CustomerDashboardPage({
       },
     },
   });
+
+  const storedItems = carts.flatMap((cart) => cart.items);
+  const publicVariants = await resolvePublicVariantReferences(
+    storedItems.map((item) => ({
+      productSlug: item.productSlug,
+      variantSku: item.variantSku,
+    })),
+  );
+  const publicVariantByItemId = new Map(
+    storedItems.map((item, index) => [item.id, publicVariants[index]]),
+  );
 
   const ordered = carts.filter((c) => c.status === "ORDERED");
   const totalItems = ordered.reduce(
@@ -170,8 +183,11 @@ export default async function CustomerDashboardPage({
                       <li key={i}>
                         {it.quantity} × {it.productName} <span className="font-mono text-[10px]">({it.productRef})</span>
                         {(() => {
-                          const talla = it.variantSku ? extractSize({ size: null, sku: it.variantSku }) : null;
-                          const extra = [it.colorName, talla ? `talla ${talla}` : null]
+                          const variant = publicVariantByItemId.get(it.id);
+                          const extra = [
+                            variant?.colorName ?? it.colorName,
+                            variant?.size ? `talla ${variant.size}` : null,
+                          ]
                             .filter(Boolean)
                             .join(" · ");
                           return extra ? <span className="text-ink/50"> — {extra}</span> : null;

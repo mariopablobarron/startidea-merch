@@ -46,6 +46,8 @@ export async function GET(req: Request) {
           primaryImageUrl: true,
           fromPriceCents: true,
           categoryId: true,
+          _count: { select: { variants: true } },
+          variants: { take: 1, select: { id: true } },
           override: {
             select: {
               customName: true,
@@ -84,6 +86,8 @@ export async function GET(req: Request) {
         priceFromCents: price.finalCents,
         originalFromCents:
           price.hasPromo && price.originalCents !== price.finalCents ? price.originalCents : null,
+        variantId: p._count.variants === 1 ? p.variants[0]?.id ?? null : null,
+        requiresVariantSelection: p._count.variants > 1,
         url: `/catalogo/${p.slug}`,
       };
     });

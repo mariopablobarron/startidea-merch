@@ -260,6 +260,10 @@ export function CartPage() {
       setError("Tu carrito está vacío.");
       return;
     }
+    if (items.some((item) => item.variantReviewRequired)) {
+      setError("Vuelve a la ficha del producto indicado y elige de nuevo su variante.");
+      return;
+    }
     if (name.trim().length < 2 || !email.includes("@")) {
       setError("Faltan datos de contacto válidos.");
       return;
@@ -380,6 +384,10 @@ export function CartPage() {
     e.preventDefault();
     const mail = saveEmail.trim();
     if (!mail || items.length === 0) return;
+    if (items.some((item) => item.variantReviewRequired)) {
+      setSaveError("Revisa primero la variante indicada en el carrito.");
+      return;
+    }
     setSavingCart(true);
     setSaveError(null);
     try {
@@ -461,7 +469,7 @@ export function CartPage() {
 
         {items.map((it, i) => (
           <article
-            key={`${it.productSlug}-${it.variantSku || "_"}-${it.markingTechniqueCode || "_"}-${i}`}
+            key={`${it.productSlug}-${it.variantId || it.variantSku || "_"}-${it.markingTechniqueCode || "_"}-${i}`}
             className="grid gap-5 rounded-3xl border border-line bg-bone p-5 sm:grid-cols-[120px,1fr]"
           >
             <div className="relative aspect-square overflow-hidden rounded-2xl bg-bone-soft">
@@ -485,6 +493,15 @@ export function CartPage() {
                 {it.productName}
               </Link>
               <p className="text-xs text-ink/50">Ref. {it.productRef}</p>
+
+              {it.variantReviewRequired && (
+                <p className="mt-2 rounded-lg border border-accent/30 bg-accent-mist px-3 py-2 text-xs text-accent-deep">
+                  Esta configuración antigua necesita volver a elegir color o talla.{" "}
+                  <Link href={`/catalogo/${it.productSlug}`} className="font-semibold underline">
+                    Revisar variante
+                  </Link>
+                </p>
+              )}
 
               {(it.colorName || it.size) && (
                 <p className="mt-1.5 flex flex-wrap gap-1.5">

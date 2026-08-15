@@ -4,6 +4,7 @@ import { authenticateApiKey, requireScope } from "@/lib/api-auth";
 import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
+import { normalizeLegacyCifraVariant } from "@/lib/suppliers/cifra-variant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,6 +44,8 @@ export async function GET(req: Request) {
         enhancedShortDescription: true,
         material: true,
         primaryImageUrl: true,
+        supplier: true,
+        supplierRef: true,
         countryOfOrigin: true,
         weightG: true,
         lengthMm: true,
@@ -51,7 +54,16 @@ export async function GET(req: Request) {
         category: { select: { name: true, slug: true } },
         override: { select: { customName: true } },
         variants: {
-          select: { sku: true, colorName: true, colorGroup: true, stockQty: true, gtin: true, size: true },
+          select: {
+            id: true,
+            sku: true,
+            gtin: true,
+            colorName: true,
+            colorGroup: true,
+            colorHex: true,
+            stockQty: true,
+            size: true,
+          },
         },
         positions: {
           select: {
@@ -86,7 +98,23 @@ export async function GET(req: Request) {
       // mismo patrón que /api/recommend tras la fuga del 2026-07-20.
       image: proxyImageUrl(p.primaryImageUrl),
       category: p.category,
-      variants: p.variants,
+      variants: p.variants.map((storedVariant) => {
+        const variant =
+          p.supplier === "cifra"
+            ? normalizeLegacyCifraVariant(storedVariant, p.supplierRef)
+            : storedVariant;
+        return {
+          variantId: variant.id,
+          // Alias transitorio de v1: conserva el campo documentado sin volver
+          // a exponer la referencia de proveedor. Usar variantId en clientes nuevos.
+          sku: variant.id,
+          gtin: storedVariant.gtin,
+          colorName: variant.colorName,
+          colorGroup: variant.colorGroup,
+          stockQty: variant.stockQty,
+          size: variant.size,
+        };
+      }),
       marking: p.positions.map((pos) => ({
         position: pos.positionId,
         max_width_mm: pos.maxWidthMm,

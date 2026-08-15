@@ -15,9 +15,9 @@ import {
  *   cambia la imagen principal y marca el color. Nunca elige una talla por
  *   stock: si hay más de una, la decisión sigue siendo del cliente.
  * - Tallas: aparecen bajo los colores para el color elegido (o el único color).
- *   Clic → fija la variante exacta (SKU con esa talla).
+ *   Clic → fija la variante exacta mediante su identificador público opaco.
  *
- * La variante final (sku + colorName + size + imagen) se guarda en el Context
+ * La variante final (variantId + colorName + size + imagen) se guarda en el Context
  * para que el ProductOrderForm la meta en el carrito/pedido.
  */
 export function ProductGallery({
@@ -54,8 +54,8 @@ export function ProductGallery({
       : displayedOption ?? null;
   const activeSelectableSizes = activeColor ? selectableSizesForOption(activeColor) : [];
   const canonicalSelectedSize =
-    selectedOption && selected?.sku
-      ? activeSelectableSizes.find((size) => size.sku === selected.sku)
+    selectedOption && selected?.variantId
+      ? activeSelectableSizes.find((size) => size.variantId === selected.variantId)
       : undefined;
   const displayedSize =
     canonicalSelectedSize
@@ -78,10 +78,10 @@ export function ProductGallery({
     const sizes = selectableSizesForOption(opt);
     const onlySize = !opt.ambiguous && sizes.length === 1 ? sizes[0] : null;
     setSelected({
-      sku: onlySize
-        ? onlySize.sku
+      variantId: onlySize
+        ? onlySize.variantId
         : !opt.ambiguous && opt.sizes.length === 0 && opt.variantCount === 1
-          ? opt.primarySku
+          ? opt.primaryVariantId
           : null,
       optionKey: opt.key,
       colorName: opt.colorName,
@@ -92,7 +92,7 @@ export function ProductGallery({
 
   function selectSize(opt: ColorOption, s: SizeOption) {
     setSelected({
-      sku: s.sku,
+      variantId: s.variantId,
       optionKey: opt.key,
       colorName: opt.colorName,
       size: s.size,
@@ -154,7 +154,7 @@ export function ProductGallery({
                   {opt.imageUrl ? (
                     <Image
                       src={opt.imageUrl}
-                      alt={opt.colorName ?? opt.primarySku}
+                      alt={opt.colorName ?? "Opción estándar"}
                       fill
                       sizes="64px"
                       className="object-contain p-1"
@@ -197,14 +197,14 @@ export function ProductGallery({
               const colorHasStock = activeColor.sizes.some((s) => s.stockQty > 0);
               return activeColor.sizes.map((s) => {
                 const isSel =
-                  (selected?.sku === s.sku && selectedOption?.key === activeColor.key) ||
+                  (selected?.variantId === s.variantId && selectedOption?.key === activeColor.key) ||
                   (!activeColor.ambiguous &&
                     activeSelectableSizes.length === 1 &&
-                    activeSelectableSizes[0].sku === s.sku);
+                    activeSelectableSizes[0].variantId === s.variantId);
                 const outOfStock = colorHasStock && s.stockQty <= 0;
                 return (
                   <button
-                    key={s.sku}
+                    key={s.variantId}
                     type="button"
                     data-size-option
                     onClick={() => selectSize(activeColor, s)}

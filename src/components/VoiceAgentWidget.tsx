@@ -67,6 +67,8 @@ type ProductCard = {
   image: string | null;
   priceFromCents: number | null;
   originalFromCents: number | null;
+  variantId: string | null;
+  requiresVariantSelection: boolean;
   url: string;
 };
 
@@ -422,6 +424,9 @@ function VoiceAgentInner() {
               })
             : undefined;
           if (!card) return "Error: producto no encontrado o no disponible.";
+          if (card.requiresVariantSelection) {
+            return `Este producto necesita elegir color o talla en ${card.url}. No lo he añadido para evitar cursar una variante incorrecta.`;
+          }
           // Posición: la resuelta por el servidor si viene; si no, la que diga
           // David; y como último recurso "AUTO" — el checkout tolera posición
           // inexacta (recae en cualquier posición del producto que soporte la
@@ -451,8 +456,11 @@ function VoiceAgentInner() {
             productName: card.name,
             primaryImageUrl: card.image,
             quantity: qty,
-            colorName: p.color?.trim() || null,
-            size: p.size?.trim() || null,
+            variantId: card.variantId,
+            // La identidad la decide el servidor. Los atributos libres del
+            // modelo no se persisten como si fueran metadata canónica.
+            colorName: null,
+            size: null,
             notes: p.notes?.trim() || null,
             markingTechniqueCode: markings ? tech : null,
             markingTechniqueName: markings ? (calcMarking?.techniqueName ?? null) : null,
@@ -476,7 +484,7 @@ function VoiceAgentInner() {
             ...m,
             {
               role: "cart",
-              text: `${qty} × ${card.name}${p.color ? ` (${p.color})` : ""}${markTxt}${totalTxt ? ` — ${totalTxt} sin IVA` : ""}`,
+              text: `${qty} × ${card.name}${markTxt}${totalTxt ? ` — ${totalTxt} sin IVA` : ""}`,
               at: Date.now(),
             },
           ]);

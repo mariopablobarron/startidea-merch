@@ -18,7 +18,8 @@ describe("guard: variante exacta antes de añadir al carrito", () => {
     expect(variantGuard).toBeLessThan(tracking);
     expect(variantGuard).toBeLessThan(addItem);
     expect(form).toContain("resolveOrderVariantSelection(");
-    expect(form).toContain("variantSku: orderVariant?.sku ?? null");
+    expect(form).toContain("variantId: orderVariant?.variantId ?? null");
+    expect(form).not.toContain("variantSku: orderVariant");
     expect(form).toContain("{addRequirement ??");
     expect(form).toContain('role="alert"');
   });
@@ -41,7 +42,7 @@ describe("guard: variante exacta antes de añadir al carrito", () => {
     const form = source("src/components/ProductOrderForm.tsx");
     const gallery = source("src/components/ProductGallery.tsx");
 
-    expect(page).toContain("groupColorOptions(product.variants)");
+    expect(page).toContain("groupColorOptions(publicVariants)");
     expect(page).not.toContain("product.variants.filter((v) => v.colorName)");
     expect(gallery).not.toContain("defaultSize");
     expect(form).toContain("data-matrix-quantity");
@@ -53,5 +54,17 @@ describe("guard: variante exacta antes de añadir al carrito", () => {
     expect(form).toContain("if (matrixActive && matrixTotal === 0)");
     expect(form.match(/focusVariantRequirement\("Indica cantidades"\)/g)).toHaveLength(2);
     expect(form).toContain("? matrixTotal");
+  });
+
+  it("no cruza SKU proveedor a componentes cliente", () => {
+    const grouping = source("src/lib/variant-grouping.ts");
+    const gallery = source("src/components/ProductGallery.tsx");
+    const form = source("src/components/ProductOrderForm.tsx");
+
+    expect(grouping).toContain("primaryVariantId: v.id");
+    expect(grouping).toContain("variantId: v.id");
+    expect(grouping).not.toContain("primarySku:");
+    expect(gallery).not.toMatch(/primarySku|selected\?\.sku|size\.sku/);
+    expect(form).not.toContain("orderVariant.sku");
   });
 });

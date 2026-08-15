@@ -24,7 +24,7 @@ import { prisma } from "@/lib/prisma";
 import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
 import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
 import { Prisma } from "@prisma/client";
-import { extractSize, colorGroupFromName, canonicalColorGroup } from "@/lib/variant-grouping";
+import { colorGroupFromName, canonicalColorGroup } from "@/lib/variant-grouping";
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
 import { notifyTelegram } from "@/lib/telegram";
 import {
@@ -32,10 +32,9 @@ import {
   fetchPriceTiers,
   priceStringToCents,
   cmStringToMm,
-  extractColorSuffix,
-  resolveColor,
   type CifraProduct,
 } from "./cifra";
+import { parseCifraVariantDimensions } from "./cifra-variant";
 // Reusamos el slug-builder de midocean: SEO-clean a partir del nombre,
 // resolución de colisión con sufijos -2, -3... Importante para cumplir
 // regla anti-supplier-leak (no exponer "cif-" en URLs públicas).
@@ -291,8 +290,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
 
           // Variantes
           for (const v of variants) {
-            const suffix = extractColorSuffix(v.model, rootmodel);
-            const color = resolveColor(suffix);
+            const dimensions = parseCifraVariantDimensions(v.model, rootmodel);
             // Proxy de imagen variant (mismo motivo que el primary)
             const proxiedVariantImg = await ensureMediaAsset(v.image || null, "product-variant");
             await prisma.productVariant.upsert({
@@ -301,29 +299,27 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
                 product: { connect: { id: product.id } },
                 sku: v.model,
                 variantId: v.model,
-                colorName: sanitizeSupplierText(color.name),
+                colorName: sanitizeSupplierText(dimensions.colorName),
                 // Canonicalizamos el grupo del dict (guarda "marrón"/"lila" con
                 // tilde) al vocabulario minúsculas-sin-acentos común; y si el
                 // sufijo no resolvió grupo, lo derivamos del nombre. Sin esto el
                 // filtro de color parte el catálogo por acentos/caja.
-                colorGroup: canonicalColorGroup(color.group) ?? colorGroupFromName(color.name),
-                colorHex: color.hex,
-                // Feed sin talla; en algunas familias textiles (T-1090-XS) el
-                // sufijo del model ES la talla. Alfabéticas conocidas o null.
-                size: extractSize({ size: null, sku: v.model }),
+                colorGroup: canonicalColorGroup(dimensions.colorGroup) ?? colorGroupFromName(dimensions.colorName),
+                colorHex: dimensions.colorHex,
+                size: dimensions.size,
                 imageUrl: proxiedVariantImg,
                 stockQty: toQty(v.quantity),
                 stockUpdatedAt: new Date(),
               },
               update: {
-                colorName: sanitizeSupplierText(color.name),
+                colorName: sanitizeSupplierText(dimensions.colorName),
                 // Canonicalizamos el grupo del dict (guarda "marrón"/"lila" con
                 // tilde) al vocabulario minúsculas-sin-acentos común; y si el
                 // sufijo no resolvió grupo, lo derivamos del nombre. Sin esto el
                 // filtro de color parte el catálogo por acentos/caja.
-                colorGroup: canonicalColorGroup(color.group) ?? colorGroupFromName(color.name),
-                colorHex: color.hex,
-                size: extractSize({ size: null, sku: v.model }),
+                colorGroup: canonicalColorGroup(dimensions.colorGroup) ?? colorGroupFromName(dimensions.colorName),
+                colorHex: dimensions.colorHex,
+                size: dimensions.size,
                 imageUrl: proxiedVariantImg,
                 stockQty: toQty(v.quantity),
                 stockUpdatedAt: new Date(),

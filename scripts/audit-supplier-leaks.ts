@@ -12,25 +12,9 @@
  * Uso: bun scripts/audit-supplier-leaks.ts
  */
 
-const SITE = process.env.SITE_URL || "https://merchandising.startidea.es";
+import { PUBLIC_SUPPLIER_LEAK_PATTERNS } from "../src/lib/public-supplier-leak-patterns";
 
-// Patrones tóxicos
-const LEAK_PATTERNS = [
-  // MidOcean CDN
-  { code: "midocean-cdn", re: /[a-z0-9.-]*\.midocean\.com[^"'\s]*/gi },
-  { code: "xindao-cdn", re: /[a-z0-9.-]*\.xindao\.(?:com|eu)[^"'\s]*/gi },
-  // Cifra CDN
-  { code: "cifra-cdn", re: /[a-z0-9.-]*\.publicatalogue\.com[^"'\s]*/gi },
-  { code: "cifra-domain", re: /\bcifrashop\.com[^"'\s]*/gi },
-  // Makito CDN + dominios
-  { code: "makito-cdn", re: /[a-z0-9.-]*\.makito\.(?:com|es)[^"'\s]*/gi },
-  { code: "makito-keyword", re: /\bmakito\b/gi },
-  // Slugs con prefijos de proveedor (regla anti-supplier-leak)
-  { code: "slug-prefix-cif", re: /\/catalogo\/cif-[a-z0-9-]+/gi },
-  { code: "slug-prefix-mak", re: /\/catalogo\/(?:mak|mk)-[a-z0-9-]+/gi },
-  // SKU patterns
-  { code: "supplier-sku", re: /\b(ar|mo|cx|mk)[0-9]{3,5}\b/gi },
-];
+const SITE = process.env.SITE_URL || "https://merchandising.startidea.es";
 
 // Páginas a auditar
 const ROUTES = [
@@ -39,6 +23,7 @@ const ROUTES = [
   "/catalogo/target",
   "/catalogo/boc",
   "/catalogo/columbus",
+  "/catalogo/camiseta-adulto-runner",
   "/promociones",
   "/comparar",
   "/sectores/tech",
@@ -54,16 +39,18 @@ for (const route of ROUTES) {
   try {
     const r = await fetch(`${SITE}${route}`);
     if (!r.ok) {
-      console.log(`\x1b[90m  · ${route} → HTTP ${r.status} (skip)\x1b[0m`);
+      hits.push({ route, pattern: "http-error", sample: `HTTP ${r.status}` });
+      console.log(`\x1b[31m  ✗ ${route} → HTTP ${r.status}\x1b[0m`);
       continue;
     }
     html = await r.text();
   } catch (e) {
-    console.log(`\x1b[31m  ✗ ${route} → ${e instanceof Error ? e.message : "fetch error"}\x1b[0m`);
+    hits.push({ route, pattern: "network-error", sample: "fetch failed" });
+    console.log(`\x1b[31m  ✗ ${route} → error de red\x1b[0m`);
     continue;
   }
 
-  for (const p of LEAK_PATTERNS) {
+  for (const p of PUBLIC_SUPPLIER_LEAK_PATTERNS) {
     const matches = html.match(p.re);
     if (!matches) continue;
     // Filtrar falsos positivos: meta name="google-site-verification" tiene patrones aleatorios
@@ -102,7 +89,8 @@ if (hits.length === 0) {
 
 console.log("\x1b[31m  → Fugas detectadas:\x1b[0m\n");
 for (const h of hits) {
-  console.log(`    ${h.pattern.padEnd(18)} ${h.route.padEnd(30)} ${h.sample.slice(0, 80)}`);
+  const detail = h.pattern === "http-error" ? h.sample : "[valor oculto]";
+  console.log(`    ${h.pattern.padEnd(18)} ${h.route.padEnd(38)} ${detail}`);
 }
 console.log("");
 process.exit(1);

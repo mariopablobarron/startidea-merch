@@ -1,16 +1,19 @@
 import type { ProposalVariantSelection } from "./proposal-types";
 
 export type QuoteRequestVariantLine = {
-  sku: string;
+  variantId?: string;
+  sku?: string;
   quantity: number;
 };
 
 type QuoteRequestVariantSelectionInput = {
+  variantId?: string | null;
   variantSku?: string | null;
   colorName?: string | null;
   size?: string | null;
   variantLines?: ReadonlyArray<{
-    sku: string;
+    variantId?: string;
+    sku?: string;
     colorName?: string | null;
     size?: string | null;
     quantity: number;
@@ -18,6 +21,7 @@ type QuoteRequestVariantSelectionInput = {
 };
 
 export type CanonicalQuoteVariant = {
+  variantId: string;
   sku: string;
   colorName: string | null;
   size: string | null;
@@ -26,10 +30,14 @@ export type CanonicalQuoteVariant = {
 /** Valida que una solicitud use un único modo y que su matriz cuadre con qty. */
 export function validateQuoteRequestVariantDistribution(
   quantity: number,
-  variantSku: string | null | undefined,
+  variantId: string | null | undefined,
+  legacyVariantSku: string | null | undefined,
   lines: ReadonlyArray<QuoteRequestVariantLine> | undefined,
 ): string | null {
-  if (variantSku && lines !== undefined) {
+  if (variantId && legacyVariantSku) {
+    return "Usa variantId o variantSku legacy, no ambos.";
+  }
+  if ((variantId || legacyVariantSku) && lines !== undefined) {
     return "Usa una variante individual o un reparto por tallas, no ambos.";
   }
   // `undefined` significa que el cliente solicita revisión manual. Un array
@@ -42,8 +50,14 @@ export function validateQuoteRequestVariantDistribution(
   }
 
   const matrixTotal = lines.reduce((sum, line) => sum + line.quantity, 0);
-  const uniqueSkus = new Set(lines.map((line) => line.sku));
-  if (matrixTotal !== quantity || uniqueSkus.size !== lines.length) {
+  const references = lines.map((line) => line.variantId ?? line.sku ?? "");
+  const uniqueReferences = new Set(references);
+  if (
+    references.some((reference) => !reference) ||
+    lines.some((line) => Boolean(line.variantId) === Boolean(line.sku)) ||
+    matrixTotal !== quantity ||
+    uniqueReferences.size !== lines.length
+  ) {
     return "El reparto de variantes no coincide con la cantidad solicitada.";
   }
   return null;
@@ -62,7 +76,11 @@ export function canonicalizeQuoteRequestVariantSelection(
     if (input.variantLines.length !== canonicalVariants.length) return null;
     const variantLines = input.variantLines.map((line, index) => {
       const canonical = canonicalVariants[index];
-      if (!canonical || canonical.sku !== line.sku) return null;
+      const reference = line.variantId ?? line.sku;
+      if (
+        !canonical ||
+        (canonical.variantId !== reference && canonical.sku !== reference)
+      ) return null;
       return {
         sku: canonical.sku,
         colorName: canonical.colorName,
@@ -88,12 +106,14 @@ export function canonicalizeQuoteRequestVariantSelection(
     };
   }
 
-  if (input.variantSku) {
+  const individualReference = input.variantId ?? input.variantSku;
+  if (individualReference) {
     const canonical = canonicalVariants[0];
     if (
       canonicalVariants.length !== 1 ||
       !canonical ||
-      canonical.sku !== input.variantSku
+      (canonical.variantId !== individualReference &&
+        canonical.sku !== individualReference)
     ) {
       return null;
     }

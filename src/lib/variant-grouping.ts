@@ -30,7 +30,8 @@ export type VariantInput = {
 
 export type SizeOption = {
   size: string;
-  sku: string;
+  /** ProductVariant.id opaco; nunca es el SKU proveedor. */
+  variantId: string;
   stockQty: number;
 };
 
@@ -49,7 +50,7 @@ export function currentVariantQuantityLines(
   quantities: Readonly<Record<string, number>>,
 ): VariantQuantityLine[] {
   return sizes
-    .map((size) => ({ ...size, quantity: quantities[size.sku] ?? 0 }))
+    .map((size) => ({ ...size, quantity: quantities[size.variantId] ?? 0 }))
     .filter((line) => line.quantity > 0);
 }
 
@@ -62,8 +63,8 @@ export type ColorOption = {
   imageUrl: string | null;
   /** Tallas de este color, ordenadas. Vacío si el color no tiene tallas. */
   sizes: SizeOption[];
-  /** SKU a usar cuando el color no tiene tallas (variante única del color). */
-  primarySku: string;
+  /** Referencia pública opaca cuando el color tiene una sola variante. */
+  primaryVariantId: string;
   totalStock: number;
   /** Número de filas de variante que contiene la opción. */
   variantCount: number;
@@ -74,7 +75,7 @@ export type ColorOption = {
 };
 
 export type OrderVariant = {
-  sku: string;
+  variantId: string;
   optionKey: string;
   colorName: string | null;
   size: string | null;
@@ -82,7 +83,7 @@ export type OrderVariant = {
 };
 
 export type VariantSelection = {
-  sku: string | null;
+  variantId: string | null;
   optionKey: string | null;
   colorName: string | null;
   size: string | null;
@@ -99,7 +100,7 @@ export type VariantSelectionPrompt =
  *
  * Las opciones únicas que no exigen una decisión del cliente se resuelven de
  * forma implícita. Si hay varios colores o varias tallas, obliga a elegirlos
- * para no crear líneas ambiguas con `variantSku: null`.
+ * para no crear líneas ambiguas sin `variantId`.
  */
 export function resolveOrderVariantSelection(
   options: ColorOption[] | undefined,
@@ -135,14 +136,14 @@ export function resolveOrderVariantSelection(
   }
 
   const eligibleSizes = selectableSizesForOption(option);
-  const selectedSize = selected?.sku
-    ? eligibleSizes.find((size) => size.sku === selected.sku)
+  const selectedSize = selected?.variantId
+    ? eligibleSizes.find((size) => size.variantId === selected.variantId)
     : undefined;
 
   if (selectedSize) {
     return {
       variant: {
-        sku: selectedSize.sku,
+        variantId: selectedSize.variantId,
         optionKey: option.key,
         colorName: option.colorName,
         size: selectedSize.size,
@@ -159,7 +160,7 @@ export function resolveOrderVariantSelection(
     const size = eligibleSizes[0];
     return {
       variant: {
-        sku: size.sku,
+        variantId: size.variantId,
         optionKey: option.key,
         colorName: option.colorName,
         size: size.size,
@@ -174,7 +175,7 @@ export function resolveOrderVariantSelection(
   }
   return {
     variant: {
-      sku: option.primarySku,
+      variantId: option.primaryVariantId,
       optionKey: option.key,
       colorName: option.colorName,
       size: null,
@@ -229,7 +230,7 @@ export function groupColorOptions(variants: VariantInput[]): ColorOption[] {
         colorHex: v.colorHex ?? null,
         imageUrl: v.imageUrl,
         sizes: [],
-        primarySku: v.sku,
+        primaryVariantId: v.id,
         totalStock: 0,
         variantCount: 0,
         untaggedVariantCount: 0,
@@ -249,7 +250,7 @@ export function groupColorOptions(variants: VariantInput[]): ColorOption[] {
       // no elegimos uno por stock, lo marcamos para revisión humana.
       const existing = opt.sizes.find((s) => s.size === size);
       if (!existing) {
-        opt.sizes.push({ size, sku: v.sku, stockQty: v.stockQty ?? 0 });
+        opt.sizes.push({ size, variantId: v.id, stockQty: v.stockQty ?? 0 });
       } else {
         opt.ambiguous = true;
       }

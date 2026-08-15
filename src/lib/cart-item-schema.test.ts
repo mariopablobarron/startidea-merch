@@ -3,7 +3,7 @@ import {
   CartItemSchema,
   CartMarkingSchema,
   cartItemToCreate,
-  type CartItemInput,
+  type CanonicalCartItemInput,
 } from "./cart-item-schema";
 
 /**
@@ -15,7 +15,7 @@ import {
  * auditoría). Estos tests fijan que el marcaje viaja íntegro y en orden.
  */
 
-const base: CartItemInput = {
+const base: CanonicalCartItemInput = {
   productSlug: "taza-ceramica",
   productRef: "STM-1001",
   productName: "Taza cerámica",
@@ -225,6 +225,18 @@ describe("cartItemToCreate — pass-through de precio, cantidad e identidad", ()
 describe("CartItemSchema / CartMarkingSchema — validación de límites", () => {
   it("acepta una línea mínima válida", () => {
     expect(CartItemSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("acepta variantId público o SKU legacy, pero nunca ambos", () => {
+    expect(CartItemSchema.safeParse({ ...base, variantId: "opaque-id" }).success).toBe(true);
+    expect(CartItemSchema.safeParse({ ...base, variantSku: "LEGACY-SKU" }).success).toBe(true);
+    expect(
+      CartItemSchema.safeParse({
+        ...base,
+        variantId: "opaque-id",
+        variantSku: "LEGACY-SKU",
+      }).success,
+    ).toBe(false);
   });
 
   it("rechaza cantidad no positiva o no entera", () => {

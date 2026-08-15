@@ -27,6 +27,8 @@ export const CartItemSchema = z.object({
   productName: z.string().min(1).max(500),
   primaryImageUrl: z.string().nullable().optional(),
   quantity: z.number().int().positive().max(1_000_000),
+  variantId: z.string().nullable().optional(),
+  /** Compatibilidad de pestañas antiguas; se canonicaliza antes de guardar. */
   variantSku: z.string().nullable().optional(),
   colorName: z.string().nullable().optional(),
   // Shape plano (deprecated, mantenido por compat)
@@ -43,12 +45,18 @@ export const CartItemSchema = z.object({
   customerLogoUrl: z.string().max(500).nullable().optional(),
   customerLogoFilename: z.string().max(200).nullable().optional(),
   customerLogoSize: z.number().int().nullable().optional(),
+}).refine((item) => !(item.variantId && item.variantSku), {
+  message: "Usa variantId o variantSku legacy, no ambos",
+  path: ["variantId"],
 });
 
 export type CartItemInput = z.infer<typeof CartItemSchema>;
+export type CanonicalCartItemInput = Omit<CartItemInput, "variantId"> & {
+  variantId?: never;
+};
 
 /** Persistencia Prisma de una línea + sus marcajes (create anidado). */
-export function cartItemToCreate(it: CartItemInput) {
+export function cartItemToCreate(it: CanonicalCartItemInput) {
   const markingsArr =
     it.markings && it.markings.length > 0
       ? it.markings

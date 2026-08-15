@@ -198,6 +198,32 @@ if [ "$RUN_SHA" != "$SHA" ]; then
 fi
 log "imagen viva verificada: corre $SHA"
 
+# Gate de confidencialidad proveedor sobre el runtime NUEVO. Es fail-closed:
+# una ruta caída o cualquier canario tóxico impide marcar el deploy como OK.
+log "audit público anti-fuga proveedor"
+AUDIT_ROUTES=(
+  "/"
+  "/catalogo"
+  "/catalogo/target"
+  "/catalogo/boc"
+  "/catalogo/columbus"
+  "/catalogo/camiseta-adulto-runner"
+  "/promociones"
+  "/comparar"
+)
+AUDIT_PATTERN='(\.midocean\.com|\.xindao\.(com|eu)|\.publicatalogue\.com|cifrashop\.com|\.makito\.(com|es)|/catalogo/(cif-|mak-|mk-)|\\?"(primarySku|variantSku)\\?"[[:space:]]*:|\\"sku\\"[[:space:]]*:|\b(ar|mo|cx|mk)[0-9]{3,5}\b|\b[0-9]{4,6}-(XXS|XS|S|M|L|XL|XXL|XXXL|[3-8]XL)-[A-Z]{2}\b)'
+AUDIT_PUBLIC_SKU_SED='s/\\"sku\\"[[:space:]]*:[[:space:]]*\\"STM-[A-Z0-9-]+\\"//g'
+for route_path in "${AUDIT_ROUTES[@]}"; do
+  if ! AUDIT_HTML=$(curl -fsS --max-time 15 "$BASE$route_path"); then
+    fail "audit anti-fuga: no se pudo leer $route_path"
+  fi
+  if printf '%s' "$AUDIT_HTML" | sed -E "$AUDIT_PUBLIC_SKU_SED" | grep -Eiq "$AUDIT_PATTERN"; then
+    fail "audit anti-fuga: canario proveedor detectado en $route_path (valor oculto)"
+  fi
+done
+unset AUDIT_HTML
+log "audit público anti-fuga: OK"
+
 # Verifica rutas críticas adicionales (sin retry — ya sabemos que el / responde).
 # Aceptamos 200 (público), 302 (redirect login), 401 (necesita auth) como OK.
 log "healthcheck rutas adicionales"
