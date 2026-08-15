@@ -73,7 +73,14 @@ describe("guard: una sola superficie inferior en móvil", () => {
     );
     const voice = source("src/components/VoiceAgentWidget.tsx");
     expect(voice).toContain("launcherAllowed && !isActive && !isConnecting");
+    expect(voice).toContain("useModelessDialogFocus({");
+    expect(voice).toContain("suspended: fichaUrl !== null");
     expect(voice).toContain("useModalFocus({");
+    const focus = source("src/lib/use-modal-focus.ts");
+    expect(focus).toContain("container.inert");
+    expect(focus).toContain(
+      "!container.contains(document.activeElement)",
+    );
     expect(voice).toContain('aria-modal="true"');
     expect(voice).toContain(
       "data-floating-surface={FLOATING_SURFACES.assistantSheet}",

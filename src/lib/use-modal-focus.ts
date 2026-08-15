@@ -143,3 +143,77 @@ export function useModalFocus(input: {
     };
   }, [active, containerRef, restoreFallbackSelector]);
 }
+
+/**
+ * Paneles auxiliares que deben convivir con la página (por ejemplo, el chat
+ * lateral de David): reciben foco inicial, Escape y restauración, pero no
+ * bloquean navegación ni confinan Tab. Una modal hija puede suspender Escape
+ * sin desmontar este ciclo y así conservar el disparador original.
+ */
+export function useModelessDialogFocus(input: {
+  active: boolean;
+  containerRef: RefObject<HTMLElement | null>;
+  onEscape: () => void;
+  suspended?: boolean;
+  restoreFallbackSelector?: string;
+}) {
+  const escapeRef = useRef(input.onEscape);
+  const suspendedRef = useRef(input.suspended ?? false);
+  escapeRef.current = input.onEscape;
+  suspendedRef.current = input.suspended ?? false;
+  const { active, containerRef, restoreFallbackSelector } = input;
+
+  useEffect(() => {
+    if (!active) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const previous =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const frame = requestAnimationFrame(() => {
+      if (
+        container.dataset.floatingSuppressed === "true" ||
+        getComputedStyle(container).display === "none"
+      ) {
+        return;
+      }
+      const preferred = container.querySelector<HTMLElement>(
+        "[data-modal-initial-focus]",
+      );
+      (preferred || focusableChildren(container)[0] || container).focus();
+    });
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key !== "Escape" ||
+        suspendedRef.current ||
+        container.dataset.floatingSuppressed === "true" ||
+        container.inert ||
+        !container.contains(document.activeElement)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      escapeRef.current();
+    };
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKeyDown);
+      requestAnimationFrame(() => {
+        if (previous?.isConnected) {
+          previous.focus();
+          return;
+        }
+        if (restoreFallbackSelector) {
+          document
+            .querySelector<HTMLElement>(restoreFallbackSelector)
+            ?.focus();
+        }
+      });
+    };
+  }, [active, containerRef, restoreFallbackSelector]);
+}
