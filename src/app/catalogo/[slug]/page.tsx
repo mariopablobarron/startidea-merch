@@ -264,14 +264,12 @@ export default async function ProductDetailPage({
 
         <section className="py-10 lg:py-14">
           <ProductColorProvider>
-          <div className="mx-auto grid max-w-8xl gap-12 px-6 lg:grid-cols-[1.3fr,1fr] lg:px-10">
-            {/* IZQUIERDA — galería + variantes + descripción.
-                En móvil `contents` permite intercalar la información de compra:
-                galería → producto/precio/configurador → contenido técnico.
-                En escritorio vuelve a ser un único bloque y conserva la galería
-                y la descripción en la columna izquierda. */}
-            <div className="contents lg:order-1 lg:block">
-              <div className="order-1">
+          <div className="mx-auto grid max-w-8xl gap-x-12 px-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:px-10">
+              {/* El DOM sigue el recorrido móvil y semántico real:
+                  galería → H1/precio/configurador → contenido técnico.
+                  En escritorio, las áreas explícitas mantienen galería y ficha
+                  técnica a la izquierda y el configurador sticky a la derecha. */}
+              <div data-product-region="gallery" className="lg:col-start-1 lg:row-start-1">
                 <ProductGallery
                   primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
                   productName={displayName}
@@ -279,7 +277,159 @@ export default async function ProductDetailPage({
                 />
               </div>
 
-              <div className="order-3">
+              <section
+                aria-labelledby="product-title"
+                data-product-region="purchase"
+                className="mt-12 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:self-start"
+              >
+                {/* Banda de promoción activa: aparece encima de la marca y muy visible */}
+                {activePromo && (
+                  <div
+                    className="-mt-2 mb-4 rounded-xl px-3 py-2 text-bone shadow-sm"
+                    style={{ background: promoBadgeColor }}
+                  >
+                    <p className="flex items-center gap-2 text-xs">
+                      <span className="rounded-full bg-bone/25 px-2 py-0.5 font-display text-[11px] font-bold tracking-wider">
+                        {promoBadgeText}
+                      </span>
+                      <span className="font-medium">{activePromo.name}</span>
+                      {activePromo.endsAt && (
+                        <span className="ml-auto text-[10px] opacity-90">
+                          hasta{" "}
+                          {new Date(activePromo.endsAt).toLocaleDateString("es-ES", {
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
+                {publicBrand(product.brand) && (
+                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
+                    {publicBrand(product.brand)}
+                  </p>
+                )}
+                <div className="mt-3 flex items-start justify-between gap-3">
+                  <h1 id="product-title" className="font-display text-3xl font-semibold text-ink lg:text-4xl">
+                    {displayName}
+                  </h1>
+                  {/* Favoritos del portal cliente (sin sesión → lleva al login) */}
+                  <FavoriteHeart productId={product.id} />
+                </div>
+                {marketingTags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {marketingTags.map((t) => (
+                      <span
+                        key={t}
+                        className="rounded-full bg-social/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-social"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-2 text-sm text-ink/50">
+                  Ref. <span className="font-mono">{displayRef}</span> ·{" "}
+                  {totalStock > 0 ? (
+                    <span className="tabular-nums">{totalStock.toLocaleString("es-ES")} uds en stock</span>
+                  ) : (
+                    <span>Fabricación bajo pedido</span>
+                  )}
+                </p>
+
+                {/* Precio "desde" — con tachado del original si hay promo activa */}
+                {finalFromPriceCents && finalFromPriceCents > 0 && (
+                  <p className="mt-4 flex flex-wrap items-baseline gap-2 text-ink">
+                    <span className="text-[11px] uppercase tracking-wider text-ink/55">
+                      Desde
+                    </span>
+                    <span className="font-display text-2xl font-semibold text-accent tabular-nums">
+                      {(finalFromPriceCents / 100).toLocaleString("es-ES", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      €
+                    </span>
+                    {activePromo &&
+                      originalFromPriceCents &&
+                      originalFromPriceCents > finalFromPriceCents && (
+                        <span className="font-mono text-xs tabular-nums text-ink/40 line-through">
+                          {(originalFromPriceCents / 100).toLocaleString("es-ES", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                          €
+                        </span>
+                      )}
+                    <span className="text-[11px] text-ink/55">/ud (sin IVA)</span>
+                  </p>
+                )}
+
+                {displayShortDescription && (
+                  <p className="mt-5 text-base text-ink/75">{displayShortDescription}</p>
+                )}
+
+                {/* Formulario unificado:
+                      cantidad → toggle marcaje SI/NO → opciones marcaje
+                      (si SÍ) → total + CTAs.
+                    Reemplaza la antigua trilogía PriceTierTable +
+                    QuantityConfigurator + MarkingCalculator que mostraban
+                    precios contradictorios y duplicaban lógica de cantidad. */}
+                <ProductOrderForm
+                  productSlug={product.slug}
+                  productRef={displayRef}
+                  productName={displayName}
+                  primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
+                  tiers={tiers}
+                  baseCentsForEstimate={baseCents}
+                  orderFixedPromo={pricing.orderFixedPromo}
+                  colorOptions={colorOptions}
+                  positions={product.positions.map((pos) => ({
+                    id: pos.id,
+                    positionId: pos.positionId,
+                    maxWidthMm: pos.maxWidthMm,
+                    maxHeightMm: pos.maxHeightMm,
+                    techniques: pos.techniques.map((t) => ({
+                      techniqueId: t.techniqueId,
+                      techniqueCode: t.technique.code,
+                      techniqueName: t.technique.name,
+                      maxColors: t.maxColors,
+                    })),
+                  }))}
+                />
+
+                {/* CTA WhatsApp alternativo — para quien prefiera preguntar
+                    por chat antes de configurar. Mensaje pre-rellenado. */}
+                <div className="mt-4">
+                  <WhatsAppCta
+                    productName={displayName}
+                    internalRef={product.internalRef}
+                    productUrl={`https://merchandising.startidea.es/catalogo/${product.slug}`}
+                    variant="secondary"
+                  />
+                </div>
+
+                <CompareToggle slug={product.slug} />
+
+                <MockupGenerator
+                  productSlug={product.slug}
+                  positions={product.positions.map((p) => ({ id: p.id, positionId: p.positionId }))}
+                />
+
+                <div className="mt-4">
+                  <DeliveryEstimate />
+                </div>
+
+                <div className="mt-5 grid gap-2 text-sm text-ink/70">
+                  <Trust>Boceto con tu logo gratis antes de producir — apruébalo tú primero</Trust>
+                  <Trust>Producción en Centros Especiales de Empleo o talleres locales</Trust>
+                  <Trust>Precio al instante · cotización formal opcional</Trust>
+                  <Trust>Sin compromiso · Sin coste · Sin letra pequeña</Trust>
+                </div>
+              </section>
+
+              <div data-product-region="technical" className="lg:col-start-1 lg:row-start-2">
 
               {/* Descripción larga + ficha técnica */}
               {displayDescription && (
@@ -434,158 +584,6 @@ export default async function ProductDetailPage({
                 </div>
               )}
               </div>
-            </div>
-
-            {/* DERECHA — sticky con info + configurador.
-                Mobile: entre la galería y el contenido técnico. Desktop: sticky
-                en la columna derecha como hasta ahora. */}
-            <aside className="order-2 lg:sticky lg:top-24 lg:self-start">
-              {/* Banda de promoción activa: aparece encima de la marca y muy visible */}
-              {activePromo && (
-                <div
-                  className="-mt-2 mb-4 rounded-xl px-3 py-2 text-bone shadow-sm"
-                  style={{ background: promoBadgeColor }}
-                >
-                  <p className="flex items-center gap-2 text-xs">
-                    <span className="rounded-full bg-bone/25 px-2 py-0.5 font-display text-[11px] font-bold tracking-wider">
-                      {promoBadgeText}
-                    </span>
-                    <span className="font-medium">{activePromo.name}</span>
-                    {activePromo.endsAt && (
-                      <span className="ml-auto text-[10px] opacity-90">
-                        hasta{" "}
-                        {new Date(activePromo.endsAt).toLocaleDateString("es-ES", {
-                          day: "numeric",
-                          month: "short",
-                        })}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              )}
-              {publicBrand(product.brand) && (
-                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">
-                  {publicBrand(product.brand)}
-                </p>
-              )}
-              <div className="mt-3 flex items-start justify-between gap-3">
-                <h1 className="font-display text-3xl font-semibold text-ink lg:text-4xl">
-                  {displayName}
-                </h1>
-                {/* Favoritos del portal cliente (sin sesión → lleva al login) */}
-                <FavoriteHeart productId={product.id} />
-              </div>
-              {marketingTags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {marketingTags.map((t) => (
-                    <span
-                      key={t}
-                      className="rounded-full bg-social/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-social"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <p className="mt-2 text-sm text-ink/50">
-                Ref. <span className="font-mono">{displayRef}</span> ·{" "}
-                {totalStock > 0 ? (
-                  <span className="tabular-nums">{totalStock.toLocaleString("es-ES")} uds en stock</span>
-                ) : (
-                  <span>Fabricación bajo pedido</span>
-                )}
-              </p>
-
-              {/* Precio "desde" — con tachado del original si hay promo activa */}
-              {finalFromPriceCents && finalFromPriceCents > 0 && (
-                <p className="mt-4 flex flex-wrap items-baseline gap-2 text-ink">
-                  <span className="text-[11px] uppercase tracking-wider text-ink/55">
-                    Desde
-                  </span>
-                  <span className="font-display text-2xl font-semibold text-accent tabular-nums">
-                    {(finalFromPriceCents / 100).toLocaleString("es-ES", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    €
-                  </span>
-                  {activePromo &&
-                    originalFromPriceCents &&
-                    originalFromPriceCents > finalFromPriceCents && (
-                      <span className="font-mono text-xs tabular-nums text-ink/40 line-through">
-                        {(originalFromPriceCents / 100).toLocaleString("es-ES", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                        €
-                      </span>
-                    )}
-                  <span className="text-[11px] text-ink/55">/ud (sin IVA)</span>
-                </p>
-              )}
-
-              {displayShortDescription && (
-                <p className="mt-5 text-base text-ink/75">{displayShortDescription}</p>
-              )}
-
-              {/* Formulario unificado:
-                    cantidad → toggle marcaje SI/NO → opciones marcaje
-                    (si SÍ) → total + CTAs.
-                  Reemplaza la antigua trilogía PriceTierTable +
-                  QuantityConfigurator + MarkingCalculator que mostraban
-                  precios contradictorios y duplicaban lógica de cantidad. */}
-              <ProductOrderForm
-                productSlug={product.slug}
-                productRef={displayRef}
-                productName={displayName}
-                primaryImageUrl={proxyImageUrl(product.primaryImageUrl)}
-                tiers={tiers}
-                baseCentsForEstimate={baseCents}
-                orderFixedPromo={pricing.orderFixedPromo}
-                colorOptions={colorOptions}
-                positions={product.positions.map((pos) => ({
-                  id: pos.id,
-                  positionId: pos.positionId,
-                  maxWidthMm: pos.maxWidthMm,
-                  maxHeightMm: pos.maxHeightMm,
-                  techniques: pos.techniques.map((t) => ({
-                    techniqueId: t.techniqueId,
-                    techniqueCode: t.technique.code,
-                    techniqueName: t.technique.name,
-                    maxColors: t.maxColors,
-                  })),
-                }))}
-              />
-
-              {/* CTA WhatsApp alternativo — para quien prefiera preguntar
-                  por chat antes de configurar. Mensaje pre-rellenado. */}
-              <div className="mt-4">
-                <WhatsAppCta
-                  productName={displayName}
-                  internalRef={product.internalRef}
-                  productUrl={`https://merchandising.startidea.es/catalogo/${product.slug}`}
-                  variant="secondary"
-                />
-              </div>
-
-              <CompareToggle slug={product.slug} />
-
-              <MockupGenerator
-                productSlug={product.slug}
-                positions={product.positions.map((p) => ({ id: p.id, positionId: p.positionId }))}
-              />
-
-              <div className="mt-4">
-                <DeliveryEstimate />
-              </div>
-
-              <div className="mt-5 grid gap-2 text-sm text-ink/70">
-                <Trust>Boceto con tu logo gratis antes de producir — apruébalo tú primero</Trust>
-                <Trust>Producción en Centros Especiales de Empleo o talleres locales</Trust>
-                <Trust>Precio al instante · cotización formal opcional</Trust>
-                <Trust>Sin compromiso · Sin coste · Sin letra pequeña</Trust>
-              </div>
-            </aside>
           </div>
           </ProductColorProvider>
         </section>
