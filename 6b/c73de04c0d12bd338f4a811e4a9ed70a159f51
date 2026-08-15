@@ -1,0 +1,83 @@
+src/components/StickyMobileCta.tsx
+  s_578116e23e11cc::t_a864d87f09b725 4,24-25,28
+  s_578116e23e11cc::t_b1353668482503 29
+src/app/layout.tsx
+  s_578116e23e11cc::t_cecacc8e36c360 21,147
+  s_578116e23e11cc::t_1ad1a5840451be 22,94,101
+src/components/SpinWheelPopup.tsx
+  s_578116e23e11cc::t_a0aa0fbabe824b 6
+  s_578116e23e11cc::t_31dbf45939be7b 7,52-54,184-185,189,191,196,200
+src/components/Tour.tsx
+  s_578116e23e11cc::t_8f79ead70f9e18 9,41,53-54,149-150,154,192,202
+  s_578116e23e11cc::t_10867456d93efd 321-324
+  s_578116e23e11cc::t_a0aa0fbabe824b 8
+src/components/CookieBanner.tsx
+  s_578116e23e11cc::t_ac0ed2928d0092 73
+  s_578116e23e11cc::t_5531b4af570b24 5,70
+src/components/ProductOrderForm.tsx
+  s_578116e23e11cc::t_19173bdcd94b70 25-28,347,352-358,1132-1134,1136
+  s_578116e23e11cc::t_b1353668482503 1135
+src/lib/floating-surfaces.test.ts
+  s_578116e23e11cc::t_0b614620e02f5d 158-164
+  s_578116e23e11cc::t_f5f4a3913334cd 1-4,6-7,10-17,19-22,24-31,36-47,49-79,103,105-116,165-166
+  s_578116e23e11cc::t_af3d9632a2dc6d 97
+  s_578116e23e11cc::t_c6e22ffafcdf7d 9,117-157
+  s_578116e23e11cc::t_ee64bbbbe0769d 5,8,18,23,32-35,80-96,98-102,104
+  s_578116e23e11cc::t_f85acf75b27326 48
+src/components/WhatsAppFloat.tsx
+  s_578116e23e11cc::t_2e9b72821df406 4,6-9,13,26-32,40
+src/components/VoiceAgentWidget.guard.test.ts
+  s_578116e23e11cc::t_658e33e3200c67 21-29,31-32
+  s_578116e23e11cc::t_b1353668482503 30
+src/components/CompareBanner.tsx
+  s_578116e23e11cc::t_e440c31bd646a0 5-12,18-19,29,33,37,42-53,56-58,60-64,69,71,81
+  s_578116e23e11cc::t_b1353668482503 59
+src/components/VoiceAgentGate.tsx
+  s_578116e23e11cc::t_29c2e6085b5f29 20
+  s_578116e23e11cc::t_db4ee5dd92a0c1 5
+  s_578116e23e11cc::t_d7c60d48e7e1d9 8-9
+src/components/FloatingSurfaceCoordinator.tsx
+  s_578116e23e11cc::t_58c7a211f972e9 5,11-16,38-44,46-51,55,60,70
+  s_578116e23e11cc::t_8def8a95f587a3 74-79
+  s_578116e23e11cc::t_fa08f291fd846d 1-4,6-10,17-19,23-37,45,52-54,56-59,61-69,71-73,80-106
+  s_578116e23e11cc::t_065592490bcedc 20-22
+src/lib/floating-surfaces.ts
+  s_578116e23e11cc::t_9af99348841394 3-5,23-25,43-44,57-58,72-73,86-87,116-127,129-135,198-201
+  s_578116e23e11cc::t_f5f4a3913334cd 1-2,6-22,26-35,37-42,45-56,59-71,74-78,80-85,88-113,172-197,202-205
+  s_578116e23e11cc::t_0b614620e02f5d 36,79
+  s_578116e23e11cc::t_4314225775ee8f 128
+  s_578116e23e11cc::t_c6e22ffafcdf7d 114-115,136-171
+src/components/VoiceAgentWidget.tsx
+  s_578116e23e11cc::t_b1353668482503 1070
+  s_578116e23e11cc::t_178170016f7b53 11,14,260-261,982-1004,1009,1057,1059,1083,1085,1089,1091-1092,1126-1127,1436-1443,1464-1465
+  s_578116e23e11cc::t_d6d57ae9ef8d01 7-10,12-13,78,233-253,977-981,1011,1018,1060,1069,1071-1072,1074-1076,1086
+src/components/EmailCapturePopup.tsx
+  s_578116e23e11cc::t_31dbf45939be7b 3,7,41-43,162-163,167,169,174,178
+  s_578116e23e11cc::t_a0aa0fbabe824b 6
+src/lib/use-modal-focus.ts
+  s_578116e23e11cc::t_52c36c26fc26e8 51,54-55,62-64,92-94,98-131,137,139,144
+  s_578116e23e11cc::t_29c51775c0ed22 1-50,52-53,56-61,65-91,95-97,132-136,138,140-143,145
+src/components/FloatingSurfaces.guard.test.ts
+  s_578116e23e11cc::t_ee64bbbbe0769d 29-34,67-80
+  s_578116e23e11cc::t_64b0c5fc24fe6e 1-28,35-66,81-82
+src/components/CartBanner.tsx
+  s_578116e23e11cc::t_e69cf862a49111 7-12,40-47,52-56,59-61,63-65,68,75
+  s_578116e23e11cc::t_b1353668482503 62
+  s_578116e23e11cc::t_8e7b935ae2d14b 38-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "6bc73de04c0d12bd338f4a811e4a9ed70a159f51",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
