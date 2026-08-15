@@ -1,0 +1,25 @@
+src/components/ProductOrderForm.tsx
+  s_578116e23e11cc::t_b6badcdc0787a0 27,350-383
+src/lib/floating-surfaces.test.ts
+  s_578116e23e11cc::t_b6badcdc0787a0 12,118-138
+src/lib/floating-surfaces.ts
+  s_578116e23e11cc::t_b6badcdc0787a0 186-196
+src/components/FloatingSurfaces.guard.test.ts
+  s_578116e23e11cc::t_b6badcdc0787a0 64-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "67daae4085ea22c192e041e3af10d9b468a3fc3a",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
