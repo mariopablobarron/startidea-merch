@@ -5,6 +5,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/resend";
 import { CartItemSchema, cartItemToCreate } from "@/lib/cart-item-schema";
 import { normalizeProductName } from "@/lib/product-name";
+import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 export const runtime = "nodejs";
 
@@ -46,7 +47,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   }
   const email = parsed.data.email.trim().toLowerCase();
-  const items = parsed.data.items;
+  const canonicalVariants = await resolveSupplierOrderVariants(
+    parsed.data.items.map((item) => ({
+      productSlug: item.productSlug,
+      variantId: item.variantId,
+      variantSku: item.variantSku,
+    })),
+  );
+  if (!canonicalVariants.ok) {
+    return NextResponse.json(
+      { error: "Hay un producto cuya variante no es válida.", code: canonicalVariants.code },
+      { status: 422 },
+    );
+  }
+  const items = parsed.data.items.map((item, index) => {
+    const canonical = canonicalVariants.items[index];
+    const { variantId: _publicVariantId, ...legacyCompatibleItem } = item;
+    return {
+      ...legacyCompatibleItem,
+      productSlug: canonical.canonicalSlug,
+      variantSku: canonical.variantId ? canonical.sku : null,
+      colorName: canonical.colorName,
+    };
+  });
 
   // Dedup: reutilizar el guardado vivo más reciente de este email.
   const existing = await prisma.cartQuote.findFirst({
@@ -63,10 +86,12 @@ export async function POST(req: Request) {
   let cartId: string;
   let isNew = false;
   if (existing) {
-    await prisma.cartQuoteItem.deleteMany({ where: { cartId: existing.id } });
-    await prisma.cartQuote.update({
-      where: { id: existing.id },
-      data: { items: { create: items.map(cartItemToCreate) } },
+    await prisma.$transaction(async (tx) => {
+      await tx.cartQuoteItem.deleteMany({ where: { cartId: existing.id } });
+      await tx.cartQuote.update({
+        where: { id: existing.id },
+        data: { items: { create: items.map(cartItemToCreate) } },
+      });
     });
     cartId = existing.id;
   } else {

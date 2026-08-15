@@ -39,4 +39,22 @@ describe("guard: David no compite con la compra en móvil", () => {
     expect(source).toContain("@media (prefers-reduced-motion: reduce)");
     expect(source).toContain("motion-safe:animate-pulse");
   });
+
+  it("no añade productos multivariante sin una selección exacta", () => {
+    const cards = readFileSync(
+      join(process.cwd(), "src/app/api/products/cards/route.ts"),
+      "utf8",
+    );
+    const refusal = source.indexOf("if (card.requiresVariantSelection)");
+    const add = source.indexOf("addItem({", refusal);
+
+    expect(refusal).toBeGreaterThan(-1);
+    expect(add).toBeGreaterThan(refusal);
+    expect(source.slice(refusal, add)).toContain("No lo he añadido");
+    expect(source).toContain("variantId: card.variantId");
+    expect(source).not.toContain("variantSku: card.");
+    expect(cards).toContain("variantId: p._count.variants === 1");
+    expect(cards).toContain("requiresVariantSelection: p._count.variants > 1");
+    expect(cards).not.toMatch(/select:\s*\{\s*sku:\s*true/);
+  });
 });

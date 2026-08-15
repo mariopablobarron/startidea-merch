@@ -5,6 +5,7 @@ import { proxyImageUrl } from "@/lib/proxy-image";
 import { authenticateApiKey, requireScope } from "@/lib/api-auth";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { publicProductName } from "@/lib/product-name";
+import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,8 @@ export const dynamic = "force-dynamic";
 const ItemSchema = z.object({
   ref: z.string().min(1),
   quantity: z.number().int().positive().max(1_000_000),
+  variantId: z.string().optional(),
+  /** Compatibilidad temporal para integraciones que ya recibieron SKU. */
   variantSku: z.string().optional(),
   marking: z
     .object({
@@ -21,6 +24,9 @@ const ItemSchema = z.object({
     })
     .optional(),
   notes: z.string().max(500).optional(),
+}).refine((item) => !(item.variantId && item.variantSku), {
+  message: "Usa variantId o variantSku legacy, no ambos",
+  path: ["variantId"],
 });
 
 const QuoteSchema = z.object({
@@ -91,6 +97,20 @@ export async function POST(req: Request) {
     );
   }
 
+  const canonicalVariants = await resolveSupplierOrderVariants(
+    data.items.map((item) => ({
+      productSlug: byRef.get(item.ref)!.slug,
+      variantId: item.variantId,
+      variantSku: item.variantSku,
+    })),
+  );
+  if (!canonicalVariants.ok) {
+    return NextResponse.json(
+      { error: "Variante no válida para el producto indicado", code: canonicalVariants.code },
+      { status: 422 },
+    );
+  }
+
   const cart = await prisma.cartQuote.create({
     data: {
       name: data.contact.name,
@@ -106,15 +126,17 @@ export async function POST(req: Request) {
       deadline: data.deadline,
       source: "api-v1",
       items: {
-        create: data.items.map((it) => {
+        create: data.items.map((it, index) => {
           const p = byRef.get(it.ref)!;
+          const canonical = canonicalVariants.items[index];
           return {
-            productSlug: p.slug,
+            productSlug: canonical.canonicalSlug,
             productRef: it.ref,
             productName: publicProductName(p.name, p.override?.customName),
             primaryImageUrl: proxyImageUrl(p.primaryImageUrl), // guardar proxy, nunca crudo
             quantity: it.quantity,
-            variantSku: it.variantSku,
+            variantSku: canonical.variantId ? canonical.sku : null,
+            colorName: canonical.colorName,
             markingPositionId: it.marking?.position,
             markingTechniqueCode: it.marking?.technique,
             markingColours: it.marking?.colours,

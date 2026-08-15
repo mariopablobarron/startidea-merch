@@ -69,6 +69,11 @@ export default function ApiDocsPage() {
                 Listado de productos activos con variantes, dimensiones y áreas de marcaje.
                 Soporta búsqueda parcial por nombre y paginación.
               </p>
+              <p className="mt-3 text-sm text-ink/65">
+                Usa <code className="rounded bg-bone-soft px-1.5">variantId</code> para seleccionar
+                una variante al crear una cotización. El campo <code className="rounded bg-bone-soft px-1.5">sku</code>
+                se mantiene temporalmente como alias del mismo ID opaco y está deprecado.
+              </p>
               <Code>{`curl -s "${SITE}/api/v1/products?q=botella&page=1&pageSize=20" \\
   -H "Authorization: Bearer merch_live_XXXXXXXX_YYYY..."`}</Code>
               <p className="mt-3 text-xs text-ink/60">Respuesta abreviada:</p>
@@ -87,7 +92,8 @@ export default function ApiDocsPage() {
       "image": "https://merchandising.startidea.es/api/m/A7B2C9XK",
       "category": { "name": "Toallas deportivas", "slug": "toallas-deportivas" },
       "variants": [
-        { "sku": "STM-A7B2C9-NEG", "colorName": "Negro", "colorGroup": "Negro", "stockQty": 1240,
+        { "variantId": "cmvariant7f4k2", "sku": "cmvariant7f4k2",
+          "colorName": "Negro", "colorGroup": "Negro", "stockQty": 1240,
           "gtin": "8719941007840", "size": null }
       ],
       "marking": [
@@ -134,6 +140,7 @@ export default function ApiDocsPage() {
       {
         "ref": "STM-A7B2C9",
         "quantity": 100,
+        "variantId": "cmvariant7f4k2",
         "marking": { "position": "UPPER MIDDLE", "technique": "EM", "colours": 2 },
         "notes": "Logo en hilo dorado preferentemente"
       }

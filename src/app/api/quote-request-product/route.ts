@@ -28,24 +28,28 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.star
  *
  * NO expone coste/proveedor: la propuesta usa publicRef (STM-XXX) y el PVP.
  */
+const VariantLineSchema = z.object({
+  variantId: z.string().min(1).max(160).optional(),
+  sku: z.string().min(1).max(160).optional(), // clientes legacy
+  colorName: z.string().max(160).optional().nullable(),
+  size: z.string().min(1).max(80),
+  quantity: z.number().int().min(1).max(100_000),
+}).refine((line) => Boolean(line.variantId) !== Boolean(line.sku), {
+  message: "La línea necesita una única identidad de variante",
+});
+
 const Schema = z.object({
   slug: z.string().min(1).max(160),
   qty: z.number().int().min(1).max(100_000),
   email: z.string().email().max(200),
   name: z.string().max(120).optional().nullable(),
   company: z.string().max(160).optional().nullable(),
+  variantId: z.string().min(1).max(160).optional().nullable(),
   variantSku: z.string().min(1).max(160).optional().nullable(),
   colorName: z.string().max(160).optional().nullable(),
   size: z.string().max(80).optional().nullable(),
   variantLines: z
-    .array(
-      z.object({
-        sku: z.string().min(1).max(160),
-        colorName: z.string().max(160).optional().nullable(),
-        size: z.string().min(1).max(80),
-        quantity: z.number().int().min(1).max(100_000),
-      }),
-    )
+    .array(VariantLineSchema)
     .max(40)
     .optional(),
   // marcaje opcional (si el visitante lo configuró en la ficha)
@@ -53,6 +57,9 @@ const Schema = z.object({
   numberOfColours: z.number().int().min(1).max(12).optional(),
   printAreaCm2: z.number().min(0).max(100_000).optional(),
   manipulationCode: z.string().min(1).max(2).optional(),
+}).refine((data) => !(data.variantId && data.variantSku), {
+  message: "Usa variantId o variantSku legacy, no ambos",
+  path: ["variantId"],
 });
 
 export async function POST(req: Request) {
@@ -66,6 +73,7 @@ export async function POST(req: Request) {
 
   const distributionError = validateQuoteRequestVariantDistribution(
     d.qty,
+    d.variantId,
     d.variantSku,
     d.variantLines,
   );
@@ -76,24 +84,34 @@ export async function POST(req: Request) {
     );
   }
 
-  const requestedSkus = d.variantLines?.length
-    ? d.variantLines.map((line) => line.sku)
-    : d.variantSku
-      ? [d.variantSku]
+  const requestedReferences = d.variantLines?.length
+    ? d.variantLines.map((line) => line.variantId ?? line.sku!)
+    : d.variantId
+      ? [d.variantId]
+      : d.variantSku
+        ? [d.variantSku]
       : [];
   let canonicalVariants: Array<{
+    variantId: string;
     sku: string;
     colorName: string | null;
     size: string | null;
   }> = [];
-  if (requestedSkus.length > 0) {
+  if (requestedReferences.length > 0) {
     const checked = await resolveSupplierOrderVariants(
-      requestedSkus.map((variantSku) => ({ productSlug: d.slug, variantSku })),
+      d.variantLines?.length
+        ? d.variantLines.map((line) => ({
+            productSlug: d.slug,
+            variantId: line.variantId,
+            variantSku: line.sku,
+          }))
+        : [{
+            productSlug: d.slug,
+            variantId: d.variantId,
+            variantSku: d.variantSku,
+          }],
     );
-    if (
-      !checked.ok ||
-      checked.items.some((item, index) => item.sku !== requestedSkus[index])
-    ) {
+    if (!checked.ok || checked.items.some((item) => !item.variantId)) {
       return NextResponse.json(
         {
           error: "La variante solicitada no pertenece al producto.",
@@ -103,6 +121,7 @@ export async function POST(req: Request) {
       );
     }
     canonicalVariants = checked.items.map((item) => ({
+      variantId: item.variantId!,
       sku: item.sku,
       colorName: item.colorName,
       size: item.size,

@@ -21,6 +21,10 @@
 
 import { measuredJson } from "./blocking-timer";
 import { resolveCredentialField } from "@/lib/supplier-credentials";
+import {
+  extractCifraColorSuffix,
+  resolveCifraColor,
+} from "./cifra-variant";
 
 const BASE_URL = process.env.CIFRA_API_BASE || "https://api.cifrashop.com";
 const DEFAULT_LANG = process.env.CIFRA_LANG || "es";
@@ -282,37 +286,13 @@ export function cmStringToMm(s: string | null | undefined): number | null {
 
 /** Extrae sufijo de color del model ("A-012-AM" → "AM"). */
 export function extractColorSuffix(model: string, rootmodel: string): string | null {
-  if (!model.startsWith(rootmodel) || model === rootmodel) return null;
-  const suffix = model.slice(rootmodel.length).replace(/^-/, "");
-  return suffix.length > 0 ? suffix : null;
+  return extractCifraColorSuffix(model, rootmodel);
 }
-
-/** Mapea código de color Cifra a nombre legible — heurística amplía con tiempo. */
-const COLOR_MAP: Record<string, { name: string; hex?: string; group?: string }> = {
-  AM: { name: "Amarillo", hex: "#FBBF24", group: "amarillo" },
-  AZ: { name: "Azul", hex: "#3B82F6", group: "azul" },
-  RJ: { name: "Rojo", hex: "#EF4444", group: "rojo" },
-  RO: { name: "Rojo", hex: "#EF4444", group: "rojo" },
-  VE: { name: "Verde", hex: "#10B981", group: "verde" },
-  NE: { name: "Negro", hex: "#1F2937", group: "negro" },
-  BL: { name: "Blanco", hex: "#FFFFFF", group: "blanco" },
-  GR: { name: "Gris", hex: "#9CA3AF", group: "gris" },
-  NA: { name: "Naranja", hex: "#FB923C", group: "naranja" },
-  LI: { name: "Lila", hex: "#A855F7", group: "lila" },
-  RS: { name: "Rosa", hex: "#EC4899", group: "rosa" },
-  FU: { name: "Fucsia", hex: "#D946EF", group: "rosa" },
-  MA: { name: "Marrón", hex: "#92400E", group: "marrón" },
-  TR: { name: "Transparente", hex: "#E5E7EB", group: "transparente" },
-};
 
 export function resolveColor(suffix: string | null): {
   name: string | null;
   hex: string | null;
   group: string | null;
 } {
-  if (!suffix) return { name: null, hex: null, group: null };
-  const m = COLOR_MAP[suffix.toUpperCase()];
-  if (m) return { name: m.name, hex: m.hex ?? null, group: m.group ?? null };
-  // fallback: usar el código como nombre
-  return { name: suffix, hex: null, group: null };
+  return resolveCifraColor(suffix);
 }

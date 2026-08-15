@@ -8,7 +8,14 @@ type Product = ResolvedProductSlug<{
   supplier: SupplierCode;
   supplierRef: string;
   _count: { variants: number };
-  variants: Array<{ sku: string; colorName: string | null; size: string | null }>;
+  variants: Array<{
+    id: string;
+    sku: string;
+    colorName: string | null;
+    colorGroup: string | null;
+    colorHex: string | null;
+    size: string | null;
+  }>;
 }>;
 
 function lookup(rows: Record<string, Product>) {
@@ -29,7 +36,14 @@ function product(
       supplier: "midocean",
       supplierRef: "MO-ROOT",
       _count: { variants: variantSkus.length },
-      variants: variantSkus.map((sku) => ({ sku, colorName: null, size: null })),
+      variants: variantSkus.map((sku, index) => ({
+        id: `variant-${index + 1}`,
+        sku,
+        colorName: null,
+        colorGroup: null,
+        colorHex: null,
+        size: null,
+      })),
     },
   };
 }
@@ -55,6 +69,7 @@ describe("resolveSupplierOrderVariants", () => {
         {
           supplier: "midocean",
           supplierRef: "MO-ROOT",
+          variantId: null,
           sku: "MO-ROOT",
           colorName: null,
           size: null,
@@ -63,6 +78,7 @@ describe("resolveSupplierOrderVariants", () => {
         {
           supplier: "midocean",
           supplierRef: "MO-ROOT",
+          variantId: "variant-1",
           sku: "MO-UNIQUE",
           colorName: null,
           size: null,
@@ -83,6 +99,41 @@ describe("resolveSupplierOrderVariants", () => {
     expect(result).toMatchObject({
       ok: true,
       items: [{ sku: "MO-TWO", canonicalSlug: "new-slug" }],
+    });
+  });
+
+  it("resuelve ProductVariant.id público y rechaza identidad doble", async () => {
+    const row = product("multi", ["MO-ONE", "MO-TWO"]);
+    expect(
+      await resolveSupplierOrderVariants(
+        [{ productSlug: "multi", variantId: "variant-2" }],
+        "midocean",
+        lookup({ multi: row }),
+      ),
+    ).toMatchObject({
+      ok: true,
+      items: [{ variantId: "variant-2", sku: "MO-TWO" }],
+    });
+    expect(
+      await resolveSupplierOrderVariants(
+        [{ productSlug: "multi", variantId: "variant-2", variantSku: "MO-TWO" }],
+        "midocean",
+        lookup({ multi: row }),
+      ),
+    ).toMatchObject({ ok: false, code: "invalid_variant" });
+  });
+
+  it("acepta el ID opaco en variantSku durante la transición de API v1", async () => {
+    const row = product("multi", ["MO-ONE", "MO-TWO"]);
+    expect(
+      await resolveSupplierOrderVariants(
+        [{ productSlug: "multi", variantSku: "variant-2" }],
+        "midocean",
+        lookup({ multi: row }),
+      ),
+    ).toMatchObject({
+      ok: true,
+      items: [{ variantId: "variant-2", sku: "MO-TWO" }],
     });
   });
 
@@ -125,13 +176,24 @@ describe("resolveSupplierOrderVariants", () => {
         lookup({ known: product("known", ["MO-A", "MO-B"]) }),
       ),
     ).toMatchObject({ ok: false, code: "invalid_variant" });
+
+    expect(
+      await resolveSupplierOrderVariants(
+        [{ productSlug: "root", variantId: "variant-ajena" }],
+        "midocean",
+        lookup({ root: product("root", []) }),
+      ),
+    ).toMatchObject({ ok: false, code: "invalid_variant" });
   });
 
   it("devuelve color y talla canónicos de BD para no confiar en el POST", async () => {
     const row = product("camiseta", ["CAM-AZ-M"]);
     row.product.variants[0] = {
+      id: "variant-cam-m",
       sku: "CAM-AZ-M",
       colorName: "AZUL",
+      colorGroup: "azul",
+      colorHex: null,
       size: "M",
     };
 
@@ -144,6 +206,31 @@ describe("resolveSupplierOrderVariants", () => {
     expect(result).toMatchObject({
       ok: true,
       items: [{ sku: "CAM-AZ-M", colorName: "AZUL", size: "M" }],
+    });
+  });
+
+  it("normaliza metadata Cifra heredada antes de cotizar o pedir", async () => {
+    const row = product("runner", ["10866-L-NE"]);
+    row.product.supplier = "cifra";
+    row.product.supplierRef = "10866";
+    row.product.variants[0] = {
+      id: "opaque-runner-l",
+      sku: "10866-L-NE",
+      colorName: "L-NE",
+      colorGroup: null,
+      colorHex: null,
+      size: null,
+    };
+
+    expect(
+      await resolveSupplierOrderVariants(
+        [{ productSlug: "runner", variantId: "opaque-runner-l" }],
+        "cifra",
+        lookup({ runner: row }),
+      ),
+    ).toMatchObject({
+      ok: true,
+      items: [{ sku: "10866-L-NE", colorName: "Negro", size: "L" }],
     });
   });
 });

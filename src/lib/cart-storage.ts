@@ -30,7 +30,11 @@ export type CartItem = {
   productName: string;
   primaryImageUrl?: string | null;
   quantity: number;
+  /** ProductVariant.id público/opaco usado por navegadores nuevos. */
+  variantId?: string | null;
+  /** Compatibilidad de pestañas antiguas; nunca lo emiten las APIs nuevas. */
   variantSku?: string | null;
+  variantReviewRequired?: boolean;
   colorName?: string | null;
   size?: string | null;
   // Shape plano (deprecated pero mantenido): primer marcaje
@@ -79,7 +83,8 @@ function sameLine(a: CartItem, b: CartItem): boolean {
   return (
     a.productSlug === b.productSlug &&
     (a.markingTechniqueCode ?? null) === (b.markingTechniqueCode ?? null) &&
-    (a.variantSku ?? null) === (b.variantSku ?? null)
+    (a.variantId ?? a.variantSku ?? null) ===
+      (b.variantId ?? b.variantSku ?? null)
   );
 }
 

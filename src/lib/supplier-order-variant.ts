@@ -5,10 +5,13 @@ import {
   type ResolvedProductSlug,
 } from "@/lib/product-slug-resolver";
 import { extractSize } from "@/lib/variant-grouping";
+import { normalizeLegacyCifraVariant } from "@/lib/suppliers/cifra-variant";
 
 export type SupplierOrderVariantInput = {
   productSlug: string;
   productRef?: string | null;
+  variantId?: string | null;
+  /** Compatibilidad con CartQuote históricos; no lo envían clientes nuevos. */
   variantSku?: string | null;
 };
 
@@ -17,12 +20,20 @@ type SupplierProduct = {
   supplier: SupplierCode;
   supplierRef: string;
   _count: { variants: number };
-  variants: Array<{ sku: string; colorName: string | null; size: string | null }>;
+  variants: Array<{
+    id: string;
+    sku: string;
+    colorName: string | null;
+    colorGroup: string | null;
+    colorHex: string | null;
+    size: string | null;
+  }>;
 };
 
 export type ResolvedSupplierOrderVariant = {
   supplier: SupplierCode;
   supplierRef: string;
+  variantId: string | null;
   sku: string;
   colorName: string | null;
   size: string | null;
@@ -52,7 +63,16 @@ async function lookupProducts(slugs: ReadonlyArray<string>) {
         supplier: true,
         supplierRef: true,
         _count: { select: { variants: true } },
-        variants: { select: { sku: true, colorName: true, size: true } },
+        variants: {
+          select: {
+            id: true,
+            sku: true,
+            colorName: true,
+            colorGroup: true,
+            colorHex: true,
+            size: true,
+          },
+        },
       },
     }),
   );
@@ -93,25 +113,42 @@ export async function resolveSupplierOrderVariants(
       };
     }
 
-    const explicitSku = input.variantSku?.trim();
+    const explicitVariantId = input.variantId?.trim();
+    const legacySku = input.variantSku?.trim();
+    if (explicitVariantId && legacySku) {
+      return {
+        ok: false,
+        code: "invalid_variant",
+        error: `El producto ${resolved.canonicalSlug} recibió dos identidades de variante`,
+      };
+    }
     let sku: string;
     let canonicalVariant: SupplierProduct["variants"][number] | undefined;
     if (product._count.variants === 0) {
       // Sin catálogo de variantes, la única identidad autorizada es la raíz
-      // canónica de proveedor. Un SKU del navegador no puede sustituirla.
+      // canónica de proveedor. Ninguna identidad explícita puede sustituirla.
+      if (explicitVariantId || legacySku) {
+        return {
+          ok: false,
+          code: "invalid_variant",
+          error: `El producto ${resolved.canonicalSlug} no admite variante`,
+        };
+      }
       sku = product.supplierRef;
-    } else if (explicitSku) {
+    } else if (explicitVariantId || legacySku) {
       canonicalVariant = product.variants.find(
-        (variant) => variant.sku === explicitSku,
+        (variant) =>
+          (explicitVariantId ? variant.id === explicitVariantId : false) ||
+          (legacySku ? variant.sku === legacySku || variant.id === legacySku : false),
       );
       if (!canonicalVariant) {
         return {
           ok: false,
           code: "invalid_variant",
-          error: `La variante ${explicitSku} no pertenece a ${resolved.canonicalSlug}`,
+          error: `La variante indicada no pertenece a ${resolved.canonicalSlug}`,
         };
       }
-      sku = explicitSku;
+      sku = canonicalVariant.sku;
     } else if (product._count.variants === 1 && product.variants[0]?.sku) {
       canonicalVariant = product.variants[0];
       sku = canonicalVariant.sku;
@@ -123,13 +160,18 @@ export async function resolveSupplierOrderVariants(
       };
     }
 
+    const canonicalAttributes =
+      canonicalVariant && product.supplier === "cifra"
+        ? normalizeLegacyCifraVariant(canonicalVariant, product.supplierRef)
+        : canonicalVariant;
     resolvedItems.push({
       supplier: product.supplier,
       supplierRef: product.supplierRef,
+      variantId: canonicalVariant?.id ?? null,
       sku,
-      colorName: canonicalVariant?.colorName ?? null,
-      size: canonicalVariant
-        ? extractSize({ size: canonicalVariant.size, sku: canonicalVariant.sku })
+      colorName: canonicalAttributes?.colorName ?? null,
+      size: canonicalAttributes
+        ? extractSize({ size: canonicalAttributes.size, sku: canonicalAttributes.sku })
         : null,
       canonicalSlug: resolved.canonicalSlug,
     });

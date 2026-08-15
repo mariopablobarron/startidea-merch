@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import type { CartItem } from "@/lib/cart-storage";
+import { resolvePublicVariantReferences } from "@/lib/public-variant-reference";
 
 export const runtime = "nodejs";
 // El contenido depende del id y muta estado (recoveredAt); nunca cachear.
@@ -76,14 +77,17 @@ export async function GET(
     return NextResponse.json({ error: "Cotización no encontrada" }, { status: 404 });
   }
 
-  const items: CartItem[] = cart.items.map((it) => ({
+  const publicVariants = await resolvePublicVariantReferences(cart.items);
+  const items: CartItem[] = cart.items.map((it, index) => ({
     productSlug: it.productSlug,
     productRef: it.productRef,
     productName: it.productName,
     primaryImageUrl: proxyImageUrl(it.primaryImageUrl), // nunca URL cruda de proveedor
     quantity: it.quantity,
-    variantSku: it.variantSku,
-    colorName: it.colorName,
+    variantId: publicVariants[index]?.variantId ?? null,
+    colorName: publicVariants[index]?.colorName ?? it.colorName,
+    size: publicVariants[index]?.size ?? null,
+    variantReviewRequired: publicVariants[index]?.requiresVariantReview ?? true,
     markingTechniqueCode: it.markingTechniqueCode,
     markingTechniqueName: it.markingTechniqueName,
     markingPositionId: it.markingPositionId,

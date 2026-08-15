@@ -160,11 +160,11 @@ export function ProductOrderForm({
   const canMultiSize = matrixSizes.length > 1 && !activeColorOpt?.ambiguous;
   const [multiSize, setMultiSize] = useState(false);
   const [sizesQty, setSizesQty] = useState<Record<string, number>>({});
-  // Cambiar de color reinicia la matriz (los SKUs por talla son otros)
+  // Cambiar de color reinicia la matriz (los IDs de variante son otros)
   useEffect(() => {
     setSizesQty({});
   }, [activeColorOpt?.key]);
-  // Solo cuentan los SKU del color ACTUAL. El efecto de arriba limpia el
+  // Solo cuentan los IDs del color ACTUAL. El efecto de arriba limpia el
   // estado después del render; este filtro evita que durante ese intervalo
   // una cantidad del color anterior habilite el CTA o altere el precio.
   const currentVariantLines = currentVariantQuantityLines(matrixSizes, sizesQty);
@@ -516,7 +516,7 @@ export function ProductOrderForm({
           productRef,
           productName,
           primaryImageUrl: activeColorOpt.imageUrl ?? primaryImageUrl,
-          variantSku: line.sku,
+          variantId: line.variantId,
           colorName: activeColorOpt.colorName,
           size: line.size,
           quantity: line.quantity,
@@ -544,7 +544,7 @@ export function ProductOrderForm({
       productName,
       // Si el cliente eligió una variante de color, usamos su imagen y datos
       primaryImageUrl: orderVariant?.imageUrl ?? primaryImageUrl,
-      variantSku: orderVariant?.sku ?? null,
+      variantId: orderVariant?.variantId ?? null,
       colorName: orderVariant?.colorName ?? null,
       size: orderVariant?.size ?? null,
       quantity: finalQty,
@@ -616,7 +616,7 @@ export function ProductOrderForm({
           ...(matrixActive
             ? {
                 variantLines: currentVariantLines.map((line) => ({
-                    sku: line.sku,
+                    variantId: line.variantId,
                     colorName: activeColorOpt?.colorName ?? null,
                     size: line.size,
                     quantity: line.quantity,
@@ -624,7 +624,7 @@ export function ProductOrderForm({
               }
             : orderVariant
               ? {
-                  variantSku: orderVariant.sku,
+                  variantId: orderVariant.variantId,
                   colorName: orderVariant.colorName,
                   size: orderVariant.size,
                 }
@@ -694,7 +694,7 @@ export function ProductOrderForm({
                   const outOfStock = colorHasStock && s.stockQty <= 0;
                   return (
                     <label
-                      key={s.sku}
+                      key={s.variantId}
                       className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-sm ${
                         outOfStock ? "border-line/60 opacity-40" : "border-line bg-bone"
                       }`}
@@ -714,12 +714,12 @@ export function ProductOrderForm({
                         max={1_000_000}
                         disabled={outOfStock}
                         placeholder="0"
-                        value={sizesQty[s.sku] || ""}
+                        value={sizesQty[s.variantId] || ""}
                         onChange={(e) => {
                           const n = parseInt(e.target.value, 10);
                           setSizesQty((prev) => ({
                             ...prev,
-                            [s.sku]: Number.isFinite(n) && n > 0 ? n : 0,
+                            [s.variantId]: Number.isFinite(n) && n > 0 ? n : 0,
                           }));
                         }}
                         className="w-20 rounded-lg border border-line bg-bone-soft px-2 py-1 text-right text-sm tabular-nums outline-none focus:border-accent"
