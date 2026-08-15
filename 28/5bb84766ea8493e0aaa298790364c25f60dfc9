@@ -1,0 +1,21 @@
+src/app/sitemap.test.ts
+  s_c425556e2d00cd::t_8dc74a0b77b207 35-37,40-109
+src/app/sitemap.ts
+  s_c425556e2d00cd::t_880e7a3a217a05 6-7,14-21,33-42,44-49,56,59-62,65-66,70-71,75-77,84-90,102-121,123-124,138,146,154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "285bb84766ea8493e0aaa298790364c25f60dfc9",
+  "prompts": {},
+  "sessions": {
+    "s_c425556e2d00cd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
