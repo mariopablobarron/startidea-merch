@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
-import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { CartPage } from "@/components/CartPage";
 
 export const metadata: Metadata = {
@@ -40,7 +39,6 @@ export default function CarritoPage() {
         </section>
       </main>
       <Footer />
-      <WhatsAppFloat />
     </>
   );
 }

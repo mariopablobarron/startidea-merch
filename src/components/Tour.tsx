@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { TOUR_STEPS } from "@/lib/tour-steps";
+import { FLOATING_SURFACES } from "@/lib/floating-surfaces";
+import { useModalFocus } from "@/lib/use-modal-focus";
 
 /**
  * Tour guiado on-demand. Se dispara con evento global `tour:start` (lanzado
@@ -36,6 +38,7 @@ export function Tour() {
   const [stepIdx, setStepIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -46,6 +49,8 @@ export function Tour() {
       localStorage.setItem(STORAGE_KEY, new Date().toISOString());
     } catch {}
   }, []);
+
+  useModalFocus({ active: open, containerRef: dialogRef, onEscape: close });
 
   // Listener evento global
   useEffect(() => {
@@ -141,9 +146,12 @@ export function Tour() {
 
   return createPortal(
     <div
+      ref={dialogRef}
+      data-floating-surface={FLOATING_SURFACES.tourDialog}
       role="dialog"
       aria-modal="true"
       aria-label="Tour guiado"
+      tabIndex={-1}
       className="fixed inset-0 z-[100]"
     >
       {/* Backdrop con recorte para spotlight */}
@@ -181,7 +189,7 @@ export function Tour() {
 
       {/* Tooltip */}
       <div
-        className="absolute z-10 w-[340px] max-w-[calc(100vw-32px)] rounded-2xl border border-line bg-bone p-5 shadow-2xl"
+        className="absolute z-10 max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_2rem)] w-[340px] max-w-[calc(100vw-32px)] overflow-y-auto rounded-2xl border border-line bg-bone p-5 shadow-2xl"
         style={tooltipPos}
       >
         <div className="flex items-center justify-between">
@@ -191,6 +199,7 @@ export function Tour() {
           <button
             type="button"
             onClick={close}
+            data-modal-initial-focus
             className="text-xs text-ink/40 hover:text-accent"
             aria-label="Cerrar tour"
           >
@@ -309,5 +318,8 @@ function computeTooltipPosition(
   left = Math.max(16, Math.min(left, vw - w - 16));
   top = Math.max(16, Math.min(top, vh - h - 16));
 
-  return { top, left };
+  return {
+    top: `max(${top}px, calc(env(safe-area-inset-top) + 16px))`,
+    left,
+  };
 }

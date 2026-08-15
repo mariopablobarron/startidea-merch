@@ -2,9 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
+import { isVoiceAgentMountedOnPath } from "@/lib/floating-surfaces";
 
 /**
- * Carga el widget de voz SOLO en rutas públicas (no en /admin/*).
+ * Carga el widget de voz solo donde puede ayudar sin invadir funnels de pago,
+ * portales privados o pantallas de revisión.
  * Lazy via next/dynamic con ssr:false: no aporta nada al SSR y la SDK de
  * ElevenLabs es client-only (WebRTC, mic, etc.).
  */
@@ -13,10 +15,8 @@ const VoiceAgentWidget = dynamic(
   { ssr: false },
 );
 
-const HIDE_ON_PREFIXES = ["/admin", "/api", "/pay/"];
-
 export function VoiceAgentGate() {
   const pathname = usePathname() || "";
-  if (HIDE_ON_PREFIXES.some((p) => pathname.startsWith(p))) return null;
+  if (!isVoiceAgentMountedOnPath(pathname)) return null;
   return <VoiceAgentWidget />;
 }

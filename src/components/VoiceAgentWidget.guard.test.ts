@@ -18,10 +18,18 @@ describe("guard: David no compite con la compra en móvil", () => {
     );
   });
 
-  it("mantiene un lanzador compacto y separado de la barra inferior en móvil", () => {
-    expect(source).toContain("bottom-[calc(env(safe-area-inset-bottom)_+_6rem)]");
-    expect(source).toMatch(/className="[^"]*h-12 w-12[^"]*sm:h-auto sm:w-auto/);
-    expect(source).toContain('<span className="hidden sm:inline">Habla o escribe a {agentName}</span>');
+  it("cede el espacio inferior al propietario comercial en móvil", () => {
+    expect(source).toContain("mobileFloatingOwner({");
+    expect(source).toContain(
+      'mobileOwner !== FLOATING_SURFACES.assistantLauncher && "hidden md:flex"',
+    );
+    expect(source).toContain(
+      "data-floating-surface={FLOATING_SURFACES.assistantLauncher}",
+    );
+    expect(source).toContain(
+      "bottom-[calc(env(safe-area-inset-bottom)_+_0.75rem)]",
+    );
+    expect(source).toContain('className="hidden md:inline"');
   });
 
   it("identifica la IA, expone el diálogo y respeta movimiento reducido", () => {

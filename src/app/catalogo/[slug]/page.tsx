@@ -4,7 +4,6 @@ import Image from "next/image";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
-import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { RelatedProducts } from "@/components/RelatedProducts";
 import { DeliveryEstimate } from "@/components/DeliveryEstimate";
 import { prisma } from "@/lib/prisma";
@@ -599,7 +598,6 @@ export default async function ProductDetailPage({
         />
       </main>
       <Footer />
-      <WhatsAppFloat />
     </>
   );
 }

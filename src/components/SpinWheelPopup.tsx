@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { trackLead } from "@/lib/ads-events";
+import { FLOATING_SURFACES } from "@/lib/floating-surfaces";
+import { useModalFocus } from "@/lib/use-modal-focus";
 
 /**
  * Popup de captación con ruleta de premios (lead magnet gamificado).
@@ -47,6 +49,9 @@ export function SpinWheelPopup({
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
   const turnsRef = useRef(0);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useModalFocus({ active: open, containerRef: dialogRef, onEscape: dismiss });
 
   useEffect(() => {
     try {
@@ -176,19 +181,23 @@ export function SpinWheelPopup({
 
   return (
     <div
+      ref={dialogRef}
+      data-floating-surface={FLOATING_SURFACES.entryDialog}
       role="dialog"
       aria-modal="true"
       aria-label="Gira la ruleta y gana un premio"
+      tabIndex={-1}
       data-popup="ruleta"
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/40 p-3 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/40 px-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] pt-[calc(0.75rem_+_env(safe-area-inset-top))] backdrop-blur-sm sm:items-center sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) dismiss();
       }}
     >
-      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-line bg-bone-soft shadow-2xl">
+      <div className="relative max-h-full w-full max-w-lg overflow-y-auto rounded-3xl border border-line bg-bone-soft shadow-2xl">
         <button
           type="button"
           onClick={dismiss}
+          data-modal-initial-focus
           aria-label="Cerrar"
           className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-bone/80 text-ink/60 transition hover:bg-bone hover:text-ink"
         >
