@@ -9,6 +9,7 @@ import {
   mobileFloatingOwner,
   pickHighestPrioritySurface,
   shouldShowStickyActions,
+  shouldShowStickyActionsForRect,
 } from "./floating-surfaces";
 
 describe("floating surfaces", () => {
@@ -114,6 +115,27 @@ describe("floating surfaces", () => {
     expect(shouldShowStickyActions({ isIntersecting: false, top: -1 })).toBe(
       true,
     );
+    expect(
+      shouldShowStickyActionsForRect({
+        top: 700,
+        bottom: 746,
+        viewportHeight: 640,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowStickyActionsForRect({
+        top: -20,
+        bottom: 26,
+        viewportHeight: 640,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowStickyActionsForRect({
+        top: -292,
+        bottom: -246,
+        viewportHeight: 640,
+      }),
+    ).toBe(true);
   });
 
   it("reserva portada y ficha y arbitra el resto del móvil", () => {

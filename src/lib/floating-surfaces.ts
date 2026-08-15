@@ -183,6 +183,17 @@ export function shouldShowStickyActions(input: {
   return !input.isIntersecting && input.top < 0;
 }
 
+export function shouldShowStickyActionsForRect(input: {
+  top: number;
+  bottom: number;
+  viewportHeight: number;
+}): boolean {
+  return shouldShowStickyActions({
+    isIntersecting: input.bottom > 0 && input.top < input.viewportHeight,
+    top: input.top,
+  });
+}
+
 export function floatingSurfacePriorityCss(): string {
   const selectors: string[] = [];
   for (let high = 0; high < FLOATING_SURFACE_PRIORITY.length; high++) {

@@ -61,7 +61,13 @@ describe("guard: una sola superficie inferior en móvil", () => {
       expect(source(path), path).toContain("env(safe-area-inset-bottom)");
     }
     expect(source("src/components/ProductOrderForm.tsx")).toContain(
-      "shouldShowStickyActions({",
+      "shouldShowStickyActionsForRect({",
+    );
+    expect(source("src/components/ProductOrderForm.tsx")).toContain(
+      'window.addEventListener("scroll", scheduleMeasure, { passive: true })',
+    );
+    expect(source("src/components/ProductOrderForm.tsx")).toContain(
+      "window.requestAnimationFrame(measureActions)",
     );
     expect(source("src/app/layout.tsx")).toContain('viewportFit: "cover"');
   });
