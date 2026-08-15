@@ -1,0 +1,21 @@
+src/lib/suppliers/cifra-variant.test.ts
+  s_578116e23e11cc::t_f7a677c0d68d97 12-15,84-105,107,109-116,118,142
+src/lib/suppliers/cifra-variant.ts
+  s_578116e23e11cc::t_f7a677c0d68d97 23-24,59-76,85,126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "4d6151346188b28e734e57bb2a75cc1d24a0bfa2",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
