@@ -24,8 +24,9 @@ const CIFRA_COLOR_MAP: Readonly<
 };
 
 export function extractCifraColorSuffix(model: string, rootmodel: string): string | null {
-  if (!model.startsWith(rootmodel) || model === rootmodel) return null;
-  const suffix = model.slice(rootmodel.length).replace(/^-/, "");
+  const prefix = `${rootmodel}-`;
+  if (!model.startsWith(prefix)) return null;
+  const suffix = model.slice(prefix.length);
   return suffix.length > 0 ? suffix : null;
 }
 
@@ -103,12 +104,23 @@ export function normalizeLegacyCifraVariant<T extends {
   size: string | null;
 }>(variant: T, rootmodel: string): T {
   const suffix = extractCifraColorSuffix(variant.sku, rootmodel);
-  if (!suffix || variant.colorName?.trim().toUpperCase() !== suffix.toUpperCase()) {
-    return variant;
-  }
-
+  if (!suffix) return variant;
   const parsed = parseCifraVariantDimensions(variant.sku, rootmodel);
+  const currentColor = variant.colorName?.trim().toUpperCase() || null;
+  const currentGroup = variant.colorGroup?.trim() || null;
+  const currentHex = variant.colorHex?.trim() || null;
   const currentSize = variant.size?.trim().toUpperCase() || null;
+  const isLegacyRawColor = currentColor === suffix.toUpperCase();
+  // Algunas filas Cifra históricas (Formentera T-691/T-791) llegaron sin
+  // metadata de color/talla. Solo las reconstruimos si el parser cerrado
+  // reconoce una talla o un código del diccionario; sufijos desconocidos no se tocan.
+  const isEmptyClosedPattern =
+    currentColor === null &&
+    currentGroup === null &&
+    currentHex === null &&
+    currentSize === null &&
+    (parsed.size !== null || parsed.colorGroup !== null);
+  if (!isLegacyRawColor && !isEmptyClosedPattern) return variant;
   if (currentSize && currentSize !== parsed.size) return variant;
   if (
     parsed.colorName === variant.colorName &&

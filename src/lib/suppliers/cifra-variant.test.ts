@@ -25,6 +25,15 @@ describe("parseCifraVariantDimensions", () => {
       size: null,
     });
   });
+
+  it("exige el delimitador exacto entre raíz y sufijo", () => {
+    expect(parseCifraVariantDimensions("T-691L-MA", "T-691")).toEqual({
+      colorName: null,
+      colorGroup: null,
+      colorHex: null,
+      size: null,
+    });
+  });
 });
 
 describe("compatibilidad de filas Cifra heredadas", () => {
@@ -67,5 +76,58 @@ describe("compatibilidad de filas Cifra heredadas", () => {
       size: "M",
     };
     expect(normalizeLegacyCifraVariant(structured, "10866")).toEqual(structured);
+  });
+
+  it.each([
+    ["T-691-L-MA", "T-691"],
+    ["T-791-L-MA", "T-791"],
+  ])("recupera Formentera %s aunque la fila heredada esté vacía", (sku, rootmodel) => {
+    const variant = normalizeLegacyCifraVariant(
+      {
+        id: `opaque-${rootmodel}`,
+        sku,
+        colorName: null,
+        colorGroup: null,
+        colorHex: null,
+        size: null,
+        imageUrl: null,
+        stockQty: 0,
+      },
+      rootmodel,
+    );
+    const options = groupColorOptions([variant]);
+
+    expect(variant).toMatchObject({ colorName: "Marino", colorGroup: "azul", size: "L" });
+    expect(options).toHaveLength(1);
+    expect(options[0]).toMatchObject({ colorName: "Marino", ambiguous: false });
+    expect(options[0].sizes.map((size) => size.size)).toEqual(["L"]);
+    expect(resolveOrderVariantSelection(options, null)).toMatchObject({
+      prompt: null,
+      variant: { variantId: `opaque-${rootmodel}`, colorName: "Marino", size: "L" },
+    });
+  });
+
+  it("no inventa atributos para una fila vacía con código desconocido", () => {
+    const unknown = {
+      sku: "ABC-L-XX",
+      colorName: null,
+      colorGroup: null,
+      colorHex: null,
+      size: null,
+    };
+    expect(normalizeLegacyCifraVariant(unknown, "ABC")).toEqual(unknown);
+  });
+
+  it.each([
+    [{ colorGroup: "editorial", colorHex: null }],
+    [{ colorGroup: null, colorHex: "#123456" }],
+  ])("no pisa metadata parcial aunque color y talla estén vacíos", (metadata) => {
+    const partial = {
+      sku: "T-691-L-MA",
+      colorName: null,
+      size: null,
+      ...metadata,
+    };
+    expect(normalizeLegacyCifraVariant(partial, "T-691")).toEqual(partial);
   });
 });
