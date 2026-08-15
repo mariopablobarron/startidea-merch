@@ -4,6 +4,7 @@ const cartFindUnique = vi.fn();
 const poUpdate = vi.fn();
 const createOrderMock = vi.fn();
 const notifyTelegramMock = vi.fn();
+const productFindMany = vi.fn();
 
 /** Ver el porqué de la unicidad síncrona en midocean-auto-order.test.ts. */
 const settings = new Map<string, number>();
@@ -12,6 +13,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     cartQuote: { findUnique: (...a: unknown[]) => cartFindUnique(...a) },
     purchaseOrder: { update: (...a: unknown[]) => poUpdate(...a) },
+    product: { findMany: (...a: unknown[]) => productFindMany(...a) },
     adminSetting: {
       create: ({ data }: { data: { key: string; value: number } }) => {
         if (settings.has(data.key)) return Promise.reject(new Error("unique constraint"));
@@ -70,7 +72,7 @@ function cart(overrides: Record<string, unknown> = {}) {
     shippingCity: "Granada",
     shippingCountry: "ES",
     items: [
-      { id: "it_1", productRef: "A-012", variantSku: "A-012-AM", quantity: 50, purchaseOrderId: "po_cif" },
+      { id: "it_1", productSlug: "a-012", productRef: "STM-CIFRA", variantSku: "A-012-AM", quantity: 50, purchaseOrderId: "po_cif" },
     ],
     purchaseOrders: [
       { id: "po_cif", supplier: "cifra", status: "PENDING", supplierOrderRef: null, internalNotes: null },
@@ -87,6 +89,16 @@ beforeEach(() => {
   poUpdate.mockResolvedValue({});
   notifyTelegramMock.mockResolvedValue(undefined);
   createOrderMock.mockResolvedValue({ data: { order_id: "CIF-1", total: 500 } });
+  productFindMany.mockImplementation(
+    async ({ where }: { where: { slug: { in: string[] } } }) =>
+      where.slug.in.map((slug) => ({
+        slug,
+        supplier: "cifra",
+        supplierRef: "A-012",
+        _count: { variants: 1 },
+        variants: [{ sku: "A-012-AM" }],
+      })),
+  );
 });
 
 describe("autoPlaceCifraOrder · con los pedidos en vivo", () => {
@@ -108,6 +120,26 @@ describe("autoPlaceCifraOrder · con los pedidos en vivo", () => {
     const res = await autoPlaceCifraOrder("cart_cifra01");
 
     expect(res).toMatchObject({ skipped: true });
+    expect(createOrderMock).not.toHaveBeenCalled();
+  });
+
+  it("sin variantSku y con varias variantes corta antes de Cifra", async () => {
+    cartFindUnique.mockResolvedValue(
+      cart({ items: [{ ...cart().items[0], variantSku: null }] }),
+    );
+    productFindMany.mockResolvedValue([
+      {
+        slug: "a-012",
+        supplier: "cifra",
+        supplierRef: "A-012",
+        _count: { variants: 2 },
+        variants: [{ sku: "A-012-AM" }],
+      },
+    ]);
+
+    const result = await autoPlaceCifraOrder("cart_cifra01");
+
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining("variante exacta") });
     expect(createOrderMock).not.toHaveBeenCalled();
   });
 

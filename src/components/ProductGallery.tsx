@@ -2,20 +2,18 @@
 
 import Image from "next/image";
 import { useProductColor } from "./product-color-context";
-import type { ColorOption, SizeOption } from "@/lib/variant-grouping";
-
-/** Talla por defecto al elegir un color: la de más stock. */
-function defaultSize(opt: ColorOption): SizeOption | null {
-  if (opt.sizes.length === 0) return null;
-  return opt.sizes.reduce((best, s) => (s.stockQty > best.stockQty ? s : best), opt.sizes[0]);
-}
+import {
+  selectableSizesForOption,
+  type ColorOption,
+  type SizeOption,
+} from "@/lib/variant-grouping";
 
 /**
  * Imagen grande + selector de COLOR (deduplicado) y de TALLA.
  *
  * - Colores: un swatch por color único (no por variante color×talla). Clic →
- *   cambia la imagen principal, marca el color y preselecciona su talla de más
- *   stock. Clicar el color activo lo deselecciona.
+ *   cambia la imagen principal y marca el color. Nunca elige una talla por
+ *   stock: si hay más de una, la decisión sigue siendo del cliente.
  * - Tallas: aparecen bajo los colores para el color elegido (o el único color).
  *   Clic → fija la variante exacta (SKU con esa talla).
  *
@@ -32,32 +30,74 @@ export function ProductGallery({
   colorOptions: ColorOption[];
 }) {
   const { selected, setSelected } = useProductColor();
+  const productHasStock = colorOptions.some((option) => option.totalStock > 0);
+  const eligibleOptions = productHasStock
+    ? colorOptions.filter((option) => option.totalStock > 0)
+    : colorOptions;
 
-  // Color activo: si solo hay uno, ese; si hay varios, el que coincide con lo elegido.
+  const selectedOption = selected
+    ? eligibleOptions.find(
+        (option) =>
+          option.key === selected.optionKey ||
+          (selected.optionKey == null &&
+            selected.colorName != null &&
+            option.colorName === selected.colorName),
+      )
+    : undefined;
+  const implicitOption = eligibleOptions.length === 1 ? eligibleOptions[0] : undefined;
+  const displayedOption = selectedOption ?? implicitOption;
+  // Si solo queda una opción elegible, coincide visualmente con la resolución
+  // implícita del carrito; con varias, solo se activa la elegida.
   const activeColor =
     colorOptions.length === 1
       ? colorOptions[0]
-      : colorOptions.find((o) => o.colorName === selected?.colorName) ?? null;
+      : displayedOption ?? null;
+  const activeSelectableSizes = activeColor ? selectableSizesForOption(activeColor) : [];
+  const canonicalSelectedSize =
+    selectedOption && selected?.sku
+      ? activeSelectableSizes.find((size) => size.sku === selected.sku)
+      : undefined;
+  const displayedSize =
+    canonicalSelectedSize
+      ? canonicalSelectedSize.size
+      : !activeColor?.ambiguous && activeSelectableSizes.length === 1
+        ? activeSelectableSizes[0].size
+        : null;
 
-  const bigImage = selected?.imageUrl ?? primaryImageUrl;
-  const bigAlt = selected?.colorName ? `${productName} — ${selected.colorName}` : productName;
+  const bigImage = displayedOption?.imageUrl ?? primaryImageUrl;
+  const bigAlt = displayedOption?.colorName
+    ? `${productName} — ${displayedOption.colorName}`
+    : productName;
+  const hasNeutralOption = colorOptions.some((option) => option.colorName == null);
 
   function selectColor(opt: ColorOption) {
-    if (selected?.colorName === opt.colorName) {
+    if (selectedOption?.key === opt.key) {
       setSelected(null);
       return;
     }
-    const ds = defaultSize(opt);
+    const sizes = selectableSizesForOption(opt);
+    const onlySize = !opt.ambiguous && sizes.length === 1 ? sizes[0] : null;
     setSelected({
-      sku: ds ? ds.sku : opt.primarySku,
+      sku: onlySize
+        ? onlySize.sku
+        : !opt.ambiguous && opt.sizes.length === 0 && opt.variantCount === 1
+          ? opt.primarySku
+          : null,
+      optionKey: opt.key,
       colorName: opt.colorName,
-      size: ds ? ds.size : null,
+      size: onlySize?.size ?? null,
       imageUrl: opt.imageUrl,
     });
   }
 
   function selectSize(opt: ColorOption, s: SizeOption) {
-    setSelected({ sku: s.sku, colorName: opt.colorName, size: s.size, imageUrl: opt.imageUrl });
+    setSelected({
+      sku: s.sku,
+      optionKey: opt.key,
+      colorName: opt.colorName,
+      size: s.size,
+      imageUrl: opt.imageUrl,
+    });
   }
 
   return (
@@ -80,28 +120,35 @@ export function ProductGallery({
 
       {/* Selector de COLOR (solo si hay más de un color) */}
       {colorOptions.length > 1 && (
-        <div className="mt-6">
-          <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
-            {colorOptions.length} colores
-            {selected?.colorName && (
+        <fieldset className="mt-6">
+          <legend className="text-xs font-medium uppercase tracking-wider text-ink/50">
+            {colorOptions.length} {hasNeutralOption ? "opciones" : "colores"}
+            {displayedOption && (
               <span className="ml-2 font-semibold normal-case tracking-normal text-ink/75">
-                · {selected.colorName}
+                · {displayedOption.colorName ?? "Estándar"}
               </span>
             )}
-          </p>
+          </legend>
           <div className="mt-3 flex flex-wrap gap-2">
             {colorOptions.map((opt) => {
-              const isSel = selected?.colorName === opt.colorName;
+              const isSel = displayedOption?.key === opt.key;
+              const outOfStock = productHasStock && opt.totalStock <= 0;
               return (
                 <button
                   key={opt.key}
                   type="button"
+                  data-color-option
                   onClick={() => selectColor(opt)}
-                  title={opt.colorName ?? undefined}
+                  disabled={outOfStock}
+                  title={outOfStock ? "Sin stock en esta opción" : opt.colorName ?? "Estándar"}
                   aria-pressed={isSel}
-                  aria-label={opt.colorName ? `Color ${opt.colorName}` : opt.primarySku}
+                  aria-label={opt.colorName ? `Color ${opt.colorName}` : "Opción estándar"}
                   className={`relative h-16 w-16 overflow-hidden rounded-xl border bg-bone transition ${
-                    isSel ? "border-accent ring-2 ring-accent" : "border-line hover:border-accent/50"
+                    outOfStock
+                      ? "cursor-not-allowed border-line/60 opacity-40"
+                      : isSel
+                        ? "border-accent ring-2 ring-accent"
+                        : "border-line hover:border-accent/50"
                   }`}
                 >
                   {opt.imageUrl ? (
@@ -120,25 +167,29 @@ export function ProductGallery({
                       className="absolute inset-2 rounded-full border border-line/60"
                       style={{ background: opt.colorHex }}
                     />
-                  ) : null}
+                  ) : (
+                    <span className="grid h-full place-items-center px-1 text-[10px] font-semibold text-ink/60">
+                      Estándar
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
-        </div>
+        </fieldset>
       )}
 
       {/* Selector de TALLA (del color activo) */}
       {activeColor && activeColor.sizes.length > 0 && (
-        <div className="mt-5">
-          <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
+        <fieldset className="mt-5">
+          <legend className="text-xs font-medium uppercase tracking-wider text-ink/50">
             Talla
-            {selected?.size && selected?.colorName === activeColor.colorName && (
+            {displayedSize && (
               <span className="ml-2 font-semibold normal-case tracking-normal text-ink/75">
-                · {selected.size}
+                · {displayedSize}
               </span>
             )}
-          </p>
+          </legend>
           <div className="mt-3 flex flex-wrap gap-2">
             {(() => {
               // Solo bloqueamos tallas a 0 si el color opera con stock: si TODAS
@@ -146,12 +197,16 @@ export function ProductGallery({
               const colorHasStock = activeColor.sizes.some((s) => s.stockQty > 0);
               return activeColor.sizes.map((s) => {
                 const isSel =
-                  selected?.size === s.size && selected?.colorName === activeColor.colorName;
+                  (selected?.sku === s.sku && selectedOption?.key === activeColor.key) ||
+                  (!activeColor.ambiguous &&
+                    activeSelectableSizes.length === 1 &&
+                    activeSelectableSizes[0].sku === s.sku);
                 const outOfStock = colorHasStock && s.stockQty <= 0;
                 return (
                   <button
                     key={s.sku}
                     type="button"
+                    data-size-option
                     onClick={() => selectSize(activeColor, s)}
                     disabled={outOfStock}
                     aria-pressed={isSel}
@@ -170,7 +225,7 @@ export function ProductGallery({
               });
             })()}
           </div>
-        </div>
+        </fieldset>
       )}
     </div>
   );

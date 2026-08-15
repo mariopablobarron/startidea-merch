@@ -23,6 +23,7 @@ import {
   formatSizes,
   formatTechnique,
   proposalLineLabel,
+  proposalVariantCustomerLabel,
 } from "./proposal-types";
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -248,6 +249,7 @@ export function RecommenderProposalPdf({
             it.notFound ? styles.tableRowMissing : {},
           ];
           const b = it.breakdown;
+          const variantLabel = proposalVariantCustomerLabel(it);
 
           // Con breakdown: SIEMPRE producto / marcaje / cliché / envío como
           // filas propias, con 0,00 € cuando el concepto no aplica.
@@ -283,6 +285,9 @@ export function RecommenderProposalPdf({
                     {it.product?.ref ? (
                       <Text style={styles.tdMuted}>Ref: {it.product.ref}</Text>
                     ) : null}
+                    {variantLabel ? (
+                      <Text style={styles.tdMuted}>{variantLabel}</Text>
+                    ) : null}
                   </View>
                   <Text style={[styles.td, styles.colTech]}> </Text>
                   <Text style={[styles.td, styles.colQty]}>{it.quantity}</Text>
@@ -316,6 +321,9 @@ export function RecommenderProposalPdf({
                 <Text style={styles.td}>{proposalLineLabel(it)}</Text>
                 {it.product?.ref ? (
                   <Text style={styles.tdMuted}>Ref: {it.product.ref}</Text>
+                ) : null}
+                {variantLabel ? (
+                  <Text style={styles.tdMuted}>{variantLabel}</Text>
                 ) : null}
                 {it.notFound ? (
                   <Text style={styles.tdMuted}>

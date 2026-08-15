@@ -146,10 +146,10 @@ export default async function ProductDetailPage({
   const displayRef = publicRef(product);
 
   const totalStock = product.variants.reduce((sum, v) => sum + v.stockQty, 0);
-  const colorVariants = product.variants.filter((v) => v.colorName);
-  // Agrupamos por color (deduplicado) con sus tallas; las imágenes se pasan ya
-  // por proxyImageUrl (oculta el CDN del proveedor) al ser cliente el receptor.
-  const colorOptions = groupColorOptions(colorVariants).map((o) => ({
+  // Agrupamos TODAS las variantes. Las filas sin color forman una opción
+  // neutra para que productos solo-talla o de variante única conserven su SKU.
+  // Las imágenes se pasan por proxyImageUrl al ser cliente el receptor.
+  const colorOptions = groupColorOptions(product.variants).map((o) => ({
     ...o,
     imageUrl: proxyImageUrl(o.imageUrl),
   }));

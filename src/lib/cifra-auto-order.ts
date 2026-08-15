@@ -23,6 +23,7 @@ import { createOrder, type CifraOrderPayload } from "@/lib/suppliers/cifra";
 import { notifyTelegram } from "@/lib/telegram";
 import { provinciaFromPostalCodeOrCity } from "@/lib/spain-postal-code";
 import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
+import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 export type CifraAutoOrderResult =
   | { ok: true; orderId: string }
@@ -95,6 +96,11 @@ async function cursarPedidoCifra(
     return { skipped: true, reason: "PO Cifra sin items asignados" };
   }
 
+  const supplierVariants = await resolveSupplierOrderVariants(cifraItems, "cifra");
+  if (!supplierVariants.ok) {
+    return { ok: false, error: supplierVariants.error };
+  }
+
   // Validación dirección
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
     await notifyTelegram(
@@ -103,12 +109,9 @@ async function cursarPedidoCifra(
     return { skipped: true, reason: "Falta dirección de envío" };
   }
 
-  // Construir payload Cifra
-  // - El SKU del producto Cifra es el `model` (con sufijo color, ej "A-012-AM")
-  //   que coincide con CartQuoteItem.variantSku.
-  // - Si no hay variantSku, caemos a productRef (rootmodel).
-  const items = cifraItems.map((it) => ({
-    model: it.variantSku || it.productRef,
+  // El helper devuelve un SKU exacto o corta antes del efecto externo.
+  const items = cifraItems.map((it, index) => ({
+    model: supplierVariants.items[index].sku,
     quantity: it.quantity,
   }));
 

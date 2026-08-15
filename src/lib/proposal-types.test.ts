@@ -3,6 +3,9 @@ import {
   computeProposalTotals,
   cotizacionToProposalItem,
   proposalLineLabel,
+  proposalVariantAdminLabel,
+  proposalVariantCustomerLabel,
+  proposalVariantSummary,
   type ProposalQuoteItem,
 } from "./proposal-types";
 import { ivaPart, withIva } from "./iva";
@@ -214,5 +217,62 @@ describe("proposalLineLabel", () => {
 
   it("sin product (propuesta antigua o no localizado): cae a la descripción", () => {
     expect(proposalLineLabel(item({ description: "Artículo suelto", product: null }))).toBe("Artículo suelto");
+  });
+});
+
+describe("proposalVariantSummary", () => {
+  it("expone la selección canónica y tolera propuestas antiguas", () => {
+    expect(
+      proposalVariantSummary(
+        item({
+          variantSelection: {
+            summary: "CAM-AZ-M · AZUL · talla M",
+            variantSku: "CAM-AZ-M",
+            colorName: "AZUL",
+            size: "M",
+          },
+        }),
+      ),
+    ).toBe("CAM-AZ-M · AZUL · talla M");
+    expect(
+      proposalVariantAdminLabel(
+        item({
+          variantSelection: { summary: "CAM-AZ-M · AZUL · talla M" },
+        }),
+      ),
+    ).toBe("Variante: CAM-AZ-M · AZUL · talla M");
+    const customerLabel = proposalVariantCustomerLabel(
+      item({
+        variantSelection: {
+          summary: "CAM-AZ-M · AZUL · talla M",
+          variantSku: "CAM-AZ-M",
+          colorName: "AZUL",
+          size: "M",
+        },
+      }),
+    );
+    expect(customerLabel).toBe("Variante: AZUL · talla M");
+    expect(customerLabel).not.toContain("CAM-AZ-M");
+    expect(proposalVariantSummary(item())).toBeNull();
+    expect(proposalVariantAdminLabel(item())).toBeNull();
+    expect(proposalVariantCustomerLabel(item())).toBeNull();
+  });
+
+  it("el PDF público omite todos los SKU de una matriz", () => {
+    const line = item({
+      variantSelection: {
+        summary: "10× S17000-BF-S · 15× S17000-BF-M",
+        variantLines: [
+          { sku: "S17000-BF-S", colorName: "AZUL", size: "S", quantity: 10 },
+          { sku: "S17000-BF-M", colorName: "AZUL", size: "M", quantity: 15 },
+        ],
+      },
+    });
+
+    expect(proposalVariantAdminLabel(line)).toContain("S17000-BF-S");
+    expect(proposalVariantCustomerLabel(line)).toBe(
+      "Variante: 10× AZUL · talla S · 15× AZUL · talla M",
+    );
+    expect(proposalVariantCustomerLabel(line)).not.toContain("S17000");
   });
 });
