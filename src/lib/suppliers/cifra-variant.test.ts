@@ -9,8 +9,11 @@ describe("parseCifraVariantDimensions", () => {
   it.each([
     ["10866-L-NE", "10866", "Negro", "L"],
     ["11035-3XL-MA", "11035", "Marino", "3XL"],
-    ["T-691-L-MA", "T-691", "Marino", "L"],
-    ["T-791-L-MA", "T-791", "Marino", "L"],
+    ["T-691-L-MA", "T-690", "Marino", "L"],
+    ["T-694-S-RY", "T-690", "Royal", "S"],
+    ["T-791-L-MA", "T-790", "Marino", "L"],
+    ["T-794-M-RY", "T-790", "Royal", "M"],
+    ["T-527-L-NE", "T-525", "Negro", "L"],
     ["T-089-XL-AZ", "T-089", "Azul", "XL"],
     ["10050-VE", "10050", "Verde", null],
     ["10137-MA", "10137", "Marino", null],
@@ -28,6 +31,18 @@ describe("parseCifraVariantDimensions", () => {
 
   it("exige el delimitador exacto entre raíz y sufijo", () => {
     expect(parseCifraVariantDimensions("T-691L-MA", "T-691")).toEqual({
+      colorName: null,
+      colorGroup: null,
+      colorHex: null,
+      size: null,
+    });
+  });
+
+  it.each([
+    ["T-791-L-MA", "T-690"],
+    ["ABC-L-MA", "T-690"],
+  ])("no acepta la cola cerrada de otra familia: %s / %s", (model, rootmodel) => {
+    expect(parseCifraVariantDimensions(model, rootmodel)).toEqual({
       colorName: null,
       colorGroup: null,
       colorHex: null,
@@ -79,32 +94,41 @@ describe("compatibilidad de filas Cifra heredadas", () => {
   });
 
   it.each([
-    ["T-691-L-MA", "T-691"],
-    ["T-791-L-MA", "T-791"],
-  ])("recupera Formentera %s aunque la fila heredada esté vacía", (sku, rootmodel) => {
-    const variant = normalizeLegacyCifraVariant(
-      {
-        id: `opaque-${rootmodel}`,
-        sku,
-        colorName: null,
-        colorGroup: null,
-        colorHex: null,
-        size: null,
-        imageUrl: null,
-        stockQty: 0,
-      },
-      rootmodel,
+    ["hombre", "T-690", ["S", "M", "L", "XL", "XXL"], ["S"]],
+    ["mujer", "T-790", ["S", "M", "L"], ["S", "M", "L"]],
+  ])("recupera las dos familias Formentera %s con el rootmodel real", (_label, rootmodel, marinoSizes, royalSizes) => {
+    const familyRoot = rootmodel === "T-690" ? "T-69" : "T-79";
+    const rawVariants = [
+      ...marinoSizes.map((size) => ({ sku: `${familyRoot}1-${size}-MA`, size })),
+      ...royalSizes.map((size) => ({ sku: `${familyRoot}4-${size}-RY`, size })),
+    ];
+    const variants = rawVariants.map(({ sku }, index) =>
+      normalizeLegacyCifraVariant(
+        {
+          id: `opaque-${index}`,
+          sku,
+          colorName: null,
+          colorGroup: null,
+          colorHex: null,
+          size: null,
+          imageUrl: null,
+          stockQty: 10,
+        },
+        rootmodel,
+      ),
     );
-    const options = groupColorOptions([variant]);
+    const options = groupColorOptions(variants);
 
-    expect(variant).toMatchObject({ colorName: "Marino", colorGroup: "azul", size: "L" });
-    expect(options).toHaveLength(1);
-    expect(options[0]).toMatchObject({ colorName: "Marino", ambiguous: false });
-    expect(options[0].sizes.map((size) => size.size)).toEqual(["L"]);
-    expect(resolveOrderVariantSelection(options, null)).toMatchObject({
-      prompt: null,
-      variant: { variantId: `opaque-${rootmodel}`, colorName: "Marino", size: "L" },
+    expect(options).toHaveLength(2);
+    expect(options.map((option) => option.colorName)).toEqual(["Marino", "Royal"]);
+    expect(options[0].sizes.map((size) => size.size)).toEqual(marinoSizes);
+    expect(options[1].sizes.map((size) => size.size)).toEqual(royalSizes);
+    expect(options.every((option) => option.ambiguous === false)).toBe(true);
+    expect(resolveOrderVariantSelection(options, null)).toEqual({
+      variant: null,
+      prompt: "Elige un color",
     });
+    expect(JSON.stringify(options)).not.toMatch(/T-69|T-79/);
   });
 
   it("no inventa atributos para una fila vacía con código desconocido", () => {
@@ -128,6 +152,6 @@ describe("compatibilidad de filas Cifra heredadas", () => {
       size: null,
       ...metadata,
     };
-    expect(normalizeLegacyCifraVariant(partial, "T-691")).toEqual(partial);
+    expect(normalizeLegacyCifraVariant(partial, "T-690")).toEqual(partial);
   });
 });
