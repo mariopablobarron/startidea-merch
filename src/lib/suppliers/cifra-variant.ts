@@ -20,6 +20,8 @@ const CIFRA_COLOR_MAP: Readonly<
   FU: { name: "Fucsia", hex: "#D946EF", group: "rosa" },
   // Cifra usa MA para Marino (p. ej. T-691-L-MA y T-791-L-MA), no Marrón.
   MA: { name: "Marino", hex: "#1E3A5F", group: "azul" },
+  // RY es Royal en el catálogo Cifra (p. ej. T-694-S-RY y T-794-L-RY).
+  RY: { name: "Royal", group: "azul" },
   TR: { name: "Transparente", hex: "#E5E7EB", group: "transparente" },
 };
 
@@ -55,6 +57,34 @@ export type CifraVariantDimensions = {
 };
 
 /**
+ * Algunos rootmodel Cifra agrupan subfamilias distintas: T-690 contiene
+ * variantes T-691-*-MA y T-694-*-RY. En ese caso no existe un prefijo común,
+ * pero la cola TALLA-COLOR sigue siendo inequívoca si ambos tokens pertenecen
+ * a los diccionarios cerrados.
+ */
+function extractCifraDimensionSuffix(model: string, rootmodel: string): string | null {
+  const relativeSuffix = extractCifraColorSuffix(model, rootmodel);
+  if (relativeSuffix) return relativeSuffix;
+
+  const parts = model.toUpperCase().split("-");
+  if (parts.length < 3) return null;
+  const size = parts.at(-2) ?? "";
+  const colorCode = parts.at(-1) ?? "";
+  if (!KNOWN_SIZES.has(size) || !CIFRA_COLOR_MAP[colorCode]) return null;
+
+  const familyModel = parts.slice(0, -2).join("-");
+  const normalizedRoot = rootmodel.toUpperCase();
+  const sameNumberedFamily =
+    familyModel.length === normalizedRoot.length &&
+    familyModel.slice(0, -1) === normalizedRoot.slice(0, -1) &&
+    /^[0-9]$/.test(familyModel.slice(-1)) &&
+    /^[0-9]$/.test(normalizedRoot.slice(-1));
+  if (!sameNumberedFamily) return null;
+
+  return `${size}-${colorCode}`;
+}
+
+/**
  * Separa únicamente el dialecto cerrado de variantes Cifra:
  * `ROOT-TALLA-COLOR`. Un código desconocido nunca se interpreta como talla.
  */
@@ -62,7 +92,7 @@ export function parseCifraVariantDimensions(
   model: string,
   rootmodel: string,
 ): CifraVariantDimensions {
-  const suffix = extractCifraColorSuffix(model, rootmodel)?.toUpperCase() ?? null;
+  const suffix = extractCifraDimensionSuffix(model, rootmodel)?.toUpperCase() ?? null;
   if (!suffix) {
     return { colorName: null, colorGroup: null, colorHex: null, size: null };
   }
@@ -103,7 +133,7 @@ export function normalizeLegacyCifraVariant<T extends {
   colorHex?: string | null;
   size: string | null;
 }>(variant: T, rootmodel: string): T {
-  const suffix = extractCifraColorSuffix(variant.sku, rootmodel);
+  const suffix = extractCifraDimensionSuffix(variant.sku, rootmodel);
   if (!suffix) return variant;
   const parsed = parseCifraVariantDimensions(variant.sku, rootmodel);
   const currentColor = variant.colorName?.trim().toUpperCase() || null;
