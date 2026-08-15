@@ -1,0 +1,25 @@
+src/lib/suppliers/cifra-variant.test.ts
+  s_578116e23e11cc::t_9c56d4d2af78fc 28-36,119-131
+  s_578116e23e11cc::t_3d501cbcaffaa2 80-118,132
+src/lib/suppliers/cifra-variant.ts
+  s_578116e23e11cc::t_61d2d8c1f01239 115-116
+  s_578116e23e11cc::t_3d501cbcaffaa2 107,109,113,117-118,121-123
+  s_578116e23e11cc::t_9c56d4d2af78fc 27-29,110-111,119-120
+  s_578116e23e11cc::t_291ac815f88210 114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "842aed13a16e5802c01e6d27a2c1ee97e2253b1e",
+  "prompts": {},
+  "sessions": {
+    "s_578116e23e11cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc420-6f78-7b53-ad4a-e8403239b514",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
