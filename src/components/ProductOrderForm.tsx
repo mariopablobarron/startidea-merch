@@ -24,7 +24,7 @@ import { useProductColor } from "./product-color-context";
 import type { ColorOption } from "@/lib/variant-grouping";
 import {
   FLOATING_SURFACES,
-  shouldShowStickyActions,
+  shouldShowStickyActionsForRect,
 } from "@/lib/floating-surfaces";
 
 /**
@@ -347,19 +347,40 @@ export function ProductOrderForm({
   const [showStickyActions, setShowStickyActions] = useState(false);
   useEffect(() => {
     const el = actionsRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(
-      ([entry]) =>
-        setShowStickyActions(
-          shouldShowStickyActions({
-            isIntersecting: entry.isIntersecting,
-            top: entry.boundingClientRect.top,
-          }),
-        ),
-      { threshold: 0.1 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    if (!el) return;
+
+    let measureFrame: number | null = null;
+    const measureActions = () => {
+      measureFrame = null;
+      const rect = el.getBoundingClientRect();
+      setShowStickyActions(
+        shouldShowStickyActionsForRect({
+          top: rect.top,
+          bottom: rect.bottom,
+          viewportHeight: window.innerHeight,
+        }),
+      );
+    };
+    const scheduleMeasure = () => {
+      if (measureFrame !== null) return;
+      measureFrame = window.requestAnimationFrame(measureActions);
+    };
+
+    const io =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver(scheduleMeasure, { threshold: 0.1 });
+    io?.observe(el);
+    window.addEventListener("scroll", scheduleMeasure, { passive: true });
+    window.addEventListener("resize", scheduleMeasure);
+    measureActions();
+
+    return () => {
+      io?.disconnect();
+      window.removeEventListener("scroll", scheduleMeasure);
+      window.removeEventListener("resize", scheduleMeasure);
+      if (measureFrame !== null) window.cancelAnimationFrame(measureFrame);
+    };
   }, []);
 
   useEffect(() => {
