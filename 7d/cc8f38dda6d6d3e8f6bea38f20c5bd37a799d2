@@ -1,0 +1,30 @@
+.env.example
+  s_55424eb3e79fe1::t_23ca19c0d876bd 83-86
+src/lib/pricing.test.ts
+  s_55424eb3e79fe1::t_94fc8d813c14c0 139,141,143,145-146,149
+  s_55424eb3e79fe1::t_720d484b9e64c7 121-129
+docker-compose.yml
+  s_55424eb3e79fe1::t_7cbf46df43591b 104
+src/lib/pricing.ts
+  s_55424eb3e79fe1::t_98dd3752237838 99-107,113-117,120-121
+.claude/agents/deal-coach.md
+  s_55424eb3e79fe1::t_fa45cf94d538eb 65
+.claude/agents/pricing-strategist.md
+  s_55424eb3e79fe1::t_70d4f5d415bb41 77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "7dcc8f38dda6d6d3e8f6bea38f20c5bd37a799d2",
+  "prompts": {},
+  "sessions": {
+    "s_55424eb3e79fe1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "97b11976-a465-4ba1-ae47-ed424217aa49",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
