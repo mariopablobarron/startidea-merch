@@ -74,7 +74,7 @@ Si misma categoría (ej. camiseta orgánica 180g) tiene 3 productos:
 ## Acceso
 
 - BD prod
-- MARGIN_MULTIPLIER env (default 1.6)
+- MARGIN_MULTIPLIER env (default 1.6667 = 40% sobre venta)
 - WebFetch para precios competencia (camaloon.com, etc.)
 - ProductOverride para precio manual override
 

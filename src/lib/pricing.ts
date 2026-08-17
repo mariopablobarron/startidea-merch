@@ -96,17 +96,29 @@ export function totalForQty(tiers: PriceTier[], qty: number): Money | null {
 
 /**
  * Multiplicador del margen comercial coste→cliente. Configurable vía env
- * MARGIN_MULTIPLIER (default 1,6 = +60%).
+ * MARGIN_MULTIPLIER (default 1,6667 = 40% de beneficio sobre venta).
+ *
+ * OJO — markup y margen NO son lo mismo, y el default lo dice en markup:
+ *   multiplicador 1,6667  →  +66,67% sobre COSTE  →  40,0% sobre VENTA
+ *   multiplicador 1,6     →  +60%    sobre COSTE  →  37,5% sobre VENTA
+ * El objetivo comercial se fija SIEMPRE sobre venta ("40% de beneficio"), así
+ * que la conversión es multiplicador = 1 / (1 − objetivo). Hasta el 17-ago-2026
+ * el default era 1,6 y todo el catálogo salía al 37,5%: 2,5 puntos por debajo
+ * del objetivo en 9.532 productos (auditoría contra la BD de producción).
  *
  * FUENTE ÚNICA del margen para todo el sitio: tiers públicos, precio "desde",
  * total del carrito y la ruta /api/quote/calculate (producto y marcaje). Si
  * cada superficie aplicara su propio margen, el mismo producto mostraría
  * precios distintos (era el caso: la web pública mostraba el coste NETO sin
- * margen y solo el path "con marcaje" aplicaba 1,6×).
+ * margen y solo el path "con marcaje" aplicaba el multiplicador).
+ *
+ * No cubre portes ni la comisión de Stripe (1,5% + 0,25 €/pedido): son de
+ * PEDIDO, no de producto, y se cotizan aparte. Para que el 40% quedara limpio
+ * tras Stripe el multiplicador tendría que ser ~1,71.
  */
 export function marginMultiplier(override?: number): number {
-  const m = override ?? Number(process.env.MARGIN_MULTIPLIER ?? "1.6");
-  return Number.isFinite(m) && m > 0 ? m : 1.6;
+  const m = override ?? Number(process.env.MARGIN_MULTIPLIER ?? "1.6667");
+  return Number.isFinite(m) && m > 0 ? m : 1.6667;
 }
 
 /** Aplica el margen comercial a un coste neto → precio cliente (céntimos). */

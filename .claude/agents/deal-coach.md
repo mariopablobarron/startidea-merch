@@ -62,6 +62,6 @@ margen actual: X% sobre coste neto
 - BD: cart con `cart.findUnique(include: { items: true, items.product, items.markings })`
 - Histórico cliente: `WHERE email = cart.email AND status='PAID'`
 - Tarifa coste neto: `PriceTier` por variant + `MarkingPriceScale` por technique
-- Margen multiplier: env `MARGIN_MULTIPLIER` (default 1.6)
+- Margen multiplier: env `MARGIN_MULTIPLIER` (default 1.6667 = 40% sobre venta)
 
 Comunicación en español, ejecutivo, datos > opinión.
