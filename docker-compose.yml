@@ -101,7 +101,7 @@ services:
       # a admin (Mario) con el desglose; el pedido al proveedor se hace
       # manualmente (mismo workflow legacy de B2B Makito).
       MAKITO_AUTO_PLACE_ON_PAYMENT: ${MAKITO_AUTO_PLACE_ON_PAYMENT:-true}
-      MARGIN_MULTIPLIER: ${MARGIN_MULTIPLIER:-1.6}
+      MARGIN_MULTIPLIER: ${MARGIN_MULTIPLIER:-1.6667}
       STRIPE_MODE: ${STRIPE_MODE:-test}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}

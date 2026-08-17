@@ -118,8 +118,15 @@ describe("marginMultiplier / applyMargin", () => {
     else process.env.MARGIN_MULTIPLIER = original;
   });
 
-  it("default 1,6 cuando no hay override ni env", () => {
-    expect(marginMultiplier()).toBe(1.6);
+  it("default 1,6667 (40% sobre venta) cuando no hay override ni env", () => {
+    expect(marginMultiplier()).toBe(1.6667);
+  });
+  it("el default deja el margen SOBRE VENTA en el 40% objetivo", () => {
+    // El objetivo comercial se fija sobre venta, no sobre coste: con coste 100
+    // el PVP ha de ser 167 (40% de 167 ≈ 67 de beneficio). Un 1,6 daría 160,
+    // que es 37,5% — el fallo que corrigió esta constante el 17-ago-2026.
+    const pvp = applyMargin(10000);
+    expect((pvp - 10000) / pvp).toBeCloseTo(0.4, 4);
   });
   it("el override manda sobre el env", () => {
     process.env.MARGIN_MULTIPLIER = "2.0";
@@ -129,17 +136,17 @@ describe("marginMultiplier / applyMargin", () => {
     process.env.MARGIN_MULTIPLIER = "1.8";
     expect(marginMultiplier()).toBe(1.8);
   });
-  it("SALVAGUARDA: valor inválido, 0 o negativo → 1,6 (nunca precio a coste o gratis)", () => {
+  it("SALVAGUARDA: valor inválido, 0 o negativo → 1,6667 (nunca precio a coste o gratis)", () => {
     process.env.MARGIN_MULTIPLIER = "0";
-    expect(marginMultiplier()).toBe(1.6);
+    expect(marginMultiplier()).toBe(1.6667);
     process.env.MARGIN_MULTIPLIER = "-3";
-    expect(marginMultiplier()).toBe(1.6);
+    expect(marginMultiplier()).toBe(1.6667);
     process.env.MARGIN_MULTIPLIER = "abc";
-    expect(marginMultiplier()).toBe(1.6);
-    expect(marginMultiplier(0)).toBe(1.6);
+    expect(marginMultiplier()).toBe(1.6667);
+    expect(marginMultiplier(0)).toBe(1.6667);
   });
   it("applyMargin aplica y redondea coste→cliente", () => {
-    expect(applyMargin(100)).toBe(160);
+    expect(applyMargin(100)).toBe(167); // 166,67 → 167
     expect(applyMargin(333, 1.5)).toBe(500); // 499,5 → 500
   });
 });
