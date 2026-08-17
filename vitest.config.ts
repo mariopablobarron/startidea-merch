@@ -7,6 +7,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+  // El tsconfig de Next lleva `jsx: "preserve"` (lo compila Next, no esbuild),
+  // y Vite lo respeta: sin esto, importar un `.tsx` desde un test peta con
+  // «invalid JS syntax». Hace falta desde que `recommender-proposal-pdf.fuga`
+  // renderiza el PDF de verdad en vez de leer su fuente como texto. Solo
+  // afecta a los tests — `next build` no usa este fichero.
+  // (Este Vite transforma con oxc, no con esbuild: poner las opciones en
+  // `esbuild` se ignora en silencio y solo avisa por consola.)
+  oxc: { jsx: { runtime: "automatic", importSource: "react" } },
   test: {
     environment: "node",
     include: ["src/**/*.{test,spec}.ts"],
