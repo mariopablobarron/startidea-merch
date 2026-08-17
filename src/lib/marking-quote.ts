@@ -12,7 +12,7 @@
  *     → MarkingTechnique + MarkingPriceScale via calculateMarkingCost
  *     → si devuelve warning (sin tarifa / sin tramo / por-cm² sin área) → ok:false
  *
- * Devuelve COSTE NETO: el margen (applyMargin ×1,6) se aplica FUERA, igual que
+ * Devuelve COSTE NETO: el margen (applyMargin ×1,6667) se aplica FUERA, igual que
  * hace cotizar-core. `ok:false` significa "sin tarifa fiable": la ficha muestra
  * cotización manual y el checkout de pago directo DEGRADA a presupuesto — nunca
  * se cobra un marcaje a 0 € en silencio.

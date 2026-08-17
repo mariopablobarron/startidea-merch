@@ -84,7 +84,7 @@ export type CotizarOk = {
 export type CotizarErr = { ok: false; status: number; error: string };
 export type CotizarResult = CotizarOk | CotizarErr;
 
-/** PVP a partir del coste neto: override marginPct o margen global (×1,6). */
+/** PVP a partir del coste neto: override marginPct o margen global (×1,6667). */
 function pvp(netCents: number, marginPct?: number): number {
   if (marginPct != null) return Math.round((netCents * (100 + marginPct)) / 100);
   return applyMargin(netCents);

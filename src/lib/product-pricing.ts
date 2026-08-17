@@ -4,7 +4,7 @@
  * Resuelve, en un solo sitio y de forma coherente, la cadena:
  *
  *     coste NETO (PriceTier/fromPriceCents)
- *       → MARGEN  (override marginPct / customFromPriceCents, o 1,6× global)
+ *       → MARGEN  (override marginPct / customFromPriceCents, o 1,6667× global)
  *       → PROMO   (PERCENT por unidad · FIXED una vez por pedido)
  *
  * La usan la ficha (`/catalogo/[slug]`), las tarjetas de catálogo y promociones,
@@ -109,7 +109,7 @@ export function adminOverridesPrice(override: PriceOverride): boolean {
  * Precio "desde" CLIENTE (post-margen/override, SIN promo) a partir del neto.
  *   - customFromPriceCents → precio cliente absoluto (ya con margen del admin).
  *   - marginPct            → neto × (1 + marginPct/100).
- *   - sin override         → neto × margen global (1,6×).
+ *   - sin override         → neto × margen global (1,6667×).
  *
  * Un override corrupto (0 €, negativo, no finito) se ignora — ver
  * `normalizePriceOverride`. Si el margen manual hunde el precio a 0 o menos,
