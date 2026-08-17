@@ -16,6 +16,12 @@ const ID_B = "clzz99zz88yy77xx66ww55vv4";
 const AHORA = new Date("2026-08-06T12:00:00Z");
 const DIA = 24 * 3600 * 1000;
 
+// Valor de prueba deliberadamente repetitivo y autoexplicativo: gitleaks marca
+// por ENTROPÍA, y un literal con pinta de credencial dejaba el escaneo semanal
+// del historial en rojo (17-ago-2026). Aquí el valor concreto da igual — lo que
+// se prueba es que HAYA un ADMIN_SECRET, no cuál sea.
+const SECRETO_DE_PRUEBA = "xxxx-admin-secret-solo-para-tests-xxxx";
+
 describe("proposal-token", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -51,7 +57,7 @@ describe("proposal-token", () => {
   describe("en producción con ADMIN_SECRET: funciona, y el literal deja de valer", () => {
     it("firma y verifica con normalidad", () => {
       vi.stubEnv("NODE_ENV", "production");
-      vi.stubEnv("ADMIN_SECRET", "un-secreto-de-verdad-de-64-chars");
+      vi.stubEnv("ADMIN_SECRET", SECRETO_DE_PRUEBA);
 
       const token = signProposalToken(ID_A, AHORA);
       expect(verifyProposalToken(token, AHORA)).toEqual({
@@ -66,7 +72,7 @@ describe("proposal-token", () => {
       const enlaceViejo = signProposalToken(ID_A, AHORA);
 
       vi.stubEnv("NODE_ENV", "production");
-      vi.stubEnv("ADMIN_SECRET", "un-secreto-de-verdad-de-64-chars");
+      vi.stubEnv("ADMIN_SECRET", SECRETO_DE_PRUEBA);
 
       expect(verifyProposalToken(enlaceViejo, AHORA)).toEqual({
         valid: false,

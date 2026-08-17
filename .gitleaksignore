@@ -22,3 +22,16 @@ f7581da7015525f2e23e030bebc870254c96a0fd:docs/deploy-vps.md:generic-api-key:134
 # Solo lo ve el escaneo `schedule` (escanea todo el historial); los runs de
 # pull_request escanean el diff y por eso salían verdes desde el 20-jun.
 892ed84f1790e913ecc681dd9b34beeff3a47f54:docs/facturascripts-integration.md:generic-api-key:68
+
+# Valor de PRUEBA del ADMIN_SECRET en el test de firma de propuestas (72b71fa,
+# 06-ago-2026). La regla generic-api-key lo marca solo por entropia (3,57): es
+# un literal descriptivo en castellano dentro de un `vi.stubEnv`, no una
+# credencial. Auditado 2026-08-17 comprobando el .env de produccion: el
+# ADMIN_SECRET real tiene 64 caracteres y NO empieza por ese literal, asi que
+# no hay nada que rotar.
+# Se ignora por fingerprint porque el hallazgo esta en un commit del HISTORIAL:
+# cambiar el fichero hoy no lo borra del pasado. El literal de HEAD si se ha
+# bajado de entropia en este mismo commit, para que el rojo no renazca la
+# proxima vez que alguien toque el fichero (seria otro fingerprint distinto).
+72b71fa0ea913b32b2946c215e7bc797609e2110:src/lib/proposal-token.test.ts:generic-api-key:54
+72b71fa0ea913b32b2946c215e7bc797609e2110:src/lib/proposal-token.test.ts:generic-api-key:69
