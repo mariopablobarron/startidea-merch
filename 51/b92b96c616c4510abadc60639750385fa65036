@@ -1,0 +1,23 @@
+src/app/api/analytics/event/route.ts
+  s_0720ad1befc413::t_94bcf7ec9ab9d4 3-4,14-21,28
+src/lib/analytics-event-schema.test.ts
+  s_0720ad1befc413::t_730f4742abb48f 1-88
+src/lib/analytics-event-schema.ts
+  s_0720ad1befc413::t_0fc9864eb69edc 1-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "51b92b96c616c4510abadc60639750385fa65036",
+  "prompts": {},
+  "sessions": {
+    "s_0720ad1befc413": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2fdaedc1-d098-4cb2-9829-f22ae839f3cd",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
