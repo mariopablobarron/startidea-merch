@@ -1,0 +1,21 @@
+scripts/audit-crons-vps.sh
+  s_0cf83fab60aa91::t_0195234c4f20d4 1-94
+src/lib/cron-catalog.ts
+  s_0cf83fab60aa91::t_edb47fc07d602d 250-265
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "31f11b3dbc01f1fc9272d83980b0b25fa2146c99",
+  "prompts": {},
+  "sessions": {
+    "s_0cf83fab60aa91": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "93b777ad-f83d-438f-a642-6633932319b1",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
