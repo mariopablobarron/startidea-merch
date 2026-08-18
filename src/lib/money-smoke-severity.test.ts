@@ -9,6 +9,7 @@ import {
   buildAlertText,
   esFalloDeConexion,
   timeoutParaIntento,
+  debeReintentar,
   KIND_MONEY,
   KIND_AVAILABILITY,
   // @ts-expect-error — .mjs sin tipos, importado a propósito desde el test
@@ -211,5 +212,86 @@ describe("timeoutParaIntento — el guard tiene que TERMINAR y llegar a avisar",
     }
     expect(t - inicio).toBeLessThanOrEqual(BUDGET);
     expect(peticiones).toBeLessThan(500); // termina de verdad, no da vueltas
+  });
+});
+
+describe("debeReintentar — un parpadeo de red no puede apagar el guard 6 horas", () => {
+  // 2026-08-18 01:50 UTC: barrido entero rojo, 9 superficies "caídas" y CERO
+  // invariantes rotas. La app estaba viva (crons del VPS respondiendo 200 en
+  // 53 ms contra localhost en esa misma ventana, Traefik sin reinicios). Era
+  // la red entre el runner y el sitio, y dejó el dinero sin vigilar 6 h.
+  it("disponibilidad pura: se confirma con un segundo barrido", () => {
+    const c = classifyResults([availFail("GET /catalogo/taza responde", "fetch failed"), skip("precio base > 0", "status 0")]);
+    expect(debeReintentar(c)).toBe(true);
+  });
+
+  it("un fallo de DINERO no se reintenta jamás: la alerta sale ya", () => {
+    // Esperar 45 s para "confirmar" una fuga de proveedor sería justo lo que
+    // este guard no puede permitirse.
+    const c = classifyResults([moneyFail("sin proveedor en GET /catalogo/taza", 'contiene "midocean"')]);
+    expect(debeReintentar(c)).toBe(false);
+  });
+
+  it("dinero roto Y superficie caída a la vez tampoco se reintenta", () => {
+    const c = classifyResults([moneyFail("el marcaje incrementa el precio (P0)"), availFail("GET /llms.txt responde")]);
+    expect(c.severity).toBe(KIND_MONEY);
+    expect(debeReintentar(c)).toBe(false);
+  });
+
+  it("todo verde no reintenta nada", () => {
+    expect(debeReintentar(classifyResults([ok("precio base > 0")]))).toBe(false);
+  });
+
+  it("el aviso distingue el corte confirmado del de un solo barrido", () => {
+    const c = classifyResults([availFail("GET /catalogo/taza responde"), skip("precio base > 0")]);
+    expect(buildAlertText(c)).not.toMatch(/CONFIRMADO/);
+    const confirmado = { ...c, confirmadoTrasReintento: true };
+    expect(buildAlertText(confirmado)).toMatch(/CONFIRMADO en dos barridos/);
+    // Y sigue sin afirmar una rotura de dinero que no consta.
+    expect(buildAlertText(confirmado)).not.toMatch(/invariante de dinero .* se rompió/);
+  });
+
+  it("el reintento está REALMENTE cableado a debeReintentar (guard estático)", () => {
+    // Sin esto, la mutación "main reintenta siempre" pasa verde: la función
+    // pura seguiría bien y el guard retrasaría 45 s una alerta de fuga real.
+    const fuente = readFileSync(new URL("../../scripts/money-smoke-test.mjs", import.meta.url), "utf8");
+    const main = fuente.slice(fuente.indexOf("async function main()"));
+    // Ojo con el regex: `main` contiene DOS `if (debeReintentar(classification)`
+    // —el que gobierna el reintento y el que marca `confirmadoTrasReintento`—,
+    // así que un patrón laxo pasa verde aunque se borre la guarda del primero.
+    // Cazado mutando: `if (debeReintentar(...) && !NO_RETRY)` → `if (!NO_RETRY)`
+    // dejaba el guard reintentando incluso con una fuga de proveedor confirmada,
+    // y los tests no se enteraban. Por eso se exige la guarda COMPLETA y que el
+    // segundo barrido cuelgue de ella.
+    expect(main).toMatch(/if \(debeReintentar\(classification\) && !NO_RETRY\) \{[\s\S]*?await barrido\(\)/);
+    // El segundo barrido va DESPUÉS de la espera y vuelve a clasificar.
+    expect(main).toMatch(/setTimeout\(r, RETRY_DELAY_MS\)/);
+    expect(main).toMatch(/await barrido\(\);\s*\n\s*classification = classifyResults\(results\);/);
+    // Cada barrido tiene que partir de cero, o el segundo arrastraría los
+    // fallos del primero y nunca saldría verde.
+    const barrido = fuente.slice(fuente.indexOf("async function barrido()"));
+    expect(barrido.slice(0, 300)).toMatch(/results\.length = 0/);
+  });
+
+  it("el peor caso CON reintento sigue cabiendo en el timeout del job", () => {
+    // El número del yml y el del script tienen que moverse juntos: si alguien
+    // sube el presupuesto y no el timeout, el job vuelve a morir CANCELADO —
+    // el modo de fallo mudo del 2026-08-05, sin alerta de Telegram.
+    const script = readFileSync(new URL("../../scripts/money-smoke-test.mjs", import.meta.url), "utf8");
+    const budget = Number(script.match(/SMOKE_BUDGET_MS \|\| ([\d_]+)/)![1].replace(/_/g, ""));
+    const espera = Number(script.match(/SMOKE_RETRY_DELAY_MS \|\| ([\d_]+)/)![1].replace(/_/g, ""));
+    const yml = readFileSync(new URL("../../.github/workflows/money-smoke.yml", import.meta.url), "utf8");
+    // Anclado a la clave REAL, no a la primera aparición del texto: el yml
+    // menciona el `timeout-minutes: 3` histórico dentro de un comentario, y un
+    // regex ingenuo lee ese 3 y da un verde (o un rojo) que no prueba nada.
+    // Cazado por este mismo test al escribirlo.
+    const claves = [...yml.matchAll(/^\s*timeout-minutes: (\d+)\s*$/gm)];
+    expect(claves).toHaveLength(1);
+    const timeoutMin = Number(claves[0][1]);
+
+    const peorCasoMs = budget * 2 + espera;
+    expect(peorCasoMs).toBeLessThan(timeoutMin * 60_000);
+    // Y con holgura para el checkout + setup-node del runner (~30 s).
+    expect(timeoutMin * 60_000 - peorCasoMs).toBeGreaterThan(60_000);
   });
 });

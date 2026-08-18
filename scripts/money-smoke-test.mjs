@@ -107,6 +107,25 @@ const REQUEST_TIMEOUT_MS = Number(process.env.SMOKE_REQUEST_TIMEOUT_MS || 20_000
 const BUDGET_MS = Number(process.env.SMOKE_BUDGET_MS || 240_000);
 
 /**
+ * Espera entre el primer barrido y el de confirmación.
+ *
+ * El 2026-08-18 a las 01:50 UTC el barrido entero salió rojo con **9
+ * superficies caídas y 0 invariantes rotas**: `fetch failed` contra el dominio
+ * durante los 4 minutos del presupuesto. La app estaba VIVA — en esa misma
+ * ventana los crons del VPS respondían 200 en 53 ms contra localhost, Traefik
+ * no se reinició y ningún watchdog local disparó. Fue un corte de red entre el
+ * runner y el sitio, y aun así dejó el guard del dinero **sin comprobar nada
+ * hasta 6 horas después**, que es cuando vuelve a correr.
+ *
+ * Por eso un fallo de PURA DISPONIBILIDAD se confirma con un segundo barrido:
+ * una caída de verdad dura más que esto y sigue saliendo roja —con más
+ * evidencia—, mientras que un parpadeo deja de apagar el guard medio día.
+ */
+const RETRY_DELAY_MS = Number(process.env.SMOKE_RETRY_DELAY_MS || 45_000);
+/** Escotilla para depurar en local sin esperar los 45 s. */
+const NO_RETRY = process.env.SMOKE_NO_RETRY === "1";
+
+/**
  * Cuánto se le concede al siguiente intento sin pasarse del presupuesto.
  * Pura y exportada: es la que garantiza que el barrido TERMINA.
  * 0 significa "no queda presupuesto" ⇒ ni se toca la red.
@@ -156,6 +175,17 @@ export function classifyResults(list) {
   return { severity, moneyFails, availabilityFails, skipped, oks };
 }
 
+/**
+ * ¿Este resultado merece un segundo barrido antes de dar la alarma?
+ *
+ * SOLO cuando el problema es de disponibilidad pura. Si una invariante de
+ * dinero o de proveedor consta rota, se avisa YA: retrasar esa alerta 45 s
+ * para "confirmarla" es exactamente lo que este guard no puede hacer.
+ */
+export function debeReintentar(classification) {
+  return classification.severity === KIND_AVAILABILITY;
+}
+
 /** Texto del aviso de Telegram. Una sola línea (formato de GITHUB_OUTPUT). */
 export function buildAlertText(classification, runUrl = "") {
   const { severity, moneyFails, availabilityFails, skipped } = classification;
@@ -169,9 +199,13 @@ export function buildAlertText(classification, runUrl = "") {
   } else {
     // Nada de dinero consta roto: lo que ha pasado es que no se ha podido mirar.
     const caidas = names(availabilityFails) || "—";
+    // Si hubo segundo barrido, decirlo: separa "parpadeo" de "sigue caído".
+    const confirmacion = classification.confirmadoTrasReintento
+      ? " CONFIRMADO en dos barridos separados."
+      : "";
     text =
       "⚠️ MONEY SMOKE: una superficie pública no respondió, así que sus invariantes de dinero NO se han podido " +
-      `comprobar (ninguna invariante rota confirmada). Caídas: ${caidas}. Sin comprobar: ${skipped.length}`;
+      `comprobar (ninguna invariante rota confirmada).${confirmacion} Caídas: ${caidas}. Sin comprobar: ${skipped.length}`;
   }
   if (runUrl) text += ` — ${runUrl}`;
   return text.replace(/[\r\n]+/g, " ").slice(0, 900);
@@ -248,7 +282,9 @@ async function getJson(path, opts) {
   return { status: r.status, json, text };
 }
 
-async function main() {
+async function barrido() {
+  // Cada barrido parte de cero: presupuesto nuevo y sin arrastrar resultados.
+  results.length = 0;
   deadline = Date.now() + BUDGET_MS;
 
   // ── 1. Marcaje se cobra ──────────────────────────────────────────
@@ -366,8 +402,32 @@ async function main() {
     check("/comparar muestra un precio con €", /\d+,\d{2}\s*€/.test(cmpBody), "no se encontró patrón de precio");
   }
 
+}
+
+async function main() {
+  await barrido();
+  let classification = classifyResults(results);
+
+  // Un corte de red no puede dejar el dinero sin vigilar hasta dentro de 6 h.
+  if (debeReintentar(classification) && !NO_RETRY) {
+    const caidasPrimeras = classification.availabilityFails.length;
+    console.error(
+      `⏳ ${caidasPrimeras} superficie(s) sin responder y 0 invariantes rotas: ` +
+        `repito el barrido en ${Math.round(RETRY_DELAY_MS / 1000)} s para distinguir ` +
+        "un parpadeo de red de una caída real.",
+    );
+    await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+    await barrido();
+    classification = classifyResults(results);
+    if (debeReintentar(classification)) classification.confirmadoTrasReintento = true;
+    else if (!classification.severity) {
+      // Verde en el segundo: el corte fue transitorio. No se alerta (sería
+      // ruido que desgasta la señal), pero queda escrito en el run.
+      console.log("::notice::Money smoke: el primer barrido no tuvo conexión; el segundo salió limpio (corte transitorio).");
+    }
+  }
+
   // ── Reporte ──────────────────────────────────────────────────────
-  const classification = classifyResults(results);
   const { severity, moneyFails, availabilityFails, skipped, oks } = classification;
   console.log(`\n💰 Money smoke test contra ${BASE}\n`);
   for (const r of oks) console.log(`  ✓ ${r.name}`);

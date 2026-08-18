@@ -26,7 +26,14 @@ jobs:
     # un job cancelado no dispara `if: failure()`, así que no salió ninguna
     # alerta y el run quedó como "cancelled", que se lee como algo manual.
     # El guard del dinero y de la fuga de proveedor murió en silencio.
-    timeout-minutes: 8
+    #
+    # 12 y no 8 desde el 2026-08-18: un fallo de PURA disponibilidad se
+    # confirma ahora con un segundo barrido (ver RETRY_DELAY_MS en el script),
+    # así que el peor caso pasa a ser 240 s + 45 s de espera + 240 s ≈ 8m45.
+    # Con 8 el job habría muerto CANCELADO justo en ese caso, que es el modo
+    # de fallo mudo descrito arriba. El guard estático del test comprueba que
+    # este número sigue por encima del peor caso del script.
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
