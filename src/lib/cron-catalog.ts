@@ -247,15 +247,22 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "override-price-drift",
     endpointPath: "/api/cron/override-price-drift",
     method: "POST",
-    // ⚠️ DISPARADOR SIN IDENTIFICAR (buscado el 2026-08-11): no está en el
-    // crontab de root, ni en /etc/cron.d, ni en .github/workflows. Pero SÍ
-    // corre: `cron_runs_override-price-drift` registra lunes 3-ago y 10-ago,
-    // los dos a las 07:00 UTC — que es exactamente `0 9 * * 1` en hora local
-    // del VPS. La expresión de abajo describe bien CUÁNDO ocurre; lo que no se
-    // sabe es QUIÉN lo dispara. Importa porque es un guard de DINERO (avisa de
-    // overrides con margen <30% o bajo coste): hoy funciona, pero nadie
-    // controla su origen. Escalado a Mario.
-    schedule: "semanal lunes 09:00 local VPS = 07:00 UTC (disparador sin identificar)",
+    // DISPARADOR IDENTIFICADO (2026-08-18): línea del `crontab -l` de root del
+    // VPS, `0 9 * * 1 /usr/local/bin/merch-cron-runner.sh override-price-drift
+    // POST /api/cron/override-price-drift`. No es un cron zombi de un servicio
+    // externo, que era la sospecha (precedente: cron-job.org, mayo-2026).
+    //
+    // ⚠️ Por qué la búsqueda del 11-ago concluyó "no está en el crontab" con la
+    // línea delante: el crontab de esta máquina es MIXTO. Casi todos los crons
+    // de merch van envueltos en `cron-global-guard <base64>` — un `grep` normal
+    // no los ve —, pero ESTE va en CLARO y suelto bajo el bloque de comentarios
+    // de otro proyecto (Dify), sin cabecera propia. Un barrido que decodifica
+    // base64 lo pierde, y uno que agrupa por bloque lo atribuye a Dify. Hay que
+    // mirar las dos formas: eso es lo que hace `scripts/audit-crons-vps.sh`.
+    // (El fichero no se toca desde el 10-ago 23:56, así que la línea YA estaba.)
+    //
+    // Corre a las 07:00 UTC, no a las 09:00: `0 9` es hora LOCAL del VPS.
+    schedule: "semanal lunes 09:00 local VPS = 07:00 UTC (crontab de root del VPS)",
     scheduleCron: "0 9 * * 1",
     frequencyHours: 168,
     description:
