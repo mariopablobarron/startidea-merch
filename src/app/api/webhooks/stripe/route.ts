@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
 import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { markReferralEarned } from "@/lib/referral";
 import { recordCouponRedemption } from "@/lib/affiliates";
 import { autoPlaceMidoceanOrder } from "@/lib/midocean-auto-order";
@@ -322,7 +322,7 @@ async function postPaymentAutoflow(args: {
 
   const viaLabel = via === "express-checkout" ? " (Apple/Google Pay)" : "";
   void notifyTelegram(
-    `💰 <b>Pago recibido</b>${viaLabel}\n${customer.name}${customer.company ? ` · ${customer.company}` : ""}\n<b>${amountFmt} €</b>\n📧 ${customer.email}`,
+    `💰 <b>Pago recibido</b>${viaLabel}\n${escapeTgHtml(customer.name)}${customer.company ? ` · ${escapeTgHtml(customer.company)}` : ""}\n<b>${amountFmt} €</b>\n📧 ${customer.email}`,
   ).catch((e) =>
     console.error("[stripe webhook] notifyTelegram pago recibido falló:", e instanceof Error ? e.message : e),
   );

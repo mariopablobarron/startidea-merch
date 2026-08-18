@@ -14,7 +14,7 @@ import {
   escapeHtml,
   EMAIL_COLORS,
 } from "./email-templates";
-import { notifyTelegram } from "./telegram";
+import { notifyTelegram, escapeTgHtml } from "./telegram";
 import type { ProposalTotals } from "./proposal-types";
 
 const EUR = new Intl.NumberFormat("es-ES", {
@@ -120,7 +120,7 @@ export async function sendProposalEmail(
         `Propuesta: ${params.proposalNumber}\n` +
         `To: ${params.toEmail}\n` +
         `Total: ${fmt(params.totals.totalCents)}\n` +
-        `Error: ${message.slice(0, 300)}`,
+        `Error: ${escapeTgHtml(message.slice(0, 300))}`,
     ).catch(() => {});
     return { ok: false, error: message };
   }

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { resend, MARKETING_FROM, MARKETING_REPLY_TO } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { resolveAudience } from "@/lib/broadcast-audience";
 import { emailShell } from "@/lib/email-templates";
 
@@ -120,7 +120,7 @@ export async function sendBroadcast(id: string): Promise<SendBroadcastResult> {
       `⚠️ <b>Broadcast con ${failedCount}/${recipients.length} fallos (${Math.round(
         (failedCount / recipients.length) * 100,
       )}%)</b>\n` +
-        `Asunto: ${broadcast.subject.slice(0, 100)}\n` +
+        `Asunto: ${escapeTgHtml(broadcast.subject.slice(0, 100))}\n` +
         `Broadcast ID: <code>${id}</code>\n` +
         `Audiencia: ${broadcast.audience}\n\n` +
         `Revisa /admin/marketing/broadcasts/${id} y los deliveries en BD.`,

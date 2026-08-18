@@ -51,7 +51,12 @@ vi.mock("@/lib/metricool", () => ({
     channel === "EMAIL" || channel === "WEB" ? null : channel.toLowerCase(),
 }));
 
-vi.mock("@/lib/telegram", () => ({ notifyTelegram: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/telegram", async (importOriginal) => ({
+  notifyTelegram: vi.fn().mockResolvedValue(undefined),
+  // escapeTgHtml se toma del módulo REAL: si el mock lo sustituyera por la
+  // identidad, el test vería un texto distinto del que se envía de verdad.
+  escapeTgHtml: (await importOriginal<typeof import("@/lib/telegram")>()).escapeTgHtml,
+}));
 
 vi.mock("@/lib/auth", () => ({
   requireCronSecret: (...a: unknown[]) => requireCronSecret(...a),

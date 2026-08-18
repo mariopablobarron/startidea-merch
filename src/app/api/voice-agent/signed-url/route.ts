@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -85,7 +85,7 @@ export async function GET(req: Request) {
     }
   })();
   void notifyTelegram(
-    `🎙️ <b>David</b> — conversación iniciada${page ? `\n📍 ${page.replace(/&/g, "&amp;").replace(/</g, "&lt;")}` : ""}\n<i>La transcripción llegará al terminar.</i>`,
+    `🎙️ <b>David</b> — conversación iniciada${page ? `\n📍 ${escapeTgHtml(page)}` : ""}\n<i>La transcripción llegará al terminar.</i>`,
   ).catch((e) =>
     console.error("[voice-agent] telegram inicio:", e instanceof Error ? e.message : e),
   );

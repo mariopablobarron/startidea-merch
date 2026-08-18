@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
@@ -75,7 +75,7 @@ export const POST = wrapCronHandler("stock-alert", async (req: Request) => {
     lines.push("");
     lines.push(`<b>${soldOut.length} agotados</b>:`);
     for (const p of soldOut.slice(0, 8)) {
-      lines.push(`• ${p.name} <code>${p.supplier_ref}</code>`);
+      lines.push(`• ${escapeTgHtml(p.name)} <code>${escapeTgHtml(p.supplier_ref)}</code>`);
     }
     if (soldOut.length > 8) lines.push(`  …y ${soldOut.length - 8} más`);
   }
@@ -84,7 +84,7 @@ export const POST = wrapCronHandler("stock-alert", async (req: Request) => {
     lines.push("");
     lines.push(`<b>${critical.length} stock crítico (≤20 uds)</b>:`);
     for (const p of critical.slice(0, 8)) {
-      lines.push(`• ${p.name} — ${Number(p.total_stock)} uds`);
+      lines.push(`• ${escapeTgHtml(p.name)} — ${Number(p.total_stock)} uds`);
     }
     if (critical.length > 8) lines.push(`  …y ${critical.length - 8} más`);
   }

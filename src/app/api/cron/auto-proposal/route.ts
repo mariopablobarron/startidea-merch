@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { wrapCronHandler } from "@/lib/cron-tracking";
 import { draftProposalFromCart } from "@/lib/auto-proposal";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { notifyAdmins } from "@/lib/notify-admin";
 
 export const runtime = "nodejs";
@@ -81,7 +81,7 @@ export const POST = wrapCronHandler("auto-proposal", async (req: Request) => {
       const who = `${cart.name}${cart.company ? ` · ${cart.company}` : ""}`;
       void notifyTelegram(
         `🤖 <b>Propuesta borrador lista</b> (${draft.proposalNumber})\n` +
-          `${who}\n` +
+          `${escapeTgHtml(who)}\n` +
           `${draft.itemCount} producto${draft.itemCount === 1 ? "" : "s"} · <b>${EUR.format(draft.totalCents / 100)}</b> (IVA incl.)\n` +
           `📄 PDF: ${draft.downloadUrl}\n` +
           `✍️ Revisar y enviar (1 clic): ${SITE_URL}/admin/propuestas`,
@@ -103,7 +103,7 @@ export const POST = wrapCronHandler("auto-proposal", async (req: Request) => {
       // No des-reclamamos: evita reintentos infinitos + spam. Avisamos del fallo
       // para que el admin lo haga a mano si hace falta.
       void notifyTelegram(
-        `⚠️ <b>auto-proposal FALLÓ</b>\nCart ${cart.id.slice(0, 8)} · ${cart.name}\n${msg.slice(0, 200)}`,
+        `⚠️ <b>auto-proposal FALLÓ</b>\nCart ${cart.id.slice(0, 8)} · ${escapeTgHtml(cart.name)}\n${escapeTgHtml(msg.slice(0, 200))}`,
       ).catch((e) =>
         console.error("[auto-proposal] notifyTelegram (aviso de fallo) falló:", e instanceof Error ? e.message : e),
       );

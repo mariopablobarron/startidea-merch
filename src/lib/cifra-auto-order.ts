@@ -20,7 +20,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { createOrder, type CifraOrderPayload } from "@/lib/suppliers/cifra";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { provinciaFromPostalCodeOrCity } from "@/lib/spain-postal-code";
 import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
@@ -104,7 +104,7 @@ async function cursarPedidoCifra(
   // Validación dirección
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
     await notifyTelegram(
-      `⚠️ <b>Pago recibido sin dirección completa (Cifra)</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
+      `⚠️ <b>Pago recibido sin dirección completa (Cifra)</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
     ).catch(() => {});
     return { skipped: true, reason: "Falta dirección de envío" };
   }
@@ -168,7 +168,7 @@ async function cursarPedidoCifra(
       },
     });
     await notifyTelegram(
-      `📦 <b>Pedido enviado a Cifra</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nCifra order: <code>${orderId}</code>`,
+      `📦 <b>Pedido enviado a Cifra</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\nCifra order: <code>${orderId}</code>`,
     ).catch(() => {});
     return { ok: true, orderId };
   } catch (e) {
@@ -181,7 +181,7 @@ async function cursarPedidoCifra(
       },
     });
     await notifyTelegram(
-      `❌ <b>Cifra rechazó el pedido</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\n${errMsg.slice(0, 200)}`,
+      `❌ <b>Cifra rechazó el pedido</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\n${escapeTgHtml(errMsg.slice(0, 200))}`,
     ).catch(() => {});
     return { ok: false, error: errMsg };
   }

@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { suppressEmail } from "@/lib/outbound-email";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
     }
     if (emails.length > 0) {
       void notifyTelegram(
-        `🧹 <b>Lista curada</b> (${reason})\n${emails.length} email(s) a supresión: ${emails.join(", ").slice(0, 200)}`,
+        `🧹 <b>Lista curada</b> (${reason})\n${emails.length} email(s) a supresión: ${escapeTgHtml(emails.join(", ").slice(0, 200))}`,
       ).catch(() => {});
     }
   }

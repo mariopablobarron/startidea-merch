@@ -33,7 +33,7 @@ import { generateProposalNumber } from "@/lib/proposal-number";
 import { signProposalToken } from "@/lib/proposal-token";
 import { RecommenderProposalPdf } from "@/lib/recommender-proposal-pdf";
 import { sendProposalEmail } from "@/lib/proposal-mailer";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { isNotificationEnabled } from "@/lib/notification-rules";
 import type { Prisma } from "@prisma/client";
@@ -153,7 +153,7 @@ export async function POST(req: Request) {
       `⚠️ <b>Propuesta PDF render FALLÓ</b>\n` +
         `Propuesta: ${proposalNumber}\n` +
         `To: ${parsed.email}\n` +
-        `Error: ${message.slice(0, 300)}`,
+        `Error: ${escapeTgHtml(message.slice(0, 300))}`,
     ).catch((e) =>
       console.error("[proposal-send] notifyTelegram (aviso PDF fallido) falló:", e instanceof Error ? e.message : e),
     );
@@ -267,8 +267,8 @@ export async function POST(req: Request) {
   const summary =
     `Nº: ${proposalNumber}\n` +
     `A: ${parsed.email}` +
-    (parsed.name ? ` (${parsed.name})` : "") +
-    (parsed.company ? ` · ${parsed.company}` : "") +
+    (parsed.name ? ` (${escapeTgHtml(parsed.name)})` : "") +
+    (parsed.company ? ` · ${escapeTgHtml(parsed.company)}` : "") +
     `\n` +
     `Total: ${(totals.totalCents / 100).toFixed(2)}€ (IVA incl.)\n` +
     `Items: ${items.length}`;

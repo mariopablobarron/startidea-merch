@@ -45,8 +45,11 @@ vi.mock("@/lib/suppliers/cifra", () => ({
   createOrder: (...a: unknown[]) => createOrderMock(...a),
 }));
 
-vi.mock("@/lib/telegram", () => ({
+vi.mock("@/lib/telegram", async (importOriginal) => ({
   notifyTelegram: (...a: unknown[]) => notifyTelegramMock(...a),
+  // escapeTgHtml se toma del módulo REAL: si el mock lo sustituyera por la
+  // identidad, el test vería un texto distinto del que se envía de verdad.
+  escapeTgHtml: (await importOriginal<typeof import("@/lib/telegram")>()).escapeTgHtml,
 }));
 
 import { autoPlaceCifraOrder } from "./cifra-auto-order";

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { midoceanProofs } from "@/lib/suppliers/midocean-orders";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -54,7 +54,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   }
 
   void notifyTelegram(
-    `🎨 <b>Artwork nuevo subido</b>\n${proof.cart.name}${proof.cart.company ? ` · ${proof.cart.company}` : ""}\n📧 ${proof.cart.email}\nURL: ${parsed.data.artworkUrl.slice(0, 100)}\nCart <code>${proof.cartId.slice(0, 8)}</code>`,
+    `🎨 <b>Artwork nuevo subido</b>\n${escapeTgHtml(proof.cart.name)}${proof.cart.company ? ` · ${escapeTgHtml(proof.cart.company)}` : ""}\n📧 ${proof.cart.email}\nURL: ${escapeTgHtml(parsed.data.artworkUrl.slice(0, 100))}\nCart <code>${proof.cartId.slice(0, 8)}</code>`,
   ).catch(() => {});
 
   return NextResponse.json({ ok: true, status: updated.status });

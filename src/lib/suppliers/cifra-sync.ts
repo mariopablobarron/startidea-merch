@@ -26,7 +26,7 @@ import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
 import { Prisma } from "@prisma/client";
 import { colorGroupFromName, canonicalColorGroup } from "@/lib/variant-grouping";
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import {
   fetchProducts,
   fetchPriceTiers,
@@ -397,7 +397,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
     const pricelistErrors = errors.filter((er) => er.ref.startsWith("pricelist:"));
     if (pricelistErrors.length > 0) {
       void notifyTelegram(
-        `⚠️ cifra-sync: ${pricelistErrors.length} tramos de precio fallaron (ej. ${pricelistErrors[0].ref}) — revisa /admin/suppliers`,
+        `⚠️ cifra-sync: ${pricelistErrors.length} tramos de precio fallaron (ej. ${escapeTgHtml(pricelistErrors[0].ref)}) — revisa /admin/suppliers`,
       ).catch((err) =>
         console.error("[cifra-sync] notifyTelegram falló:", err instanceof Error ? err.message : err),
       );
@@ -408,7 +408,7 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
       message: e instanceof Error ? e.message : String(e),
     });
     void notifyTelegram(
-      `⚠️ cifra-sync: pricelist completo falló: ${(e instanceof Error ? e.message : String(e)).slice(0, 150)}`,
+      `⚠️ cifra-sync: pricelist completo falló: ${escapeTgHtml((e instanceof Error ? e.message : String(e)).slice(0, 150))}`,
     ).catch((err) =>
       console.error("[cifra-sync] notifyTelegram falló:", err instanceof Error ? err.message : err),
     );

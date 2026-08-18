@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { computeCotizacion } from "@/lib/cotizar-core";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 
 /**
  * Inteligencia de competencia — 🔒 SOLO USO INTERNO.
@@ -574,7 +574,7 @@ export async function runCompetitorWatch(limit = 8): Promise<{
       if (a.recomendacion.accion === "SUBIR" || a.recomendacion.accion === "BAJAR") {
         accionables++;
         lines.push(
-          `${a.recomendacion.accion === "SUBIR" ? "📈 SUBIR" : "📉 BAJAR"} <b>${a.producto}</b> (${a.ref})\n` +
+          `${a.recomendacion.accion === "SUBIR" ? "📈 SUBIR" : "📉 BAJAR"} <b>${escapeTgHtml(a.producto)}</b> (${a.ref})\n` +
             `  nuestro ${a.nuestro.pvp_unit}/ud (margen ${a.nuestro.margen_pct}) · ${a.recomendacion.detalle}`,
         );
       }

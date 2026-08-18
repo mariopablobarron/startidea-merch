@@ -3,7 +3,7 @@ import { z } from "zod";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { computeCotizacion, type CotizarInput } from "@/lib/cotizar-core";
 import { createProposalFromCotizacion } from "@/lib/proposal-from-cotizacion";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { withIva } from "@/lib/iva";
 
 export const runtime = "nodejs";
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
   const totalConIva = d.itemOverride ? withIva(d.itemOverride.totalCents) : quote.pvp.totalConIva;
   void notifyTelegram(
     `📄 <b>Propuesta ${result.proposalNumber}</b> creada desde el cotizador\n` +
-      `Cliente: ${d.name || d.company || d.email}\n` +
+      `Cliente: ${escapeTgHtml(d.name || d.company || d.email)}\n` +
       `Total: ${(totalConIva / 100).toFixed(2)} € (IVA inc.)${d.itemOverride ? " · precio editado a mano" : ""}\n` +
       `${d.send ? (result.emailed ? "✉️ Enviada por email" : "⚠️ Email FALLÓ — guardada igualmente") : "💾 Borrador (revisar y enviar en /admin/propuestas)"}`,
   ).catch((e) =>

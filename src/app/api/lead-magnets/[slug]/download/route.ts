@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -117,7 +117,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   // Notificar a Telegram al equipo
   void notifyTelegram(
-    `📥 <b>Nuevo lead</b>\n${d.email}${d.name ? ` · ${d.name}` : ""}${d.company ? ` · ${d.company}` : ""}\nDescargó: ${magnet.title}${d.utm?.campaign ? `\nCampaña: ${d.utm.campaign}` : ""}`,
+    `📥 <b>Nuevo lead</b>\n${d.email}${d.name ? ` · ${escapeTgHtml(d.name)}` : ""}${d.company ? ` · ${escapeTgHtml(d.company)}` : ""}\nDescargó: ${escapeTgHtml(magnet.title)}${d.utm?.campaign ? `\nCampaña: ${escapeTgHtml(d.utm.campaign)}` : ""}`,
   ).catch(() => {});
 
   return NextResponse.json({

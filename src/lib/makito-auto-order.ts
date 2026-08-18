@@ -13,7 +13,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 export type MakitoAutoOrderResult =
@@ -63,7 +63,7 @@ export async function autoPlaceMakitoOrder(cartId: string): Promise<MakitoAutoOr
   // Validación dirección
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
     await notifyTelegram(
-      `⚠️ <b>Pago recibido sin dirección completa (Makito)</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
+      `⚠️ <b>Pago recibido sin dirección completa (Makito)</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
     ).catch(() => {});
     return { skipped: true, reason: "Falta dirección de envío" };
   }
@@ -72,18 +72,18 @@ export async function autoPlaceMakitoOrder(cartId: string): Promise<MakitoAutoOr
   const lines = [
     `🚨 <b>PEDIDO MAKITO · ACCIÓN MANUAL</b>`,
     `Cart <code>${cart.id.slice(0, 8)}</code>`,
-    `Cliente: ${cart.name}${cart.company ? " · " + cart.company : ""}`,
-    `Email: ${cart.email}${cart.phone ? " · " + cart.phone : ""}`,
+    `Cliente: ${escapeTgHtml(cart.name)}${escapeTgHtml(cart.company ? " · " + cart.company : "")}`,
+    `Email: ${escapeTgHtml(cart.email)}${escapeTgHtml(cart.phone ? " · " + cart.phone : "")}`,
     ``,
     `<b>Envío a:</b>`,
-    `  ${cart.shippingAddress}`,
-    `  ${cart.shippingPostalCode} ${cart.shippingCity}${cart.shippingCountry ? " (" + cart.shippingCountry + ")" : ""}`,
+    `  ${escapeTgHtml(cart.shippingAddress)}`,
+    `  ${escapeTgHtml(cart.shippingPostalCode)} ${escapeTgHtml(cart.shippingCity)}${escapeTgHtml(cart.shippingCountry ? " (" + cart.shippingCountry + ")" : "")}`,
     ``,
     `<b>Items (${makitoItems.length}):</b>`,
   ];
   for (const [index, it] of makitoItems.entries()) {
     const ref = supplierVariants.items[index].sku;
-    const marking = it.markingTechniqueName ? ` · marcaje ${it.markingTechniqueName}` : "";
+    const marking = it.markingTechniqueName ? ` · marcaje ${escapeTgHtml(it.markingTechniqueName)}` : "";
     lines.push(`  · ${it.quantity}× <code>${ref}</code> — ${it.productName}${marking}`);
   }
   lines.push("");

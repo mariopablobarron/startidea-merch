@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 
 export const runtime = "nodejs";
@@ -86,12 +86,12 @@ export async function POST(req: Request) {
   // Notificación INMEDIATA a Mario (TG + email)
   const tgMsg = [
     `📞 <b>CALLBACK SOLICITADO · VOZ AGENT</b>`,
-    `Cliente: ${d.name}${d.company ? ` · ${d.company}` : ""}`,
-    `Tlf: <code>${d.phone}</code>`,
+    `Cliente: ${escapeTgHtml(d.name)}${d.company ? ` · ${escapeTgHtml(d.company)}` : ""}`,
+    `Tlf: <code>${escapeTgHtml(d.phone)}</code>`,
     d.email ? `Email: ${d.email}` : "",
-    `Hora: ${d.preferred_time || "Sin especificar — llamar lo antes posible"}`,
+    `Hora: ${escapeTgHtml(d.preferred_time || "Sin especificar — llamar lo antes posible")}`,
     "",
-    d.reason ? `Quiere: ${d.reason}` : "",
+    d.reason ? `Quiere: ${escapeTgHtml(d.reason)}` : "",
     "",
     `<a href="https://merchandising.startidea.es/admin/cart-quotes/${cart.id}">Abrir en /admin</a>`,
   ]

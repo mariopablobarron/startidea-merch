@@ -13,8 +13,11 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("@/lib/telegram", () => ({
+vi.mock("@/lib/telegram", async (importOriginal) => ({
   notifyTelegram: (...args: unknown[]) => notifyTelegram(...args),
+  // escapeTgHtml se toma del módulo REAL: si el mock lo sustituyera por la
+  // identidad, el test vería un texto distinto del que se envía de verdad.
+  escapeTgHtml: (await importOriginal<typeof import("@/lib/telegram")>()).escapeTgHtml,
 }));
 
 import { autoPlaceMakitoOrder } from "./makito-auto-order";

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { sendBroadcast } from "@/lib/broadcast-send";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
@@ -52,8 +52,8 @@ export const POST = wrapCronHandler("send-scheduled-broadcasts", async (req: Req
       results
         .map((r) =>
           r.ok
-            ? `✓ ${r.subject.slice(0, 60)} — ${r.sent} OK${r.failed ? ` / ${r.failed} fallidos` : ""}`
-            : `✕ ${r.subject.slice(0, 60)} — ${r.error}`,
+            ? `✓ ${escapeTgHtml(r.subject.slice(0, 60))} — ${r.sent} OK${r.failed ? ` / ${r.failed} fallidos` : ""}`
+            : `✕ ${escapeTgHtml(r.subject.slice(0, 60))} — ${r.error}`,
         )
         .join("\n"),
   ).catch((e) =>

@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/admin-auth";
 import { sendEmail } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import {
   emailShell,
   emailHeader,
@@ -163,7 +163,7 @@ export async function POST(req: Request) {
 
   // Telegram al equipo
   void notifyTelegram(
-    `✨ <b>Cotización IA guardada</b>\n${data.customerName}${data.customerCompany ? ` · ${data.customerCompany}` : ""}\n${data.lines.length} líneas · <b>${EUR.format(totalCents / 100)}</b>${paymentLinkToken ? "\n💳 Link de pago activo" : ""}\nCart <code>${cart.id.slice(0, 8)}</code>`,
+    `✨ <b>Cotización IA guardada</b>\n${escapeTgHtml(data.customerName)}${data.customerCompany ? ` · ${escapeTgHtml(data.customerCompany)}` : ""}\n${data.lines.length} líneas · <b>${EUR.format(totalCents / 100)}</b>${paymentLinkToken ? "\n💳 Link de pago activo" : ""}\nCart <code>${cart.id.slice(0, 8)}</code>`,
   ).catch((e) =>
     console.error("[quote-ai-save] notifyTelegram falló:", e instanceof Error ? e.message : e),
   );

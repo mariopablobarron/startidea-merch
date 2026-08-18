@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { wrapCronHandler } from "@/lib/cron-tracking";
 
 export const runtime = "nodejs";
@@ -101,7 +101,7 @@ export const POST = wrapCronHandler("voice-agent-health", async (req: Request) =
 
   if (problems.length > 0 && signature !== last) {
     await notifyTelegram(
-      `🚨 <b>David (voz) con problemas</b>\n${problems.map((p) => `• ${p}`).join("\n")}\n\nEl asistente puede estar caído para los clientes. Revisa elevenlabs.io.`,
+      `🚨 <b>David (voz) con problemas</b>\n${problems.map((p) => `• ${escapeTgHtml(p)}`).join("\n")}\n\nEl asistente puede estar caído para los clientes. Revisa elevenlabs.io.`,
     ).catch((e) => console.error("[voice-agent-health] telegram:", e instanceof Error ? e.message : e));
   } else if (problems.length === 0 && last) {
     // Se recuperó → avisar una vez que ya está OK.

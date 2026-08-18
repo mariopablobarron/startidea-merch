@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { computeRoi, validateRoiInputs } from "@/lib/roi-calc";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
   // Alerta interna Telegram
   await notifyTelegram(
     `<b>📊 Nuevo lead calculadora ROI RSC</b>\n` +
-      `${data.name || "(sin nombre)"}${data.company ? ` · ${data.company}` : ""}\n` +
+      `${escapeTgHtml(data.name || "(sin nombre)")}${data.company ? ` · ${escapeTgHtml(data.company)}` : ""}\n` +
       `${data.email}\n` +
       `Empleados: ${data.employees} · Presupuesto: ${data.annualBudgetEur}€/año · Sustitución: ${data.substitutionPct}%\n` +
       `Resultado: ${results.co2SavedKg} kg CO₂ · ${results.workHoursDignified} h trabajo digno`,

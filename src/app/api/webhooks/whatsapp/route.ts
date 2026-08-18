@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         const from = msg.from || value?.contacts?.[0]?.wa_id || "?";
         const text = msg.type === "text" ? msg.text?.body || "" : `[${msg.type}]`;
         void notifyTelegram(
-          `📲 <b>WhatsApp entrante</b>\n${name ? `${name} · ` : ""}+${from}\n${text.slice(0, 500)}`,
+          `📲 <b>WhatsApp entrante</b>\n${name ? `${escapeTgHtml(name)} · ` : ""}+${escapeTgHtml(from)}\n${escapeTgHtml(text.slice(0, 500))}`,
         ).catch((e) =>
           console.error("[webhooks-whatsapp] notifyTelegram falló:", e instanceof Error ? e.message : e),
         );
