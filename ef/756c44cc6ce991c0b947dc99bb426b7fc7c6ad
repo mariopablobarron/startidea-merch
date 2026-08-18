@@ -1,0 +1,23 @@
+.github/workflows/money-smoke.yml
+  s_4c65f7b474a3ba::t_db8e6adce01358 29-36
+scripts/money-smoke-test.mjs
+  s_4c65f7b474a3ba::t_01bd4451955f89 109-127,178-188,202-205,208,285-287,405-429
+src/lib/money-smoke-severity.test.ts
+  s_4c65f7b474a3ba::t_45e859de5946b6 12,217-297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ef756c44cc6ce991c0b947dc99bb426b7fc7c6ad",
+  "prompts": {},
+  "sessions": {
+    "s_4c65f7b474a3ba": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "833f9323-6d28-4d17-a1f0-fc020778ef2a",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
