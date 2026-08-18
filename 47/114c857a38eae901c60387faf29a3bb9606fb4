@@ -1,0 +1,89 @@
+src/app/api/proof/[token]/revision/route.ts
+  s_4c65f7b474a3ba::t_29bc32876b09e9 6
+  s_4c65f7b474a3ba::t_06234ff7943edb 57
+src/app/api/proof/[token]/reject/route.ts
+  s_4c65f7b474a3ba::t_b17c02c27f37af 7
+  s_4c65f7b474a3ba::t_e5e3f60055036a 67
+src/app/api/proposal/send/route.ts
+  s_4c65f7b474a3ba::t_b919799f6f1c86 270-271
+  s_4c65f7b474a3ba::t_a4a9715e9ec1dc 36
+  s_4c65f7b474a3ba::t_1c7f3545885790 156
+src/app/api/admin/cart-quotes/[id]/simulate-payment/route.ts
+  s_4c65f7b474a3ba::t_83413ddffabdd7 7,127,130
+src/app/api/admin/cotizar/proposal/route.ts
+  s_4c65f7b474a3ba::t_18750564275772 6,96
+src/app/api/admin/quote-ai/save/route.ts
+  s_4c65f7b474a3ba::t_a53eb7d1bae70e 7,166
+src/app/api/calculadora-rsc/route.ts
+  s_4c65f7b474a3ba::t_729b2d590880ac 5,116
+src/app/api/cron/auto-proposal/route.ts
+  s_4c65f7b474a3ba::t_aaec83d9b7945c 6,84,106
+src/app/api/cron/override-price-drift/route.ts
+  s_4c65f7b474a3ba::t_c1808db7d74064 5,96
+src/app/api/cron/publish-scheduled/route.test.ts
+  s_4c65f7b474a3ba::t_062da0594d6c3b 54-59
+src/app/api/cron/publish-scheduled/route.ts
+  s_4c65f7b474a3ba::t_77f114b468c497 10,172
+src/app/api/cron/send-scheduled-broadcasts/route.ts
+  s_4c65f7b474a3ba::t_02c9148a0149b6 5,55-56
+src/app/api/cron/stock-alert/route.ts
+  s_4c65f7b474a3ba::t_a156cc6cbd6717 4,78,87
+src/app/api/cron/voice-agent-health/route.ts
+  s_4c65f7b474a3ba::t_50fb269b588c38 4,104
+src/app/api/lead-magnets/[slug]/download/route.ts
+  s_4c65f7b474a3ba::t_9645e00f303980 6,120
+src/app/api/proof/[token]/approve/route.ts
+  s_4c65f7b474a3ba::t_66f9a15fcd948f 7,37,78
+src/app/api/voice-agent/session-end/route.ts
+  s_4c65f7b474a3ba::t_68a2410fb6eb45 5,131-133,142
+src/app/api/voice-agent/signed-url/route.ts
+  s_4c65f7b474a3ba::t_1150adc1955665 4,88
+src/app/api/voice-agent/tools/request-callback/route.ts
+  s_4c65f7b474a3ba::t_e606e5f533a13d 5,89-90,92,94
+src/app/api/webhooks/resend/route.ts
+  s_4c65f7b474a3ba::t_21c6ed938bd3a4 5,93
+src/app/api/webhooks/stripe/route.ts
+  s_4c65f7b474a3ba::t_ebf632985a202b 7,325
+src/app/api/webhooks/whatsapp/route.ts
+  s_4c65f7b474a3ba::t_8ca525cf833aa7 3,74
+src/lib/broadcast-send.ts
+  s_4c65f7b474a3ba::t_4456633adb1c9a 3,123
+src/lib/cifra-auto-order.test.ts
+  s_4c65f7b474a3ba::t_38dde8e931c47a 48,50-52
+src/lib/cifra-auto-order.ts
+  s_4c65f7b474a3ba::t_f6208c0a4a07b1 23,107,171,184
+src/lib/competitor-intel.ts
+  s_4c65f7b474a3ba::t_11e29462116e8d 3,577
+src/lib/makito-auto-order.test.ts
+  s_4c65f7b474a3ba::t_4043e29e5dcf8e 16,18-20
+src/lib/makito-auto-order.ts
+  s_4c65f7b474a3ba::t_c2cf3015e6edc9 16,66,75-76,79-80,86
+src/lib/midocean-auto-order.test.ts
+  s_4c65f7b474a3ba::t_7e817f88150b06 65,67-69
+src/lib/midocean-auto-order.ts
+  s_4c65f7b474a3ba::t_b63e88aaad107d 22,126,218,249
+src/lib/proposal-mailer.ts
+  s_4c65f7b474a3ba::t_21a0af5e320459 17,123
+src/lib/suppliers/cifra-sync.ts
+  s_4c65f7b474a3ba::t_8322f2f31faffc 29,400,411
+src/lib/telegram-escape.guard.test.ts
+  s_4c65f7b474a3ba::t_81c74cf9b3eb22 1-194
+src/lib/telegram-escape.test.ts
+  s_4c65f7b474a3ba::t_3d1578aae84659 1-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "47114c857a38eae901c60387faf29a3bb9606fb4",
+  "prompts": {},
+  "sessions": {
+    "s_4c65f7b474a3ba": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "833f9323-6d28-4d17-a1f0-fc020778ef2a",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
