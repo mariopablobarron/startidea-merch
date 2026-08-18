@@ -21,7 +21,6 @@
  */
 import { createElement, type ReactElement } from "react";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
@@ -37,45 +36,13 @@ import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { isNotificationEnabled } from "@/lib/notification-rules";
 import type { Prisma } from "@prisma/client";
+import { BodySchema } from "@/lib/proposal-send-schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
-
-const QuoteItemSchema = z.object({
-  description: z.string(),
-  notFound: z.boolean(),
-  searchedAs: z.string().optional(),
-  quantity: z.number().int().nonnegative(),
-  sizes: z.record(z.string(), z.number()).nullable().optional(),
-  technique: z.string().nullable(),
-  colorRequested: z.string().nullable(),
-  rationale: z.string().optional(),
-  product: z
-    .object({
-      slug: z.string(),
-      name: z.string(),
-      ref: z.string(),
-      url: z.string(),
-      primaryImageUrl: z.string().nullable(),
-    })
-    .nullable(),
-  unitPriceCents: z.number().int().nullable(),
-  markingPerUnitCents: z.number().int().default(0),
-  markingSetupCents: z.number().int().default(0),
-  totalCents: z.number().int().nullable(),
-  priceSource: z.enum(["tier", "estimate"]).nullable(),
-});
-
-const BodySchema = z.object({
-  email: z.string().email().max(200),
-  name: z.string().max(120).optional().nullable(),
-  company: z.string().max(160).optional().nullable(),
-  quoteItems: z.array(QuoteItemSchema).min(1).max(40),
-  recommenderQueryId: z.string().max(40).optional().nullable(),
-});
 
 export async function POST(req: Request) {
   // Rate limit: 5 propuestas por 10 min por IP — generoso para humano,
