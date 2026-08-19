@@ -1,0 +1,23 @@
+src/app/api/webhooks/stripe/route.ts
+  s_c161148a335896::t_650fb099f3bbff 17
+src/lib/stripe-paid-emails.test.ts
+  s_c161148a335896::t_5ee1c679780f9a 1-154
+src/lib/stripe-paid-emails.ts
+  s_c161148a335896::t_73d3f410bda5cd 1-188
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ff60cfc9ed76ba60cad2491e62a5678266e81d7d",
+  "prompts": {},
+  "sessions": {
+    "s_c161148a335896": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "586183f3-aff0-4a1c-b357-394fbe22139a",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
