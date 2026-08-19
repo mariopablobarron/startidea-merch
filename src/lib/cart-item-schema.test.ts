@@ -3,6 +3,14 @@ import {
   CartItemSchema,
   CartMarkingSchema,
   cartItemToCreate,
+  MAX_REF,
+  MAX_SLUG,
+  MAX_URL,
+  MAX_SKU,
+  MAX_COLOR,
+  MAX_POSITION_ID,
+  MAX_TECHNIQUE_CODE,
+  MAX_TECHNIQUE_NAME,
   type CanonicalCartItemInput,
 } from "./cart-item-schema";
 
@@ -291,5 +299,86 @@ describe("CartItemSchema / CartMarkingSchema — validación de límites", () =>
     expect(CartItemSchema.safeParse({ ...base, markings: many }).success).toBe(
       false,
     );
+  });
+});
+
+/**
+ * Topes de longitud de los campos que controla el navegador. Las dos rutas que
+ * usan este schema son PÚBLICAS (sin sesión ni secreto, sólo rate limit) y lo
+ * que aceptan se persiste tal cual en `CartQuoteItem`/`CartQuoteItemMarking`.
+ *
+ * ⚠️ Los tamaños de estos casos son LITERALES a propósito, no `MAX_X + 1`: un
+ * caso que deriva su tamaño de la constante que vigila se mueve con ella, y
+ * subir el tope a 100 MB dejaría la suite igual de verde (falso verde real,
+ * cazado en el run del 19-ago en el schema de voz).
+ */
+describe("CartItemSchema — topes de longitud (rutas públicas)", () => {
+  const ok = {
+    productSlug: "taza-ceramica",
+    productRef: "STM-1001",
+    productName: "Taza cerámica",
+    quantity: 100,
+  };
+
+  it("fija los topes en su valor medido, pase lo que pase con las constantes", () => {
+    expect(MAX_REF).toBe(60);
+    expect(MAX_SLUG).toBe(160);
+    expect(MAX_URL).toBe(500);
+    expect(MAX_SKU).toBe(60);
+    expect(MAX_COLOR).toBe(120);
+    expect(MAX_POSITION_ID).toBe(60);
+    expect(MAX_TECHNIQUE_CODE).toBe(40);
+    expect(MAX_TECHNIQUE_NAME).toBe(120);
+  });
+
+  it("acepta los valores más largos que existen hoy en producción", () => {
+    // Máximos reales medidos el 19-ago-2026: ref 12, url 23, sku 20, color 25,
+    // slug 80, y en marcaje 6 / 4 / 12.
+    const r = CartItemSchema.safeParse({
+      ...ok,
+      productSlug: "s".repeat(80),
+      productRef: "R".repeat(12),
+      primaryImageUrl: "/api/m/" + "a".repeat(32),
+      variantSku: "K".repeat(20),
+      colorName: "C".repeat(25),
+      markingPositionId: "front1",
+      markingTechniqueCode: "SERI",
+      markingTechniqueName: "Serigrafía",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rechaza un productRef absurdo aunque el resto sea válido", () => {
+    const r = CartItemSchema.safeParse({ ...ok, productRef: "R".repeat(5000) });
+    expect(r.success).toBe(false);
+  });
+
+  it("rechaza una primaryImageUrl de 100 KB", () => {
+    const r = CartItemSchema.safeParse({ ...ok, primaryImageUrl: "x".repeat(100_000) });
+    expect(r.success).toBe(false);
+  });
+
+  it("el shape plano legado NO puede saltarse los topes de markings[]", () => {
+    // El agujero real: `cartItemToCreate` usa estos tres como fallback y los
+    // persiste igual, pero sólo la vía nueva tenía `.max()`.
+    for (const campo of ["markingPositionId", "markingTechniqueCode", "markingTechniqueName"]) {
+      const r = CartItemSchema.safeParse({ ...ok, [campo]: "z".repeat(10_000) });
+      expect(r.success, `${campo} sin tope`).toBe(false);
+    }
+  });
+
+  it("los topes del shape plano son los MISMOS que los de markings[]", () => {
+    const viaNueva = CartMarkingSchema.safeParse({
+      positionId: "p".repeat(61),
+      techniqueCode: "SERI",
+    });
+    const viaPlana = CartItemSchema.safeParse({ ...ok, markingPositionId: "p".repeat(61) });
+    expect(viaNueva.success).toBe(false);
+    expect(viaPlana.success).toBe(false);
+  });
+
+  it("rechaza un colorName y un variantSku desbordados", () => {
+    expect(CartItemSchema.safeParse({ ...ok, colorName: "c".repeat(5000) }).success).toBe(false);
+    expect(CartItemSchema.safeParse({ ...ok, variantSku: "k".repeat(5000) }).success).toBe(false);
   });
 });

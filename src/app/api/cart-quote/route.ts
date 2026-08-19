@@ -15,63 +15,25 @@ import { computeServerLinePricing, type ServerMarkingInput } from "@/lib/quote-s
 import type { Prisma } from "@prisma/client";
 import { normalizeProductName } from "@/lib/product-name";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
+// Schema compartido con /api/cart-quote/save-for-later. Estaba DUPLICADO aquí
+// palabra por palabra: por eso los topes de longitud había que ponerlos dos
+// veces, y bastaba olvidar una copia para dejar la ruta abierta.
+import { CartItemSchema, type CartItemInput } from "@/lib/cart-item-schema";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://merchandising.startidea.es";
 
 export const runtime = "nodejs";
 
-const MarkingSchema = z.object({
-  positionId: z.string().min(1).max(60),
-  positionLabel: z.string().max(120).optional().nullable(),
-  techniqueCode: z.string().min(1).max(40),
-  techniqueName: z.string().max(120).optional().nullable(),
-  numberOfColors: z.number().int().min(1).max(20).default(1),
-  manipulationCode: z.string().max(2).optional().nullable(),
-  // Área de impresión (cm²) de la posición. El recálculo server-side la pasa a
-  // calculateMarkingCost para elegir el MISMO tramo AreaRange que vio la ficha
-  // (sin ella cogería el tramo más barato y cobraría de menos).
-  printAreaCm2: z.number().positive().optional().nullable(),
-  notes: z.string().max(500).optional().nullable(),
-});
-
-const ItemSchema = z.object({
-  productSlug: z.string().min(1),
-  productRef: z.string().min(1),
-  productName: z.string().min(1).max(500),
-  primaryImageUrl: z.string().nullable().optional(),
-  quantity: z.number().int().positive().max(1_000_000),
-  variantId: z.string().nullable().optional(),
-  variantSku: z.string().nullable().optional(), // pestañas legacy
-  colorName: z.string().nullable().optional(),
-  // Shape plano (deprecated, mantenido por compat)
-  markingTechniqueCode: z.string().nullable().optional(),
-  markingTechniqueName: z.string().nullable().optional(),
-  markingPositionId: z.string().nullable().optional(),
-  markingColours: z.number().int().min(1).max(10).nullable().optional(),
-  markingComplexity: z.string().max(2).nullable().optional(),
-  // Nuevo: array completo multi-marca
-  markings: z.array(MarkingSchema).max(10).optional(),
-  unitPriceClientCents: z.number().int().nullable().optional(),
-  totalClientCents: z.number().int().nullable().optional(),
-  notes: z.string().max(500).nullable().optional(),
-  customerLogoUrl: z.string().max(500).nullable().optional(),
-  customerLogoFilename: z.string().max(200).nullable().optional(),
-  customerLogoSize: z.number().int().nullable().optional(),
-}).refine((item) => !(item.variantId && item.variantSku), {
-  message: "Usa variantId o variantSku legacy, no ambos",
-  path: ["variantId"],
-});
-
 const Schema = z.object({
   name: z.string().min(2).max(120),
   company: z.string().max(160).optional().or(z.literal("")),
-  email: z.string().email(),
+  email: z.string().email().max(160),
   phone: z.string().max(40).optional().or(z.literal("")),
   message: z.string().max(4000).optional().or(z.literal("")),
   deadline: z.string().max(120).optional().or(z.literal("")),
   source: z.string().max(80).optional(),
   couponCode: z.string().max(40).optional().or(z.literal("")),
-  items: z.array(ItemSchema).min(1).max(40),
+  items: z.array(CartItemSchema).min(1).max(40),
   // Si true y todos los items tienen precio, generamos paymentLinkToken
   // y devolvemos payUrl para redirigir al checkout Stripe (Apple/Google Pay).
   directPay: z.boolean().optional(),
@@ -90,7 +52,7 @@ const EUR = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 2,
 });
 
-type CartItem = z.infer<typeof ItemSchema>;
+type CartItem = CartItemInput;
 type NormalizedMarking = {
   positionId: string;
   positionLabel: string | null;
