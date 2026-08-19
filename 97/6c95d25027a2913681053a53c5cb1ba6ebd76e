@@ -1,0 +1,43 @@
+src/app/api/calculadora-rsc/route.ts
+  s_88da8e90ced29c::t_23472d87b9f57e 8,75
+src/app/api/cart-quote/route.ts
+  s_88da8e90ced29c::t_1ab74b6fe7367b 13,450,452,480,493,497,499-500,534,537,542,563
+src/app/api/mockup-request/route.ts
+  s_e35897274f73ec::t_64c6ca3ca19214 11-12,44,102,106,127,164,167-171,176,179
+src/app/api/partners/apply/route.ts
+  s_88da8e90ced29c::t_0104d511639389 7,61
+src/app/api/quote-request-product/route.ts
+  s_88da8e90ced29c::t_a2d3c5b3a244d9 4,182
+src/components/boceto-prometido-con-flujo.guard.test.ts
+  s_88da8e90ced29c::t_eed076fc4642d4 22,133-150,155-156
+src/lib/email-html-escape.guard.test.ts
+  s_88da8e90ced29c::t_6316870f947505 1-83
+src/lib/mockup-request-schema.test.ts
+  s_88da8e90ced29c::t_936eb06ceb93ca 1-73
+src/lib/mockup-request-schema.ts
+  s_88da8e90ced29c::t_41f745372ec81d 1-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "976c95d25027a2913681053a53c5cb1ba6ebd76e",
+  "prompts": {},
+  "sessions": {
+    "s_88da8e90ced29c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec7ce145-ee57-4247-81cc-3141744b61a3",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_e35897274f73ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "51748f09-45c0-48d5-853b-f0fd1ef7519d",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
