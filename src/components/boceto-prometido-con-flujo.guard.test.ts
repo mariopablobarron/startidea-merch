@@ -19,6 +19,7 @@
  *    (deja de aplicar tal cual y hay que revisarlo, no seguir verde por inercia).
  */
 import { describe, it, expect } from "vitest";
+import { MockupRequestSchema } from "@/lib/mockup-request-schema";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -129,13 +130,30 @@ describe("guard · la promesa de boceto gratis tiene flujo en todas las fichas",
     // Si la API pasara a exigir positionId, el modo "solo-peticion" enviaría
     // formularios que fallan siempre: la promesa volvería a ser falsa, esta vez
     // con el usuario rellenando datos para nada.
+    //
+    // Antes esto se comprobaba con un regex sobre el fuente del route. El
+    // schema se movió a `@/lib/mockup-request-schema` (para poder acotarlo y
+    // probarlo) y el regex empezó a fallar sin que nada se hubiera roto: un
+    // guard atado a DÓNDE vive el código vigila la ubicación, no la promesa.
+    // Ahora se comprueba el COMPORTAMIENTO, que es lo que importa.
+    const base = {
+      productSlug: "cottonel-2",
+      name: "Ana Ruiz",
+      email: "ana@empresa.es",
+    };
+    expect(
+      MockupRequestSchema.safeParse(base).success,
+      "la API debe aceptar una petición SIN positionId (ficha sin zonas de marcaje)",
+    ).toBe(true);
+    expect(MockupRequestSchema.safeParse({ ...base, positionId: null }).success).toBe(true);
+
+    // Y la ruta tiene que seguir usando ESE schema, no uno propio otra vez.
     const ruta = "src/app/api/mockup-request/route.ts";
     expect(existsSync(join(RAIZ, ruta)), `falta ${ruta}`).toBe(true);
     const texto = colapsar(leer(ruta));
     expect(
-      /positionId:\s*z\.string\(\)\.optional\(\)\.nullable\(\)/.test(texto),
-      `${ruta} debe seguir aceptando positionId opcional/nulo: las fichas sin zonas de marcaje ` +
-        `piden el boceto sin poder mandar ninguna.`,
+      texto.includes("MockupRequestSchema.safeParse"),
+      `${ruta} debe validar con MockupRequestSchema (el schema compartido y acotado).`,
     ).toBe(true);
   });
 });

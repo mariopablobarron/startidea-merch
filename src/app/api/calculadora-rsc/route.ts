@@ -5,6 +5,7 @@ import { sendEmail } from "@/lib/resend";
 import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { computeRoi, validateRoiInputs } from "@/lib/roi-calc";
 import { rateLimit } from "@/lib/rate-limit";
+import { escapeHtml } from "@/lib/email-templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Tu cálculo RSC</p>
           <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
-            Hola ${firstName}.<br>
+            Hola ${escapeHtml(firstName)}.<br>
             <span style="color:#E63E73;">Esto es lo que generarías.</span>
           </h1>
         </div>

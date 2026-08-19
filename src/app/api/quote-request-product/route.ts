@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
+import { escapeHtml } from "@/lib/email-templates";
 import { computeCotizacion } from "@/lib/cotizar-core";
 import { createProposalFromCotizacion } from "@/lib/proposal-from-cotizacion";
 import { sendEmail } from "@/lib/resend";
@@ -178,7 +179,7 @@ export async function POST(req: Request) {
     subject: "Hemos recibido tu solicitud de presupuesto · TodoMerchandising",
     context: "quote-request-product · client confirm",
     html: `<div style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#222;max-width:560px;">
-      <p>Hola${d.name ? ` ${d.name}` : ""},</p>
+      <p>Hola${d.name ? ` ${escapeHtml(d.name)}` : ""},</p>
       <p>Hemos recibido tu solicitud de presupuesto para <strong>${productName}</strong> (${d.qty} uds). Estamos preparándolo y te enviaremos el precio cerrado en menos de 24&nbsp;h laborables.</p>
       <p>Si quieres adelantar algo (logo, plazo, dudas), respóndenos a este correo.</p>
       <p style="margin-top:20px;color:#888;font-size:13px;">TodoMerchandising · Startidea Málaga SL<br>pedidos@startidea.es · +34 958 045 789</p>

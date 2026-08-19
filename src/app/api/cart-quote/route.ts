@@ -10,6 +10,7 @@ import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { readPartnerSlug, attachReferral } from "@/lib/referral";
 import { readAttribution } from "@/lib/attribution";
 import { rateLimit } from "@/lib/rate-limit";
+import { escapeHtml } from "@/lib/email-templates";
 import { loadActivePromotions } from "@/lib/promotions";
 import { computeServerLinePricing, type ServerMarkingInput } from "@/lib/quote-server-pricing";
 import type { Prisma } from "@prisma/client";
@@ -446,9 +447,9 @@ function renderMarkings(it: {
 }): string {
   // Si hay array markings con más de 1, renderizamos lista. Si 1 o 0, usamos campos planos.
   const list = it.markings && it.markings.length > 1
-    ? it.markings.map((m) => `${m.techniqueName || m.techniqueCode || "—"} en ${humanZone(m.positionId)}${m.numberOfColors > 1 ? ` · ${m.numberOfColors} col.` : ""}`)
+    ? it.markings.map((m) => `${escapeHtml(m.techniqueName || m.techniqueCode || "—")} en ${escapeHtml(humanZone(m.positionId))}${m.numberOfColors > 1 ? ` · ${m.numberOfColors} col.` : ""}`)
     : it.markingTechniqueName
-      ? [`${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}${it.markingColours && it.markingColours > 1 ? ` · ${it.markingColours} col.` : ""}`]
+      ? [`${escapeHtml(it.markingTechniqueName)} en ${escapeHtml(humanZone(it.markingPositionId))}${it.markingColours && it.markingColours > 1 ? ` · ${it.markingColours} col.` : ""}`]
       : [];
   if (list.length === 0) return "—";
   if (list.length === 1) return list[0];
@@ -476,7 +477,7 @@ function internalCartHtml(cart: { id: string; name: string; company: string | nu
     .map(
       (it) => `
       <tr>
-        <td style="padding:12px;border-bottom:1px solid #E8E2D5;">${it.productName}<br><small style="color:#6b6b6b">Ref. ${it.productRef}</small></td>
+        <td style="padding:12px;border-bottom:1px solid #E8E2D5;">${escapeHtml(it.productName)}<br><small style="color:#6b6b6b">Ref. ${escapeHtml(it.productRef)}</small></td>
         <td style="padding:12px;border-bottom:1px solid #E8E2D5;text-align:center;font-weight:600;">${it.quantity}</td>
         <td style="padding:12px;border-bottom:1px solid #E8E2D5;font-size:13px;color:#444;">${renderMarkings(it)}</td>
         <td style="padding:12px;border-bottom:1px solid #E8E2D5;text-align:right;font-weight:600;">${it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : "—"}</td>
@@ -489,14 +490,14 @@ function internalCartHtml(cart: { id: string; name: string; company: string | nu
       <div style="max-width:680px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
         <div style="background:#2A2A2A;padding:20px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(244,239,230,0.6);">— Admin · Cotización nueva</p>
-          <h1 style="margin:6px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#FFFFFF;">${cart.name}${cart.company ? ` · ${cart.company}` : ""}</h1>
+          <h1 style="margin:6px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#FFFFFF;">${escapeHtml(cart.name)}${cart.company ? ` · ${escapeHtml(cart.company)}` : ""}</h1>
         </div>
         <div style="padding:24px;">
           <p style="margin:0;font-size:14px;color:#444;">
-            <a href="mailto:${cart.email}" style="color:#E63E73;text-decoration:none;">${cart.email}</a>${cart.phone ? ` · <a href="tel:${cart.phone}" style="color:#E63E73;text-decoration:none;">${cart.phone}</a>` : ""}
+            <a href="mailto:${encodeURIComponent(cart.email)}" style="color:#E63E73;text-decoration:none;">${escapeHtml(cart.email)}</a>${cart.phone ? ` · <a href="tel:${encodeURIComponent(cart.phone)}" style="color:#E63E73;text-decoration:none;">${escapeHtml(cart.phone)}</a>` : ""}
           </p>
-          ${cart.deadline ? `<p style="margin:8px 0 0;font-size:14px;color:#444;">⏰ Fecha límite cliente: <strong>${cart.deadline}</strong></p>` : ""}
-          ${cart.message ? `<div style="margin-top:16px;background:#F4EFE6;border-left:3px solid #E63E73;padding:14px 16px;border-radius:8px;font-size:14px;line-height:1.5;color:#2A2A2A;">${cart.message.replace(/\n/g, "<br>")}</div>` : ""}
+          ${cart.deadline ? `<p style="margin:8px 0 0;font-size:14px;color:#444;">⏰ Fecha límite cliente: <strong>${escapeHtml(cart.deadline)}</strong></p>` : ""}
+          ${cart.message ? `<div style="margin-top:16px;background:#F4EFE6;border-left:3px solid #E63E73;padding:14px 16px;border-radius:8px;font-size:14px;line-height:1.5;color:#2A2A2A;">${escapeHtml(cart.message).replace(/\n/g, "<br>")}</div>` : ""}
 
           <table style="width:100%;border-collapse:collapse;margin-top:24px;">
             <thead>
@@ -530,15 +531,15 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
       (it) => {
         const marksText = it.markings && it.markings.length > 1
           ? it.markings
-              .map((m) => `${m.techniqueName || ""} en ${humanZone(m.positionId)}`)
+              .map((m) => `${escapeHtml(m.techniqueName || "")} en ${escapeHtml(humanZone(m.positionId))}`)
               .join(" · ")
           : it.markingTechniqueName
-            ? `${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}`
+            ? `${escapeHtml(it.markingTechniqueName)} en ${escapeHtml(humanZone(it.markingPositionId))}`
             : "sin marcaje";
         return `
       <tr>
         <td style="padding:14px 0;border-bottom:1px solid #E8E2D5;font-size:14px;line-height:1.4;">
-          <strong style="color:#2A2A2A;">${it.productName}</strong><br>
+          <strong style="color:#2A2A2A;">${escapeHtml(it.productName)}</strong><br>
           <span style="color:#6b6b6b;font-size:12px;">
             ${it.quantity} uds · ${marksText}
           </span>
@@ -559,7 +560,7 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Cotización recibida</p>
           <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
-            Gracias ${firstName}.<br>
+            Gracias ${escapeHtml(firstName)}.<br>
             <span style="color:#a09e98;">La estamos revisando.</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
