@@ -1,0 +1,23 @@
+src/app/api/cart-quote/route.ts
+  s_9687f8cb158c44::t_d378c41b641069 18-21,30,36,55
+src/lib/cart-item-schema.test.ts
+  s_9687f8cb158c44::t_0c051979c52ae0 6-13,304-384
+src/lib/cart-item-schema.ts
+  s_9687f8cb158c44::t_d240105b8ade9c 10-39,41,43-44,55-56,58,60,62-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "e27dd5b66e1d61182cce8daf84241707134cf933",
+  "prompts": {},
+  "sessions": {
+    "s_9687f8cb158c44": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "74587c39-dc84-40ff-b92e-feeeeeb776c7",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
