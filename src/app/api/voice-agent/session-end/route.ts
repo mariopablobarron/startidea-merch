@@ -1,31 +1,12 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
+import { VoiceSessionEndSchema, type VoiceSessionEnd } from "@/lib/voice-session-end-schema";
 import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
-
-const TranscriptMsg = z.object({
-  role: z.enum(["user", "agent"]),
-  text: z.string().max(4000),
-});
-
-const Schema = z.object({
-  voice_session_id: z.string().min(1),
-  elevenlabs_conversation_id: z.string().optional().nullable(),
-  duration_sec: z.number().int().min(0).max(3600),
-  tools_called: z
-    .array(z.object({ tool: z.string(), args: z.unknown().optional(), ok: z.boolean(), at: z.string().optional() }))
-    .max(50)
-    .optional(),
-  product_slugs_discussed: z.array(z.string()).max(50).optional(),
-  // Transcripción vista por el widget — fallback si la API de ElevenLabs
-  // aún no tiene la conversación disponible.
-  transcript: z.array(TranscriptMsg).max(400).optional(),
-});
 
 /**
  * Cliente notifica cierre de sesión (timeout/usuario cierra widget).
@@ -41,7 +22,7 @@ export async function POST(req: Request) {
   if (!rl.ok) return rl.response;
 
   const body = await req.json().catch(() => ({}));
-  const parsed = Schema.safeParse(body);
+  const parsed = VoiceSessionEndSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const d = parsed.data;
 
@@ -104,7 +85,7 @@ async function fetchElevenLabsTranscript(conversationId: string): Promise<Msg[]>
   }
 }
 
-async function notifyTranscript(d: z.infer<typeof Schema>, sourceUrl: string | null) {
+async function notifyTranscript(d: VoiceSessionEnd, sourceUrl: string | null) {
   let transcript: Msg[] = [];
   let source = "widget";
   if (d.elevenlabs_conversation_id) {
