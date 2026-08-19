@@ -1,0 +1,23 @@
+src/app/api/voice-agent/session-end/route.ts
+  s_e25f66014ced17::t_36dccff5557b69 4,25,88
+src/lib/voice-session-end-schema.test.ts
+  s_e25f66014ced17::t_cd09ddf34e7d42 1-145
+src/lib/voice-session-end-schema.ts
+  s_e25f66014ced17::t_14365fc047e677 1-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "63c12247d59ff0b1c0753a0932faf231d647ed96",
+  "prompts": {},
+  "sessions": {
+    "s_e25f66014ced17": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3a7473fd-ff6c-4b45-aaf6-ebd163ee1f15",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
