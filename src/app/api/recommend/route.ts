@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { captureError } from "@/lib/insights/capture-error";
 import { rateLimit } from "@/lib/rate-limit";
+import { callAiGateway } from "@/lib/recommend-gateway";
 import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { defaultTiersFromBase, pickTier } from "@/lib/pricing";
@@ -250,44 +251,17 @@ Ajusta tu respuesta según este mensaje (afinar productos, responder a tu pregun
     ],
   });
 
-  let response: Response | null = null;
-  let lastFailure = "";
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENROUTER_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": SITE_URL,
-          "X-Title": "TodoMerchandising",
-        },
-        body: aiPayload,
-        signal: AbortSignal.timeout(attempt === 1 ? 12_000 : 14_000),
-      });
-      if (r.ok) {
-        response = r;
-        break;
-      }
-      const detail = await r.text().catch(() => "");
-      lastFailure = `gateway HTTP ${r.status}: ${detail.slice(0, 300)}`;
-      // 4xx no transitorios (key inválida, payload) no merecen reintento
-      if (r.status < 429 || (r.status > 429 && r.status < 500)) break;
-    } catch (err) {
-      lastFailure = err instanceof Error ? err.message : String(err);
-    }
-    if (attempt === 1) await new Promise((res) => setTimeout(res, 800));
+  const gateway = await callAiGateway({
+    payload: aiPayload,
+    apiKey: OPENROUTER_KEY,
+    siteUrl: SITE_URL,
+  });
+
+  if (!gateway.ok) {
+    return gracefulFallback(`IA no disponible tras 2 intentos — ${gateway.reason}`);
   }
 
-  if (!response) {
-    return gracefulFallback(`IA no disponible tras 2 intentos — ${lastFailure}`);
-  }
-
-  const json = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
-    usage?: Record<string, number>;
-    model?: string;
-  };
+  const json = gateway.json;
   const text = json.choices?.[0]?.message?.content || "";
 
   type QuoteItemAi = {
