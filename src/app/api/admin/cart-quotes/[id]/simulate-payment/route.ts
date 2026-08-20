@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { createPurchaseOrdersFromCart } from "@/lib/purchase-orders";
 import { sendEmail } from "@/lib/resend";
+import { escapeHtml } from "@/lib/email-templates";
 import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { syncPaymentToFacturaScripts } from "@/lib/facturascripts-sync";
 
@@ -102,7 +103,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         <div style="padding:32px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#E63E73;">— Simulación · entorno admin</p>
           <h1 style="margin:8px 0 0;font-family:Georgia,serif;font-size:24px;line-height:1.15;">
-            Hola ${firstName}.<br>
+            Hola ${escapeHtml(firstName)}.<br>
             <span style="color:#E63E73;">Esto sería el email post-pago real.</span>
           </h1>
           <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#444;">

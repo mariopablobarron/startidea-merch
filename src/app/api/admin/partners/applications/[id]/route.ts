@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { sendEmail } from "@/lib/resend";
+import { escapeHtml } from "@/lib/email-templates";
 import { randomBytes } from "node:crypto";
 
 export const runtime = "nodejs";
@@ -76,7 +77,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           <div style="padding:32px 32px 24px;">
             <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Solicitud aprobada</p>
             <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
-              ¡Bienvenido ${firstName}!<br>
+              ¡Bienvenido ${escapeHtml(firstName)}!<br>
               <span style="color:#E63E73;">Ya eres partner.</span>
             </h1>
             <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
@@ -131,12 +132,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         <div style="padding:32px 32px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Sobre tu solicitud</p>
           <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:1.2;color:#2A2A2A;">
-            Hola ${firstName},
+            Hola ${escapeHtml(firstName)},
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
             Gracias por el interés. De momento no encajamos en programa partners ${reason ? `por lo siguiente:` : "."}
           </p>
-          ${reason ? `<div style="margin:12px 0 0;padding:14px 16px;background:#F4EFE6;border-radius:10px;font-size:14px;color:#2A2A2A;">${reason.replace(/</g, "&lt;")}</div>` : ""}
+          ${reason ? `<div style="margin:12px 0 0;padding:14px 16px;background:#F4EFE6;border-radius:10px;font-size:14px;color:#2A2A2A;">${escapeHtml(reason)}</div>` : ""}
           <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#444;">
             Si en el futuro cambia tu situación, vuelve a aplicar sin problema.
           </p>

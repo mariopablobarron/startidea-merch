@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { sendEmail } from "@/lib/resend";
+import { escapeHtml } from "@/lib/email-templates";
 import { wrapCronHandler } from "@/lib/cron-tracking";
 import { withCronLock } from "@/lib/cron-lock";
 
@@ -114,7 +115,7 @@ async function sendStep(
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Pedido entregado</p>
           <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
-            Gracias ${firstName}.<br>
+            Gracias ${escapeHtml(firstName)}.<br>
             <span style="color:#E63E73;">Esto es lo que has generado.</span>
           </h1>
         </div>
@@ -156,7 +157,7 @@ async function sendStep(
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Informe disponible</p>
           <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
-            Hola ${firstName}.<br>
+            Hola ${escapeHtml(firstName)}.<br>
             <span style="color:#a09e98;">Tu informe de impacto está listo.</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
@@ -220,7 +221,7 @@ async function sendStep(
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Para tu próxima campaña</p>
           <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
-            Hola ${firstName}.<br>
+            Hola ${escapeHtml(firstName)}.<br>
             <span style="color:#E63E73;">10% para tu próxima cotización.</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
@@ -232,7 +233,7 @@ async function sendStep(
         <div style="padding:0 32px;">
           <div style="background:#FBDFE9;border:2px dashed #E63E73;padding:24px;text-align:center;border-radius:12px;">
             <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Tu código personal</p>
-            <p style="margin:8px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#E63E73;letter-spacing:0.05em;">${code}</p>
+            <p style="margin:8px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#E63E73;letter-spacing:0.05em;">${escapeHtml(code)}</p>
             <p style="margin:10px 0 0;font-size:12px;color:#6b6b6b;">Válido 30 días · Solo en tu próximo carrito</p>
           </div>
         </div>

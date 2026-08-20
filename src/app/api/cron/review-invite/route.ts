@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { sendEmail } from "@/lib/resend";
+import { escapeHtml } from "@/lib/email-templates";
 import { withCronLock } from "@/lib/cron-lock";
 import { wrapCronHandler } from "@/lib/cron-tracking";
 import { reviewInviteEligibility } from "@/lib/review-invite-eligibility";
@@ -103,7 +104,7 @@ export const POST = wrapCronHandler("review-invite", async (req: Request) => {
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— ¿Qué tal todo?</p>
           <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
-            Hola ${firstName}.<br>
+            Hola ${escapeHtml(firstName)}.<br>
             <span style="color:#E63E73;">¿Cómo lo hemos hecho?</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">

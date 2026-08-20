@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const findMany = vi.fn();
 const dripCreate = vi.fn();
 const dripDelete = vi.fn();
+const couponUpsert = vi.fn();
 const sendEmail = vi.fn();
 const requireCronSecret = vi.fn();
 const withCronLock = vi.fn();
@@ -37,6 +38,9 @@ vi.mock("@/lib/prisma", () => ({
         calls.push("release");
         return dripDelete(...a);
       },
+    },
+    coupon: {
+      upsert: (...a: unknown[]) => couponUpsert(...a),
     },
   },
 }));
@@ -92,6 +96,7 @@ beforeEach(() => {
   findMany.mockReset();
   dripCreate.mockReset();
   dripDelete.mockReset();
+  couponUpsert.mockReset();
   sendEmail.mockReset();
   requireCronSecret.mockReset();
   withCronLock.mockReset();
@@ -101,6 +106,7 @@ beforeEach(() => {
   withCronLock.mockImplementation((_key: string, fn: () => Promise<Response>) => fn());
   dripCreate.mockResolvedValue({ id: "drip_1" });
   dripDelete.mockResolvedValue({ id: "drip_1" });
+  couponUpsert.mockResolvedValue({ id: "coupon_1" });
   sendEmail.mockResolvedValue({ ok: true });
 });
 
@@ -192,5 +198,85 @@ describe("post-order-drip · claim-then-send", () => {
     expect(findMany).not.toHaveBeenCalled();
     expect(sendEmail).not.toHaveBeenCalled();
     expect(calls).toEqual([]);
+  });
+});
+
+/**
+ * Tests de escapado HTML en el drip post-pedido.
+ *
+ * `name` lo escribe quien rellena el formulario público de cotización
+ * (/api/cart-quote) — es dato de usuario sin confiar, no algo que controle
+ * Startidea. Los tres pasos del drip (D0, D14, D45) interpolan el saludo con
+ * `firstName` en el HTML del email, y el paso D45 además interpola el código
+ * de cupón (derivado de `firstName`) dentro de una tarjeta de descuento. Un
+ * nombre con markup sin escapar podría inyectar un link o script suplantando
+ * la marca de TodoMerchandising dentro de un email que el cliente sí espera
+ * recibir. Se comprueba el HTML real que le llega a `sendEmail`, con
+ * literales fijos — nunca reconstruyendo el escapado con `escapeHtml` dentro
+ * del test, porque eso pasaría en verde aunque se quitara el escape real.
+ */
+const ATTACK_NAME = '<script>alert(1)</script>"onmouseover="x';
+
+function cartWithName(name: string, id = "cart_atk") {
+  return {
+    id,
+    name,
+    email: "atacante@example.com",
+    company: "Acme",
+    items: [{ quantity: 2 }],
+    customerToken: "tok_atk",
+  };
+}
+
+describe("post-order-drip · escapado HTML de datos de usuario", () => {
+  beforeEach(() => {
+    couponUpsert.mockResolvedValue({ id: "coupon_1" });
+  });
+
+  it("D0 (gracias): el nombre malicioso sale escapado en el saludo", async () => {
+    findMany.mockResolvedValueOnce([cartWithName(ATTACK_NAME)]).mockResolvedValue([]);
+
+    await POST(makeReq());
+
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const html = (sendEmail.mock.calls[0][0] as { html: string }).html;
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;&quot;onmouseover=&quot;x");
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).not.toContain('onmouseover="x"');
+  });
+
+  it("D14 (memoria RSC): el nombre malicioso sale escapado en el saludo", async () => {
+    findMany
+      .mockResolvedValueOnce([]) // D0 sin candidatos
+      .mockResolvedValueOnce([cartWithName(ATTACK_NAME)]) // D14
+      .mockResolvedValue([]); // D45 sin candidatos
+
+    await POST(makeReq());
+
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const html = (sendEmail.mock.calls[0][0] as { html: string }).html;
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;&quot;onmouseover=&quot;x");
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).not.toContain('onmouseover="x"');
+  });
+
+  it("D45 (cupón 10%): el nombre malicioso sale escapado en el saludo y en el código del cupón", async () => {
+    findMany
+      .mockResolvedValueOnce([]) // D0 sin candidatos
+      .mockResolvedValueOnce([]) // D14 sin candidatos
+      .mockResolvedValueOnce([cartWithName(ATTACK_NAME)]) // D45
+      .mockResolvedValue([]);
+
+    await POST(makeReq());
+
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const html = (sendEmail.mock.calls[0][0] as { html: string }).html;
+    // Saludo
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;&quot;onmouseover=&quot;x");
+    expect(html).not.toContain("<script>alert(1)</script>");
+    // Código de cupón: derivado de los 4 primeros chars del nombre en
+    // mayúsculas ("<scr" → "<SCR10"); el "<" también debe salir escapado.
+    expect(html).toContain("&lt;SCR10");
+    expect(html).not.toContain("<SCR10");
   });
 });
