@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
+import { rateLimit } from "@/lib/rate-limit";
 import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 
@@ -35,6 +36,14 @@ const Schema = z.object({
 export async function POST(req: Request) {
   const auth = requireVoiceAgentToolSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
+
+  // Defensa en profundidad: el secreto ya filtra a extraños, pero cada llamada
+  // crea un `CartQuote` y dispara Telegram + email interno. Un bucle del agente
+  // (o un secreto filtrado) llenaría el panel de leads y el canal del equipo.
+  // 20 en 10 min está muy por encima de cualquier volumen real (medido: 0
+  // callbacks registrados hasta hoy) y corta el bucle.
+  const rl = rateLimit(req, { key: "voice-request-callback", max: 20, windowMs: 10 * 60_000 });
+  if (!rl.ok) return rl.response;
 
   const body = await req.json().catch(() => ({}));
   const parsed = Schema.safeParse(body);
