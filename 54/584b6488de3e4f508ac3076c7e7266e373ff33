@@ -1,0 +1,44 @@
+src/app/api/cron/review-invite/route.test.ts
+  s_3630723be13f2d::t_51f866b3a43b9f 1-111
+src/app/api/cron/post-order-drip/route.test.ts
+  s_3630723be13f2d::t_8377ccc9c62dc7 99,109
+  s_3630723be13f2d::t_28d64542ed073e 203-282
+  s_3630723be13f2d::t_b85e5676369d16 19,42-43
+  s_e6402bc5cc7d4b::t_8bd6e5c4b5f92a 44
+src/app/api/admin/partners/applications/[id]/route.test.ts
+  s_3630723be13f2d::t_441cf0cbe8a1ce 1-130
+src/app/api/admin/cart-quotes/[id]/simulate-payment/route.test.ts
+  s_3630723be13f2d::t_053e392d012ef3 1-113
+src/app/api/admin/cart-quotes/[id]/simulate-payment/route.ts
+  s_3630723be13f2d::t_ce63f4554ae71e 7,106
+src/app/api/admin/partners/applications/[id]/route.ts
+  s_3630723be13f2d::t_f53ed52fe4c203 6,80,135,140
+src/app/api/cron/post-order-drip/route.ts
+  s_3630723be13f2d::t_6b31803a26d14d 5,118,160,224,236
+src/app/api/cron/review-invite/route.ts
+  s_3630723be13f2d::t_7b01e75f915af0 5,107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "54584b6488de3e4f508ac3076c7e7266e373ff33",
+  "prompts": {},
+  "sessions": {
+    "s_3630723be13f2d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7042761e-622d-4954-b99b-8d692d03c7cb",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_e6402bc5cc7d4b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db92bcbf-ceb0-4e66-afa1-a7c5875e0da2",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
