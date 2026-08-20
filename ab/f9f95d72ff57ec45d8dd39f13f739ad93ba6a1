@@ -1,0 +1,29 @@
+src/app/api/newsletter/subscribe/route.ts
+  s_e123b597d3f4d0::t_118f2efc1adb6b 4-5,13-20,27
+src/app/api/webhooks/whatsapp/route.ts
+  s_e123b597d3f4d0::t_82d9d95a1cfe97 36-41
+src/lib/newsletter-subscribe-schema.test.ts
+  s_e123b597d3f4d0::t_a9c4ba288ba8df 1-52
+src/lib/newsletter-subscribe-schema.ts
+  s_e123b597d3f4d0::t_7958d09d2551a0 1-26
+src/lib/roi-calc.test.ts
+  s_e123b597d3f4d0::t_acd364e4f804f7 1-91
+src/lib/roi-calc.ts
+  s_e123b597d3f4d0::t_449116bad5d703 38-46,48-50,55,75-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "abf9f95d72ff57ec45d8dd39f13f739ad93ba6a1",
+  "prompts": {},
+  "sessions": {
+    "s_e123b597d3f4d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "83d0aa0b-c06f-4b64-9d28-49ef7a30d925",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
