@@ -33,7 +33,12 @@ export async function GET(req: Request) {
 
 /** Verifica X-Hub-Signature-256 (HMAC-SHA256 del cuerpo con el App Secret). */
 function verifySignature(body: string, header: string | null): boolean {
-  if (!APP_SECRET) return true; // sin secret configurado, no bloqueamos (dormido)
+  // Fail-closed: sin App Secret no hay forma de saber si el POST viene de
+  // Meta, y el cuerpo termina en un mensaje de Telegram al equipo. La
+  // integración está dormida (en producción solo existe WHATSAPP_NUMBER),
+  // así que rechazar no rompe nada; activarla exigirá fijar el secreto,
+  // que es justo lo que hay que hacer.
+  if (!APP_SECRET) return false;
   if (!header) return false;
   const expected = "sha256=" + createHmac("sha256", APP_SECRET).update(body).digest("hex");
   const a = Buffer.from(expected);

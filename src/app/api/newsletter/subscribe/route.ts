@@ -1,28 +1,30 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM } from "@/lib/resend";
+import { rateLimit } from "@/lib/rate-limit";
+import { NewsletterSubscribeSchema } from "@/lib/newsletter-subscribe-schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
-const Schema = z.object({
-  email: z.string().email(),
-  name: z.string().max(120).optional(),
-  company: z.string().max(160).optional(),
-  source: z.string().max(60).optional(),
-});
-
 export async function POST(req: Request) {
+  // Esta ruta escribe en BD y dispara un email real de Resend a la dirección
+  // que le manden: sin tope, sirve para enviar correo con nuestro dominio a
+  // terceros que no lo han pedido, y eso se paga en entregabilidad. Alta
+  // legítima es un acto único por persona, así que 5/hora por IP sobra
+  // (medido: 3 altas orgánicas en los últimos 14 días).
+  const rl = rateLimit(req, { key: "newsletter-subscribe", max: 5, windowMs: 60 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
-  const parsed = Schema.safeParse(body);
+  const parsed = NewsletterSubscribeSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const data = parsed.data;
 
