@@ -11,6 +11,7 @@ import { defaultTiersFromBase, pickTier } from "@/lib/pricing";
 import { computeClientPricing } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 import { legacyHtmlToText, normalizeProductName, publicProductName } from "@/lib/product-name";
+import { RecommendSchema } from "@/lib/recommend-request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,27 +27,6 @@ export const maxDuration = 30;
  * Si OPENROUTER_API_KEY no está configurada, devuelve 503 con mensaje claro.
  */
 
-const Schema = z.object({
-  brief: z.string().min(20).max(2000),
-  budget: z.number().int().positive().max(1_000_000).optional(),
-  quantity: z.number().int().positive().max(1_000_000).optional(),
-  preferredCategories: z.array(z.string()).max(8).optional(),
-  ecoOnly: z.boolean().optional(),
-  // Conversación: turnos previos (brief inicial + resúmenes del asistente) y
-  // el nuevo mensaje del cliente. Con followUp presente, el último mensaje al
-  // modelo es ese texto (el brief original viaja dentro de history). Capado
-  // corto: es contexto, no un segundo brief.
-  history: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant"]),
-        content: z.string().min(1).max(1500),
-      }),
-    )
-    .max(10)
-    .optional(),
-  followUp: z.string().min(1).max(1000).optional(),
-});
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4.5";
@@ -64,7 +44,7 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
-  const parsed = Schema.safeParse(body);
+  const parsed = RecommendSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Datos inválidos", issues: parsed.error.flatten() },
