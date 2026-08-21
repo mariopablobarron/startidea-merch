@@ -113,7 +113,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   // Notificar a Telegram al equipo
   void notifyTelegram(
-    `📥 <b>Nuevo lead</b>\n${d.email}${d.name ? ` · ${escapeTgHtml(d.name)}` : ""}${d.company ? ` · ${escapeTgHtml(d.company)}` : ""}\nDescargó: ${escapeTgHtml(magnet.title)}${d.utm?.campaign ? `\nCampaña: ${escapeTgHtml(d.utm.campaign)}` : ""}`,
+    `📥 <b>Nuevo lead</b>\n${escapeTgHtml(d.email)}${d.name ? ` · ${escapeTgHtml(d.name)}` : ""}${d.company ? ` · ${escapeTgHtml(d.company)}` : ""}\nDescargó: ${escapeTgHtml(magnet.title)}${d.utm?.campaign ? `\nCampaña: ${escapeTgHtml(d.utm.campaign)}` : ""}`,
   ).catch(() => {});
 
   return NextResponse.json({

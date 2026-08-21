@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { midoceanProofs } from "@/lib/suppliers/midocean-orders";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
+import { rateLimit } from "@/lib/rate-limit";
+import { proofRevisionEmailHtml, proofRevisionEmailSubject } from "@/lib/proof-review-emails";
 
 export const runtime = "nodejs";
 
@@ -13,6 +15,10 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
+  // Mismo bucket compartido que las otras dos decisiones del proof.
+  const rl = rateLimit(req, { key: "proof-decision", max: 20, windowMs: 60 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   const { token } = await params;
   const body = await req.json().catch(() => ({}));
   const parsed = Schema.safeParse(body);
@@ -47,14 +53,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       .send({
         from: RESEND_FROM,
         to: RESEND_TO_INTERNAL,
-        subject: `[Proof artwork nuevo] ${proof.cart.name}${proof.cart.company ? " · " + proof.cart.company : ""}`,
-        html: `<p>El cliente <strong>${proof.cart.name}</strong> ha subido artwork nuevo.</p><p>URL: <a href="${parsed.data.artworkUrl}">${parsed.data.artworkUrl}</a></p><p>Proof ID: <code>${proof.id}</code></p>`,
+        subject: proofRevisionEmailSubject(proof.cart),
+        html: proofRevisionEmailHtml(proof.cart, proof.id, parsed.data.artworkUrl),
       })
       .catch((err) => console.error("[proof revision] resend", err));
   }
 
   void notifyTelegram(
-    `🎨 <b>Artwork nuevo subido</b>\n${escapeTgHtml(proof.cart.name)}${proof.cart.company ? ` · ${escapeTgHtml(proof.cart.company)}` : ""}\n📧 ${proof.cart.email}\nURL: ${escapeTgHtml(parsed.data.artworkUrl.slice(0, 100))}\nCart <code>${proof.cartId.slice(0, 8)}</code>`,
+    `🎨 <b>Artwork nuevo subido</b>\n${escapeTgHtml(proof.cart.name)}${proof.cart.company ? ` · ${escapeTgHtml(proof.cart.company)}` : ""}\n📧 ${escapeTgHtml(proof.cart.email)}\nURL: ${escapeTgHtml(parsed.data.artworkUrl.slice(0, 100))}\nCart <code>${proof.cartId.slice(0, 8)}</code>`,
   ).catch(() => {});
 
   return NextResponse.json({ ok: true, status: updated.status });

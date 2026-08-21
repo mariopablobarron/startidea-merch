@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { unsubscribeMessage } from "@/lib/newsletter-unsubscribe-page";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,9 +77,7 @@ function html(message: string, ok: boolean): string {
 
 export async function GET(req: Request) {
   const r = await unsubscribe(req);
-  const message = r.ok
-    ? `Tu email${r.email ? ` <b>${r.email}</b>` : ""} ya no recibirá más emails de marketing. Sigues pudiendo pedir cotización con normalidad.`
-    : `${r.reason || "Error procesando la baja"}. Si el problema persiste, escríbenos a hola@startidea.es y te damos de baja manualmente.`;
+  const message = unsubscribeMessage(r);
   return new Response(html(message, r.ok), {
     status: r.ok ? 200 : 400,
     headers: { "content-type": "text/html; charset=utf-8" },

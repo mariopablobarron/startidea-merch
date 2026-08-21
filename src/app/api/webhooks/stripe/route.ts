@@ -322,7 +322,7 @@ async function postPaymentAutoflow(args: {
 
   const viaLabel = via === "express-checkout" ? " (Apple/Google Pay)" : "";
   void notifyTelegram(
-    `💰 <b>Pago recibido</b>${viaLabel}\n${escapeTgHtml(customer.name)}${customer.company ? ` · ${escapeTgHtml(customer.company)}` : ""}\n<b>${amountFmt} €</b>\n📧 ${customer.email}`,
+    `💰 <b>Pago recibido</b>${viaLabel}\n${escapeTgHtml(customer.name)}${customer.company ? ` · ${escapeTgHtml(customer.company)}` : ""}\n<b>${amountFmt} €</b>\n📧 ${escapeTgHtml(customer.email)}`,
   ).catch((e) =>
     console.error("[stripe webhook] notifyTelegram pago recibido falló:", e instanceof Error ? e.message : e),
   );

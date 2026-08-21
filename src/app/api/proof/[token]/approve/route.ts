@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { midoceanProofs } from "@/lib/suppliers/midocean-orders";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
+import { rateLimit } from "@/lib/rate-limit";
+import { proofApprovedEmailHtml, proofApprovedEmailSubject } from "@/lib/proof-review-emails";
 import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
@@ -11,6 +13,12 @@ export const runtime = "nodejs";
 const Schema = z.object({ decidedBy: z.string().email().optional() });
 
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
+  // El token es el único control de acceso y cada decisión llama al proveedor
+  // (MidOcean), escribe en BD y avisa al equipo. Bucket compartido por las tres
+  // decisiones: cambiar de acción no debe multiplicar el cupo.
+  const rl = rateLimit(req, { key: "proof-decision", max: 20, windowMs: 60 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   const { token } = await params;
   const body = await req.json().catch(() => ({}));
   const parsed = Schema.safeParse(body);
@@ -60,8 +68,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       .send({
         from: RESEND_FROM,
         to: RESEND_TO_INTERNAL,
-        subject: `[Proof aprobado] ${proof.cart.name}${proof.cart.company ? " · " + proof.cart.company : ""}`,
-        html: `<p>El cliente <strong>${proof.cart.name}</strong> (${proof.cart.email}) ha aprobado el proof.</p><p>Proof ID: <code>${proof.id}</code></p>`,
+        subject: proofApprovedEmailSubject(proof.cart),
+        html: proofApprovedEmailHtml(proof.cart, proof.id),
       })
       .catch((err) => console.error("[proof approve] resend", err));
   }
@@ -75,7 +83,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   });
 
   void notifyTelegram(
-    `✅ <b>Mockup aprobado</b>\n${escapeTgHtml(proof.cart.name)}${proof.cart.company ? ` · ${escapeTgHtml(proof.cart.company)}` : ""}\n📧 ${proof.cart.email}\nCart <code>${proof.cartId.slice(0, 8)}</code> · pasamos producción a marcha`,
+    `✅ <b>Mockup aprobado</b>\n${escapeTgHtml(proof.cart.name)}${proof.cart.company ? ` · ${escapeTgHtml(proof.cart.company)}` : ""}\n📧 ${escapeTgHtml(proof.cart.email)}\nCart <code>${proof.cartId.slice(0, 8)}</code> · pasamos producción a marcha`,
   ).catch((e) =>
     console.error("[proof approve] notifyTelegram falló:", e instanceof Error ? e.message : e),
   );

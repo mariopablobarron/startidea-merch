@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
+import { rateLimit } from "@/lib/rate-limit";
+import { reviewInternalEmailHtml, reviewInternalEmailSubject } from "@/lib/proof-review-emails";
 
 export const runtime = "nodejs";
 
@@ -14,6 +16,11 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
+  // El token es el único control de acceso: sin tope, esta ruta se puede usar
+  // para enumerar tokens a ciegas. Enviar una review es un acto único.
+  const rl = rateLimit(req, { key: "review-submit", max: 10, windowMs: 60 * 60_000 });
+  if (!rl.ok) return rl.response;
+
   const { token } = await params;
   const body = await req.json().catch(() => ({}));
   const parsed = Schema.safeParse(body);
@@ -37,19 +44,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     },
   });
 
+  const datosReview = {
+    npsScore: parsed.data.npsScore,
+    authorName: parsed.data.authorName || review.authorName,
+    authorCompany: parsed.data.authorCompany ?? review.authorCompany,
+    comment: parsed.data.comment,
+    isPublic: parsed.data.isPublic ?? review.isPublic,
+    cartId: review.cartId,
+  };
+
   // Aviso interno (no público hasta que admin apruebe)
   if (resend) {
     void resend.emails
       .send({
         from: RESEND_FROM,
         to: RESEND_TO_INTERNAL,
-        subject: `[Review NPS ${parsed.data.npsScore}/10] ${parsed.data.authorName || review.authorName}`,
-        html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
-          <h3 style="margin-top:0;">Nueva review · NPS ${parsed.data.npsScore}/10</h3>
-          <p><strong>${parsed.data.authorName || review.authorName}</strong>${parsed.data.authorCompany ? ` · ${parsed.data.authorCompany}` : ""}</p>
-          ${parsed.data.comment ? `<blockquote style="border-left:3px solid #ff6b35;padding-left:12px;color:#444;">${parsed.data.comment.replace(/\n/g, "<br>")}</blockquote>` : "<p style='color:#888'><em>Sin comentario</em></p>"}
-          <p style="font-size:12px;color:#888;">Pública: ${parsed.data.isPublic ? "sí" : "no"} · Cart ID <code>${review.cartId}</code></p>
-        </div>`,
+        subject: reviewInternalEmailSubject(datosReview),
+        html: reviewInternalEmailHtml(datosReview),
       })
       .catch(() => {});
   }

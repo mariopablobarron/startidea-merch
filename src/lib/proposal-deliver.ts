@@ -6,7 +6,7 @@ import { computeProposalTotals, type ProposalQuoteItem } from "@/lib/proposal-ty
 import { signProposalToken } from "@/lib/proposal-token";
 import { RecommenderProposalPdf } from "@/lib/recommender-proposal-pdf";
 import { sendProposalEmail } from "@/lib/proposal-mailer";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
@@ -99,7 +99,7 @@ export async function deliverProposal(
 
   const verb = opts.resend ? "reenviada" : "enviada";
   void notifyTelegram(
-    `📤 <b>Propuesta ${verb}</b> (${proposal.proposalNumber})\n→ ${proposal.email}\nPor: ${actorEmail}`,
+    `📤 <b>Propuesta ${verb}</b> (${proposal.proposalNumber})\n→ ${escapeTgHtml(proposal.email)}\nPor: ${escapeTgHtml(actorEmail)}`,
   ).catch(() => {});
 
   return { ok: true, proposalNumber: proposal.proposalNumber, sentTo: proposal.email };
