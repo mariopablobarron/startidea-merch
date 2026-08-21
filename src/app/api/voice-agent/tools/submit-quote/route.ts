@@ -1,44 +1,17 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { requireVoiceAgentToolSecret } from "@/lib/voice-agent-auth";
 import { publicProductName } from "@/lib/product-name";
 import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
+import { rateLimit } from "@/lib/rate-limit";
+import { SubmitQuoteSchema, SUBMIT_QUOTE_RATE_LIMIT } from "@/lib/voice-submit-quote";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
 
-const MarkingSchema = z.object({
-  position_id: z.string().max(40),
-  technique_code: z.string().max(20),
-  number_of_colors: z.number().int().min(1).max(20).optional(),
-  notes: z.string().max(500).optional().nullable(),
-});
-
-const ItemSchema = z.object({
-  product_slug: z.string().min(1),
-  quantity: z.number().int().positive().max(1_000_000),
-  // Shape plano (1 marca, compat)
-  marking_position_id: z.string().max(40).optional().nullable(),
-  technique_code: z.string().max(20).optional().nullable(),
-  number_of_colors: z.number().int().min(1).max(10).optional().nullable(),
-  // Multi-marca (N marcas en un mismo item: pecho + manga + espalda)
-  markings: z.array(MarkingSchema).max(10).optional(),
-  notes: z.string().max(500).optional().nullable(),
-});
-
-const Schema = z.object({
-  name: z.string().min(2).max(120),
-  email: z.string().email().max(160),
-  company: z.string().max(160).optional().nullable(),
-  phone: z.string().max(40).optional().nullable(),
-  items: z.array(ItemSchema).min(1).max(20),
-  voice_session_id: z.string().max(80).optional().nullable(),
-  notes: z.string().max(2000).optional().nullable(),
-});
 
 /**
  * Tool: submit_quote
@@ -54,8 +27,15 @@ export async function POST(req: Request) {
   const auth = requireVoiceAgentToolSecret(req);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
+  // Defensa en profundidad: el secreto es el único control, y cada llamada que
+  // pasa crea un CartQuote, manda email al cliente y avisa al Telegram del
+  // equipo. Un bucle del agente o un secreto filtrado llenaría el panel de
+  // leads. Mismo cupo que request-callback.
+  const rl = rateLimit(req, SUBMIT_QUOTE_RATE_LIMIT);
+  if (!rl.ok) return rl.response;
+
   const body = await req.json().catch(() => ({}));
-  const parsed = Schema.safeParse(body);
+  const parsed = SubmitQuoteSchema.safeParse(body);
   if (!parsed.success)
     return NextResponse.json({ error: "Datos inválidos", issues: parsed.error.flatten() }, { status: 400 });
   const data = parsed.data;
