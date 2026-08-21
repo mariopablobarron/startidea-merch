@@ -30,6 +30,11 @@ import {
 } from "@/lib/cron-tracking";
 import { CRON_CATALOG } from "@/lib/cron-catalog";
 import {
+  detectStalledSyncs,
+  stalledIssueName,
+  STALLED_AFTER_HOURS,
+} from "@/lib/suppliers/stalled-sync";
+import {
   expectedHoursFor,
   silenceWatchability,
   sortBySeverity,
@@ -141,6 +146,22 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
   const order = sortBySeverity(unordered.map((i) => i.name));
   const issues = order.map((n) => unordered.find((i) => i.name === n)!);
 
+  // Syncs de proveedor que arrancaron y no cerraron. Es un agujero distinto al
+  // del silencio: el cron SÍ se ejecutó (y el runner del VPS reportó HTTP 200,
+  // porque el endpoint contesta 202 sin esperar), pero el proceso murió a mitad
+  // y su fila de SupplierSync se quedó abierta sin que lo viera nadie.
+  // Ver @/lib/suppliers/stalled-sync para el caso medido que motivó esto.
+  let stalledSyncs: ReturnType<typeof detectStalledSyncs> = [];
+  try {
+    const snapshots = await prisma.supplierSync.findMany({
+      select: { supplier: true, startedAt: true, finishedAt: true },
+    });
+    stalledSyncs = detectStalledSyncs(snapshots, Date.now());
+  } catch {
+    // Telemetría: si la consulta falla, el watchdog sigue haciendo su trabajo
+    // con los crons en vez de devolver 500.
+  }
+
   // Anti-spam con memoria de CUÁNDO se avisó: la lista sola no basta, porque un
   // problema que sigue igual dejaba de avisarse para siempre.
   let lastState = { names: [] as string[], at: null as string | null };
@@ -153,7 +174,10 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
   } catch {
     // ignore — alertaremos si hay issues
   }
-  const currentSet = new Set(issues.map((i) => i.name));
+  const currentSet = new Set([
+    ...issues.map((i) => i.name),
+    ...stalledSyncs.map((s) => stalledIssueName(s.supplier)),
+  ]);
   const decision = decideWatchdogAlert({
     currentNames: Array.from(currentSet),
     lastNames: lastState.names,
@@ -176,9 +200,18 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
         : "última run terminó con error";
       return `· ${i.name}: ${tag} — ${detail}`;
     });
+    // Los colgados van DELANTE: un sync a medias deja catálogo, stock y coste
+    // de proveedor en un estado intermedio, y el cuerpo del push se trunca.
+    lines.unshift(
+      ...stalledSyncs.map(
+        (s) =>
+          `· ${stalledIssueName(s.supplier)}: 🔴 colgado — arrancó hace ${s.hoursRunning}h y no ha cerrado (umbral ${STALLED_AFTER_HOURS}h)`,
+      ),
+    );
     const titlePrefix = decision.reason === "persistente" ? "⏰ SIGUE" : "⏰";
+    const problemCount = issues.length + stalledSyncs.length;
     await notifyAdmins({
-      title: `${titlePrefix} ${issues.length} cron${issues.length === 1 ? "" : "s"} con problemas`,
+      title: `${titlePrefix} ${problemCount} cron${problemCount === 1 ? "" : "s"} con problemas`,
       body: lines.join("\n").slice(0, 280),
       url: "/admin/insights/crons",
       tag: "cron-watchdog-alert",
@@ -201,7 +234,7 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
     } catch {
       // si falla el upsert, la próxima vez volverá a alertar — no es crítico
     }
-  } else if (issues.length === 0 && lastState.names.length > 0) {
+  } else if (currentSet.size === 0 && lastState.names.length > 0) {
     // Todo OK ahora pero antes había problemas → limpiar memoria de alertas
     const cleared = { names: [] as string[], at: null };
     try {
@@ -221,6 +254,7 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
     silent: silent.map((s) => s.name),
     failing: failing.map((f) => f.name),
     issuesCount: issues.length,
+    stalledSyncs,
     notified: shouldNotify,
     notifyReason: decision.reason,
     unwatched: statuses

@@ -59,11 +59,23 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "cifra-sync",
     endpointPath: "/api/cron/cifra-sync",
     method: "POST",
-    // Minuto 12 y no 0: movido el 2026-08-05 porque en el minuto redondo se
-    // apilaban ~12 watchdogs `*/5` y el guard lo saltaba por carga (perdía 6 de
-    // cada 9 días). Aquí seguía puesto el `0 5` viejo.
-    schedule: "diario 05:12 local VPS = 03:12 UTC",
-    scheduleCron: "12 5 * * *",
+    // Minuto 33 y no 12 ni 0. Historia de dos mudanzas por la misma razón —
+    // este cron cae en la hora más concurrida del VPS y el guard lo descarta
+    // sin reintento:
+    //   · 05:00 → 05:12 el 2026-08-05: en el minuto redondo se apilaban ~12
+    //     watchdogs `*/5` y lo saltaba por carga (perdía 6 de cada 9 días).
+    //   · 05:12 → 05:33 el 2026-08-21: `restic-offsite.sh` arranca a las 05:00
+    //     y, con la cuota de Backblaze agotada, reintenta ~14,5 min antes de
+    //     rendirse con rc=1 **reteniendo el lock de su slot**. Las 05:12 caen
+    //     dentro, así que `cron-global-guard` lo descartaba con
+    //     `skip=slot-busy` los días 19, 20 y 21 de agosto — y como no hay
+    //     reintento, cada descarte pierde el día entero de catálogo. Era el
+    //     único cron DIARIO atrapado en esa ventana (los demás son `*/5`,
+    //     `*/10`, `*/15` y se recuperan solos en la pasada siguiente).
+    // 05:33 deja 19 min de margen tras restic y esquiva tanto los minutos
+    // múltiplos de 5 como el `1-59/5` del autodeploy del hub.
+    schedule: "diario 05:33 local VPS = 03:33 UTC",
+    scheduleCron: "33 5 * * *",
     frequencyHours: 24,
     description: "Sincroniza catálogo Cifra (productos + variantes + pricelist)",
   },
