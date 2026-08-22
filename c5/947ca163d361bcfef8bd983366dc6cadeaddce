@@ -1,0 +1,19 @@
+src/lib/etiqueta-variante-con-sku-solo-en-admin.guard.test.ts
+  s_d0505e42dc6840::t_cb07f458a4e1bc 1-118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "c5947ca163d361bcfef8bd983366dc6cadeaddce",
+  "prompts": {},
+  "sessions": {
+    "s_d0505e42dc6840": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b699cef9-06ba-4d0c-8f87-f6651b0f4753",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
