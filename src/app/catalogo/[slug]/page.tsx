@@ -128,6 +128,25 @@ export default async function ProductDetailPage({
     if (redirectEntry?.product?.slug) {
       permanentRedirect(`/catalogo/${redirectEntry.product.slug}`);
     }
+    // Categoría legacy: el sitio anterior servía las categorías bajo
+    // /catalogo/<slug> (a veces con sufijo numérico: "sudaderas-231",
+    // "deportes-ocio--175"). Hoy viven en /categorias/<slug> y estas URLs
+    // acumulan cientos de miles de 404 rastreados (Ahrefs, 2026-08-22).
+    const legacyCategorySlug = slug.replace(/-+\d+$/, "");
+    const category =
+      (await prisma.category.findFirst({
+        where: { slug },
+        select: { slug: true },
+      })) ??
+      (legacyCategorySlug !== slug
+        ? await prisma.category.findFirst({
+            where: { slug: legacyCategorySlug },
+            select: { slug: true },
+          })
+        : null);
+    if (category) {
+      permanentRedirect(`/categorias/${category.slug}`);
+    }
     notFound();
   }
   // Si admin lo marcó hidden, no se muestra al público
