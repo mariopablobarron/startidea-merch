@@ -130,12 +130,20 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "refresh-tracking",
     endpointPath: "/api/cron/refresh-tracking",
     method: "POST",
-    // Minuto 9: movido el 2026-08-05 para esquivar el minuto en que arranca
-    // makito-sync, que dejaba la app sin responder y le devolvía 502 (y con
-    // cada 6h de cadencia, un 502 costaba 6 horas de retraso en el tracking
-    // que ve el cliente). Aquí seguía puesto el `0 */6` viejo.
-    schedule: "cada 6h al minuto :09 (local VPS)",
-    scheduleCron: "9 */6 * * *",
+    // Minuto 45: segunda mudanza (2026-08-22). El minuto 9 esquivaba
+    // makito-sync (mudanza del 2026-08-05, ver abajo) pero caía dentro de la
+    // ventana en que el autodeploy de merch (`3-59/5`) está construyendo: los
+    // dos comparten SLOT del cron-global-guard — el slot sale del hash del
+    // comando, así que cambiar el minuto NO lo cambia — y un build de 5-6 min
+    // retiene el lock del slot. El 2026-08-22 el watchdog delató que este cron
+    // había perdido 2 de sus 4 disparos (06:09 y 12:09, `skip=slot-busy`),
+    // justo los dos deploys de ese día. El :45 deja media hora de margen.
+    // Mudanza previa (2026-08-05): del `0 */6` al `9 */6` para esquivar el
+    // arranque de makito-sync, que dejaba la app sin responder y devolvía 502
+    // (con cadencia de 6h, un 502 costaba 6 horas de retraso en el tracking
+    // que ve el cliente).
+    schedule: "cada 6h al minuto :45 (local VPS)",
+    scheduleCron: "45 */6 * * *",
     frequencyHours: 6,
     description: "Refresca tracking de pedidos en producción",
   },
