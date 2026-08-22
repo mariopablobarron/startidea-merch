@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
+import { serializeJsonLd } from "@/components/JsonLd";
 
 type Faq = { q: string; a: string };
 
@@ -127,7 +128,7 @@ export function FaqJsonLd({ faqs }: { faqs: Faq[] }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(json) }}
     />
   );
 }
