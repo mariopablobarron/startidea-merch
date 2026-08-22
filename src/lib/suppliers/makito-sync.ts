@@ -36,6 +36,7 @@ import { resolveCleanProductSlug } from "./midocean-sync";
 import { ensureMediaAsset } from "@/lib/proxy-image";
 import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
 import { colorGroupFromName } from "@/lib/variant-grouping";
+import { withSyncFailureClosing } from "./sync-failure";
 
 const SUPPLIER = "makito" as const;
 const CHUNK = 25; // productos por batch (Makito tiene 4482, son ~180 chunks)
@@ -205,7 +206,22 @@ function parseXmlStock(xml: string): XmlStock[] {
 
 // ─── Main sync ────────────────────────────────────────────────────────────
 
+/**
+ * Envoltorio: garantiza que la fila de `SupplierSync` **queda cerrada** pase lo
+ * que pase. Si el sync sale por excepción a mitad, sin esto la fila se queda
+ * con `finishedAt = null` y es indistinguible de un sync todavía en marcha
+ * (`stalled-sync.ts` tarda 2 h en llamarlo colgado). El error se relanza tal
+ * cual: el llamante decide.
+ */
 export async function runMakitoSync(): Promise<MakitoSyncResult> {
+  return withSyncFailureClosing(
+    "makito-sync",
+    (data) => prisma.supplierSync.update({ where: { supplier: SUPPLIER }, data }),
+    runMakitoSyncInner,
+  );
+}
+
+async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
   const startedAt = new Date();
   const errors: MakitoSyncResult["errors"] = [];
   let productsUpserted = 0;

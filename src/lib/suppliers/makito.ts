@@ -98,13 +98,31 @@ async function callApi<T>(
 }
 
 /**
+ * Tope de vida de la descarga de un feed, **body incluido**.
+ *
+ * Sin `signal`, un feed que acepta la conexión y luego gotea deja el `fetch`
+ * (y el `res.text()` de 17 MB que viene detrás) esperando indefinidamente: la
+ * promesa del sync no se resuelve **ni se rechaza**, así que ningún `catch` la
+ * ve y la fila de `SupplierSync` se queda abierta. Medido el 22-ago-2026: el
+ * sync de makito arrancó a las 04:00, terminó los 4.479 productos a las 04:04
+ * y a las 06:00 no había impreso **ni una línea más**, ni siquiera el
+ * `console.error` del `.catch()` de su ruta.
+ *
+ * 10 min = ~2× el download más lento observado del XML grande.
+ */
+export const FEED_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
  * Descarga un feed XML (raw text). El token va en query string.
  */
 async function fetchFeedXml(endpoint: string): Promise<string> {
   if (!FEED_TOKEN) throw new Error("MAKITO_FEED_TOKEN no configurado");
   const sep = endpoint.includes("?") ? "&" : "?";
   const url = `${FEED_BASE}${endpoint}${sep}pszinternal=${FEED_TOKEN}`;
-  const res = await fetch(url, { headers: { Accept: "application/xml,text/xml" } });
+  const res = await fetch(url, {
+    headers: { Accept: "application/xml,text/xml" },
+    signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
+  });
   if (!res.ok) {
     throw new Error(`Makito feed ${endpoint} → ${res.status}`);
   }
