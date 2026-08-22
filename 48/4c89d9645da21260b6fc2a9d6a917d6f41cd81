@@ -1,0 +1,29 @@
+src/app/api/recommend/route.ts
+  s_c96e7d036a9244::t_a4ddac111e232a 14,47
+src/app/api/voice-agent/tools/submit-quote/route.ts
+  s_c96e7d036a9244::t_29b08fa8c7c289 7-8,30-36,38
+src/lib/recommend-request.test.ts
+  s_c96e7d036a9244::t_f8e592aaf565d6 1-61
+src/lib/recommend-request.ts
+  s_c96e7d036a9244::t_8902857d299b65 1-43
+src/lib/voice-submit-quote.test.ts
+  s_c96e7d036a9244::t_5fff75db2f640f 1-80
+src/lib/voice-submit-quote.ts
+  s_c96e7d036a9244::t_97d65fdb57ad23 1-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "484c89d9645da21260b6fc2a9d6a917d6f41cd81",
+  "prompts": {},
+  "sessions": {
+    "s_c96e7d036a9244": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc3abd82-e364-4e34-89ef-a33c42f472d4",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
