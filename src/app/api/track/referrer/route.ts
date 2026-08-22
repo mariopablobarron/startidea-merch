@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { trackRateLimit } from "@/lib/track-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,9 @@ const BodySchema = z.object({
 const OWN_HOSTS = ["merchandising.startidea.es", "localhost"];
 
 export async function POST(req: Request) {
+  const rl = trackRateLimit(req, "track-referrer");
+  if (!rl.ok) return rl.response;
+
   let body;
   try {
     body = BodySchema.parse(await req.json());

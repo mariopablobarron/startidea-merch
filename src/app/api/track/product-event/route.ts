@@ -6,15 +6,16 @@
  * Upsert atómico en ProductView con increment del contador correspondiente.
  * Fire-and-forget desde el cliente — devuelve 200 inmediato sin esperar.
  *
- * Sin rate limit estricto a nivel servidor: el navegador del cliente solo
- * dispara 1 view por sesión (lo gestiona el componente, no la API), y
- * cart_add solo se dispara en add real. Si llegara abuso, se añade rate
- * limit con la lib existente.
+ * Con cupo por IP (`track-rate-limit.ts`): el navegador dispara 1 view por
+ * producto abierto y cart_add solo en un add real, así que el tope holgado no
+ * estorba a nadie — pero sin él un bucle desde una IP infla los contadores que
+ * alimentan «lo más visto» y el recomendador, escribiendo en BD en cada POST.
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveProductBySlug } from "@/lib/product-slug-resolver";
+import { trackRateLimit } from "@/lib/track-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +31,9 @@ const BodySchema = z
   });
 
 export async function POST(req: Request) {
+  const rl = trackRateLimit(req, "track-product-event");
+  if (!rl.ok) return rl.response;
+
   let body;
   try {
     body = BodySchema.parse(await req.json());
