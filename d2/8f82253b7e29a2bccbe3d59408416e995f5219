@@ -1,0 +1,22 @@
+src/lib/auth.test.ts
+  s_5cc4671b80d79c::t_6905b282feb842 1-93,105
+  s_5cc4671b80d79c::t_6f4a0cdb913ad8 94-104
+src/lib/auth.ts
+  s_5cc4671b80d79c::t_6905b282feb842 2,55-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "d28f82253b7e29a2bccbe3d59408416e995f5219",
+  "prompts": {},
+  "sessions": {
+    "s_5cc4671b80d79c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a026e9-cdb5-7833-a5ac-183a923ec421",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
