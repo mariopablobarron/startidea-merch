@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { hasAdminClaims } from "@/lib/session-claims";
 
 export function safeEqual(a: string, b: string) {
   const ab = Buffer.from(a);
@@ -51,13 +52,17 @@ function verifyJwtCookie(token: string): boolean {
       .digest("base64url");
     if (!safeEqual(sig, expected)) return false;
 
-    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8")) as {
-      exp?: number;
-      userId?: string;
-      email?: string;
-    };
-    if (payload.exp && Date.now() / 1000 > payload.exp) return false;
-    return Boolean(payload.userId && payload.email);
+    const payload = JSON.parse(
+      Buffer.from(payloadB64, "base64url").toString("utf8"),
+    ) as Record<string, unknown>;
+
+    // Verificar la firma no basta mientras ADMIN_JWT_SECRET y
+    // CUSTOMER_JWT_SECRET caigan al mismo ADMIN_SECRET: un JWT de cliente
+    // legítimo también trae userId+email. Exigimos el mismo contrato de
+    // identidad que el verificador admin moderno y una caducidad real.
+    if (typeof payload.exp !== "number" || !Number.isFinite(payload.exp)) return false;
+    if (Date.now() / 1000 >= payload.exp) return false;
+    return hasAdminClaims(payload);
   } catch {
     return false;
   }
