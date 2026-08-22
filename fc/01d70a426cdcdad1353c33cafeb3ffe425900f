@@ -1,0 +1,19 @@
+src/app/catalogo/[slug]/page.tsx
+  s_0776569c19e05c::t_72e1650ddbda20 131-149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "fc01d70a426cdcdad1353c33cafeb3ffe425900f",
+  "prompts": {},
+  "sessions": {
+    "s_0776569c19e05c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1349a302-eec5-46cf-8706-9dc128ce7ab0",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
