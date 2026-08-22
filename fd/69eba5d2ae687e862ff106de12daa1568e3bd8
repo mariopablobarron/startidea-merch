@@ -1,0 +1,27 @@
+src/app/api/track/experiment-event/route.ts
+  s_27757be2b5dd68::t_48f749b9a0df1f 11,24-26
+src/app/api/track/product-event/route.ts
+  s_27757be2b5dd68::t_d9cab59acf1b9a 9-12,18,34-36
+src/app/api/track/referrer/route.ts
+  s_27757be2b5dd68::t_4e18796fee8ffd 10,23-25
+src/lib/track-rate-limit.test.ts
+  s_27757be2b5dd68::t_127dce687b69a4 1-95
+src/lib/track-rate-limit.ts
+  s_27757be2b5dd68::t_ed7da4dab1b8e8 1-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "fd69eba5d2ae687e862ff106de12daa1568e3bd8",
+  "prompts": {},
+  "sessions": {
+    "s_27757be2b5dd68": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9c6382e-fe7c-427f-b93b-1b4f007fe539",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
