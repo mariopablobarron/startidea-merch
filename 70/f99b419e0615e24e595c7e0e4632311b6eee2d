@@ -1,0 +1,42 @@
+src/components/JsonLd.tsx
+  s_5cc4671b80d79c::t_a7eafd9d2d158e 1-7,12-15
+src/components/pillar/PillarShell.tsx
+  s_5cc4671b80d79c::t_73260573885240 5,131
+src/components/JsonLd.test.ts
+  s_5cc4671b80d79c::t_634aaed9df985f 1-21
+src/lib/blog-xss.guard.test.ts
+  s_5cc4671b80d79c::t_52a4245cff21a1 1-27,35-36
+  s_5cc4671b80d79c::t_73260573885240 28-34
+src/app/blog/[slug]/page.tsx
+  s_5cc4671b80d79c::t_a7eafd9d2d158e 13,112-116
+  s_5cc4671b80d79c::t_42558c08c699cd 117
+src/lib/blog-html.test.ts
+  s_5cc4671b80d79c::t_634aaed9df985f 25-26
+  s_5cc4671b80d79c::t_f1d076b63c01f6 18-20,27
+  s_5cc4671b80d79c::t_a7eafd9d2d158e 1-17,21-24,28-71
+src/lib/blog-generator.ts
+  s_5cc4671b80d79c::t_a7eafd9d2d158e 20,211
+src/lib/blog-html.ts
+  s_5cc4671b80d79c::t_a7eafd9d2d158e 1-16,19-47
+  s_5cc4671b80d79c::t_f1d076b63c01f6 17-18
+package.json
+  s_5cc4671b80d79c::t_d8f3ab07e54c93 45,58
+pnpm-lock.yaml
+  s_5cc4671b80d79c::t_802b8f090b1004 81-83,115-117,793-795,1421-1424,1428-1431,1436-1439,1443-1446,1484-1491,1882-1888,2007-2010,2138-2140,2497-2499,2768-2771,3832-3835,4498-4503,4506-4507,4512-4515,4522-4527,4563-4566,5129-5142,5266-5267,5402-5405,5733-5734,6013-6022
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "70f99b419e0615e24e595c7e0e4632311b6eee2d",
+  "prompts": {},
+  "sessions": {
+    "s_5cc4671b80d79c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a026e9-cdb5-7833-a5ac-183a923ec421",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
