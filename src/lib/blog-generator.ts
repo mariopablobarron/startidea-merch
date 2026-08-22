@@ -17,6 +17,7 @@
 
 import { marked } from "marked";
 import { detectHowToSteps, buildHowToSchema } from "./blog-howto";
+import { sanitizeBlogHtml } from "./blog-html";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.OPENROUTER_MODEL_BLOG || "anthropic/claude-sonnet-4.5";
@@ -207,7 +208,7 @@ export function mdToHtml(md: string): string {
     gfm: true,
     breaks: false,
   });
-  return marked.parse(md, { async: false }) as string;
+  return sanitizeBlogHtml(marked.parse(md, { async: false }) as string);
 }
 
 /**

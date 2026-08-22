@@ -10,6 +10,7 @@ import { RelatedPosts } from "@/components/RelatedPosts";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { prisma } from "@/lib/prisma";
 import { mdToHtml, buildBlogSchema } from "@/lib/blog-generator";
+import { sanitizeBlogHtml } from "@/lib/blog-html";
 import { injectInternalLinks, type LinkableEntity } from "@/lib/blog-internal-links";
 import { SECTORS } from "@/lib/sectors";
 
@@ -107,6 +108,12 @@ export default async function BlogPostPage({
   } catch {
     // Si falla la BD, seguimos con el HTML sin linkar — no rompemos el post.
   }
+
+  // Última frontera antes de dangerouslySetInnerHTML. `mdToHtml` ya sanea
+  // el Markdown, pero los enlaces se inyectan después y también incorporan
+  // nombres/slugs de BD. Sanear de nuevo mantiene seguro el pipeline completo
+  // y cubre todas las filas históricas sin reescribir sus fuentes Markdown.
+  html = sanitizeBlogHtml(html);
 
   const faq = (post.schemaJson as { faq?: Array<{ q: string; a: string }> } | null)?.faq;
   const schema = buildBlogSchema(
