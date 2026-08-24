@@ -1,0 +1,21 @@
+src/lib/cron-catalog-colision-minuto.guard.test.ts
+  s_ca37ad91bb9ef4::t_ca9b4b252fe76a 1-130
+src/lib/cron-catalog.ts
+  s_ca37ad91bb9ef4::t_f67b7bc66cfcb2 44-49,57-60,92-108,127,145,264
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "cab9f457d69b9d598931858217f26507454e6634",
+  "prompts": {},
+  "sessions": {
+    "s_ca37ad91bb9ef4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "189ce693-084d-4e42-98a1-2812302be0e5",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
