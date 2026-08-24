@@ -41,8 +41,12 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "midocean-sync",
     endpointPath: "/api/cron/midocean-sync",
     method: "POST",
-    schedule: "diario 04:00 local VPS = 02:00 UTC",
-    scheduleCron: "0 4 * * *",
+    // Minuto 2 (mudanza del 2026-08-25): mismo motivo que makito-sync, ver su
+    // entrada. Aquí no había daño medido todavía — es el mismo mecanismo con un
+    // feed algo más ligero, y apartarlo cuesta lo mismo que esperar al primer
+    // 502.
+    schedule: "diario 04:02 local VPS = 02:02 UTC",
+    scheduleCron: "2 4 * * *",
     frequencyHours: 24,
     description: "Sincroniza catálogo MidOcean (productos + stock + printdata)",
   },
@@ -50,8 +54,10 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "midocean-print-pricelist-sync",
     endpointPath: "/api/cron/midocean-print-pricelist-sync",
     method: "POST",
-    schedule: "diario 04:30 local VPS = 02:30 UTC",
-    scheduleCron: "30 4 * * *",
+    // Minuto 32 (mudanza del 2026-08-25): el :30 lo ocupan los tres crons de
+    // alta frecuencia de merch. Ver la entrada de makito-sync.
+    schedule: "diario 04:32 local VPS = 02:32 UTC",
+    scheduleCron: "32 4 * * *",
     frequencyHours: 24,
     description: "Sync de tarifas (técnicas marcaje + precios producto)",
   },
@@ -83,8 +89,23 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "makito-sync",
     endpointPath: "/api/cron/makito-sync",
     method: "POST",
-    schedule: "diario 06:00 local VPS = 04:00 UTC",
-    scheduleCron: "0 6 * * *",
+    // Minuto 2 (mudanza del 2026-08-25). Este sync es el más pesado del día
+    // (~4.480 productos) y devuelve 202 en 0,1 s: el trabajo de verdad sigue
+    // dentro del mismo proceso, que durante unos segundos deja de contestar y
+    // el gateway responde 502 a quien pase por ahí. Mientras corría en el
+    // minuto en punto arrollaba a los tres crons de merch que también caen en
+    // el :00 — `auto-proposal` y `webhook-retry` (`*/15`) y
+    // `send-scheduled-broadcasts` (`*/5`). Medido sobre los 14 días de
+    // `merch-crons.log` rotado: 8 días con un 502, y en los 8 la víctima llegó
+    // entre 3 y 11 s DESPUÉS del arranque de este sync; los días sanos son
+    // aquellos en que nadie cayó dentro de esa ventana.
+    // El 2026-08-05 ya se apartó a una víctima por el mismo motivo
+    // (`refresh-tracking`, ver su entrada), pero apartar víctimas no escala:
+    // las que corren `*/15` y `*/5` no pueden salirse del minuto en punto.
+    // Se aparta al causante, que las cubre a todas. El :02 está libre de
+    // cualquier otro cron de merch.
+    schedule: "diario 06:02 local VPS = 04:02 UTC",
+    scheduleCron: "2 6 * * *",
     frequencyHours: 24,
     description: "Sincroniza catálogo Makito (XML productos/precios/stock + API tarifa marcaje)",
   },
@@ -103,7 +124,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "webhook-retry",
     endpointPath: "/api/cron/webhook-retry",
     method: "POST",
-    schedule: "cada 15 min",
+    schedule: "cada 15 min (crontab del VPS, hora local)",
     scheduleCron: "*/15 * * * *",
     frequencyHours: 0.25,
     description: "Reintenta webhook deliveries fallidos",
@@ -121,7 +142,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "auto-proposal",
     endpointPath: "/api/cron/auto-proposal",
     method: "POST",
-    schedule: "cada 15 min",
+    schedule: "cada 15 min (crontab del VPS, hora local)",
     scheduleCron: "*/15 * * * *",
     frequencyHours: 0.25,
     description: "Agente 24h: genera propuesta borrador + PDF por cada carrito nuevo y avisa al admin",
@@ -240,7 +261,7 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "send-scheduled-broadcasts",
     endpointPath: "/api/cron/send-scheduled-broadcasts",
     method: "POST",
-    schedule: "cada 5 min",
+    schedule: "cada 5 min (crontab del VPS, hora local)",
     scheduleCron: "*/5 * * * *",
     frequencyHours: 1,
     description: "Envía los broadcasts programados (status SCHEDULED) cuya hora ha llegado",
