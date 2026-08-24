@@ -6,6 +6,7 @@
  * importables para poder probarlos.
  */
 import { z } from "zod";
+import { urlDelataProveedor } from "@/lib/supplier-leak-terms";
 
 // Los textos del item vienen del recomendador, pero esta ruta es PÚBLICA
 // (sin sesión: solo rate limit por IP), así que quien llama controla el cuerpo
@@ -33,8 +34,24 @@ const QuoteItemSchema = z.object({
       slug: z.string().max(200),
       name: z.string().max(200),
       ref: z.string().max(60),
-      url: z.string().max(500),
-      primaryImageUrl: z.string().max(500).nullable(),
+      // Las dos URLs se SANEAN, no se rechazan: esta ruta cierra ventas y un
+      // 400 por un campo accesorio rompería una viva. Si la URL delata al
+      // proveedor (o no es navegable), se guarda vacía/nula y ya. Medido en
+      // producción el 24-ago antes de escribir esto: de 12 propuestas, 11 con
+      // `url` de nuestro dominio y las imágenes ya en `/api/m/<hash>` — la
+      // única excepción es UNA propuesta del 25-jun con
+      // `cdn1.midocean.com` en `primaryImageUrl`, anterior al arreglo del
+      // incidente del 20-jul. Es decir: hoy no entra ninguna, y esto es el
+      // cerrojo para que no vuelva a entrar por la puerta pública.
+      url: z
+        .string()
+        .max(500)
+        .transform((v) => (urlDelataProveedor(v) ? "" : v)),
+      primaryImageUrl: z
+        .string()
+        .max(500)
+        .nullable()
+        .transform((v) => (v !== null && urlDelataProveedor(v) ? null : v)),
     })
     .nullable(),
   unitPriceCents: z.number().int().nullable(),

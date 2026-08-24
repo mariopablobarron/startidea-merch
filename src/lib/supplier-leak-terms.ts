@@ -99,3 +99,50 @@ export function findSupplierLeak(text: string): string | null {
 function anyCase(term: string): string {
   return term.replace(/[a-z]/g, (c) => `[${c}${c.toUpperCase()}]`);
 }
+
+/**
+ * ¿Esta URL delata al proveedor, o no es una URL navegable?
+ *
+ * Se mira el HOST, no la cadena entera: `findSupplierLeak` incluye términos de
+ * palabra ("cifra", "adivin") que en una URL dan falso positivo —
+ * `/catalogo/cifra-de-negocio` es un slug legítimo del catálogo— y borrar la
+ * imagen de un producto real por eso sería peor que el problema que se cierra.
+ *
+ * Devuelve `true` también para protocolos que no son http(s) ni ruta relativa
+ * (`javascript:`, `data:`): un campo llamado `url` que acepta eso es un fallo
+ * de validación, no una decisión de producto.
+ */
+/**
+ * Dominios registrables de los proveedores. Se comparan por SUFIJO de host, no
+ * como subcadena: así un CDN nuevo del mismo proveedor
+ * (`printposition-img-api-v2.cdn.midocean.com`) queda cubierto sin tocar nada.
+ * El guard `url-de-proveedor-en-propuesta.guard.test.ts` comprueba que esta
+ * lista cubre todos los hosts que `proxy-image.ts` considera de proveedor.
+ */
+export const SUPPLIER_DOMAINS = [
+  "midocean.com",
+  "xindao.eu",
+  "xindao.com",
+  "publicatalogue.com",
+  "makito.es",
+  "adivin.com",
+] as const;
+
+export function urlDelataProveedor(url: string): boolean {
+  const limpia = url.trim();
+  if (limpia === "") return false;
+  // Ruta relativa del propio sitio (`/api/m/<hash>`, `/catalogo/...`): sin host
+  // que delate nada. Es la forma correcta y la que produce el código de hoy.
+  if (limpia.startsWith("/") && !limpia.startsWith("//")) return false;
+
+  let host: string;
+  try {
+    const u = new URL(limpia);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return true;
+    host = u.hostname.toLowerCase();
+  } catch {
+    // Ni ruta relativa ni URL parseable: no es navegable, fuera.
+    return true;
+  }
+  return SUPPLIER_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
+}
