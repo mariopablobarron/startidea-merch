@@ -1,0 +1,23 @@
+src/lib/proposal-send-schema.ts
+  s_32574c568cb790::t_b6dd119994403b 9,37-54
+src/lib/supplier-leak-terms.ts
+  s_32574c568cb790::t_5f1300f5d0b461 102-148
+src/lib/url-de-proveedor-en-propuesta.guard.test.ts
+  s_32574c568cb790::t_d294106abb6d00 1-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "f9a8c8b1372d0a7e459d4a64886a5c5a8cba6f1f",
+  "prompts": {},
+  "sessions": {
+    "s_32574c568cb790": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9017b718-f64a-4818-92ca-bce3744c8d19",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
