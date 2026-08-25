@@ -16,6 +16,7 @@ export const metadata: Metadata = {
       "https://merchandising.startidea.es/recursos/kit-imagen-corporativa",
   },
   openGraph: {
+    url: "https://merchandising.startidea.es/recursos/kit-imagen-corporativa",
     title: "Kit de imagen corporativa para PYMEs",
     description:
       "Los 5 elementos mínimos que separan un merch profesional de uno improvisado. Plantilla descargable.",

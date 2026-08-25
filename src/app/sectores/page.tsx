@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   description:
     "Soluciones de merchandising corporativo adaptadas a cada sector: empresas tech, organizadores de eventos, retail, administración pública, departamentos RSC y RRHH.",
   alternates: { canonical: `${SITE_URL}/sectores` },
+  openGraph: { url: `${SITE_URL}/sectores` },
 };
 
 export default function SectoresPage() {

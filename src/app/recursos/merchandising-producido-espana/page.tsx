@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description:
     "Comparativa producción local España vs importación Asia: plazos, sobreprecio real, control de calidad, trazabilidad, impacto ambiental. Datos para decidir con criterio en B2B.",
   openGraph: {
+    url: "/recursos/merchandising-producido-espana",
     title: "Merchandising producido en España · comparativa 2026",
     description:
       "Plazos 7-12 días, MOQ 50 ud, control de calidad inmediato y huella ambiental verificable. Lo que pierdes y lo que ganas frente a importar.",

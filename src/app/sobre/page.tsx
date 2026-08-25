@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   description:
     "Somos todomerchandising, una iniciativa de Startidea. Producimos merchandising corporativo en CEE y talleres locales con trazabilidad total e impacto social medible.",
   alternates: { canonical: "https://merchandising.startidea.es/sobre" },
+  openGraph: { url: "https://merchandising.startidea.es/sobre" },
 };
 
 const VALUES = [

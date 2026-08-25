@@ -62,7 +62,11 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_ES",
     siteName: "TodoMerchandising",
-    url: SITE_URL,
+    // NO definir openGraph.url aquí — mismo error que el canonical global de
+    // arriba, en el campo de al lado: Next lo heredaba literalmente y 10 de
+    // cada 12 páginas anunciaban a las redes que su URL era la home (medido en
+    // producción el 25-ago-2026). Cada page declara la suya, o la deriva de su
+    // canonical al pasar por `mergeMetadata`.
     title: "TodoMerchandising — Merchandising con impacto social",
     description:
       "Merchandising corporativo con impacto social. CEE y empresas locales detrás de cada pedido.",

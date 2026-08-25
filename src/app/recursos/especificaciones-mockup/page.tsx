@@ -16,6 +16,7 @@ export const metadata: Metadata = {
       "https://merchandising.startidea.es/recursos/especificaciones-mockup",
   },
   openGraph: {
+    url: "https://merchandising.startidea.es/recursos/especificaciones-mockup",
     title: "Especificaciones técnicas para mockup",
     description:
       "Qué enviar a tu proveedor para que te devuelva mockup en 24h sin rondas.",

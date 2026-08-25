@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   description:
     "Resolvemos las dudas más frecuentes sobre precio instantáneo, plazos, métodos de personalización, materiales, devoluciones y producción social.",
   alternates: { canonical: "https://merchandising.startidea.es/ayuda" },
+  openGraph: { url: "https://merchandising.startidea.es/ayuda" },
 };
 
 const SECTIONS = [

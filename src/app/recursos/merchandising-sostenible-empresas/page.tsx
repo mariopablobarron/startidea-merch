@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description:
     "Cómo elegir merchandising corporativo verdaderamente sostenible: materiales certificados (RPET, algodón orgánico, FSC), producción ética en CEE, métricas para tu memoria GRI/EFRAG. Sin greenwashing.",
   openGraph: {
+    url: "/recursos/merchandising-sostenible-empresas",
     title: "Merchandising sostenible para empresas · guía 2026",
     description:
       "Qué es merchandising sostenible de verdad, qué certificaciones exigir, cómo medir el impacto para tu memoria de sostenibilidad.",

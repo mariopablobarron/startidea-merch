@@ -16,6 +16,7 @@ export const metadata: Metadata = {
       "https://merchandising.startidea.es/recursos/guia-pantone-serigrafia-corporativa",
   },
   openGraph: {
+    url: "https://merchandising.startidea.es/recursos/guia-pantone-serigrafia-corporativa",
     title: "Guía Pantone para serigrafía corporativa",
     description:
       "Equivalencias Pantone → CMYK → HEX → RGB y cómo evitar que el rojo de tu logo salga rosa.",

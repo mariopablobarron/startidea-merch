@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   description:
     "Compara hasta 3 productos del catálogo lado a lado: stock, dimensiones, peso, material, áreas de marcaje, técnicas y precio orientativo por cantidades.",
   alternates: { canonical: "https://merchandising.startidea.es/comparar" },
+  openGraph: { url: "https://merchandising.startidea.es/comparar" },
 };
 
 export const revalidate = 3600;

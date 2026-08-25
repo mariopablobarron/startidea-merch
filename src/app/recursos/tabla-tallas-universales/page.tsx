@@ -16,6 +16,7 @@ export const metadata: Metadata = {
       "https://merchandising.startidea.es/recursos/tabla-tallas-universales",
   },
   openGraph: {
+    url: "https://merchandising.startidea.es/recursos/tabla-tallas-universales",
     title: "Tabla de tallas universales para merch textil",
     description:
       "Equivalencias B&C / Sols / MidOcean / Makito en cm. Cómo medir bien antes de pedir.",

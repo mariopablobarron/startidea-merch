@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   description:
     "Revisa los productos que has añadido a tu cotización, ajusta cantidad y técnica de marcaje y envíanos el brief. Te responderemos en menos de 24 horas con presupuesto cerrado.",
   alternates: { canonical: "https://merchandising.startidea.es/carrito" },
+  openGraph: { url: "https://merchandising.startidea.es/carrito" },
   robots: { index: false, follow: true },
 };
 

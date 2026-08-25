@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description:
     "Qué es un Centro Especial de Empleo, qué puedes producir ahí, cuánto cuesta vs alternativa convencional, qué métricas reportables genera para tu memoria RSC y cómo cumplir LGD (Ley General de Discapacidad) comprando merchandising.",
   openGraph: {
+    url: "/recursos/merchandising-centro-especial-empleo",
     title: "Merchandising en CEE · guía 2026",
     description:
       "Producción en Centros Especiales de Empleo: qué es, qué se puede hacer, qué métricas genera, cómo encaja con LGD y memorias GRI/EFRAG.",

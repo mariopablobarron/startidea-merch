@@ -59,7 +59,7 @@ export function mergeMetadata(
   // Nunca devolver la referencia compartida del metadata base. Algunas rutas
   // ajustan después campos según la petición (por ejemplo, el canonical de
   // /catalogo?cat=...) y mutarían el objeto de módulo para futuras peticiones.
-  if (!override) return result;
+  if (!override) return withCanonicalOgUrl(result);
 
   if (override.title) result.title = override.title;
   if (override.description) result.description = override.description;
@@ -76,5 +76,42 @@ export function mergeMetadata(
     result.robots = override.robots;
   }
 
-  return result;
+  return withCanonicalOgUrl(result);
+}
+
+/**
+ * `og:url` coherente con el canonical de la propia página.
+ *
+ * Medido en producción el 25-ago-2026: 10 de 12 páginas medidas decían a las
+ * redes que la URL compartida era la home, porque heredaban el `openGraph.url`
+ * del layout raíz. Compartir /catalogo o /sectores en LinkedIn o WhatsApp daba
+ * una tarjeta que apuntaba a la home, y las señales sociales se consolidaban
+ * ahí en vez de en la página compartida.
+ *
+ * Es el mismo error que ya se corrigió con `alternates.canonical` global (ver
+ * el comentario en `src/app/layout.tsx`): un valor de página puesto en el
+ * layout no es un default, es una afirmación falsa sobre cada página que no lo
+ * sobrescriba. Aquí la url se deriva del canonical, que cada página sí declara.
+ *
+ * No pisa un `openGraph.url` explícito: quien ya lo declara manda.
+ */
+export function withCanonicalOgUrl(metadata: Metadata): Metadata {
+  const canonical = metadata.alternates?.canonical;
+  if (!canonical) return metadata;
+  if (metadata.openGraph && "url" in metadata.openGraph && metadata.openGraph.url) {
+    return metadata;
+  }
+
+  // El canonical puede ser string, URL o `{ url }` (Next admite las tres).
+  const url =
+    typeof canonical === "string"
+      ? canonical
+      : canonical instanceof URL
+        ? canonical.toString()
+        : typeof canonical === "object" && canonical !== null && "url" in canonical
+          ? String((canonical as { url: string | URL }).url)
+          : null;
+  if (!url) return metadata;
+
+  return { ...metadata, openGraph: { ...(metadata.openGraph ?? {}), url } };
 }

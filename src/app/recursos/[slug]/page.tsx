@@ -29,6 +29,7 @@ export async function generateMetadata({
     description: m.description?.slice(0, 160) || `Descarga ${m.title} en PDF.`,
     alternates: { canonical: `${SITE_URL}/recursos/${slug}` },
     openGraph: {
+      url: `${SITE_URL}/recursos/${slug}`,
       title: m.title,
       description: m.description || undefined,
       images: m.heroUrl ? [{ url: m.heroUrl }] : undefined,

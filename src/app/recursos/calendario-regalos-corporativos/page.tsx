@@ -16,6 +16,7 @@ export const metadata: Metadata = {
       "https://merchandising.startidea.es/recursos/calendario-regalos-corporativos",
   },
   openGraph: {
+    url: "https://merchandising.startidea.es/recursos/calendario-regalos-corporativos",
     title: "Calendario corporativo de regalos 2026",
     description:
       "Qué regalar y cuándo: empleados, clientes, partners y candidatos. 12 ventanas + plantillas.",

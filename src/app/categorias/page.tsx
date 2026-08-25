@@ -19,6 +19,7 @@ export const metadata: Metadata = {
   description:
     "Todas las categorías de merchandising corporativo personalizable: textil, drinkware, escritura, tecnología, eventos y más. Producción con impacto social en Granada.",
   alternates: { canonical: `${SITE_URL}/categorias` },
+  openGraph: { url: `${SITE_URL}/categorias` },
 };
 
 export default async function CategoriasIndexPage() {
