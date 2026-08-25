@@ -10,6 +10,12 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { publicRef } from "@/lib/internal-ref";
+import {
+  catalogCanonical,
+  hasFacets,
+  pageNumber,
+  type CatalogoSearchParams,
+} from "@/lib/catalog-canonical";
 import { proxyImageUrl, absoluteProxyImageUrl } from "@/lib/proxy-image";
 import { collectionPageJsonLd } from "@/lib/jsonld";
 import { SortSelect } from "@/components/SortSelect";
@@ -28,24 +34,33 @@ import { groupLegacyHtmlValues, publicProductName } from "@/lib/product-name";
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: Promise<{ cat?: string }>;
+  searchParams: Promise<CatalogoSearchParams>;
 }): Promise<Metadata> {
-  const { getPageSeo, mergeMetadata } = await import("@/lib/page-seo");
+  const { getPageSeo, mergeMetadata, withCanonicalOgUrl } = await import(
+    "@/lib/page-seo"
+  );
   const seo = await getPageSeo("/catalogo");
   const merged = mergeMetadata(BASE_METADATA, seo);
-  // Vista filtrada por categoría → canonical a la landing limpia /categorias/{cat}
-  // para consolidar autoridad y evitar contenido duplicado por query params.
-  const cat = ((await searchParams).cat || "").trim();
-  if (cat) {
-    return {
-      ...merged,
-      alternates: {
-        ...(merged.alternates || {}),
-        canonical: `${SITE_URL}/categorias/${cat}`,
-      },
-    };
-  }
-  return merged;
+
+  const sp = await searchParams;
+  const canonical = catalogCanonical(sp, SITE_URL);
+  const page = pageNumber(sp.page);
+
+  // El título de la página 1 valía para las ~400: mismo `<title>` repetido en
+  // toda la serie. Ahora cada tramo dice cuál es.
+  const baseTitle =
+    typeof merged.title === "string" ? merged.title : BASE_METADATA.title;
+  const title =
+    page > 1 && !hasFacets(sp) ? `${baseTitle} — página ${page}` : merged.title;
+
+  return withCanonicalOgUrl({
+    ...merged,
+    title,
+    alternates: { ...(merged.alternates || {}), canonical },
+    // `withCanonicalOgUrl` no pisa un og:url ya puesto, y `mergeMetadata` acaba
+    // de poner el del canonical anterior. Se limpia para que derive del nuevo.
+    openGraph: { ...(merged.openGraph || {}), url: undefined },
+  });
 }
 
 const BASE_METADATA: Metadata = {

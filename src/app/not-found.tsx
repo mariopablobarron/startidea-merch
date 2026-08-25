@@ -1,6 +1,27 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
+
+/**
+ * El 404 servía el `<title>` de la home ("TodoMerchandising — Merchandising con
+ * impacto social", medido en producción el 26-ago-2026): una pestaña, un
+ * marcador o un enlace compartido de una URL rota se presentaban como si fueran
+ * la portada. Next resuelve el metadata de `not-found` como último eslabón de
+ * la cadena, así que lo que se declare aquí gana sobre el layout raíz.
+ *
+ * El `noindex` es explícito a propósito. Next ya emite el suyo para el 404,
+ * pero el layout declara `robots: { index: true, follow: true }` y el HTML
+ * acababa sirviendo las DOS etiquetas: `noindex` y `index, follow`. Google
+ * resuelve la contradicción por la más restrictiva —de ahí que el 404 no se
+ * indexara—, pero una señal contradictoria no es una señal correcta.
+ */
+export const metadata: Metadata = {
+  title: "Página no encontrada",
+  description:
+    "La página que buscas no existe o ha cambiado de dirección. Busca lo que necesitas desde el catálogo.",
+  robots: { index: false, follow: true },
+};
 
 export default function NotFound() {
   return (
