@@ -1,4 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Script from "next/script";
+
+import { hasMarketingConsent, onConsentChange } from "@/lib/consent";
 
 /**
  * Pixels publicitarios — Meta (Facebook/Instagram) + Google Ads + LinkedIn.
@@ -9,25 +14,40 @@ import Script from "next/script";
  *   NEXT_PUBLIC_GOOGLE_CONVERSION_LABEL → label de conversión "Purchase"
  *   NEXT_PUBLIC_LINKEDIN_PARTNER_ID   → LinkedIn Insight Tag
  *
- * Si una env falta, ese pixel no se carga. Respeta Google Consent Mode
- * v2 (los pixels solo trackearán tras consent del usuario en cookie banner).
+ * DOS puertas, y hacen falta las dos: la env var (¿está configurado?) y el
+ * consentimiento de marketing del usuario (¿nos deja?). Sin el segundo no se
+ * inyecta NADA: ni el script, ni el bloque noscript con la imagen de 1×1, que
+ * era el agujero peor porque llamaba a Meta y a LinkedIn sin JavaScript y por
+ * tanto sin ninguna posibilidad de preguntar. Por eso ya no está.
+ *
+ * ⚠️ El Consent Mode v2 de Google (`gtag('consent', ...)`, que `CookieBanner`
+ * sí emite) gobierna a gtag y a nadie más: `fbq` y `lintrk` lo ignoran. Que
+ * exista no eximía a Meta ni a LinkedIn de este gate; el comentario que decía
+ * lo contrario era falso.
  *
  * Eventos custom se disparan desde el código con `trackPurchase()`,
  * `trackAddToCart()`, etc (helpers en src/lib/ads-events.ts).
  */
 export function AdsPixels() {
+  const [consented, setConsented] = useState(false);
+
+  useEffect(() => {
+    if (hasMarketingConsent()) setConsented(true);
+    return onConsentChange((consent) => setConsented(consent.marketing));
+  }, []);
+
   const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
   const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
   const linkedInId = process.env.NEXT_PUBLIC_LINKEDIN_PARTNER_ID;
 
+  if (!consented) return null;
   if (!metaPixelId && !googleAdsId && !linkedInId) return null;
 
   return (
     <>
       {metaPixelId && (
-        <>
-          <Script id="meta-pixel" strategy="afterInteractive">
-            {`
+        <Script id="meta-pixel" strategy="afterInteractive">
+          {`
               !function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
               n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -39,19 +59,7 @@ export function AdsPixels() {
               fbq('init', '${metaPixelId}');
               fbq('track', 'PageView');
             `}
-          </Script>
-          {/* Fallback noscript */}
-          <noscript>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt=""
-              height="1"
-              width="1"
-              style={{ display: "none" }}
-              src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
-            />
-          </noscript>
-        </>
+        </Script>
       )}
 
       {googleAdsId && (
@@ -72,9 +80,8 @@ export function AdsPixels() {
       )}
 
       {linkedInId && (
-        <>
-          <Script id="linkedin-init" strategy="afterInteractive">
-            {`
+        <Script id="linkedin-init" strategy="afterInteractive">
+          {`
               _linkedin_partner_id = "${linkedInId}";
               window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
               window._linkedin_data_partner_ids.push(_linkedin_partner_id);
@@ -88,18 +95,7 @@ export function AdsPixels() {
                 s.parentNode.insertBefore(b, s);
               })(window.lintrk);
             `}
-          </Script>
-          <noscript>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              height="1"
-              width="1"
-              style={{ display: "none" }}
-              alt=""
-              src={`https://px.ads.linkedin.com/collect/?pid=${linkedInId}&fmt=gif`}
-            />
-          </noscript>
-        </>
+        </Script>
       )}
     </>
   );

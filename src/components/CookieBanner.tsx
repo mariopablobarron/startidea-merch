@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FLOATING_SURFACES } from "@/lib/floating-surfaces";
+import { CONSENT_EVENT, CONSENT_STORAGE_KEY } from "@/lib/consent";
 
 /**
  * Cookie banner GDPR.
@@ -22,7 +23,9 @@ import { FLOATING_SURFACES } from "@/lib/floating-surfaces";
  *   eventos previos buffereados se envían retroactivamente.
  */
 
-const STORAGE_KEY = "merch:cookie-consent:v2";
+// La clave y el nombre del evento viven en `@/lib/consent`, que es lo que
+// leen los pixels: una sola definición, no una copia por componente.
+const STORAGE_KEY = CONSENT_STORAGE_KEY;
 
 type Consent = {
   analytics: boolean;
@@ -59,7 +62,7 @@ export function CookieBanner() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch {}
     applyGtagConsent(consent, false);
-    window.dispatchEvent(new CustomEvent("merch:cookie-consent", { detail: consent }));
+    window.dispatchEvent(new CustomEvent(CONSENT_EVENT, { detail: consent }));
     setVisible(false);
   }
 

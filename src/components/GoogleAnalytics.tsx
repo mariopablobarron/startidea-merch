@@ -9,8 +9,13 @@ import Script from "next/script";
  *
  * Si ambas faltan, no renderiza nada (cero overhead).
  *
- * Anonimización IP por defecto + flags cookies estrictas. Si más adelante
- * añades cookie consent, gestionar via gtag('consent', 'default', ...).
+ * Anonimización IP por defecto + flags cookies estrictas.
+ *
+ * El consentimiento ya está: Consent Mode v2 con todo en `denied` antes del
+ * `config`, y `CookieBanner` emite el `update` con lo que elija el usuario.
+ * Es lo que exime a este fichero del gate de `@/lib/consent` que sí necesitan
+ * Meta y LinkedIn — y `pixels-solo-con-consentimiento.guard.test.ts` vigila
+ * que el `denied` siga aquí, porque quitarlo dejaría GA4 midiendo sin permiso.
  */
 export function GoogleAnalytics() {
   const gaId = process.env.NEXT_PUBLIC_GA4_ID;

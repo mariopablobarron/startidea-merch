@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 
-const CONSENT_KEY = "merch:cookie-consent:v2";
+import { hasMarketingConsent, onConsentChange } from "@/lib/consent";
+
 const SPOTIFY_PIXEL_ID = "18ec3e2261264ed991f8ba10a2d90161";
 
 type SpotifyPixelWindow = Window & {
@@ -11,16 +12,6 @@ type SpotifyPixelWindow = Window & {
   };
   __spotifyPixelConfigured?: boolean;
 };
-
-function hasMarketingConsent() {
-  try {
-    const raw = localStorage.getItem(CONSENT_KEY);
-    if (!raw) return false;
-    return (JSON.parse(raw) as { marketing?: boolean }).marketing === true;
-  } catch {
-    return false;
-  }
-}
 
 function loadSpotifyPixel() {
   const w = window as SpotifyPixelWindow;
@@ -49,13 +40,9 @@ export function SpotifyPixel() {
   useEffect(() => {
     if (hasMarketingConsent()) loadSpotifyPixel();
 
-    function onConsent(event: Event) {
-      const consent = (event as CustomEvent<{ marketing?: boolean }>).detail;
-      if (consent?.marketing === true) loadSpotifyPixel();
-    }
-
-    window.addEventListener("merch:cookie-consent", onConsent);
-    return () => window.removeEventListener("merch:cookie-consent", onConsent);
+    return onConsentChange((consent) => {
+      if (consent.marketing) loadSpotifyPixel();
+    });
   }, []);
 
   return null;
