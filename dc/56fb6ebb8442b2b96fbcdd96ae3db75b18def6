@@ -1,0 +1,23 @@
+src/app/api/proposal/send/route.test.ts
+  s_5518ccd62d95e3::t_3b505233f21d57 1-210
+src/app/api/proposal/send/route.ts
+  s_5518ccd62d95e3::t_a5bc5e724dd9e4 14,20,23-43,63,95-106,155-156,165,170-191
+src/lib/proposal-send-schema.ts
+  s_5518ccd62d95e3::t_0f2ca93a7b5009 70-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "dc56fb6ebb8442b2b96fbcdd96ae3db75b18def6",
+  "prompts": {},
+  "sessions": {
+    "s_5518ccd62d95e3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ea55f06-09ad-4b54-9405-981f1db31808",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
