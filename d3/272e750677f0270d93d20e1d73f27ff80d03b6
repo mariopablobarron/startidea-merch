@@ -1,0 +1,29 @@
+src/components/AdsPixels.tsx
+  s_b3a01dc2e684fe::t_86785e6dd359e2 1-3,6-7,17-26,32-38,43,49-50,62,83-84,98
+src/components/CookieBanner.tsx
+  s_b3a01dc2e684fe::t_49b406d8d212a5 6,26-28,65
+src/components/GoogleAnalytics.tsx
+  s_b3a01dc2e684fe::t_4038d82819d2f4 12-18
+src/components/SpotifyPixel.tsx
+  s_b3a01dc2e684fe::t_cdb81b4abe9d16 5-6,43-45
+src/components/pixels-solo-con-consentimiento.guard.test.ts
+  s_b3a01dc2e684fe::t_1bdcf7f39c02cd 1-144
+src/lib/consent.ts
+  s_b3a01dc2e684fe::t_ae535e73956f36 1-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "d3272e750677f0270d93d20e1d73f27ff80d03b6",
+  "prompts": {},
+  "sessions": {
+    "s_b3a01dc2e684fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2fc7081d-cb79-4e51-b7c6-c5358e4e49bc",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
