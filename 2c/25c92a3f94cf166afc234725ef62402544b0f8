@@ -1,0 +1,37 @@
+src/app/apple-icon.tsx
+  s_ae3ba167cd811b::t_677d4fe7a40aaf 1-45
+src/app/canonical-en-listados-paginados.guard.test.ts
+  s_ae3ba167cd811b::t_0923dcdd82221f 1-145
+src/app/catalogo/page.tsx
+  s_ae3ba167cd811b::t_345eeb8cb32ed1 13-18,37,39-41,44-63
+src/app/not-found.tsx
+  s_ae3ba167cd811b::t_27cb724026c3b6 1,6-25
+src/lib/catalog-canonical.test.ts
+  s_ae3ba167cd811b::t_9a2bb8d94b5648 1-106
+src/lib/catalog-canonical.ts
+  s_e80bae178fc2c9::t_ae84619d9b8d8e 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "2c25c92a3f94cf166afc234725ef62402544b0f8",
+  "prompts": {},
+  "sessions": {
+    "s_ae3ba167cd811b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9d5de006-d5f5-4abb-bcab-458ae9a386d9",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_e80bae178fc2c9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "75c8cb67-4ede-442d-9fb0-b5dc00f93d11",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
