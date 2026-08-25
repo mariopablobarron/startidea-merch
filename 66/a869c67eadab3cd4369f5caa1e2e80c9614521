@@ -1,0 +1,21 @@
+src/app/categorias/[slug]/page.tsx
+  s_e9ef7c7b2e5153::t_66b8b72657ad66 52-57,62-73
+src/app/og-image-en-rutas-dinamicas.guard.test.ts
+  s_e9ef7c7b2e5153::t_e844352696a91b 1-129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "66a869c67eadab3cd4369f5caa1e2e80c9614521",
+  "prompts": {},
+  "sessions": {
+    "s_e9ef7c7b2e5153": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dc12c7ed-7ba4-4019-8ad7-51356b388432",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
