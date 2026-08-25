@@ -67,4 +67,8 @@ export const BodySchema = z.object({
   company: z.string().max(160).optional().nullable(),
   quoteItems: z.array(QuoteItemSchema).min(1).max(40),
   recommenderQueryId: z.string().max(40).optional().nullable(),
+  // Ensayo: recorre el camino entero sin causar ningún efecto externo. La ruta
+  // exige credencial de admin para aceptarlo — el schema solo lo admite como
+  // campo, el cerrojo está en `route.ts`.
+  dryRun: z.boolean().optional(),
 });

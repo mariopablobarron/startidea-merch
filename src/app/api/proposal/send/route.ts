@@ -11,13 +11,36 @@
  *     company?: string;          // opcional
  *     quoteItems: ProposalQuoteItem[];  // del recomendador
  *     recommenderQueryId?: string;      // si viene de un query previo
+ *     dryRun?: boolean;          // ENSAYO: ver abajo. Solo admin.
  *   }
  *
  * Respuesta:
  *   200 { proposalNumber, downloadUrl }
  *   400 { error }  — validación
+ *   401 { error }  — dryRun sin credencial de admin
  *   429 { error }  — rate limit
  *   500 { error }  — fallo al enviar email o persistir
+ *
+ * MODO ENSAYO (`dryRun: true`)
+ * ---------------------------
+ * Esta ruta no se podía probar de punta a punta contra producción sin causar
+ * tres efectos reales: un email a una persona, una fila `Proposal` en la BD y
+ * un aviso a los admins por Telegram. El ensayo recorre el mismo camino —
+ * validación, saneado, cálculo de totales y render real del PDF, que es donde
+ * se rompen las cosas — y corta justo antes de cualquier efecto externo:
+ *
+ *   NO crea la fila `Proposal`      NO envía el email      NO avisa a Telegram
+ *   NO avisa a los admins           NO toca `ProductView`
+ *
+ * Va detrás de credencial de admin (cookie de sesión o `X-Admin-Secret`) a
+ * propósito: sin ese cerrojo sería una vía anónima para hacer renderizar PDFs
+ * al servidor SIN dejar rastro en la BD — hoy toda petición que llega hasta el
+ * render deja su fila. El ensayo quita el rastro, así que tiene que quitar
+ * también el anonimato.
+ *
+ * El `proposalNumber` que devuelve es el que le tocaría a la siguiente
+ * propuesta real, y NO queda reservado: no se persiste nada, así que la
+ * siguiente propuesta de verdad usará ese mismo número.
  */
 import { createElement, type ReactElement } from "react";
 import { NextResponse } from "next/server";
@@ -37,6 +60,7 @@ import { notifyAdmins } from "@/lib/notify-admin";
 import { isNotificationEnabled } from "@/lib/notification-rules";
 import type { Prisma } from "@prisma/client";
 import { BodySchema } from "@/lib/proposal-send-schema";
+import { requireAdminSession } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,6 +90,18 @@ export async function POST(req: Request) {
       },
       { status: 400 },
     );
+  }
+
+  // El ensayo no deja rastro en BD, así que no puede ser anónimo (ver cabecera).
+  const dryRun = parsed.dryRun === true;
+  if (dryRun) {
+    const auth = await requireAdminSession(req);
+    if (!auth.ok) {
+      return NextResponse.json(
+        { error: "DRY_RUN_REQUIERE_ADMIN", detail: auth.reason },
+        { status: auth.status },
+      );
+    }
   }
 
   const items: ProposalQuoteItem[] = parsed.quoteItems;
@@ -116,7 +152,8 @@ export async function POST(req: Request) {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    void notifyTelegram(
+    // En ensayo el fallo se devuelve a quien lo pidió y no despierta a nadie.
+    if (!dryRun) void notifyTelegram(
       `⚠️ <b>Propuesta PDF render FALLÓ</b>\n` +
         `Propuesta: ${proposalNumber}\n` +
         `To: ${parsed.email}\n` +
@@ -125,9 +162,31 @@ export async function POST(req: Request) {
       console.error("[proposal-send] notifyTelegram (aviso PDF fallido) falló:", e instanceof Error ? e.message : e),
     );
     return NextResponse.json(
-      { error: "PDF_RENDER_FAILED", detail: message },
+      { error: "PDF_RENDER_FAILED", detail: message, ...(dryRun ? { dryRun: true } : {}) },
       { status: 500 },
     );
+  }
+
+  // 2b. Fin del ensayo: el PDF se ha renderizado de verdad, y aquí empiezan
+  // los efectos externos. Ni una línea más.
+  if (dryRun) {
+    return NextResponse.json({
+      ok: true,
+      dryRun: true,
+      proposalNumber,
+      numeroReservado: false,
+      pdfBytes: pdfBuffer.length,
+      wouldSendTo: parsed.email,
+      totals,
+      items: items.length,
+      skipped: [
+        "Proposal.create",
+        "sendProposalEmail",
+        "notifyTelegram",
+        "notifyAdmins",
+        "ProductView.upsert",
+      ],
+    });
   }
 
   // 3. Persistir en BD antes de enviar email (necesitamos id para el token)
