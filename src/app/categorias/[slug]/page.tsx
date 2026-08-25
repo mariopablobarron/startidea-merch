@@ -49,11 +49,28 @@ export async function generateMetadata({
   const title = `${category.name} personalizable para empresas`;
   const description = `${category.name} con tu logo: precio competitivo, cotización en 24h y producción con impacto social en Centros Especiales de Empleo de Granada.`;
   const url = `${SITE_URL}/categorias/${slug}`;
+  // La imagen Open Graph se declara AQUÍ, explícita, y no se deja heredar del
+  // fichero `src/app/opengraph-image.tsx`: las páginas estáticas (/faq, /sobre,
+  // /blog) sí la heredan, pero estas 501 landings de categoría se servían sin
+  // ninguna `og:image` — medido en producción el 25-ago-2026. Compartir una
+  // categoría en WhatsApp o LinkedIn daba una tarjeta sin imagen.
+  const image = `${SITE_URL}/opengraph-image`;
   return {
     title,
     description,
     alternates: { canonical: url },
-    openGraph: { type: "website", url, title, description, siteName: "TodoMerchandising", locale: "es_ES" },
+    openGraph: {
+      type: "website",
+      url,
+      title,
+      description,
+      siteName: "TodoMerchandising",
+      locale: "es_ES",
+      images: [{ url: image, width: 1200, height: 630, alt: "TodoMerchandising" }],
+    },
+    // Sin esto, la tarjeta de Twitter/X heredaba el title y la description
+    // genéricos del layout, que no hablaban de esta categoría.
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 
