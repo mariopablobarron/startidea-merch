@@ -1,0 +1,55 @@
+src/app/ayuda/page.tsx
+  s_5518ccd62d95e3::t_4424274753b854 15
+src/app/carrito/page.tsx
+  s_5518ccd62d95e3::t_37cf91e2841daf 11
+src/app/categorias/page.tsx
+  s_5518ccd62d95e3::t_37ad121968095c 22
+src/app/comparar/page.tsx
+  s_5518ccd62d95e3::t_8ead4be2b1f2e4 23
+src/app/layout.tsx
+  s_5518ccd62d95e3::t_04bc358a069784 65-69
+src/app/og-url-coherente-con-canonical.guard.test.ts
+  s_5518ccd62d95e3::t_6456e8739c5eb7 1-141
+src/app/recursos/[slug]/page.tsx
+  s_5518ccd62d95e3::t_c70825d623c423 32
+src/app/recursos/calendario-regalos-corporativos/page.tsx
+  s_5518ccd62d95e3::t_c899aef02a819c 19
+src/app/recursos/especificaciones-mockup/page.tsx
+  s_5518ccd62d95e3::t_e3cc8523213a1d 19
+src/app/recursos/guia-pantone-serigrafia-corporativa/page.tsx
+  s_5518ccd62d95e3::t_64dd5818f2c4ac 19
+src/app/recursos/kit-imagen-corporativa/page.tsx
+  s_5518ccd62d95e3::t_47b13adbfafc9b 19
+src/app/recursos/merchandising-centro-especial-empleo/page.tsx
+  s_5518ccd62d95e3::t_3fc91b0712c454 9
+src/app/recursos/merchandising-producido-espana/page.tsx
+  s_5518ccd62d95e3::t_5414520b1f0562 9
+src/app/recursos/merchandising-sostenible-empresas/page.tsx
+  s_5518ccd62d95e3::t_b21a153aaf2268 9
+src/app/recursos/tabla-tallas-universales/page.tsx
+  s_5518ccd62d95e3::t_da1914db356089 19
+src/app/sectores/page.tsx
+  s_5518ccd62d95e3::t_2e58b3a2151e49 18
+src/app/sobre/page.tsx
+  s_5518ccd62d95e3::t_5e3d1de1569486 14
+src/lib/page-seo.test.ts
+  s_5518ccd62d95e3::t_2a317eb57c8e13 6,41-88
+src/lib/page-seo.ts
+  s_5518ccd62d95e3::t_f4a9074c77e459 62,79-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "c9673dbd1d1412add09fd014f293cb77f70b92e9",
+  "prompts": {},
+  "sessions": {
+    "s_5518ccd62d95e3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ea55f06-09ad-4b54-9405-981f1db31808",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
