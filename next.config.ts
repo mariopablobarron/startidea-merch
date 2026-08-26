@@ -66,6 +66,13 @@ const CSP_REPORT_ONLY = [
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
   "media-src 'self' blob: data:",
   "worker-src 'self' blob:",
+  // Los dos, a propósito: `report-uri` está deprecado pero es lo único que
+  // entienden Safari y Firefox; `report-to` es el moderno de Chrome. Hasta hoy
+  // no había NINGUNO, así que Report-Only no informaba a ninguna parte y solo
+  // se veía abriendo la consola a mano — por eso el checkout llevaba semanas
+  // sin medir. Ver `src/app/api/csp-report/route.ts`.
+  "report-uri /api/csp-report",
+  "report-to csp",
 ].join("; ");
 
 const SECURITY_HEADERS = [
@@ -88,6 +95,8 @@ const SECURITY_HEADERS = [
       "camera=(), microphone=(self), geolocation=(), payment=(self), interest-cohort=(), browsing-topics=()",
   },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // Declara el grupo `csp` al que apunta el `report-to` de la política.
+  { key: "Reporting-Endpoints", value: 'csp="/api/csp-report"' },
   { key: "Content-Security-Policy-Report-Only", value: CSP_REPORT_ONLY },
 ];
 
