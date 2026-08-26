@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -62,6 +62,31 @@ export function bloquesDeLaHome(fuenteHome: string): string[] {
     }
   }
   return rutas;
+}
+
+
+/**
+ * Todas las páginas públicas del App Router, para no vigilar solo la home.
+ *
+ * El guard nació mirando `src/app/page.tsx` y sus bloques, porque ahí era
+ * donde se habían visto las tres cifras. Pero el defecto —escribir el tamaño
+ * del catálogo a mano— no es de la home: el último literal que quedaba vivo
+ * estaba en la `description` de `/catalogo`, fuera del alcance de este
+ * fichero. Se excluyen `/admin` y `/clientes`: son superficies de equipo
+ * detrás de sesión, y una cifra aproximada ahí no le promete nada a nadie.
+ */
+export function paginasPublicas(dir: string = join(SRC, "app")): string[] {
+  const salida: string[] = [];
+  for (const entrada of readdirSync(dir)) {
+    const ruta = join(dir, entrada);
+    if (statSync(ruta).isDirectory()) {
+      if (entrada === "admin" || entrada === "clientes" || entrada === "api") continue;
+      salida.push(...paginasPublicas(ruta));
+    } else if (/^(page|layout)\.tsx$/.test(entrada)) {
+      salida.push(ruta);
+    }
+  }
+  return salida;
 }
 
 const HOME = join(SRC, "app", "page.tsx");
@@ -163,5 +188,30 @@ describe("cifra del catálogo: una sola fuente en la home", () => {
       expect(bloquesDeLaHome(inventado).some((f) => f.endsWith("Hero.tsx"))).toBe(true);
       expect(bloquesDeLaHome(`import { X } from "@/lib/otra-cosa";`)).toEqual([]);
     });
+  });
+
+  it("ninguna página pública escribe a mano el tamaño del catálogo", () => {
+    // El test de arriba solo alcanza la home y sus bloques. Éste recorre todas
+    // las páginas públicas: así cayó el último literal vivo, el de la
+    // `description` de /catalogo, que estaba fuera de aquel recorrido.
+    const paginas = paginasPublicas();
+    expect(paginas.length).toBeGreaterThan(10);
+
+    const infractores: string[] = [];
+    for (const fichero of paginas) {
+      const hallazgo = sinComentarios(readFileSync(fichero, "utf8")).match(LITERAL_DE_CATALOGO);
+      if (hallazgo) infractores.push(`${fichero.replace(SRC, "src")}: «${hallazgo[0].trim()}»`);
+    }
+    expect(
+      infractores,
+      `Usa formatCatalogFloor(count) de @/lib/catalog-count:\n${infractores.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("la description de /catalogo deriva del recuento, no de un literal", () => {
+    const catalogo = readFileSync(join(SRC, "app", "catalogo", "page.tsx"), "utf8");
+    // Que la frase exista con la cifra interpolada, y que el recuento se pida.
+    expect(catalogo).toMatch(/description:\s*`Más de \$\{formatCatalogFloor\(/);
+    expect(catalogo).toMatch(/contarCatalogo\(\)/);
   });
 });

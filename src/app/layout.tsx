@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import localFont from "next/font/local";
 import "./globals.css";
+import { UmamiAnalytics } from "@/components/UmamiAnalytics";
 import { CompareBanner } from "@/components/CompareBanner";
 import { CartBanner } from "@/components/CartBanner";
 import { PWARegister } from "@/components/PWARegister";
@@ -115,13 +115,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://connect.facebook.net" />
         <link rel="dns-prefetch" href="https://px.ads.linkedin.com" />
         <link rel="dns-prefetch" href="https://pixel.byspotify.com" />
-        {/* Umami analytics (privacy-first, sin cookies) */}
-        <Script
-          defer
-          src="https://analytics.hubstartidea.es/script.js"
-          data-website-id="7ab5c23b-9087-43ae-99fb-40e6c46d6da0"
-          strategy="afterInteractive"
-        />
+        {/* Umami analytics — SOLO con consentimiento de analíticas.
+            Antes se inyectaba aquí mismo, sin puerta: medía a todo el mundo
+            desde la primera carga mientras el banner ofrecía «Analíticas»
+            como una casilla que se podía desmarcar. */}
+        <UmamiAnalytics />
         {/* GA4 + Search Console — opcional, se activa con env vars */}
         <GoogleAnalytics />
         {/* Pixels publicitarios Meta + Google Ads + LinkedIn (env-driven) */}

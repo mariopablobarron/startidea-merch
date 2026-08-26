@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -41,6 +42,7 @@ export async function generateMetadata({
     "@/lib/page-seo"
   );
   const seo = await getPageSeo("/catalogo");
+  const BASE_METADATA = baseMetadata(await contarCatalogo());
   const merged = mergeMetadata(BASE_METADATA, seo);
 
   const sp = await searchParams;
@@ -64,12 +66,39 @@ export async function generateMetadata({
   });
 }
 
-const BASE_METADATA: Metadata = {
-  title: "Catálogo de merchandising personalizable",
-  description:
-    "Más de 9.000 productos promocionales personalizables: textil, drinkware, escritura, tecnología, eventos. Producción con impacto social en Centros Especiales de Empleo y talleres locales.",
-  alternates: { canonical: "https://merchandising.startidea.es/catalogo" },
-};
+/**
+ * Recuento del catálogo para la `description`, memoizado por render.
+ *
+ * `generateMetadata` y el componente de página son dos ejecuciones distintas
+ * y Prisma no las deduplica, así que sin `cache()` esto sería un `count` de
+ * más en cada render. La página revalida cada hora, y es un count sobre
+ * índice, pero no hay razón para pagarlo dos veces.
+ *
+ * Si la base de datos no responde se devuelve `undefined` y la frase cae en
+ * «miles de», que es lo que dice `formatCatalogFloor` cuando no hay recuento:
+ * una `description` sin cifra es mejor que una metadata caída.
+ */
+const contarCatalogo = cache(async (): Promise<number | undefined> => {
+  try {
+    return await prisma.product.count({ where: { active: true } });
+  } catch {
+    return undefined;
+  }
+});
+
+/**
+ * La cifra ya NO se escribe aquí: era el último literal de catálogo que
+ * quedaba en una superficie pública. Hoy no mentía —9.591 sí son «más de
+ * 9.000»— pero es exactamente la forma en que la home llegó a servir tres
+ * cifras distintas: cada literal era correcto el día que se escribió.
+ */
+function baseMetadata(productCount: number | undefined): Metadata {
+  return {
+    title: "Catálogo de merchandising personalizable",
+    description: `Más de ${formatCatalogFloor(productCount)} productos promocionales personalizables: textil, drinkware, escritura, tecnología, eventos. Producción con impacto social en Centros Especiales de Empleo y talleres locales.`,
+    alternates: { canonical: "https://merchandising.startidea.es/catalogo" },
+  };
+}
 
 export const revalidate = 3600;
 

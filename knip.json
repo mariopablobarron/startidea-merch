@@ -10,7 +10,6 @@
   "ignore": [
     "public/sw.js",
     "scripts/blog-drafts.mjs",
-    "src/components/OnboardingTour.tsx",
     "src/components/PriceTierTable.tsx",
     "src/components/QuantityConfigurator.tsx"
   ],

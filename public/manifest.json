@@ -9,14 +9,33 @@
   "orientation": "portrait-primary",
   "background_color": "#F4EFE6",
   "theme_color": "#F4EFE6",
-  "categories": ["business", "shopping"],
+  "categories": [
+    "business",
+    "shopping"
+  ],
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Catálogo", "url": "/catalogo", "description": "Explorar el catálogo completo" },
-    { "name": "Recomendador", "url": "/recomendador", "description": "Asistente IA para tu brief" },
-    { "name": "Carrito", "url": "/carrito", "description": "Ver cesta de cotización" },
-    { "name": "Admin", "url": "/admin", "description": "Panel general (sólo equipo)" }
+    {
+      "name": "Catálogo",
+      "url": "/catalogo",
+      "description": "Explorar el catálogo completo"
+    },
+    {
+      "name": "Recomendador",
+      "url": "/recomendador",
+      "description": "Asistente IA para tu brief"
+    },
+    {
+      "name": "Carrito",
+      "url": "/carrito",
+      "description": "Ver cesta de cotización"
+    }
   ]
 }

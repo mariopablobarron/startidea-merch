@@ -1,0 +1,75 @@
+name: Notificar a Mario (Telegram)
+
+# Canal de aviso del agente autónomo, y de cualquiera que necesite mandar un
+# mensaje desde CI sin tener el token delante.
+#
+# Por qué existe: el SKILL del agente manda «avisar a Mario por Telegram» y
+# apunta a un fichero que no contiene ningún mecanismo. Durante quince runs el
+# informe se quedó en el backlog porque la alternativa era improvisar un canal
+# saliente con secretos ajenos, que no se hace. Los secrets, en cambio, ya
+# estaban aquí: `money-smoke.yml` los usa para sus alertas. Esto los reutiliza.
+#
+# Diseño deliberado:
+#  - Solo `workflow_dispatch`: no se dispara solo, nunca. Cada mensaje es una
+#    llamada explícita (`gh workflow run notificar.yml -f mensaje=…`).
+#  - El texto viaja por `env` y se envía con `--data-urlencode`, así que unas
+#    comillas o un `$(…)` en el mensaje son texto y no una orden de shell.
+#  - Sin secrets configurados no falla el job: avisa y sale. Un canal de avisos
+#    que rompe la build cuando no está configurado es peor que no tenerlo.
+#  - **No es para clientes.** Habla con Mario y con nadie más; las campañas y
+#    cualquier envío saliente a terceros siguen en su sitio, fuera de aquí.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mensaje:
+        description: "Texto del aviso (máx. ~3.500 caracteres)"
+        required: true
+        type: string
+      titulo:
+        description: "Encabezado corto"
+        required: false
+        default: "🤖 Agente merch"
+        type: string
+
+concurrency:
+  group: notificar-telegram
+  cancel-in-progress: false
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Enviar a Telegram
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TITULO: ${{ inputs.titulo }}
+          MENSAJE: ${{ inputs.mensaje }}
+        run: |
+          if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
+            echo "::warning::Sin secrets de Telegram — no se envía nada"
+            exit 0
+          fi
+          # Telegram corta en 4096; se recorta antes para no perder el mensaje
+          # entero por pasarse, y se deja constancia de que va recortado.
+          TEXTO="${TITULO}"$'\n\n'"${MENSAJE}"
+          if [ ${#TEXTO} -gt 3900 ]; then
+            TEXTO="${TEXTO:0:3900}"$'\n\n'"[…recortado]"
+          fi
+          CODIGO=$(curl -sS -o /tmp/tg.json -w '%{http_code}' \
+            -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            -d "chat_id=${TG_CHAT}" \
+            -d "disable_web_page_preview=true" \
+            --data-urlencode "text=${TEXTO}")
+          echo "HTTP ${CODIGO}"
+          # Telegram responde 200 con {"ok":false,...} en varios errores, así
+          # que se mira el cuerpo y no solo el código: un aviso que se pierde
+          # en silencio es exactamente lo que este workflow viene a evitar.
+          if [ "$CODIGO" != "200" ] || ! grep -q '"ok":true' /tmp/tg.json; then
+            echo "::error::Telegram rechazó el mensaje"
+            cat /tmp/tg.json
+            exit 1
+          fi
+          echo "Aviso enviado."

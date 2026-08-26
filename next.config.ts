@@ -4,14 +4,53 @@ import type { NextConfig } from "next";
 // Aplica a TODA la respuesta de la app. Auditado con Mozilla Observatory.
 //
 // Decisiones tomadas:
-//  - Sin Content-Security-Policy todavía: una CSP estricta requiere testing
-//    exhaustivo con Stripe Checkout (iframes) y los scripts inline que Next
-//    inyecta. Pendiente sprint específico.
+//  - Content-Security-Policy en **Report-Only**, no en modo bloqueo. La
+//    cabecera de bloqueo llevaba meses aplazada porque romper el pago o el
+//    widget de voz en producción sale caro y la política se escribe a ciegas.
+//    Report-Only deshace ese nudo: el navegador NO bloquea nada, solo informa
+//    de lo que habría bloqueado. Así se mide con tráfico real y se pasa a
+//    bloqueo cuando los informes salgan limpios — ver CSP_REPORT_ONLY abajo.
 //  - HSTS 2 años + includeSubDomains + preload: el dominio sólo sirve HTTPS.
 //  - Frame-Options DENY: la app no se embebe en iframes externos.
 //  - Permissions-Policy denyall: no usamos camera/mic/geo, sí payment (Stripe).
 //  - Cross-Origin-Opener-Policy same-origin: aísla pestañas con window.open.
 //  - X-Powered-By deshabilitado (poweredByHeader: false abajo).
+
+// ── Content-Security-Policy (Report-Only) ────────────────────────────────
+// ⚠️ Esta cabecera **no bloquea nada**: `-Report-Only` hace que el navegador
+// registre en consola lo que la política habría impedido y siga cargándolo.
+// Es deliberado: es el paso previo a aplicarla de verdad, y permite descubrir
+// los orígenes que faltan sin arriesgar el checkout ni el widget de voz.
+//
+// Orígenes, cada uno con su motivo (medidos en el código, no supuestos):
+//  - 'unsafe-inline' en script-src: Next inyecta scripts inline de hidratación
+//    y los `<Script id=…>` de GA4/Ads. Quitarlo exige nonces por request, que
+//    es incompatible con las páginas estáticas que hoy sirve el sitio. Es la
+//    parte floja de esta política y está aquí escrito para que se note.
+//  - googletagmanager / connect.facebook.net / snap.licdn.com: GA4 y pixels,
+//    que solo cargan con consentimiento pero necesitan estar permitidos.
+//  - analytics.hubstartidea.es: Umami (también tras consentimiento).
+//  - js.stripe.com + frame-src: Express Checkout monta el iframe de Stripe.
+//  - api.elevenlabs.io y wss:: el SDK de voz de Carmen abre WebSocket/WebRTC.
+//  - img-src https: data: blob:: las imágenes de catálogo pasan por el proxy
+//    propio, pero next/image y los previews de mockup usan data:/blob:.
+//  - frame-ancestors 'self': equivalente moderno del X-Frame-Options de arriba.
+const CSP_REPORT_ONLY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'self'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://snap.licdn.com https://analytics.hubstartidea.es https://js.stripe.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https://www.google-analytics.com https://analytics.hubstartidea.es https://api.stripe.com https://api.elevenlabs.io https://px.ads.linkedin.com wss:",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+  "media-src 'self' blob: data:",
+  "worker-src 'self' blob:",
+].join("; ");
+
 const SECURITY_HEADERS = [
   {
     key: "Strict-Transport-Security",
@@ -32,6 +71,7 @@ const SECURITY_HEADERS = [
       "camera=(), microphone=(self), geolocation=(), payment=(self), interest-cohort=(), browsing-topics=()",
   },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  { key: "Content-Security-Policy-Report-Only", value: CSP_REPORT_ONLY },
 ];
 
 const config: NextConfig = {

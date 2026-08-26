@@ -27,6 +27,12 @@ const HOSTS_DE_TRACKING = [
   "googletagmanager.com",
   "pixel.byspotify.com",
   "google-analytics.com",
+  // Umami. Vive en un dominio NUESTRO (analytics.hubstartidea.es) y por eso
+  // no encajaba en la idea de «tercero» con la que se escribió esta lista:
+  // se coló y estuvo midiendo a todo visitante sin pasar por el banner,
+  // mientras el banner lo ofrecía como una casilla desmarcable. Que el
+  // servidor sea propio no cambia lo que el usuario cree haber decidido.
+  "analytics.hubstartidea.es",
 ];
 
 /** `dns-prefetch` y `preconnect` solo calientan DNS/TLS: no envían visita. */
@@ -50,7 +56,18 @@ function ficherosDeCodigo(dir: string): string[] {
     const ruta = join(dir, entrada);
     if (statSync(ruta).isDirectory()) {
       salida.push(...ficherosDeCodigo(ruta));
-    } else if (/\.(ts|tsx)$/.test(entrada) && entrada !== ESTE_FICHERO) {
+    } else if (
+      /\.(ts|tsx)$/.test(entrada) &&
+      entrada !== ESTE_FICHERO &&
+      // Los ficheros de test se excluyen del recorrido entero: no entran en
+      // el bundle, así que ninguno puede cargar un pixel en el navegador de
+      // nadie. Lo que sí hacen es NOMBRAR hosts —`supplier-leak-paridad` pasa
+      // un src de cdn1.midocean.com a su detector, y el guard de la CSP cita
+      // googletagmanager y Umami para comprobar que la política los cubre— y
+      // denunciarlos por mencionarlos empuja a trocear los literales para
+      // esquivar el guard, que es peor que no tenerlo.
+      !/\.test\.tsx?$/.test(entrada)
+    ) {
       salida.push(ruta);
     }
   }
@@ -72,6 +89,40 @@ function lineasQueCarganSinConsentimiento(fuente: string): string[] {
         !PISTAS_DE_HINT.some((pista) => linea.includes(pista)),
     )
     .map((linea) => linea.trim());
+}
+
+/**
+ * Dominios que servimos nosotros y que no miden nada: cargar de ahí no
+ * informa a ningún tercero de que existe la visita.
+ *
+ * `analytics.hubstartidea.es` NO está aquí a propósito, aunque el servidor
+ * sea nuestro: es justo el servicio de medición del que hablamos.
+ */
+const DOMINIOS_PROPIOS_SIN_MEDICION = [
+  "merchandising.startidea.es",
+  "merchandising.hubstartidea.es",
+  "startidea.es",
+];
+
+/**
+ * Exenciones del test de scripts externos. Cada una necesita su razón aquí:
+ *
+ *  - `GoogleAnalytics.tsx`: Consent Mode v2 (ver arriba), con su propio test.
+ *  - `AdsPixels.tsx`: sí importa el gate; queda por si alguien reordena los
+ *    imports y el detector deja de verlo — el otro test lo cubre igual.
+ */
+const SCRIPTS_EXTERNOS_EXENTOS = [EXENTO_POR_CONSENT_MODE];
+
+/** Hosts de `<Script src="https://…">` en ficheros que no importan el gate. */
+function scriptsExternosSinGate(fuente: string): string[] {
+  if (IMPORTA_EL_GATE.test(fuente)) return [];
+  const hosts: string[] = [];
+  for (const m of fuente.matchAll(/src=\{?[`"']https:\/\/([a-z0-9.-]+)/gi)) {
+    const host = m[1].toLowerCase();
+    if (DOMINIOS_PROPIOS_SIN_MEDICION.includes(host)) continue;
+    if (!hosts.includes(host)) hosts.push(host);
+  }
+  return hosts;
 }
 
 describe("los pixels de terceros solo cargan con consentimiento", () => {
@@ -115,10 +166,51 @@ describe("los pixels de terceros solo cargan con consentimiento", () => {
     expect(posicionDefault).toBeLessThan(posicionConfig);
   });
 
+  /**
+   * El anterior es una lista de hosts conocidos, y por eso Umami lo esquivó
+   * dos meses: no estaba en ella. Este test no pregunta *qué* host es, sino
+   * si un `<Script>` sale a un dominio que no es el nuestro — así el que
+   * llegue mañana también cae, se llame como se llame.
+   */
+  it("ningún <Script src> sale a un dominio ajeno sin gate ni exención escrita", () => {
+    const culpables = ficheros
+      .map((ruta) => ({
+        ruta: ruta.replace(process.cwd() + "/", ""),
+        hosts: scriptsExternosSinGate(readFileSync(ruta, "utf8")),
+      }))
+      .filter((f) => f.hosts.length > 0 && !SCRIPTS_EXTERNOS_EXENTOS.includes(f.ruta));
+
+    expect(culpables).toEqual([]);
+  });
+
+  it("el detector de scripts externos distingue el gate, el propio dominio y el inline", () => {
+    const ajenoSinGate = `<Script src="https://cdn.ajeno.com/x.js" />`;
+    expect(scriptsExternosSinGate(ajenoSinGate)).toEqual(["cdn.ajeno.com"]);
+
+    const ajenoConGate = `import { hasAnalyticsConsent } from "@/lib/consent";
+      <Script src="https://cdn.ajeno.com/x.js" />`;
+    expect(scriptsExternosSinGate(ajenoConGate)).toEqual([]);
+
+    // Un asset servido por nosotros no informa a nadie de la visita.
+    const propio = `<Script src="https://merchandising.startidea.es/sw.js" />`;
+    expect(scriptsExternosSinGate(propio)).toEqual([]);
+
+    // El caso real que se coló: dominio propio, pero servicio que mide.
+    const umami = `<Script src="https://analytics.hubstartidea.es/script.js" />`;
+    expect(scriptsExternosSinGate(umami)).toEqual(["analytics.hubstartidea.es"]);
+
+    // Un `<Script>` sin src (JSON-LD, inicializaciones) no sale a la red.
+    const inline = `<Script id="algo">{\`console.log(1)\`}</Script>`;
+    expect(scriptsExternosSinGate(inline)).toEqual([]);
+  });
+
   // — El guard se vigila a sí mismo —
 
   it("de verdad está mirando el árbol y la lista no se ha quedado corta", () => {
     expect(ficheros.length).toBeGreaterThan(200);
+    // La exclusión de tests es una decisión, no un descuido: si alguien la
+    // quita, el guard empezará a denunciar ficheros que solo citan un host.
+    expect(ficheros.some((f) => /\.test\.tsx?$/.test(f))).toBe(false);
     expect(HOSTS_DE_TRACKING.length).toBeGreaterThanOrEqual(6);
 
     const mencionan = ficheros.filter((ruta) =>
