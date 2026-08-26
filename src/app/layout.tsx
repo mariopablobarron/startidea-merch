@@ -103,10 +103,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${montserrat.variable} ${montserratAlt.variable}`}>
       <head>
         <style>{floatingSurfacePriorityCss()}</style>
-        {/* Performance: preconnect a orígenes críticos que cargamos en el
-            primer paint. Reduce LCP eliminando handshake TCP/TLS. Solo
-            los críticos — los de ads van con dns-prefetch (más barato). */}
-        <link rel="preconnect" href="https://analytics.hubstartidea.es" />
+        {/* Umami: solo `dns-prefetch`, NO `preconnect`.
+            El `preconnect` que había aquí abría el handshake TCP/TLS con el
+            servidor de analítica en el primer paint — es decir, le enseñaba
+            la IP del visitante antes de que aceptara nada, justo lo que
+            acaba de arreglarse gateando el script. `dns-prefetch` solo
+            resuelve el nombre, que es el criterio que este mismo fichero
+            aplica dos líneas más abajo a los pixels de ads.
+            Coste: el primer evento de Umami paga el handshake. Lo paga
+            quien ha dicho que sí, y solo una vez. */}
         <link rel="dns-prefetch" href="https://analytics.hubstartidea.es" />
         {/* Fonts ya gestionados por next/font (auto-preconnect) */}
         {/* Ads pixels — dns-prefetch para que solo resuelvan DNS sin

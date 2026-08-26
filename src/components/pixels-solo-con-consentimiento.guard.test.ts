@@ -35,8 +35,20 @@ const HOSTS_DE_TRACKING = [
   "analytics.hubstartidea.es",
 ];
 
-/** `dns-prefetch` y `preconnect` solo calientan DNS/TLS: no envían visita. */
-const PISTAS_DE_HINT = ["dns-prefetch", "preconnect", "prefetch"];
+/**
+ * Hints de red que NO envían la visita a nadie.
+ *
+ * ⚠️ `preconnect` estaba en esta lista y no debía: `dns-prefetch` resuelve un
+ * nombre y ahí acaba, pero `preconnect` **abre el handshake TCP/TLS**, así que
+ * el servidor de destino ve la IP del visitante aunque el script nunca llegue
+ * a cargarse. Con Umami eso significaba enseñarle cada visita al servidor de
+ * analítica justo cuando se estaba gateando el script para no hacerlo. Va
+ * aparte, en `HINTS_QUE_CONTACTAN`.
+ */
+const PISTAS_DE_HINT = ["dns-prefetch", "prefetch"];
+
+/** Hints que sí abren conexión con el destino, y por eso no valen como excusa. */
+const HINTS_QUE_CONTACTAN = ["preconnect", "preload"];
 
 const IMPORTA_EL_GATE = /from\s+["']@\/lib\/consent["']/;
 
@@ -202,6 +214,31 @@ describe("los pixels de terceros solo cargan con consentimiento", () => {
     // Un `<Script>` sin src (JSON-LD, inicializaciones) no sale a la red.
     const inline = `<Script id="algo">{\`console.log(1)\`}</Script>`;
     expect(scriptsExternosSinGate(inline)).toEqual([]);
+  });
+
+
+  it("ningún host de tracking se precalienta con preconnect (solo dns-prefetch)", () => {
+    // `preconnect` a un servidor de analítica es una conexión TLS por visita:
+    // le llega la IP de quien no ha aceptado nada. Es la mitad del defecto que
+    // queda cuando solo se gatea el <Script>.
+    const infractores: string[] = [];
+    for (const ruta of ficheros) {
+      for (const linea of readFileSync(ruta, "utf8").split("\n")) {
+        if (!HINTS_QUE_CONTACTAN.some((h) => linea.includes(`"${h}"`))) continue;
+        if (!HOSTS_DE_TRACKING.some((host) => linea.includes(host))) continue;
+        infractores.push(`${ruta.replace(process.cwd() + "/", "")}: ${linea.trim()}`);
+      }
+    }
+    expect(infractores).toEqual([]);
+  });
+
+  it("el detector no confunde dns-prefetch con preconnect", () => {
+    const conPreconnect = `<link rel="preconnect" href="https://analytics.hubstartidea.es" />`;
+    // Ya no cuenta como hint inocente: sin gate, se denuncia.
+    expect(lineasQueCarganSinConsentimiento(conPreconnect)).toHaveLength(1);
+
+    const conDnsPrefetch = `<link rel="dns-prefetch" href="https://analytics.hubstartidea.es" />`;
+    expect(lineasQueCarganSinConsentimiento(conDnsPrefetch)).toHaveLength(0);
   });
 
   // — El guard se vigila a sí mismo —
