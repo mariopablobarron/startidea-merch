@@ -27,6 +27,26 @@ CATALOGO="$REPO_ROOT/src/lib/cron-catalog.ts"
 
 [ -f "$CATALOGO" ] || { echo "ERROR: no encuentro $CATALOGO"; exit 1; }
 
+# --- 0. ¿El catálogo que voy a leer es el que está DESPLEGADO? --------------
+# Este barrido compara el VPS contra un fichero del repo, así que un repo que
+# no está en `origin/main` produce desajustes que NO son del VPS: son míos.
+# Pasó el 2026-08-27 — corrido desde el working tree principal (parado en una
+# rama 83 commits atrás) dio 5 falsos "el catálogo miente", y los minutos que
+# señalaba eran los del catálogo VIEJO. Aviso, pero no aborto: auditar una rama
+# que cambia el catálogo a propósito es legítimo.
+git -C "$REPO_ROOT" fetch -q origin main 2>/dev/null || true
+if git -C "$REPO_ROOT" rev-parse --verify -q origin/main >/dev/null; then
+  if ! git -C "$REPO_ROOT" diff --quiet origin/main -- src/lib/cron-catalog.ts 2>/dev/null; then
+    echo "⚠️  AVISO: tu src/lib/cron-catalog.ts NO coincide con origin/main."
+    echo "    Los desajustes de abajo pueden ser de ESTE REPO, no del VPS."
+    echo "    Para auditar lo desplegado, corre esto en un worktree de origin/main."
+    echo
+  fi
+else
+  echo "⚠️  AVISO: no hay ref origin/main; no puedo comprobar contra qué comparo."
+  echo
+fi
+
 # --- 1. Crontab real: líneas en claro Y líneas envueltas en base64 ----------
 real="$(ssh -o ConnectTimeout=20 "$VPS" '
   crontab -l 2>/dev/null | grep -v "^\s*#" | grep -v "^\s*$" | while IFS= read -r l; do
