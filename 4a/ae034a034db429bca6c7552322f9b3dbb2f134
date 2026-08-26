@@ -1,0 +1,25 @@
+next.config.ts
+  s_2a76f8e96d938c::t_c1379de6ca9d06 69-75,98-99
+src/app/api/csp-report/route.ts
+  s_2a76f8e96d938c::t_1f368449a67416 1-88
+src/lib/csp-report.test.ts
+  s_2a76f8e96d938c::t_2d3abcbb031961 1-106
+src/lib/csp-report.ts
+  s_2a76f8e96d938c::t_27cb2a15950a07 1-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "4aae034a034db429bca6c7552322f9b3dbb2f134",
+  "prompts": {},
+  "sessions": {
+    "s_2a76f8e96d938c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "54611bea-b9ee-44ba-b0b3-497d35331b2d",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
