@@ -1,0 +1,23 @@
+.github/workflows/ci.yml
+  s_18c9fabc6237dd::t_4d248cf1df7a0e 8-11
+next.config.ts
+  s_18c9fabc6237dd::t_49aa8fcb0cbf84 33-41,47-54,61,65
+src/lib/csp-cubre-hosts-de-script.guard.test.ts
+  s_18c9fabc6237dd::t_764def02f5f76d 1-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "1aa5cd12815e9f022eb5381cea848dc43e16b0cb",
+  "prompts": {},
+  "sessions": {
+    "s_18c9fabc6237dd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9c5696e6-648b-4329-8d76-fce74ed99b04",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
