@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { AskDiego } from "./AskDiego";
+import { formatCatalogFloor } from "@/lib/catalog-count";
+
 import { motion, fadeUp, stagger, viewportOnce } from "./motion";
 import { Counter } from "./Counter";
 import { NavSearch } from "./NavSearch";
@@ -47,10 +49,12 @@ export function Hero({
     typeof priceFromCents === "number" && priceFromCents > 0
       ? priceFromCents / 100
       : 0.3;
-  const products = typeof productCount === "number" && productCount > 0 ? productCount : 2000;
+  // Sin literal de reserva: `formatCatalogFloor` ya decide qué decir cuando no
+  // hay recuento («miles de»), y así el hero no puede volver a discrepar de los
+  // demás bloques de la misma home, que es justo lo que pasaba el 26-ago-2026.
+  const countStr = formatCatalogFloor(productCount);
 
   const priceStr = EUR_DECIMAL.format(fromEur);
-  const countStr = products.toLocaleString("es-ES");
 
   // Interpolación de variables {price} y {count}
   const accent = h1Accent.replace("{price}", priceStr).replace("{count}", countStr);
@@ -131,7 +135,15 @@ export function Hero({
           className="mt-24 grid grid-cols-3 gap-6 border-t border-line pt-12 lg:gap-12"
         >
           <Stat label="Productos">
-            <Counter value={products} prefix="+" />
+            {/* El contador anima hacia el recuento real; sin recuento (base de
+                datos caída) no se inventa un número: se dice «miles». */}
+            {typeof productCount === "number" && productCount > 0 ? (
+              <Counter value={productCount} prefix="+" />
+            ) : (
+              <span className="font-display text-5xl font-semibold tracking-tight text-ink lg:text-6xl">
+                miles
+              </span>
+            )}
           </Stat>
           <Stat label="Precio">
             <span className="font-display text-5xl font-semibold tracking-tight text-ink lg:text-6xl">

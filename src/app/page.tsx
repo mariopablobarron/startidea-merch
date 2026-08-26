@@ -57,8 +57,13 @@ async function getHeroData() {
       productCount,
     };
   } catch {
-    // Fallback si DB no disponible (build time o downtime)
-    return { priceFromCents: undefined, productCount: 2400 };
+    // Fallback si DB no disponible (build time o downtime).
+    //
+    // `productCount: undefined` a propósito, no un número escrito a mano: si no
+    // se puede contar el catálogo, las superficies dicen «miles de» en vez de
+    // una cifra inventada. El valor anterior era 2.400, que ya se había quedado
+    // corto por 7.000 productos.
+    return { priceFromCents: undefined, productCount: undefined };
   }
 }
 
@@ -95,8 +100,8 @@ export default async function HomePage() {
         <Cases />
         <LatestPosts />
         <Partners />
-        <Categories />
-        <SeoContent />
+        <Categories productCount={hero.productCount} />
+        <SeoContent productCount={hero.productCount} />
         <Faq />
         <ClosingStatement />
         <QuoteSection />

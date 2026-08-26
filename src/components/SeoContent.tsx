@@ -16,7 +16,9 @@
  *
  * Server component (no JS, no motion) — máxima velocidad y crawl bot-friendly.
  */
-export function SeoContent() {
+import { formatCatalogFloor } from "@/lib/catalog-count";
+
+export function SeoContent({ productCount }: { productCount?: number }) {
   return (
     <section
       aria-labelledby="seo-content-title"
@@ -219,7 +221,8 @@ export function SeoContent() {
             Cómo solicitar tu cotización en TodoMerchandising
           </h3>
           <p>
-            El proceso es directo y sin compromiso: explora el catálogo (más de 9.000 productos
+            El proceso es directo y sin compromiso: explora el catálogo (más de{" "}
+            {formatCatalogFloor(productCount)} productos
             con precio &quot;desde&quot; visible en cada tarjeta), añade los que te interesan al
             configurador, indica cantidad y técnica de marcaje. Te devolvemos cotización
             cerrada en menos de 24 horas laborables con depósito flexible (50 % al confirmar,

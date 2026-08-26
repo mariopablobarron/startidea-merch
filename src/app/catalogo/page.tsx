@@ -7,6 +7,7 @@ import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { BannerSlot } from "@/components/BannerSlot";
 import { JsonLd } from "@/components/JsonLd";
 import { redirect } from "next/navigation";
+import { formatCatalogFloor } from "@/lib/catalog-count";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { publicRef } from "@/lib/internal-ref";
@@ -287,8 +288,16 @@ export default async function CatalogoPage({
     pageIds = rankedIds.slice((page - 1) * perPage, page * perPage);
   }
 
-  const [products, total, topCategories, subCategories, colorGroups, sizes, activePromos] =
-    await Promise.all([
+  const [
+    products,
+    total,
+    catalogoCompleto,
+    topCategories,
+    subCategories,
+    colorGroups,
+    sizes,
+    activePromos,
+  ] = await Promise.all([
       prisma.product.findMany({
         // Con relevancia: la página ya viene resuelta en pageIds (orden Meili);
         // sin ella, paginación SQL clásica.
@@ -321,6 +330,12 @@ export default async function CatalogoPage({
         },
       }),
       prisma.product.count({ where }),
+      // Recuento del catálogo ENTERO, aparte del `total` de arriba: ese lleva
+      // el `where` de los filtros activos, así que con una búsqueda puesta vale
+      // 12 y no serviría para el titular «Más de N productos», que habla del
+      // catálogo y no del resultado. Es un `count` sobre índice y la página
+      // revalida cada hora.
+      prisma.product.count({ where: { active: true } }),
       // Top-level categories con count de productos activos por cada una.
       // Filtramos las que tienen al menos 1 producto activo (directo o en subcategorías
       // hasta level 3) para evitar que el panel muestre categorías vacías.
@@ -453,7 +468,7 @@ export default async function CatalogoPage({
     name: category ? `${category.name} · TodoMerchandising` : "Catálogo · TodoMerchandising",
     description: category
       ? `Productos de la categoría ${category.name}: personalizables con tu logo y producción con impacto social.`
-      : "Más de 9.000 productos promocionales personalizables con producción en Centros Especiales de Empleo.",
+      : `Más de ${formatCatalogFloor(catalogoCompleto)} productos promocionales personalizables con producción en Centros Especiales de Empleo.`,
     url: `${SITE_URL}/catalogo${catSlug ? `?cat=${catSlug}` : ""}`,
     items: products.slice(0, 24).map((p) => ({
       name: publicProductName(p.name, p.override?.customName),
@@ -474,7 +489,7 @@ export default async function CatalogoPage({
               Catálogo
             </p>
             <h1 className="font-display text-section font-semibold text-ink">
-              {category ? category.name : "Más de 9.000 productos personalizables"}
+              {category ? category.name : `Más de ${formatCatalogFloor(catalogoCompleto)} productos personalizables`}
             </h1>
             <p className="mt-4 max-w-3xl text-base text-ink/70 lg:text-lg">
               Cualquier producto se personaliza con tu logo y se produce en CEE o talleres

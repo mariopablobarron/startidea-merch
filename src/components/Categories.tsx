@@ -4,6 +4,8 @@ import { motion, fadeUp, stagger, viewportOnce } from "./motion";
 
 import Link from "next/link";
 
+import { formatCatalogFloor } from "@/lib/catalog-count";
+
 const CATS = [
   { name: "Textil corporativo", desc: "Camisetas, polos, sudaderas, softshell.", price: "Desde 2,13 €", hint: "textil corporativo", searchQuery: "camiseta" },
   { name: "Bolsas & mochilas", desc: "Tote bags, bolsas técnicas, mochilas viaje.", price: "Desde 0,75 €", hint: "bolsas y mochilas personalizadas", searchQuery: "mochila" },
@@ -15,7 +17,7 @@ const CATS = [
   { name: "Regalos eco", desc: "Bambú, RPET, algodón orgánico, semilla.", price: "Desde 0,40 €", hint: "regalos eco", searchQuery: "bambu" },
 ];
 
-export function Categories() {
+export function Categories({ productCount }: { productCount?: number }) {
   return (
     <section id="productos" className="bg-bone py-24 lg:py-36">
       <div className="mx-auto max-w-8xl px-6 lg:px-10">
@@ -42,8 +44,8 @@ export function Categories() {
             </motion.h2>
           </div>
           <motion.p variants={fadeUp} className="max-w-md text-ink/60">
-            Más de 2.000 referencias personalizables con stock europeo y
-            producción en talleres locales certificados.{" "}
+            Más de {formatCatalogFloor(productCount)} referencias personalizables con stock
+            europeo y producción en talleres locales certificados.{" "}
             <Link href="/catalogo" className="font-medium text-accent underline-offset-4 hover:underline">
               Explorar catálogo →
             </Link>
