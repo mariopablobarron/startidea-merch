@@ -1,0 +1,21 @@
+src/lib/catalog-count.test.ts
+  s_f652213124e91e::t_7d6f5e24dd2142 43-63
+src/lib/catalog-count.ts
+  s_f652213124e91e::t_da6f57fdaa703a 50-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "4814e98523d734cde7b5a2d84f27686bfb3689e9",
+  "prompts": {},
+  "sessions": {
+    "s_f652213124e91e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "67d80b7d-9afe-45c7-8817-b7bec745b042",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
