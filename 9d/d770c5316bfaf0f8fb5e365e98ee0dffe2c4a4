@@ -1,0 +1,45 @@
+.github/workflows/notificar.yml
+  s_f652213124e91e::t_1a6332610a464c 1-75
+next.config.ts
+  s_f652213124e91e::t_79738103a6c4f3 7-12,18-53,74
+public/manifest.json
+  s_f652213124e91e::t_c0d2a2be72d628 12-15,17-22,25-39
+src/app/catalogo/page.tsx
+  s_53295b05bf8b60::t_0f018ab8623cc0 1,45,69-101
+src/app/layout.tsx
+  s_f652213124e91e::t_824fd310081e45 4,118-122
+src/components/UmamiAnalytics.tsx
+  s_f652213124e91e::t_5df9244ff977d3 4-34,37-39,41,44-49
+src/components/pixels-solo-con-consentimiento.guard.test.ts
+  s_f652213124e91e::t_517ea11830f5e5 30-35,59-70,94-127,169-206,211-213
+src/lib/cifra-catalogo-sin-literales.guard.test.ts
+  s_f652213124e91e::t_84251f8199e174 1,67-91,192-216
+src/lib/csp-report-only.guard.test.ts
+  s_f652213124e91e::t_6d01da87da1b88 1-68
+src/lib/manifest-sin-rutas-privadas.guard.test.ts
+  s_f652213124e91e::t_af902c4f36d708 1-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "9dd770c5316bfaf0f8fb5e365e98ee0dffe2c4a4",
+  "prompts": {},
+  "sessions": {
+    "s_53295b05bf8b60": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a035df-d741-7901-9b6e-9bd16e49ca34",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_f652213124e91e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "67d80b7d-9afe-45c7-8817-b7bec745b042",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
