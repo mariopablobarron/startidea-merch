@@ -40,3 +40,24 @@ describe("formatCatalogFloor", () => {
     expect(FALLBACK_LABEL).not.toMatch(/\d/);
   });
 });
+
+describe("el formato de millares es una decisión de estilo, no un parche de entorno", () => {
+  it("pone el punto donde el español de CLDR no lo pone: cuatro cifras", () => {
+    // Medido el 26-ago-2026 dentro de `merch-app` (Node v22, **ICU 78.2
+    // completo**) y en la estación: los dos entornos dan lo MISMO. El
+    // comentario anterior de este helper culpaba a small-icu de que
+    // (9618).toLocaleString("es-ES") devolviera «9618»; no es un defecto del
+    // contenedor, es `minimumGroupingDigits = 2` del español — cuatro cifras
+    // no se agrupan, cinco sí.
+    expect((9000).toLocaleString("es-ES")).toBe("9000");
+    expect(formatCatalogFloor(9591)).toBe("9.000");
+  });
+
+  it("a partir de cinco cifras coincide con toLocaleString, que es el caso futuro", () => {
+    // El día que el catálogo cruce las 10.000 referencias, la diferencia se
+    // acaba sola: ahí CLDR también agrupa.
+    expect((12000).toLocaleString("es-ES")).toBe("12.000");
+    expect(formatCatalogFloor(12500)).toBe("12.000");
+  });
+});
+

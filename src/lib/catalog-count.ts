@@ -47,13 +47,26 @@ export const FALLBACK_LABEL = "miles de";
 /**
  * Agrupa los millares con punto: 9000 → «9.000».
  *
- * A mano, y no con `toLocaleString("es-ES")`, porque **el contenedor de
- * producción corre Node con small-icu** (comprobado el 26-ago-2026 dentro de
- * `merch-app`): el locale sí resuelve a es-ES —la coma decimal y el símbolo €
- * son correctos— pero **la agrupación de millares no se aplica**, así que
- * `(9618).toLocaleString("es-ES")` devuelve «9618», sin punto. Delegar el
- * formato daría una cifra distinta en local y en producción, y la de
- * producción sería la fea.
+ * ⚠️ **Rectificación del 26-ago-2026 (run de mediodía).** El comentario que
+ * había aquí decía que se hacía a mano «porque el contenedor de producción
+ * corre Node con small-icu y no agrupa los millares». **Es falso, medido
+ * dentro de `merch-app`**: Node v22 con **ICU 78.2 completo**, y el mismo
+ * número da el mismo resultado en producción y en la estación —999 → «999»,
+ * 9618 → «9618», 10000 → «10.000», 12500,50 € → «12.500,50 €»—.
+ *
+ * Lo que se tomó por un defecto del entorno es **la regla del español en
+ * CLDR** (`minimumGroupingDigits = 2`): las cifras de cuatro dígitos no
+ * llevan separador, y la agrupación empieza en cinco. `toLocaleString` estaba
+ * haciendo lo correcto.
+ *
+ * Se mantiene el punto a mano por una razón editorial, no técnica: la frase
+ * es prosa comercial —«Más de 9.000 productos»— y esa es la forma que el
+ * sitio ya servía en el bloque SEO. Delegar en `toLocaleString` daría «9000»
+ * mientras el catálogo esté entre 1.000 y 9.999, y cambiaría solo el día que
+ * cruce las cinco cifras. Es una decisión de estilo, y conviene que esté
+ * escrita como tal: la premisa falsa anterior ya generó en el backlog una
+ * tarea entera —«arreglar los millares sin agrupar de /catalogo»— sobre un
+ * defecto que no existe.
  */
 function groupThousands(value: number): string {
   return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
