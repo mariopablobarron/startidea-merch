@@ -30,22 +30,39 @@ import type { NextConfig } from "next";
 //  - googletagmanager / connect.facebook.net / snap.licdn.com: GA4 y pixels,
 //    que solo cargan con consentimiento pero necesitan estar permitidos.
 //  - analytics.hubstartidea.es: Umami (también tras consentimiento).
+//  - pixel.byspotify.com (script) y pixels.spotify.com (connect): el Spotify
+//    Pixel de `SpotifyPixel.tsx`, que estaba activo en producción y NO figuraba
+//    en esta política. Se descubrió leyendo los informes de Report-Only el
+//    26-ago-2026: en bloqueo se habría caído sin que nadie lo relacionase.
+//  - `*.google-analytics.com` en vez de `www.` a secas: GA4 no manda los
+//    eventos a `www`, sino a un recolector regional — medido `region1.` desde
+//    España. Con `www.` solo, pasar la CSP a bloqueo habría dejado a Mario sin
+//    medición ninguna. El comodín es de subdominio de un proveedor concreto,
+//    no un `connect-src *`, y el guard distingue una cosa de la otra.
 //  - js.stripe.com + frame-src: Express Checkout monta el iframe de Stripe.
 //  - api.elevenlabs.io y wss:: el SDK de voz de Carmen abre WebSocket/WebRTC.
 //  - img-src https: data: blob:: las imágenes de catálogo pasan por el proxy
 //    propio, pero next/image y los previews de mockup usan data:/blob:.
 //  - frame-ancestors 'self': equivalente moderno del X-Frame-Options de arriba.
+//
+// ⚠️ Dos avisos antes de que a nadie se le ocurra pasarla a bloqueo:
+//  1. Hay hosts que NO aparecen en el código y ningún guard puede descubrir:
+//     el recolector regional de GA4 lo elige gtag en tiempo de ejecución. Los
+//     de este tipo solo salen leyendo los informes en un navegador de verdad.
+//  2. El tramo del CHECKOUT sigue SIN MEDIR: Stripe se monta en `/pay/[token]`
+//     y para llegar ahí hace falta un enlace de pago real. Bloquear sin haberlo
+//     recorrido es apostar el cobro. Ese tramo lo mide Mario, o se mide con él.
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'self'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://snap.licdn.com https://analytics.hubstartidea.es https://js.stripe.com",
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://snap.licdn.com https://analytics.hubstartidea.es https://pixel.byspotify.com https://js.stripe.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://www.google-analytics.com https://analytics.hubstartidea.es https://api.stripe.com https://api.elevenlabs.io https://px.ads.linkedin.com wss:",
+  "connect-src 'self' https://*.google-analytics.com https://analytics.hubstartidea.es https://pixels.spotify.com https://api.stripe.com https://api.elevenlabs.io https://px.ads.linkedin.com wss:",
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
   "media-src 'self' blob: data:",
   "worker-src 'self' blob:",

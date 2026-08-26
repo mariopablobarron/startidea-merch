@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Relanzar CI a mano. Sin esto, la única forma de reintentar un run atascado
+  # era gastar un push entero: el 26-ago-2026 dos runs se quedaron encolados
+  # 50 min por una caída de GitHub Actions y no había manera de repetirlos.
+  workflow_dispatch: {}
 
 jobs:
   ci:
