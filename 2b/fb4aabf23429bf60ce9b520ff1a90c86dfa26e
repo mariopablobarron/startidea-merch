@@ -1,0 +1,33 @@
+public/manifest.json
+  s_f652213124e91e::t_94e85e04786cea 22-39
+src/app/apple-icon.tsx
+  s_f652213124e91e::t_21a3e1351cc4a8 1,12-14,20
+src/app/icon-192.png/route.tsx
+  s_f652213124e91e::t_6b80dec84ba701 1-23
+src/app/icon-512.png/route.tsx
+  s_f652213124e91e::t_f7f15ddba2e489 1-23
+src/app/layout.tsx
+  s_f652213124e91e::t_882bf372064e68 106-114
+src/components/pixels-solo-con-consentimiento.guard.test.ts
+  s_f652213124e91e::t_133c290ddbc595 38-51,219-243
+src/lib/brand-icon.tsx
+  s_f652213124e91e::t_fa54218a573671 1-35
+src/lib/manifest-iconos-existen.guard.test.ts
+  s_f652213124e91e::t_dedade4d27ccad 1-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "2bfb4aabf23429bf60ce9b520ff1a90c86dfa26e",
+  "prompts": {},
+  "sessions": {
+    "s_f652213124e91e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "67d80b7d-9afe-45c7-8817-b7bec745b042",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
