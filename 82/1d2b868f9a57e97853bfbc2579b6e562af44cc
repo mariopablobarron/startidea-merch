@@ -1,0 +1,21 @@
+.github/workflows/cron-failure-alert.yml
+  s_c64623ddb42545::t_385b64688fd163 1-108
+src/lib/cron-failure-alert-cubre-workflows.guard.test.ts
+  s_c64623ddb42545::t_fee4685b560312 1-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "821d2b868f9a57e97853bfbc2579b6e562af44cc",
+  "prompts": {},
+  "sessions": {
+    "s_c64623ddb42545": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fa22779e-3165-471c-9183-57f2b80905e6",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
