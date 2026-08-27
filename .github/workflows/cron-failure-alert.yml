@@ -1,0 +1,108 @@
+name: Aviso de cron fallido
+
+# Por qué existe (27-ago-2026, 20:51 UTC):
+#
+# El `Cron watchdog diario` salió con 9h51 de retraso y **falló**: tres intentos
+# de `curl` con `(28) Failed to connect ... port 443` — el runner no llegó a
+# abrir el socket TCP contra la VPS. Un corte de red de unos dos minutos, sin
+# rastro en el host (load normal, ningún contenedor recreado, fail2ban limpio,
+# steal ~1 %).
+#
+# Lo grave no fue el corte, fue el silencio. El watchdog es la pieza que avisa
+# de que los demás crons están parados, y cuando muere ANTES de llegar al
+# servidor no hay handler que lo registre: `wrapCronHandler` solo ve lo que
+# entra. El fallo se quedó en una casilla roja de la pestaña Actions, que nadie
+# mira. Ya sabíamos de un punto ciego (que el cron NO se dispare, arreglado en
+# `e981590` haciendo que el watchdog se reporte tarde a sí mismo); éste es el
+# otro: **que se dispare y no llegue**.
+#
+# Este workflow cierra ese hueco desde fuera. Corre en el runner de GitHub, así
+# que avisa precisamente cuando la VPS es inalcanzable: no depende de la infra
+# que vigila. Es la única capa de aviso con esa propiedad.
+#
+# Diseño:
+#  - `workflow_run` sobre los programados: CERO cambios en los 14 workflows.
+#    Y captura cualquier forma de fallo, no solo la del `curl` (checkout roto,
+#    timeout del job, secret ausente…).
+#  - La lista se mantiene sola por contrato: el guard
+#    `cron-failure-alert-cubre-workflows.guard.test.ts` recorre los workflows,
+#    encuentra los que tienen `schedule:` y SUSPENDE si alguno falta aquí. Una
+#    lista blanca sin quien la descubra se queda obsoleta en el primer cron
+#    nuevo y vuelve a dejar el mismo silencio.
+#  - `cancelled` NO avisa: lo provoca `concurrency` o una persona, no una avería.
+#  - Sin permisos sobre el repo: esto solo manda un mensaje.
+#  - Sin secrets de Telegram no rompe: avisa en el log y sale. Un canal de avisos
+#    que tumba la build cuando no está configurado es peor que no tenerlo.
+#
+# ⚠️ Este workflow no se vigila a sí mismo (no se lista dentro). Si falla él,
+# el aviso vuelve a ser una casilla roja. Es el límite conocido de la cadena:
+# alguien tiene que ser el último.
+
+on:
+  workflow_run:
+    types: [completed]
+    workflows:
+      - "AI usage alert diaria"
+      - "Auto-resolve errors stale"
+      - "Cron watchdog diario"
+      - "Embeddings sync diario"
+      - "Health ping cada hora"
+      - "Insights monthly digest"
+      - "Insights weekly digest"
+      - "Lighthouse CI weekly"
+      - "Makito marking enrich diario"
+      - "Metric snapshot diario"
+      - "Money smoke test (invariantes de dinero/proveedor)"
+      - "ProductView rollup diario"
+      - "Security audit"
+      - "Vigilancia de competencia semanal"
+
+permissions: {}
+
+jobs:
+  avisar:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' ||
+      github.event.workflow_run.conclusion == 'timed_out'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Avisar a Mario por Telegram
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Todo esto es dato del evento: viaja por env y se envía con
+          # --data-urlencode, así que un nombre con comillas o un `$(…)` es
+          # texto y no una orden de shell.
+          WF_NAME: ${{ github.event.workflow_run.name }}
+          WF_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WF_EVENT: ${{ github.event.workflow_run.event }}
+          WF_URL: ${{ github.event.workflow_run.html_url }}
+          WF_STARTED: ${{ github.event.workflow_run.run_started_at }}
+        run: |
+          if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
+            echo "::warning::Sin secrets de Telegram — no se envía nada"
+            exit 0
+          fi
+
+          TEXTO="🔴 Cron fallido: ${WF_NAME}"$'\n'
+          TEXTO="${TEXTO}Resultado: ${WF_CONCLUSION} (disparo: ${WF_EVENT})"$'\n'
+          TEXTO="${TEXTO}Empezó: ${WF_STARTED}"$'\n\n'
+          TEXTO="${TEXTO}${WF_URL}"$'\n\n'
+          TEXTO="${TEXTO}Si el log dice «sin conexión con el servidor», la petición no llegó a salir: mira la VPS, no el cron."
+
+          CODIGO=$(curl -sS -o /tmp/tg.json -w '%{http_code}' \
+            -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            -d "chat_id=${TG_CHAT}" \
+            -d "disable_web_page_preview=true" \
+            --data-urlencode "text=${TEXTO}")
+          echo "HTTP ${CODIGO}"
+          # Telegram responde 200 con {"ok":false,…} en varios errores, así que
+          # se mira el cuerpo: un aviso perdido en silencio es justo lo que esto
+          # viene a evitar.
+          if [ "$CODIGO" != "200" ] || ! grep -q '"ok":true' /tmp/tg.json; then
+            echo "::error::Telegram rechazó el mensaje"
+            cat /tmp/tg.json
+            exit 1
+          fi
+          echo "Aviso enviado."
