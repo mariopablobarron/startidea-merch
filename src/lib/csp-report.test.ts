@@ -47,6 +47,42 @@ describe("parseViolations", () => {
     expect(v[0]?.directive).toBe("frame-src");
   });
 
+  /**
+   * Medido contra producción el 27-ago: un informe con la URL solo en el SOBRE
+   * se registraba con `pagina=` en blanco. Chrome real la duplica dentro de
+   * `body`, así que no rompía nada — pero el sobre la trae SIEMPRE, y perderla
+   * deja el informe sin decir dónde mirar, que es para lo que sirve.
+   */
+  it("usa la `url` del sobre cuando el `body` no trae `documentURL`", () => {
+    const v = parseViolations([
+      {
+        type: "csp-violation",
+        url: "https://merchandising.startidea.es/pay/abc",
+        body: {
+          blockedURL: "https://m.stripe.network",
+          effectiveDirective: "frame-src",
+        },
+      },
+    ]);
+    expect(v).toHaveLength(1);
+    expect(v[0]?.documentUri).toBe("https://merchandising.startidea.es/pay/abc");
+  });
+
+  it("el `documentURL` del `body` MANDA sobre la `url` del sobre", () => {
+    const v = parseViolations([
+      {
+        type: "csp-violation",
+        url: "https://merchandising.startidea.es/sobre",
+        body: {
+          documentURL: "https://merchandising.startidea.es/body",
+          blockedURL: "https://x.invalid",
+          effectiveDirective: "img-src",
+        },
+      },
+    ]);
+    expect(v[0]?.documentUri).toBe("https://merchandising.startidea.es/body");
+  });
+
   it("ignora los informes de la Reporting API que no son de CSP", () => {
     expect(
       parseViolations([{ type: "deprecation", body: { id: "x" } }]),

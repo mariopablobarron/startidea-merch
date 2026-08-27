@@ -27,9 +27,20 @@ export function str(v: unknown, max = 300): string {
 export function parseViolations(payload: unknown): Violation[] {
   const out: Violation[] = [];
 
-  const push = (r: Record<string, unknown> | undefined) => {
+  const push = (
+    r: Record<string, unknown> | undefined,
+    /**
+     * URL del documento tomada del SOBRE del Reporting API. Chrome la manda
+     * ahí SIEMPRE (`{url, type, body}`), mientras que dentro de `body` solo
+     * está si la implementación la duplica. Sin este respaldo el informe
+     * llega, se registra y sale con la página en blanco: no falla nada, pero
+     * pierde justo el dato que dice DÓNDE hay que mirar.
+     */
+    envelopeUrl?: unknown,
+  ) => {
     if (!r) return;
-    const documentUri = str(r["document-uri"] ?? r.documentURL ?? r.documentURI);
+    const documentUri =
+      str(r["document-uri"] ?? r.documentURL ?? r.documentURI) || str(envelopeUrl);
     const blockedUri = str(r["blocked-uri"] ?? r.blockedURL ?? r.blockedURI);
     const directive = str(
       r["effective-directive"] ?? r.effectiveDirective ?? r["violated-directive"],
@@ -44,7 +55,7 @@ export function parseViolations(payload: unknown): Violation[] {
       if (!entry || typeof entry !== "object") continue;
       const e = entry as Record<string, unknown>;
       if (e.type && e.type !== "csp-violation") continue;
-      push(e.body as Record<string, unknown> | undefined);
+      push(e.body as Record<string, unknown> | undefined, e.url);
     }
     return out;
   }
