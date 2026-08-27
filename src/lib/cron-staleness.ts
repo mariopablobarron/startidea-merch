@@ -77,6 +77,9 @@ export const NOT_HTTP_TRIGGERED: Record<string, string> = {
 
 export const DEFAULT_HOURS = 30;
 
+/** Nombre del propio watchdog, para poder auto-vigilarse sin cadenas sueltas. */
+export const WATCHDOG_NAME = "cron-watchdog";
+
 // Un cron puede retrasarse (jitter de cron/GH Actions, carga del VPS) sin estar
 // muerto. 2× su frecuencia declarada da holgura sin dejar pasar demasiado
 // tiempo uno realmente parado.
@@ -107,6 +110,48 @@ export function expectedHoursFor(name: string): number {
   const cat = findCron(name);
   if (cat && cat.frequencyHours > 0) return cat.frequencyHours * STALE_MARGIN;
   return DEFAULT_HOURS;
+}
+
+/**
+ * ¿Ha tardado el propio watchdog más de la cuenta en volver a ejecutarse?
+ *
+ * El watchdog se excluía de su propio recorrido ("no notificarnos a nosotros
+ * mismos"), y eso dejaba un punto ciego real: **si su disparador falla, nadie
+ * avisa de nada**. Pasó el 2026-08-27 — el planificador de GitHub Actions se
+ * retrasó ~11 h para este repo, el run diario de las 11:00 UTC no salió, y ese
+ * mismo día había un sync de makito colgado 12 h que el watchdog SÍ detecta
+ * cuando corre. El aviso solo existió porque el agente lo disparó a mano.
+ *
+ * No puede avisar mientras está caído — pero **en cuanto vuelve** sabe cuánto
+ * tiempo estuvo sin correr, y eso es justo el dato que faltaba. Es un aviso
+ * retrospectivo, y aun así llega antes que nadie mirando a mano.
+ *
+ * `lastRunAt` es la ejecución ANTERIOR, no la actual: `wrapCronHandler`
+ * registra en su `finally`, o sea después de que este handler devuelva. Si
+ * algún día se adelantara ese registro, esto mediría siempre 0 y volvería a
+ * quedarse ciego en silencio.
+ */
+export function evaluateWatchdogSelfRun(
+  lastRunAt: string | null,
+  nowMs: number,
+): { silent: boolean; hoursSinceLastRun: number | null; expectedHours: number } {
+  const expectedHours = expectedHoursFor(WATCHDOG_NAME);
+  if (!lastRunAt) {
+    // Sin historia previa no se puede concluir nada: puede ser la primera
+    // ejecución tras un despliegue. Callar es el lado seguro (una falsa alarma
+    // aquí desacreditaría justo el aviso que este chequeo existe para dar).
+    return { silent: false, hoursSinceLastRun: null, expectedHours };
+  }
+  const ms = new Date(lastRunAt).getTime();
+  if (!Number.isFinite(ms)) {
+    return { silent: false, hoursSinceLastRun: null, expectedHours };
+  }
+  const hours = (nowMs - ms) / 3_600_000;
+  return {
+    silent: hours > expectedHours,
+    hoursSinceLastRun: Math.round(hours * 10) / 10,
+    expectedHours,
+  };
 }
 
 export type SilenceWatchability =

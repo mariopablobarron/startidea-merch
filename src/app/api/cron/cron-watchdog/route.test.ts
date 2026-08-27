@@ -416,4 +416,71 @@ describe("POST /api/cron/cron-watchdog", () => {
     expect(data.silent).toEqual([]);
     expect(data.notified).toBe(false);
   });
+
+  // --- Auto-chequeo del propio watchdog -------------------------------------
+  // Antes se excluía de todo chequeo ("no notificarnos a nosotros mismos") y su
+  // disparador podía fallar sin que nadie lo supiera. Caso real: 2026-08-27.
+  function historyBy(map: Record<string, { at: string; ok?: boolean }[]>) {
+    vi.mocked(getCronHistory).mockImplementation(async (name: string) =>
+      (map[name] ?? []).map((r) => ({
+        at: r.at,
+        elapsedMs: 100,
+        ok: r.ok ?? true,
+        status: r.ok === false ? 500 : 200,
+      })),
+    );
+  }
+  const hoursAgo = (h: number) => new Date(NOW - h * 3_600_000).toISOString();
+
+  it("avisa cuando su PROPIO disparador se saltó un run, aunque todo lo demás esté bien", async () => {
+    vi.mocked(listCronNames).mockResolvedValueOnce(["cifra-sync"]);
+    historyBy({
+      "cifra-sync": [{ at: hoursAgo(2) }],
+      "cron-watchdog": [{ at: hoursAgo(34.7) }], // se saltó el run diario
+    });
+    findUnique.mockResolvedValueOnce(null);
+    upsert.mockResolvedValueOnce({});
+    const res = await POST(makeReq());
+    const data = await res.json();
+    expect(data.selfCheck).toEqual({
+      hoursSinceLastRun: 34.7,
+      expectedHours: 30,
+      late: true,
+    });
+    expect(data.silent).toContain("cron-watchdog");
+    expect(data.notified).toBe(true);
+    const body = notifyAdmins.mock.calls[0][0].body as string;
+    expect(body).toContain("🕐 watchdog tarde");
+    // El aviso tiene que decir que TODO lo demás llega con ese retraso: leerlo
+    // como una foto de ahora mismo es justo la confusión que se busca evitar.
+    expect(body).toContain("retraso");
+  });
+
+  it("si el watchdog viene puntual no se menciona a sí mismo", async () => {
+    vi.mocked(listCronNames).mockResolvedValueOnce(["cifra-sync"]);
+    historyBy({
+      "cifra-sync": [{ at: hoursAgo(2) }],
+      "cron-watchdog": [{ at: hoursAgo(24) }],
+    });
+    findUnique.mockResolvedValueOnce(null);
+    const res = await POST(makeReq());
+    const data = await res.json();
+    expect(data.selfCheck.late).toBe(false);
+    expect(data.silent).toEqual([]);
+    expect(data.notified).toBe(false);
+  });
+
+  it("su propio retraso no desplaza a los crons que cuestan dinero", async () => {
+    // El push se trunca a 280 caracteres: el sync de proveedor sigue primero.
+    vi.mocked(listCronNames).mockResolvedValueOnce(["cifra-sync"]);
+    historyBy({
+      "cifra-sync": [{ at: hoursAgo(240) }],
+      "cron-watchdog": [{ at: hoursAgo(34.7) }],
+    });
+    findUnique.mockResolvedValueOnce(null);
+    upsert.mockResolvedValueOnce({});
+    await POST(makeReq());
+    const body = notifyAdmins.mock.calls[0][0].body as string;
+    expect(body.indexOf("cifra-sync")).toBeLessThan(body.indexOf("cron-watchdog"));
+  });
 });

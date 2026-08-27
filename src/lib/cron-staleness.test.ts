@@ -7,6 +7,7 @@ import {
   parseWatchdogAlertState,
   REALERT_AFTER_HOURS,
   CRITICAL_CRONS,
+  evaluateWatchdogSelfRun,
 } from "./cron-staleness";
 import { CRON_CATALOG } from "./cron-catalog";
 
@@ -261,5 +262,38 @@ describe("parseWatchdogAlertState — compatibilidad con el estado ya guardado",
       names: ["ok"],
       at: null,
     });
+  });
+});
+
+describe("evaluateWatchdogSelfRun — el watchdog vigilando su propio disparador", () => {
+  const NOW = Date.UTC(2026, 7, 27, 16, 6, 0);
+  const hoursAgo = (h: number) => new Date(NOW - h * 3_600_000).toISOString();
+
+  it("un run diario puntual (24h) NO es tarde", () => {
+    const r = evaluateWatchdogSelfRun(hoursAgo(24), NOW);
+    expect(r.silent).toBe(false);
+    expect(r.hoursSinceLastRun).toBe(24);
+  });
+
+  it("el caso real del 2026-08-27: el planificador de GitHub se saltó el run", () => {
+    // Ejecución anterior: 26-ago 11:19Z. Si el run de las 11:00 del 27 no sale
+    // y el siguiente llega retrasado, el hueco pasa de 30h y hay que decirlo.
+    const r = evaluateWatchdogSelfRun(hoursAgo(34.7), NOW);
+    expect(r.silent).toBe(true);
+    expect(r.expectedHours).toBe(30);
+  });
+
+  it("sin historia previa NO avisa (puede ser el primer run tras un deploy)", () => {
+    expect(evaluateWatchdogSelfRun(null, NOW)).toEqual({
+      silent: false,
+      hoursSinceLastRun: null,
+      expectedHours: 30,
+    });
+  });
+
+  it("una fecha corrupta no lanza ni inventa un aviso", () => {
+    const r = evaluateWatchdogSelfRun("no soy una fecha", NOW);
+    expect(r.silent).toBe(false);
+    expect(r.hoursSinceLastRun).toBeNull();
   });
 });

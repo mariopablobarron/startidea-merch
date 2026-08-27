@@ -40,7 +40,9 @@ import {
   sortBySeverity,
   decideWatchdogAlert,
   parseWatchdogAlertState,
+  evaluateWatchdogSelfRun,
   CRITICAL_CRONS,
+  WATCHDOG_NAME,
 } from "@/lib/cron-staleness";
 
 export const runtime = "nodejs";
@@ -63,8 +65,11 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
   const trackedSet = new Set(names);
   const catalogNames = CRON_CATALOG.map((c) => c.name);
   const allNames = Array.from(new Set([...names, ...catalogNames]));
-  // Excluir self del check para no notificarnos a nosotros mismos
-  const others = allNames.filter((n) => n !== "cron-watchdog");
+  // El watchdog se saca del recorrido normal (medirse a sí mismo con la lógica
+  // de los demás daría siempre "acaba de correr"), pero NO se deja sin vigilar:
+  // más abajo se comprueba aparte cuánto tardó en volver desde su ejecución
+  // anterior. Ver evaluateWatchdogSelfRun.
+  const others = allNames.filter((n) => n !== WATCHDOG_NAME);
 
   type Status = {
     name: string;
@@ -74,6 +79,7 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
     lastOk: boolean | null;
     silent: boolean; // sin runs en mucho tiempo
     failingLast: boolean; // última run fue fallo
+    selfCheck?: true; // es el propio watchdog avisando de su disparador
     unwatchedReason?: string; // por qué su silencio no se vigila (si aplica)
   };
 
@@ -134,6 +140,28 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
     }),
   );
 
+  // --- Auto-chequeo: ¿tardó el propio watchdog en volver? -------------------
+  // Su disparador (GitHub Actions) puede retrasarse horas o saltarse un día
+  // entero, y hasta ahora eso era invisible: sin ejecución no hay aviso, y al
+  // recuperarse tampoco decía nada. Ahora lo dice.
+  // `?? []`: getCronHistory devuelve [] en producción, pero un fallo suyo (o un
+  // mock a medias en un test) no puede tumbar el watchdog entero por un
+  // chequeo accesorio.
+  const selfRuns = (await getCronHistory(WATCHDOG_NAME)) ?? [];
+  const self = evaluateWatchdogSelfRun(selfRuns[0]?.at ?? null, Date.now());
+  if (self.silent) {
+    statuses.push({
+      name: WATCHDOG_NAME,
+      expectedHours: self.expectedHours,
+      lastRunAt: selfRuns[0]?.at ?? null,
+      hoursSinceLastRun: self.hoursSinceLastRun,
+      lastOk: selfRuns[0]?.ok ?? null,
+      silent: true,
+      failingLast: false,
+      selfCheck: true,
+    });
+  }
+
   const silent = statuses.filter((s) => s.silent);
   const failing = statuses.filter((s) => s.failingLast);
   const unordered = [
@@ -188,16 +216,25 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
 
   if (shouldNotify) {
     const lines = issues.map((i) => {
-      const tag = i.silent
+      const tag = i.selfCheck
+        ? "🕐 watchdog tarde"
+        : i.silent
         ? CRITICAL_CRONS.has(i.name)
           ? "🔴 silencioso"
           : "💤 silencioso"
         : "❌ fallo";
-      const detail = i.silent
-        ? i.hoursSinceLastRun === null
-          ? "nunca ha registrado una ejecución (cron del catálogo sin runs)"
-          : `lleva ${i.hoursSinceLastRun}h sin ejecutar (umbral ${i.expectedHours}h)`
-        : "última run terminó con error";
+      const detail = i.selfCheck
+        ? // El resto de la lista sale de ESTA ejecución: si el watchdog llega
+          // tarde, todo lo demás llega tarde con él. Decirlo evita leer el
+          // aviso como si fuera de hoy.
+          `su disparador falló o se retrasó — ${i.hoursSinceLastRun}h desde la ` +
+          `ejecución anterior (umbral ${i.expectedHours}h). Los demás avisos ` +
+          `llegan con ese retraso`
+        : i.silent
+          ? i.hoursSinceLastRun === null
+            ? "nunca ha registrado una ejecución (cron del catálogo sin runs)"
+            : `lleva ${i.hoursSinceLastRun}h sin ejecutar (umbral ${i.expectedHours}h)`
+          : "última run terminó con error";
       return `· ${i.name}: ${tag} — ${detail}`;
     });
     // Los colgados van DELANTE: un sync a medias deja catálogo, stock y coste
@@ -254,6 +291,11 @@ export const POST = wrapCronHandler("cron-watchdog", async (req: Request) => {
     silent: silent.map((s) => s.name),
     failing: failing.map((f) => f.name),
     issuesCount: issues.length,
+    selfCheck: {
+      hoursSinceLastRun: self.hoursSinceLastRun,
+      expectedHours: self.expectedHours,
+      late: self.silent,
+    },
     stalledSyncs,
     notified: shouldNotify,
     notifyReason: decision.reason,
