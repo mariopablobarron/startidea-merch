@@ -1,0 +1,25 @@
+src/app/api/cron/cron-watchdog/route.test.ts
+  s_1ec3c35e3cf1a0::t_7593295784962e 419-485
+src/app/api/cron/cron-watchdog/route.ts
+  s_1ec3c35e3cf1a0::t_9cd219eedd67ec 43,45,68-72,82,143-164,219-221,226-237,294-298
+src/lib/cron-staleness.test.ts
+  s_1ec3c35e3cf1a0::t_02809da8878bbd 10,267-299
+src/lib/cron-staleness.ts
+  s_1ec3c35e3cf1a0::t_e98430ae903389 80-82,115-156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "e981590c7cac9646ae2bd24d914929140997f24f",
+  "prompts": {},
+  "sessions": {
+    "s_1ec3c35e3cf1a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "20d03454-5b94-464d-b157-d08fb5ccdd37",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
