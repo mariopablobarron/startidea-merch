@@ -72,6 +72,12 @@ if ! build_attempt; then
   fi
 fi
 
+# El recreate mata lo que esté corriendo dentro del contenedor. Si hay un sync
+# de proveedor a medias, esperamos a que cierre antes de tirarlo: el build ya
+# está hecho, así que esta espera no alarga el deploy más que lo que le falte al
+# sync. Es fail-open — nunca impide desplegar. Ver el script para el caso medido.
+bash scripts/wait-supplier-sync.sh || true
+
 log "recreate container"
 # --- Idempotencia del recreate (fix carrera <hash>_merch-app) ---
 # Mecánica real de `compose up --force-recreate` con container_name FIJO
