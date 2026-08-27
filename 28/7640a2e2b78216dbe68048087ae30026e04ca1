@@ -1,0 +1,31 @@
+scripts/deploy.sh
+  s_5f5dff820e06d3::t_2f5acc84655554 75-80
+scripts/wait-supplier-sync.sh
+  s_20e2834e760922::t_9334de67d2759e 1-69
+src/lib/suppliers/wait-supplier-sync.guard.test.ts
+  s_20e2834e760922::t_3d988aed421253 1-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "287640a2e2b78216dbe68048087ae30026e04ca1",
+  "prompts": {},
+  "sessions": {
+    "s_20e2834e760922": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3aac8f43-7f69-4b96-bdba-c6daeba314e2",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_5f5dff820e06d3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a0a58131-d9a8-449e-a488-575fb5aa6831",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
