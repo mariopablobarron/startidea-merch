@@ -11,9 +11,9 @@ import { join } from "node:path";
  * Por qué importa: ese envoltorio es lo único que cierra la fila de
  * `SupplierSync` cuando el sync revienta **o se cuelga**. Sin él, la fila se
  * queda con `finishedAt = null` y es indistinguible de «sigue corriendo»: el
- * 28-ago-2026 `makito` pasó así más de dos horas, y `midocean` y `cifra` no
- * tenían el envoltorio en absoluto — no se les había caído, simplemente nadie
- * los había cableado.
+ * 27-ago-2026 `makito` pasó así 12 h, y `midocean` y `cifra` no tenían el
+ * envoltorio en absoluto — no se les había caído, simplemente nadie los había
+ * cableado.
  */
 
 const DIR = join(process.cwd(), "src/lib/suppliers");

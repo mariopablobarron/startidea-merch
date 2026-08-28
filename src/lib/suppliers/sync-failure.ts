@@ -14,11 +14,11 @@
  * **El caso que esto NO cubría, y por el que existe el tope de tiempo de
  * abajo**: un sync que no lanza ni termina, sino que se queda esperando una
  * promesa que jamás se asienta. Sin excepción no hay `catch`, así que la fila
- * se queda abierta indefinidamente. Pasó de verdad el 28-ago-2026: `makito`
- * arrancó a las 04:02Z, escribió 3.200 de sus 4.479 productos, y a las 04:06Z
- * dejó de avanzar — más de dos horas después seguía sin cerrar, con Postgres
- * sin una sola consulta en espera y el proceso Node dormido. Un `await`
- * colgado, no un fallo. El cron de la noche siguiente se lo encontró así.
+ * se queda abierta indefinidamente. Pasó de verdad el 27-ago-2026: `makito`
+ * arrancó a las 04:02Z y nunca cerró; el `cron-watchdog` lo cazó con
+ * `hoursRunning: 12.1`, y en `SupplierSyncRun` no hay fila de ese día. Siguió
+ * figurando como «en marcha» hasta que el recreate del contenedor, esa tarde,
+ * se llevó por delante el proceso. Un `await` colgado, no un fallo.
  */
 
 /**

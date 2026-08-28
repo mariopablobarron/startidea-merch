@@ -103,10 +103,10 @@ describe("withSyncFailureClosing", () => {
 });
 
 /**
- * El incidente que fija esta tanda (28-ago-2026): `makito` escribió 3.200 de
- * sus 4.479 productos y se quedó esperando algo que nunca llegó. No lanzó, así
- * que no había `catch` que cerrase la fila: más de dos horas «en marcha» para
- * el watchdog, con el proceso dormido y Postgres sin una sola consulta en cola.
+ * El incidente que fija esta tanda (27-ago-2026): `makito` arrancó a las 04:02Z
+ * y se quedó esperando algo que nunca llegó. No lanzó, así que no había `catch`
+ * que cerrase la fila: 12 h figurando «en marcha» para el watchdog, y ninguna
+ * fila de ese día en el histórico.
  */
 describe("withSyncFailureClosing: tope de tiempo para un sync colgado", () => {
   it("el tope por defecto es finito y holgado: entre 15 min y 2 h", () => {
