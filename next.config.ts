@@ -49,9 +49,24 @@ import type { NextConfig } from "next";
 //  1. Hay hosts que NO aparecen en el código y ningún guard puede descubrir:
 //     el recolector regional de GA4 lo elige gtag en tiempo de ejecución. Los
 //     de este tipo solo salen leyendo los informes en un navegador de verdad.
-//  2. El tramo del CHECKOUT sigue SIN MEDIR: Stripe se monta en `/pay/[token]`
-//     y para llegar ahí hace falta un enlace de pago real. Bloquear sin haberlo
-//     recorrido es apostar el cobro. Ese tramo lo mide Mario, o se mide con él.
+//  2. El tramo del CHECKOUT ya está MEDIDO EN PARTE (29-ago-2026). No hacía
+//     falta un enlace de pago real: se cargó Stripe.js y se montaron
+//     ExpressCheckoutElement y PaymentElement (modo diferido, sin PaymentIntent
+//     ni dinero) bajo esta misma política pero EN BLOQUEO → **cero
+//     violaciones**. Los seis iframes de Stripe salen todos de js.stripe.com,
+//     ya permitido; `m.stripe.network` NO lo carga el documento padre, así que
+//     no hace falta en frame-src. Con el gtag real medido a la vez, GA4 sale
+//     por `region1.google-analytics.com` y el comodín lo cubre.
+//     Lo que SIGUE sin medir, y es lo que queda para decidir el bloqueo:
+//       - la confirmación real del cobro (desafío 3DS en hooks.stripe.com, ya
+//         permitido, pero no ejercitado) y un wallet de verdad: el navegador de
+//         la medición no ofrecía ninguno (`availablePaymentMethods` vacío);
+//       - el fallback a Stripe Checkout hospedado (`PayButton` hace
+//         `window.location.href` a checkout.stripe.com). Es navegación de nivel
+//         superior: NO la gobierna frame-src y `form-action 'self'` tampoco la
+//         toca, porque no es el envío de un formulario;
+//       - los pixels con consentimiento otorgado (Meta, LinkedIn, Spotify).
+//     La sonda que hizo la medición está en `scripts/csp-sonda.html`.
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
   "base-uri 'self'",

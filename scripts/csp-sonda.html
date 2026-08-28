@@ -1,0 +1,105 @@
+<!doctype html>
+<!--
+  SONDA DE LA CSP — mide qué pide de verdad el tramo que cobra.
+  ────────────────────────────────────────────────────────────────────────────
+  Por qué existe: la CSP de `next.config.ts` va en Report-Only y el tramo de
+  pago (`/pay/[token]`) llevaba semanas "sin medir" porque para recorrerlo hace
+  falta un enlace de pago real, y generarlo crea un pedido en producción.
+
+  Esta sonda evita ese problema: monta el MISMO widget de Stripe que usa
+  `ExpressCheckoutPay.tsx` en modo diferido — sin PaymentIntent, sin importe
+  real, con la clave pública de PRUEBA de la documentación de Stripe — y aplica
+  la política EN BLOQUEO (via <meta>, que no admite Report-Only). Todo lo que
+  la política impediría sale aquí como violación, en vez de descubrirse el día
+  del cobro.
+
+  Cómo se usa:
+      python3 -m http.server 8791 --directory scripts
+      # abrir http://127.0.0.1:8791/csp-sonda.html  (con ?ga=1 para medir GA4)
+      # las violaciones se ven en la caja de la página y en la consola
+
+  ⚠️ Al pegar aquí la política de `next.config.ts`, cópiala TAL CUAL. Si la
+  sonda mide una política distinta de la que sirve el sitio, no mide nada; hay
+  un guard (`csp-report-only.guard.test.ts`) que lo comprueba y suspende si se
+  desincronizan. Las únicas dos ausencias legítimas son `report-uri`/`report-to`
+  (aquí no hay a dónde informar) y `frame-ancestors`, que el navegador IGNORA
+  cuando llega por <meta> — no está olvidada, es que por esta vía no se aplica.
+  ⚠️ GA4 va apagado por defecto: cada carga con ?ga=1 mete un evento real en
+  la analítica de Mario.
+
+  Medición del 29-ago-2026 (política d5277e5): CERO violaciones en Stripe
+  (ExpressCheckoutElement + PaymentElement) y cero en GA4 — que sale por
+  `region1.google-analytics.com`. Sin ejercitar: 3DS, un wallet real y el
+  fallback hospedado.
+-->
+<html lang="es"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://snap.licdn.com https://analytics.hubstartidea.es https://pixel.byspotify.com https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.google-analytics.com https://analytics.hubstartidea.es https://pixels.spotify.com https://api.stripe.com https://api.elevenlabs.io https://px.ads.linkedin.com wss:; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; media-src 'self' blob: data:; worker-src 'self' blob:">
+<title>Sonda CSP — tramo de pago</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 46rem; }
+  #violaciones { background: #fff4f4; border: 1px solid #e0b4b4; padding: 1rem; white-space: pre-wrap; }
+  #violaciones.limpio { background: #f2fbf4; border-color: #b4e0bf; }
+</style>
+</head>
+<body>
+<h1>Sonda CSP — tramo de pago</h1>
+<p>Monta el widget de Stripe con la política del sitio <strong>en bloqueo</strong>. Lo que aparezca abajo es lo que se rompería el día que la CSP deje de ser Report-Only.</p>
+<pre id="violaciones" class="limpio">Sin violaciones todavía.</pre>
+<h2>Express Checkout</h2><div id="express"></div>
+<h2>Payment Element</h2><div id="pago"></div>
+
+<script>
+  window.__violaciones = [];
+  document.addEventListener("securitypolicyviolation", function (e) {
+    var linea = e.effectiveDirective + "  ←  " + e.blockedURI;
+    if (window.__violaciones.indexOf(linea) !== -1) return;
+    window.__violaciones.push(linea);
+    var caja = document.getElementById("violaciones");
+    caja.className = "";
+    caja.textContent = window.__violaciones.join("\n");
+    console.warn("VIOLACION: " + linea);
+  });
+</script>
+<script src="https://js.stripe.com/v3"></script>
+<script>
+  // Clave pública de PRUEBA de la documentación de Stripe. Nunca la de producción:
+  // la sonda no debe poder tocar una cuenta real.
+  var CLAVE_DE_PRUEBA = "pk_test_TYooMQauvdEDq54NiTphI7jx";
+  window.addEventListener("load", function () {
+    try {
+      var stripe = Stripe(CLAVE_DE_PRUEBA);
+      // `mode: payment` = modo diferido: monta el widget sin PaymentIntent.
+      var elements = stripe.elements({ mode: "payment", amount: 1000, currency: "eur" });
+      var express = elements.create("expressCheckout", {
+        paymentMethods: { applePay: "always", googlePay: "always", link: "auto" },
+      });
+      express.on("ready", function (ev) {
+        console.log("wallets disponibles: " + JSON.stringify((ev && ev.availablePaymentMethods) || {}));
+      });
+      express.mount("#express");
+      elements.create("payment").mount("#pago");
+    } catch (err) {
+      console.error("la sonda no pudo montar Stripe: " + err.message);
+    }
+
+    // GA4 solo con ?ga=1 — mide el recolector regional, pero deja un evento real.
+    if (new URLSearchParams(location.search).get("ga") === "1") {
+      var ID = "G-FHC95RN6FS";
+      var s = document.createElement("script");
+      s.async = true;
+      s.src = "https://www.googletagmanager.com/gtag/js?id=" + ID;
+      document.head.appendChild(s);
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      gtag("js", new Date());
+      gtag("config", ID);
+      setTimeout(function () {
+        var recolectores = performance.getEntriesByType("resource")
+          .map(function (r) { return r.name.split("?")[0]; })
+          .filter(function (n) { return /google-analytics|analytics\.google/.test(n); });
+        console.log("recolectores GA4: " + JSON.stringify(recolectores));
+      }, 3000);
+    }
+  });
+</script>
+</body></html>
