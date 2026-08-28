@@ -86,6 +86,45 @@ export const WATCHDOG_NAME = "cron-watchdog";
 export const STALE_MARGIN = 2;
 
 /**
+ * Holgura mínima ABSOLUTA, en horas, por encima de la frecuencia declarada.
+ *
+ * Un cron puede retrasarse sin estar muerto: jitter del planificador de GitHub
+ * Actions (que en agosto de 2026 llegó a disparar 3 de 24 pings horarios),
+ * carga del VPS, un deploy a mitad. Por debajo de esta holgura, el umbral
+ * produce falsas alarmas — y cada falsa alarma empuja un problema real fuera
+ * de los 280 caracteres del aviso de Telegram.
+ */
+export const MIN_JITTER_SLACK_HOURS = 6;
+
+/**
+ * Ventana de umbrales de silencio admisibles para un cron de frecuencia dada.
+ *
+ * Vive aquí, y no dentro del guard que la usa, por dos razones: es la regla que
+ * decide qué umbrales son legítimos (o sea, parte de la vigilancia, no de su
+ * test), y así se puede comprobar la propiedad que le faltaba — **que la
+ * ventana nunca esté vacía**.
+ *
+ * Porque lo estaba. El techo era `freq × 4` a secas, y con el suelo en
+ * `freq + max(6, freq × 0,1)` eso da una ventana IMPOSIBLE en cuanto
+ * `freq < 2`: para un cron horario pedía un umbral «entre 7h y 4h». Nadie lo
+ * había visto porque hoy ningún workflow con `cron-trigger` es horario — es
+ * una trampa latente que salta el día que alguien intenta vigilar uno
+ * (justo lo que hacía falta para `health-ping`, que corre cada hora).
+ *
+ * El techo pasa a ser `max(freq × 4, min × 1,5)`: para frecuencias medias y
+ * largas manda `freq × 4` igual que antes (nada cambia para los 14 workflows
+ * actuales), y para las cortas el suelo arrastra al techo consigo, dejando
+ * siempre un margen real donde elegir.
+ */
+export function thresholdWindowFor(frequencyHours: number): { min: number; max: number } {
+  const min = frequencyHours + Math.max(MIN_JITTER_SLACK_HOURS, frequencyHours * 0.1);
+  // Un umbral demasiado laxo tarda semanas en detectar un cron muerto, pero un
+  // techo por debajo del suelo no deja elegir NINGUNO: el suelo manda.
+  const max = Math.max(frequencyHours * 4, min * 1.5);
+  return { min, max };
+}
+
+/**
  * Crons cuyo silencio cuesta DINERO o toca al cliente, y que por tanto van
  * primero en el aviso: el cuerpo del push se trunca a 280 caracteres, así que
  * el orden decide qué llega a verse. Los tres syncs de proveedor congelan

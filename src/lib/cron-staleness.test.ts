@@ -8,6 +8,7 @@ import {
   REALERT_AFTER_HOURS,
   CRITICAL_CRONS,
   evaluateWatchdogSelfRun,
+  thresholdWindowFor,
 } from "./cron-staleness";
 import { CRON_CATALOG } from "./cron-catalog";
 
@@ -295,5 +296,58 @@ describe("evaluateWatchdogSelfRun — el watchdog vigilando su propio disparador
     const r = evaluateWatchdogSelfRun("no soy una fecha", NOW);
     expect(r.silent).toBe(false);
     expect(r.hoursSinceLastRun).toBeNull();
+  });
+});
+
+/**
+ * La ventana de umbrales admisibles ESTUVO VACÍA para los crons de frecuencia
+ * corta, y nadie se enteró: el guard que la usa solo recorre los workflows que
+ * existen hoy, y ninguno es horario. O sea, una regla insatisfacible que solo
+ * salta el día que alguien intenta vigilar el cron para el que hacía falta
+ * (`health-ping`, cada hora).
+ *
+ * Estos tests no comprueban números concretos — comprueban la PROPIEDAD que le
+ * faltaba: que siempre haya algún umbral elegible.
+ */
+describe("thresholdWindowFor — la ventana no puede quedarse vacía", () => {
+  // De 15 minutos (webhook-retry) a mensual, pasando por el caso que rompía.
+  const FRECUENCIAS = [0.25, 0.5, 1, 1.5, 1.9, 2, 3, 6, 12, 24, 7 * 24, 30 * 24];
+
+  it.each(FRECUENCIAS)("freq %ph deja al menos un umbral elegible", (freq) => {
+    const { min, max } = thresholdWindowFor(freq);
+    expect(max).toBeGreaterThan(min);
+  });
+
+  it("el caso exacto que estaba roto: un cron HORARIO", () => {
+    const { min, max } = thresholdWindowFor(1);
+    // Antes: min 7h, max 4h. Cualquier valor fallaba las dos aserciones a la vez.
+    expect(min).toBeCloseTo(7, 5);
+    expect(max).toBeGreaterThanOrEqual(min);
+    // Y el umbral que de verdad querríamos para un horario cabe dentro.
+    expect(8).toBeGreaterThanOrEqual(min);
+    expect(8).toBeLessThanOrEqual(max);
+  });
+
+  it("de ~3,6h en adelante el techo sigue siendo freq×4, sin tocar nada", () => {
+    // El suelo deja de arrastrar al techo cuando (freq+6)×1,5 <= freq×4, o sea
+    // a partir de freq = 3,6h. Los 14 workflows programados de hoy son de 6h o
+    // más, así que caen TODOS aquí: el arreglo no les cambia la ventana y por
+    // tanto no relaja la vigilancia de ninguno.
+    for (const freq of [6, 12, 24, 7 * 24, 30 * 24]) {
+      expect(thresholdWindowFor(freq).max).toBe(freq * 4);
+    }
+  });
+
+  it("un cron cada 2h deja de tener un único umbral posible", () => {
+    // Con el techo viejo daba min 8h y max 8h: legal solo el valor exacto 8.
+    // No estaba vacía, pero por un pelo — y por la misma cuenta equivocada.
+    const { min, max } = thresholdWindowFor(2);
+    expect(min).toBeCloseTo(8, 5);
+    expect(max).toBeGreaterThan(min);
+  });
+
+  it("el suelo conserva la holgura de jitter (6h absolutas o 10%, la mayor)", () => {
+    expect(thresholdWindowFor(1).min).toBeCloseTo(7, 5); // manda el suelo de 6h
+    expect(thresholdWindowFor(24 * 30).min).toBeCloseTo(720 + 72, 5); // manda el 10%
   });
 });

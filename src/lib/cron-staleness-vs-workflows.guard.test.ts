@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { estimateFrequencyHours, expectedHoursFor } from "@/lib/cron-staleness";
+import {
+  estimateFrequencyHours,
+  expectedHoursFor,
+  thresholdWindowFor,
+} from "@/lib/cron-staleness";
 
 /**
  * GUARD: el umbral de silencio de cada cron contra su `schedule:` REAL.
@@ -57,16 +61,16 @@ describe("umbral de silencio vs schedule real de los workflows", () => {
       expect(freq, `no se pudo interpretar "${cron}" en ${file}`).not.toBeNull();
 
       const threshold = expectedHoursFor(name);
-      // Holgura mínima: un cron puede retrasarse (jitter de GitHub Actions,
-      // carga del VPS) sin estar muerto. Por debajo de esto son falsas alarmas.
-      const min = freq! + Math.max(6, freq! * 0.1);
-      // Techo: un umbral demasiado laxo tarda semanas en detectar uno muerto.
-      const max = freq! * 4;
+      // La ventana admisible vive en cron-staleness.ts, no aquí: es la regla de
+      // qué umbrales son legítimos, y reimplementarla en el test significaría
+      // que el test no vigila nada (además de esconder que estaba VACÍA para
+      // frecuencias por debajo de 2h — ver thresholdWindowFor).
+      const { min, max } = thresholdWindowFor(freq!);
 
       expect(
         threshold,
         `${name}: umbral ${threshold}h para un cron de ~${freq}h (${cron}). ` +
-          `Debe estar entre ${Math.round(min)}h y ${max}h — ajusta ` +
+          `Debe estar entre ${Math.round(min)}h y ${Math.round(max)}h — ajusta ` +
           `EXPECTED_HOURS_OVERRIDE["${name}"] en cron-staleness.ts.`,
       ).toBeGreaterThanOrEqual(min);
       expect(threshold).toBeLessThanOrEqual(max);
