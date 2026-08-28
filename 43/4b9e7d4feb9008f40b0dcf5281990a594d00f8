@@ -1,0 +1,27 @@
+src/lib/suppliers/cifra-sync.ts
+  s_d6b6d8a57a7010::t_f3d54beb8ab1c1 43,89-96
+src/lib/suppliers/midocean-sync.ts
+  s_d6b6d8a57a7010::t_497f5c69ee5fc3 22,44-51
+src/lib/suppliers/sync-cierre-garantizado.guard.test.ts
+  s_d6b6d8a57a7010::t_e190d5b796d45d 1-79
+src/lib/suppliers/sync-failure.test.ts
+  s_d6b6d8a57a7010::t_5d4dd4d93cbe4e 6-7,104-176
+src/lib/suppliers/sync-failure.ts
+  s_d6b6d8a57a7010::t_6b61637a5137c3 13-28,30-46,92-93,99-105,111,113,115-121,126-127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "434b9e7d4feb9008f40b0dcf5281990a594d00f8",
+  "prompts": {},
+  "sessions": {
+    "s_d6b6d8a57a7010": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a31f08b5-f99f-4d6f-99d0-71b9af0962b1",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
