@@ -19,6 +19,7 @@ import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
 import { notifyTelegram } from "@/lib/telegram";
 import { ensureMediaAsset } from "@/lib/proxy-image";
 import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
+import { withSyncFailureClosing } from "./sync-failure";
 
 export type MidoceanSyncResult = {
   startedAt: string;
@@ -40,6 +41,14 @@ export type MidoceanSyncResult = {
  * para no saturar Postgres.
  */
 export async function runMidoceanSync(): Promise<MidoceanSyncResult> {
+  return withSyncFailureClosing(
+    "midocean-sync",
+    (data) => prisma.supplierSync.update({ where: { supplier: "midocean" }, data }),
+    runMidoceanSyncInner,
+  );
+}
+
+async function runMidoceanSyncInner(): Promise<MidoceanSyncResult> {
   const startedAt = new Date();
   const errors: MidoceanSyncResult["errors"] = [];
   let productsUpserted = 0;

@@ -40,6 +40,7 @@ import { parseCifraVariantDimensions } from "./cifra-variant";
 // regla anti-supplier-leak (no exponer "cif-" en URLs públicas).
 import { resolveCleanProductSlug } from "./midocean-sync";
 import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
+import { withSyncFailureClosing } from "./sync-failure";
 // Proxy de imágenes: registra el original en MediaAsset y devuelve
 // `/api/m/<hash>` opaco. CRÍTICO: publicatalogue.com delata a Cifra,
 // nunca debe llegar al HTML público (regla anti-supplier-leak).
@@ -85,6 +86,14 @@ function toQty(q: unknown): number {
 }
 
 export async function runCifraSync(): Promise<CifraSyncResult> {
+  return withSyncFailureClosing(
+    "cifra-sync",
+    (data) => prisma.supplierSync.update({ where: { supplier: SUPPLIER }, data }),
+    runCifraSyncInner,
+  );
+}
+
+async function runCifraSyncInner(): Promise<CifraSyncResult> {
   const startedAt = new Date();
   const errors: CifraSyncResult["errors"] = [];
   let productsUpserted = 0;
