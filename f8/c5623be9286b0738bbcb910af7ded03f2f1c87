@@ -1,0 +1,23 @@
+src/lib/suppliers/sync-cierre-garantizado.guard.test.ts
+  s_d6b6d8a57a7010::t_2de5fea9fc2299 14-16
+src/lib/suppliers/sync-failure.test.ts
+  s_d6b6d8a57a7010::t_6be1bb98a98bd5 106-109
+src/lib/suppliers/sync-failure.ts
+  s_d6b6d8a57a7010::t_9be774656fb230 17-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "f8c5623be9286b0738bbcb910af7ded03f2f1c87",
+  "prompts": {},
+  "sessions": {
+    "s_d6b6d8a57a7010": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a31f08b5-f99f-4d6f-99d0-71b9af0962b1",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
