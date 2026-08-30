@@ -13,6 +13,8 @@ import {
   canonicalizeQuoteRequestVariantSelection,
   validateQuoteRequestVariantDistribution,
 } from "@/lib/quote-request-variant";
+import { prisma } from "@/lib/prisma";
+import { enqueueHubIntake, flushHubIntakeOutboxNow } from "@/lib/hub-intake-outbox";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -139,6 +141,51 @@ export async function POST(req: Request) {
       { status: 422 },
     );
   }
+
+  const originMessage = `Solicitud de presupuesto para ${d.slug} (${d.qty} unidades). Variante: ${variantSelection.summary}.`;
+  const { outboxId } = await prisma.$transaction(async (tx) => {
+    const origin = await tx.quoteRequest.create({
+      data: {
+        name: d.name || d.email,
+        company: d.company || null,
+        email: d.email,
+        phone: null,
+        productHint: d.slug,
+        productRef: d.slug,
+        quantity: d.qty,
+        deadline: null,
+        budget: null,
+        message: originMessage,
+        source: "product-page",
+      },
+    });
+    const outboxId = await enqueueHubIntake(tx, {
+      schemaVersion: 1,
+      submissionId: origin.id,
+      kind: "proposal",
+      form: "quote-request-product",
+      occurredAt: origin.createdAt.toISOString(),
+      contact: {
+        email: origin.email,
+        ...(d.name ? { name: d.name } : {}),
+      },
+      ...(d.company ? { organization: { name: d.company } } : {}),
+      subject: `Presupuesto de producto: ${d.slug}`,
+      message: originMessage,
+      details: {
+        productRef: d.slug,
+        quantity: d.qty,
+        variant: variantSelection.summary,
+        ...(d.techniqueCode ? { techniqueCode: d.techniqueCode } : {}),
+        ...(d.numberOfColours !== undefined ? { numberOfColours: d.numberOfColours } : {}),
+        ...(d.printAreaCm2 !== undefined ? { printAreaCm2: d.printAreaCm2 } : {}),
+        ...(d.manipulationCode ? { manipulationCode: d.manipulationCode } : {}),
+      },
+    });
+    return { outboxId };
+  });
+
+  await flushHubIntakeOutboxNow(outboxId);
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
   const ua = req.headers.get("user-agent") || null;
