@@ -14,8 +14,8 @@ until node -e "const net=require('net');const s=new net.Socket();s.setTimeout(20
   sleep 2
 done
 
-echo "[entrypoint] Postgres responde. Ejecutando prisma db push..."
-node node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss
+echo "[entrypoint] Postgres responde. Aplicando migraciones Prisma versionadas..."
+node node_modules/prisma/build/index.js migrate deploy
 
 echo "[entrypoint] Schema OK. Arrancando Next.js..."
 exec node server.js
