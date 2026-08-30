@@ -7,6 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Entregas durables de formularios humanos al HUB. El payload excluye
+/// deliberadamente IP, user-agent, archivos y credenciales.
+model HubIntakeOutbox {
+  id            String    @id @default(cuid())
+  submissionId  String    @unique
+  payload       Json
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lockedAt      DateTime?
+  lockToken     String?
+  lastError     String?
+  deliveredAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([deliveredAt, nextAttemptAt, lockedAt])
+}
+
 // ============================================================================
 // F0 — captura de leads y solicitudes de cotización
 // ============================================================================

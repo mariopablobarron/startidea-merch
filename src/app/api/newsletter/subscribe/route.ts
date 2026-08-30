@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM } from "@/lib/resend";
 import { rateLimit } from "@/lib/rate-limit";
 import { NewsletterSubscribeSchema } from "@/lib/newsletter-subscribe-schema";
+import {
+  enqueueHubIntake,
+  flushHubIntakeOutboxNow,
+  newHubIntakeEventId,
+} from "@/lib/hub-intake-outbox";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,21 +33,44 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const data = parsed.data;
 
-  // Upsert: si ya existe pero unsubscribed, lo reactivamos
-  const sub = await prisma.newsletterSubscriber.upsert({
-    where: { email: data.email },
-    create: {
-      email: data.email,
-      name: data.name,
-      company: data.company,
-      source: data.source || "home-footer",
-    },
-    update: {
-      name: data.name ?? undefined,
-      company: data.company ?? undefined,
-      unsubscribedAt: null,
-    },
+  // Cada alta/reactivación es un evento propio. Su ID aleatorio se genera antes
+  // de la transacción y no deriva del email ni expone PII.
+  const outboxId = newHubIntakeEventId();
+  const occurredAt = new Date();
+  const sub = await prisma.$transaction(async (tx) => {
+    const sub = await tx.newsletterSubscriber.upsert({
+      where: { email: data.email },
+      create: {
+        email: data.email,
+        name: data.name,
+        company: data.company,
+        source: data.source || "home-footer",
+      },
+      update: {
+        name: data.name ?? undefined,
+        company: data.company ?? undefined,
+        unsubscribedAt: null,
+      },
+    });
+    await enqueueHubIntake(tx, {
+      schemaVersion: 1,
+      submissionId: outboxId,
+      kind: "newsletter",
+      form: "newsletter-subscribe",
+      occurredAt: occurredAt.toISOString(),
+      contact: {
+        email: sub.email,
+        ...(sub.name ? { name: sub.name } : {}),
+      },
+      ...(sub.company ? { organization: { name: sub.company } } : {}),
+      subject: "Alta en newsletter de TodoMerchandising",
+      details: { source: data.source || "home-footer" },
+      consents: { marketing: true },
+    }, outboxId);
+    return sub;
   });
+
+  await flushHubIntakeOutboxNow(outboxId);
 
   // Si vino del popup lead-capture, incluir cupón de bienvenida WELCOME10
   const isLeadPopup = data.source === "lead-popup" || data.source === "exit-intent";

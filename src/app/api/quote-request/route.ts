@@ -6,6 +6,7 @@ import { autoresponseQuoteEmail, internalQuoteEmail, type QuoteEmailData } from 
 import { notifyAdmins } from "@/lib/notify-admin";
 import { getQuoteSettings } from "@/lib/quote-settings";
 import { rateLimit } from "@/lib/rate-limit";
+import { enqueueHubIntake, flushHubIntakeOutboxNow } from "@/lib/hub-intake-outbox";
 
 export const runtime = "nodejs";
 
@@ -45,21 +46,48 @@ export async function POST(req: Request) {
 
   const data = parsed.data;
 
-  const created = await prisma.quoteRequest.create({
-    data: {
-      name: data.name,
-      company: data.company || null,
-      email: data.email,
-      phone: data.phone || null,
-      productHint: data.productHint || null,
-      productRef: data.productRef || null,
-      quantity: data.quantity ?? null,
-      deadline: data.deadline || null,
-      budget: data.budget || null,
-      message: data.message,
-      source: data.source || "landing",
-    },
+  const { created, outboxId } = await prisma.$transaction(async (tx) => {
+    const created = await tx.quoteRequest.create({
+      data: {
+        name: data.name,
+        company: data.company || null,
+        email: data.email,
+        phone: data.phone || null,
+        productHint: data.productHint || null,
+        productRef: data.productRef || null,
+        quantity: data.quantity ?? null,
+        deadline: data.deadline || null,
+        budget: data.budget || null,
+        message: data.message,
+        source: data.source || "landing",
+      },
+    });
+    const outboxId = await enqueueHubIntake(tx, {
+      schemaVersion: 1,
+      submissionId: created.id,
+      kind: "proposal",
+      form: "quote-request",
+      occurredAt: created.createdAt.toISOString(),
+      contact: {
+        email: created.email,
+        name: created.name,
+        ...(created.phone ? { phone: created.phone } : {}),
+      },
+      ...(created.company ? { organization: { name: created.company } } : {}),
+      subject: created.productHint || "Solicitud de cotización de merchandising",
+      message: created.message,
+      details: {
+        source: created.source || "landing",
+        ...(created.productRef ? { productRef: created.productRef } : {}),
+        ...(created.quantity !== null ? { quantity: created.quantity } : {}),
+        ...(created.deadline ? { deadline: created.deadline } : {}),
+        ...(created.budget ? { budget: created.budget } : {}),
+      },
+    });
+    return { created, outboxId };
   });
+
+  await flushHubIntakeOutboxNow(outboxId);
 
   const settings = await getQuoteSettings();
 
