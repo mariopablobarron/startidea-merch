@@ -31,8 +31,16 @@ function politica(fuente: string): string {
  * host — que es justo lo que hay que vigilar en el tramo que cobra.
  */
 function directiva(fuente: string, nombre: string): string {
-  const m = politica(fuente).match(new RegExp(`"${nombre} ([^"]*)"`));
-  return m ? m[1] : "";
+  // Sin `new RegExp`: un patrón montado con una variable es lo que el análisis
+  // de seguridad marca como ReDoS, y aquí no aporta nada — el bloque son
+  // literales entrecomillados y basta con cortar entre comillas.
+  const bloque = politica(fuente);
+  const marca = `"${nombre} `;
+  const inicio = bloque.indexOf(marca);
+  if (inicio === -1) return "";
+  const desde = inicio + marca.length;
+  const fin = bloque.indexOf('"', desde);
+  return fin === -1 ? "" : bloque.slice(desde, fin);
 }
 
 describe("CSP: se estrena en Report-Only y no se vacía", () => {

@@ -60,6 +60,11 @@
     console.warn("VIOLACION: " + linea);
   });
 </script>
+<!-- Stripe.js se sirve SIN versión a propósito (Stripe lo exige para poder
+     parchear su script), así que no hay hash estable que poner en `integrity`:
+     un SRI aquí rompería la sonda al primer despliegue suyo. Además este
+     fichero no se sirve nunca — es una página de medición que se abre a mano.
+     nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
 <script src="https://js.stripe.com/v3"></script>
 <script>
   // Clave pública de PRUEBA de la documentación de Stripe. Nunca la de producción:
