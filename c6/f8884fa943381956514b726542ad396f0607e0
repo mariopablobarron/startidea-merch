@@ -1,0 +1,31 @@
+src/lib/suppliers/makito-sync.ts
+  s_428a4af3ad216f::t_e4a93166e70a65 39,234-244,256,259-261,272-273,467-468,548-549,575-576,603-604,620-621,647-649
+src/lib/suppliers/sync-failure.test.ts
+  s_dbfb41741a1f0c::t_ce90e64208c9c2 4,178-205
+src/lib/suppliers/sync-failure.ts
+  s_dbfb41741a1f0c::t_f0a1c34ef1de66 91-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "c6f8884fa943381956514b726542ad396f0607e0",
+  "prompts": {},
+  "sessions": {
+    "s_428a4af3ad216f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "792b6b8a-477d-486f-b28b-c4290bb0c134",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_dbfb41741a1f0c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fda32b54-60e1-4e20-b80d-8200d1380cef",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
