@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   closeFailedSync,
+  marcarFase,
   syncFailureMessage,
   withSyncFailureClosing,
   SyncTimeoutError,
@@ -172,5 +173,33 @@ describe("withSyncFailureClosing: tope de tiempo para un sync colgado", () => {
     expect(e.message).toContain("makito-sync");
     expect(e.message).toContain("45 min");
     expect(e.timeoutMs).toBe(45 * 60_000);
+  });
+});
+
+describe("marcarFase", () => {
+  it("escribe la fase con su número, su total y su nombre", async () => {
+    const escrituras: { notes: string }[] = [];
+    await marcarFase(async (row) => escrituras.push(row), 5, 8, "stock");
+    expect(escrituras).toEqual([{ notes: "fase 5/8 · stock" }]);
+  });
+
+  it("no lanza si la escritura falla — una traza no puede tumbar lo que traza", async () => {
+    // El caso real: la BD que no responde es justo la que hace que el sync se
+    // cuelgue. Si anotar la fase relanzara, la instrumentación se convertiría
+    // en una causa de fallo más.
+    await expect(
+      marcarFase(async () => {
+        throw new Error("la BD no responde");
+      }, 3, 8, "upsert"),
+    ).resolves.toBeUndefined();
+  });
+
+  it("la marca sobrevive al cierre por fallo: closeFailedSync no toca notes", async () => {
+    // Es la razón de usar `notes` y no otra columna. Si el cierre la pisara,
+    // la fase moriría con el sync y no quedaría rastro de dónde se quedó.
+    const { write, rows } = fakeWriter();
+    await closeFailedSync(write, new Error("reventó"));
+    expect(rows).toHaveLength(1);
+    expect(Object.keys(rows[0])).not.toContain("notes");
   });
 });

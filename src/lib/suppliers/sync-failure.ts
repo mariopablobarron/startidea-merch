@@ -89,6 +89,36 @@ export async function closeFailedSync(
 }
 
 /**
+ * Deja escrito **en qué fase va** el sync, en `SupplierSync.notes`.
+ *
+ * El tope de arriba recupera la observabilidad de que algo se colgó, pero no
+ * dice *dónde*: el 27-ago-2026 makito murió entre el stock y el `update`
+ * final y la causa sigue sin identificar, porque cuando se miró ya no
+ * quedaban logs del contenedor. Una fila cerrada que dice
+ * `fase 5/8 · stock` convierte el próximo cuelgue en un diagnóstico de un
+ * vistazo, sin depender de que alguien mire los logs antes de que roten.
+ *
+ * `notes` es la columna adecuada porque **`closeFailedSync` no la toca**: el
+ * cierre por fallo o por tope escribe `finishedAt`, `ok` y `errorsJson`, así
+ * que la última fase anotada sobrevive al cierre.
+ *
+ * **Nunca lanza.** Una traza que tumbe el sync que está trazando sería peor
+ * que no tener traza: si la escritura falla, el sync sigue su camino.
+ */
+export async function marcarFase(
+  write: (row: { notes: string }) => Promise<unknown>,
+  fase: number,
+  total: number,
+  nombre: string,
+): Promise<void> {
+  try {
+    await write({ notes: `fase ${fase}/${total} · ${nombre}` });
+  } catch {
+    // a propósito: ver el comentario de arriba
+  }
+}
+
+/**
  * Ejecuta un sync garantizando que su fila queda cerrada si revienta **o si se
  * cuelga**.
  *

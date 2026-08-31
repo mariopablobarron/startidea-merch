@@ -36,7 +36,7 @@ import { resolveCleanProductSlug } from "./midocean-sync";
 import { ensureMediaAsset } from "@/lib/proxy-image";
 import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
 import { colorGroupFromName } from "@/lib/variant-grouping";
-import { withSyncFailureClosing } from "./sync-failure";
+import { marcarFase, withSyncFailureClosing } from "./sync-failure";
 
 const SUPPLIER = "makito" as const;
 const CHUNK = 25; // productos por batch (Makito tiene 4482, son ~180 chunks)
@@ -231,6 +231,17 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
   let techniquesUpserted = 0;
   let scalesUpserted = 0;
 
+  // Deja constancia de por dónde va el sync. Si vuelve a colgarse (27-ago), la
+  // fila dirá en qué fase murió en vez de obligar a reconstruirlo de los logs
+  // del contenedor, que para entonces ya no están.
+  const fase = (n: number, nombre: string) =>
+    marcarFase(
+      (data) => prisma.supplierSync.update({ where: { supplier: SUPPLIER }, data }),
+      n,
+      8,
+      nombre,
+    );
+
   // 1. SupplierSync init
   await prisma.supplierSync.upsert({
     where: { supplier: SUPPLIER },
@@ -242,8 +253,12 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
       productsFetched: 0,
       productsUpserted: 0,
       errorsJson: Prisma.DbNull,
+      notes: null,
     },
   });
+  await fase(1, "apertura de la fila");
+
+  await fase(2, "descarga y parseo del XML de productos");
 
   // 2. Descargar + parsear XML productos
   let products: XmlProduct[] = [];
@@ -253,6 +268,8 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
   } catch (e) {
     errors.push({ ref: "_xml", message: e instanceof Error ? e.message : String(e) });
   }
+
+  await fase(3, "upsert de productos y variantes");
 
   // 3. Upsert productos + variantes
   // Cache de categorías root (parentId=null) — mismo patrón que cifra-sync
@@ -447,6 +464,8 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
     }
   }
 
+  await fase(4, "precios");
+
   // 4. Precios productos · XML
   try {
     const xml = await fetchPricesXml();
@@ -526,6 +545,8 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
     errors.push({ ref: "_prices", message: e instanceof Error ? e.message : String(e) });
   }
 
+  await fase(5, "stock");
+
   // 5. Stock · XML
   try {
     const xml = await fetchStockXml();
@@ -550,6 +571,8 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
   } catch (e) {
     errors.push({ ref: "_stock", message: e instanceof Error ? e.message : String(e) });
   }
+
+  await fase(6, "tarifa de marcaje");
 
   // 6. Tarifa de marcaje (API JSON · 142 técnicas con 10 tramos)
   try {
@@ -577,6 +600,8 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
     errors.push({ ref: "_marking", message: e instanceof Error ? e.message : String(e) });
   }
 
+  await fase(7, "refresco de fromPriceCents");
+
   // 7. Refresh Product.fromPriceCents = MIN(unitPriceCents) — mismo patrón que cifra
   const fromPriceRefreshed = await prisma.$executeRaw`
     UPDATE "Product" p
@@ -591,6 +616,8 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
       AND p.supplier = 'makito'
       AND (p."fromPriceCents" IS NULL OR p."fromPriceCents" != sub.min_price)
   `;
+
+  await fase(8, "cierre");
 
   // 8. SupplierSync finish
   const finishedAt = new Date();
@@ -617,6 +644,9 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
       productsFetched: products.length,
       productsUpserted,
       errorsJson: errors.length ? errors.slice(0, 100) : Prisma.DbNull,
+      // Un sync que termina no deja marca: así `notes` solo tiene texto cuando
+      // el sync se quedó a medias, y leerla no admite ambigüedad.
+      notes: null,
     },
   });
   // Histórico (telemetría, no rompe el sync si falla).
