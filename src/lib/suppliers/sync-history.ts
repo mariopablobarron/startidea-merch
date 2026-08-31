@@ -1,6 +1,7 @@
 import { Prisma, type SupplierCode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notifyTelegram } from "@/lib/telegram";
+import { describeOrphanedSync } from "./orphan-sync";
 
 /**
  * Registra en el histórico append-only (`SupplierSyncRun`) una ejecución de
@@ -36,6 +37,45 @@ export async function recordSupplierSyncRun(input: {
     });
   } catch (e) {
     console.error("[supplier-sync-history] no se pudo registrar el run:", e);
+  }
+}
+
+/**
+ * Rescata en el histórico la ejecución anterior si murió sin cerrar su fila.
+ *
+ * Se llama al ARRANCAR un sync, **antes** del `upsert` que pisa la fila del
+ * proveedor: es el último instante en que esa evidencia existe (ver
+ * `orphan-sync.ts`). Devuelve `true` si registró una ejecución muerta.
+ *
+ * Es TELEMETRÍA: no lanza nunca. Un fallo aquí no puede impedir que arranque el
+ * sync — el catálogo del día importa más que su acta de defunción.
+ */
+export async function rescueOrphanedSyncRun(
+  supplier: SupplierCode,
+  now: Date = new Date(),
+): Promise<boolean> {
+  try {
+    const previous = await prisma.supplierSync.findUnique({
+      where: { supplier },
+      select: {
+        startedAt: true,
+        finishedAt: true,
+        productsFetched: true,
+        productsUpserted: true,
+        notes: true,
+      },
+    });
+    const orphan = describeOrphanedSync(previous, now);
+    if (!orphan) return false;
+    await recordSupplierSyncRun({ supplier, ...orphan });
+    console.warn(
+      `[supplier-sync-history] ${supplier}: la ejecución anterior murió sin cerrar`,
+      orphan.errorsJson[0]?.message,
+    );
+    return true;
+  } catch (e) {
+    console.error("[supplier-sync-history] rescate de run huérfano falló:", e);
+    return false;
   }
 }
 
@@ -122,6 +162,12 @@ export async function checkAndAlertSupplierDegradation(
 ): Promise<void> {
   try {
     const runs = await prisma.supplierSyncRun.findMany({
+      // Solo ejecuciones CORRECTAS: la duración de una abortada no mide nada
+      // (un fallo a los 3 s hunde la mediana; un run muerto rescatado por
+      // `rescueOrphanedSyncRun` la dispara, porque su `finishedAt` es el
+      // arranque siguiente y no el instante real de la muerte). Mismo filtro
+      // que la ventana de /admin/control, para que panel y alerta coincidan.
+      where: { ok: true },
       orderBy: { startedAt: "desc" },
       take: DEGRADATION_WINDOW,
       select: { supplier: true, durationMs: true },

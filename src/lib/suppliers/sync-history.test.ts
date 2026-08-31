@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const create = vi.fn();
 const findMany = vi.fn();
+const syncFindUnique = vi.fn();
 const settingFind = vi.fn();
 const settingUpsert = vi.fn();
 const notifyTelegram = vi.fn();
@@ -10,6 +11,9 @@ vi.mock("@/lib/prisma", () => ({
     supplierSyncRun: {
       create: (...a: unknown[]) => create(...a),
       findMany: (...a: unknown[]) => findMany(...a),
+    },
+    supplierSync: {
+      findUnique: (...a: unknown[]) => syncFindUnique(...a),
     },
     adminSetting: {
       findUnique: (...a: unknown[]) => settingFind(...a),
@@ -26,6 +30,7 @@ import {
   summarizeSupplierRuns,
   decideDegradationAlert,
   checkAndAlertSupplierDegradation,
+  rescueOrphanedSyncRun,
 } from "./sync-history";
 
 describe("summarizeSupplierRuns", () => {
@@ -199,5 +204,74 @@ describe("checkAndAlertSupplierDegradation", () => {
   it("TELEMETRÍA: si la BD falla, NO propaga (no rompe el sync)", async () => {
     findMany.mockRejectedValueOnce(new Error("db down"));
     await expect(checkAndAlertSupplierDegradation("makito")).resolves.toBeUndefined();
+  });
+});
+
+describe("rescueOrphanedSyncRun", () => {
+  beforeEach(() => {
+    create.mockReset();
+    syncFindUnique.mockReset();
+  });
+
+  const NOW = new Date("2026-09-02T04:02:00.000Z");
+  const HACE_UN_DIA = new Date(NOW.getTime() - 24 * 3_600_000);
+
+  it("registra en el histórico la ejecución que murió sin cerrar", async () => {
+    syncFindUnique.mockResolvedValue({
+      startedAt: HACE_UN_DIA,
+      finishedAt: null,
+      productsFetched: 10,
+      productsUpserted: 8,
+      notes: "fase 5/8 · stock",
+    });
+    create.mockResolvedValue({});
+
+    await expect(rescueOrphanedSyncRun("makito", NOW)).resolves.toBe(true);
+
+    const data = create.mock.calls[0][0].data;
+    expect(data.supplier).toBe("makito");
+    expect(data.ok).toBe(false);
+    expect(data.productsUpserted).toBe(8);
+    expect(JSON.stringify(data.errorsJson)).toContain("fase 5/8 · stock");
+  });
+
+  it("no escribe nada si la ejecución anterior cerró", async () => {
+    syncFindUnique.mockResolvedValue({
+      startedAt: HACE_UN_DIA,
+      finishedAt: new Date(NOW.getTime() - 23 * 3_600_000),
+      productsFetched: 10,
+      productsUpserted: 10,
+      notes: null,
+    });
+    await expect(rescueOrphanedSyncRun("makito", NOW)).resolves.toBe(false);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("la primera vez (sin fila previa) no inventa un fallo", async () => {
+    syncFindUnique.mockResolvedValue(null);
+    await expect(rescueOrphanedSyncRun("cifra", NOW)).resolves.toBe(false);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("si la BD no responde NO rompe el arranque del sync", async () => {
+    // El catálogo del día importa más que su acta de defunción.
+    syncFindUnique.mockRejectedValue(new Error("db caída"));
+    await expect(rescueOrphanedSyncRun("midocean", NOW)).resolves.toBe(false);
+  });
+});
+
+describe("ventana de tendencia", () => {
+  beforeEach(() => {
+    findMany.mockReset();
+    settingFind.mockReset();
+    settingUpsert.mockReset();
+    notifyTelegram.mockReset();
+  });
+
+  it("solo mira ejecuciones correctas: una abortada no mide duración", async () => {
+    findMany.mockResolvedValue([]);
+    settingFind.mockResolvedValue(null);
+    await checkAndAlertSupplierDegradation("makito");
+    expect(findMany.mock.calls[0][0].where).toEqual({ ok: true });
   });
 });

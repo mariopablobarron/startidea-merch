@@ -22,7 +22,11 @@ import { notifyTelegram } from "@/lib/telegram";
 import { XMLParser } from "fast-xml-parser";
 import { measureSyncBlocking } from "./blocking-timer";
 import { prisma } from "@/lib/prisma";
-import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
+import {
+  recordSupplierSyncRun,
+  checkAndAlertSupplierDegradation,
+  rescueOrphanedSyncRun,
+} from "./sync-history";
 import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
 import { Prisma } from "@prisma/client";
 import {
@@ -241,6 +245,10 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
       8,
       nombre,
     );
+
+  // Antes de pisar la fila: si la ejecución anterior murió sin cerrar, dejar
+  // constancia en el histórico. Este `upsert` es lo que borra la evidencia.
+  await rescueOrphanedSyncRun(SUPPLIER, startedAt);
 
   // 1. SupplierSync init
   await prisma.supplierSync.upsert({

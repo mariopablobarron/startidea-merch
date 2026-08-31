@@ -1,6 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { recordSupplierSyncRun, checkAndAlertSupplierDegradation } from "./sync-history";
+import {
+  recordSupplierSyncRun,
+  checkAndAlertSupplierDegradation,
+  rescueOrphanedSyncRun,
+} from "./sync-history";
 import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
 import {
   midoceanClient,
@@ -55,6 +59,10 @@ async function runMidoceanSyncInner(): Promise<MidoceanSyncResult> {
   let variantsUpserted = 0;
   let positionsUpserted = 0;
   let stockUpdated = 0;
+
+  // Antes de pisar la fila: si la ejecución anterior murió sin cerrar, dejar
+  // constancia en el histórico. Este `upsert` es lo que borra la evidencia.
+  await rescueOrphanedSyncRun("midocean", startedAt);
 
   // Crear marcador
   await prisma.supplierSync.upsert({

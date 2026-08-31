@@ -76,6 +76,9 @@ export default async function ControlCenterPage() {
       select: { id: true, name: true, company: true, estimatedTotalCents: true, status: true, createdAt: true },
     }),
     prisma.supplierSyncRun.findMany({
+      // Solo ejecuciones correctas: la duración de una abortada no mide
+      // tendencia (mismo filtro que la alerta de degradación).
+      where: { ok: true },
       orderBy: { startedAt: "desc" },
       take: 40,
       select: { supplier: true, durationMs: true },
