@@ -175,6 +175,9 @@ const GRABADO: MarcajeParaLinea = {
   costeUnitCents: 74,
   clicheCents: 2800,
   areaCm2: 48,
+  tintas: 1,
+  posicion: "CUERPO",
+  areaMaxima: "60 × 80 mm",
   aviso: null,
 };
 
@@ -252,5 +255,14 @@ describe("lineaDeMarcaje y lineaDeCliche", () => {
 
   it("el concepto del cliché dice de qué técnica es", () => {
     expect(lineaDeCliche(GRABADO, 22, 30, pvp).concepto).toBe("Cliché / pantalla · Grabado láser");
+  });
+
+  it("el concepto del marcaje dice las tintas cuando son más de una", () => {
+    // «A una tinta» y «a dos tintas» no cuestan lo mismo: si el concepto no lo
+    // dice, el cliente no sabe qué está aceptando.
+    expect(lineaDeMarcaje(GRABADO, 500, 22, 30, pvp).concepto).toBe("Grabado láser");
+    expect(lineaDeMarcaje({ ...GRABADO, tintas: 2 }, 500, 22, 30, pvp).concepto).toBe(
+      "Grabado láser a 2 tintas",
+    );
   });
 });

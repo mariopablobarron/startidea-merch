@@ -26,8 +26,16 @@ import { IVA_RATE, ivaPart } from "@/lib/iva";
 /** Margen inicial del encargo, en % sobre el precio de venta. */
 export const MARGEN_OBJETIVO_PCT = 30;
 
-/** Techo del redondeo: por encima de esto el precio deja de ser "el de la regla". */
-export const MARGEN_MAXIMO_REDONDEO_PCT = 31;
+/**
+ * Cuánto se le deja subir al redondeo por encima del margen objetivo.
+ *
+ * Es un ANCHO, no un techo fijo. Con un techo absoluto del 31 % el redondeo
+ * ignoraba el margen que se le pedía: una línea al 22 % aceptaba como buena la
+ * cifra limpia que dejaba un 30 %, y una al 40 % no encontraba ninguna cifra
+ * dentro de banda y se quedaba sin redondear. Desde que el margen por familia
+ * manda de verdad, la banda tiene que moverse con él.
+ */
+export const MARGEN_BANDA_REDONDEO_PCT = 1;
 
 /** Por debajo de esto el panel avisa: la línea se está vendiendo demasiado justa. */
 export const MARGEN_AVISO_PCT = 20;
@@ -49,8 +57,9 @@ export function margenResultantePct(costeCents: number, pvpCents: number): numbe
  * Redondea el PVP a una cifra limpia SIN bajar del margen objetivo.
  *
  * Se prueban pasos de mayor a menor (100 €, 50 €, 10 €, 5 €, 1 €, 50 c, 10 c,
- * 5 c, 1 c) y se coge el más grueso cuyo margen siga dentro de la banda: para
- * un coste de 243 € el exacto son 347,14 € y sale 350,00 €, no 348,00 €. Nunca redondea a la baja:
+ * 5 c, 1 c) y se coge el más grueso cuyo margen siga dentro de la banda —del
+ * objetivo a un punto por encima—: para un coste de 243 € al 30 % el exacto son
+ * 347,14 € y sale 350,00 €, no 348,00 €. Nunca redondea a la baja:
  * un céntimo de menos por unidad son 20 € en una tirada de 2.000, y siempre en
  * nuestra contra.
  *
@@ -62,7 +71,7 @@ export function margenResultantePct(costeCents: number, pvpCents: number): numbe
 export function redondearPvpLimpio(
   costeCents: number,
   margenObjetivoPct: number = MARGEN_OBJETIVO_PCT,
-  margenMaximoPct: number = MARGEN_MAXIMO_REDONDEO_PCT,
+  margenMaximoPct: number = margenObjetivoPct + MARGEN_BANDA_REDONDEO_PCT,
 ): number {
   const exacto = pvpDesdeCoste(costeCents, margenObjetivoPct);
   if (exacto <= 0) return 0;

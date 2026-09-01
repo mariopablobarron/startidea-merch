@@ -311,19 +311,43 @@ export function PresupuestoEditor({
       }
     }
 
-    // Una línea recién creada y sin tocar se sustituye en vez de acumularse:
-    // el caso normal es abrir la opción y buscar el producto acto seguido.
+    // Una línea recién creada y sin tocar se sustituye en vez de acumularse: el
+    // caso normal es abrir la opción y buscar el producto acto seguido.
+    //
+    // «Sin tocar» mira TODOS los campos de texto, no solo el concepto: alguien
+    // que había escrito la descripción o pegado la referencia y luego busca el
+    // producto vería desaparecer lo escrito. Y solo se sustituye si esa línea
+    // en blanco es la única: con varias, lo que hay es una opción a medio
+    // montar, no una recién abierta.
     const enBlanco = (l: LineaForm) =>
-      l.concepto.trim() === "" && l.costeUnitCents === 0 && l.pvpUnitCents === 0;
-    const lineas = opcion.lineas.every(enBlanco) ? nuevas : [...opcion.lineas, ...nuevas];
+      l.concepto.trim() === "" &&
+      l.descripcion.trim() === "" &&
+      l.referencia.trim() === "" &&
+      l.imagenUrl.trim() === "" &&
+      l.costeUnitCents === 0 &&
+      l.pvpUnitCents === 0;
+    const lineas =
+      opcion.lineas.length === 1 && enBlanco(opcion.lineas[0])
+        ? nuevas
+        : [...opcion.lineas, ...nuevas];
 
     const ficha = fichaDesdeProducto(opcion, producto);
     editarOpcion(iP, iO, {
       lineas,
       ...ficha,
-      // La técnica elegida manda sobre la que traía el producto por defecto:
-      // es la que se está cotizando.
-      marcajeTecnica: marcaje ? marcaje.nombre : ficha.marcajeTecnica,
+      // La técnica elegida manda sobre la que traía el producto por defecto: es
+      // la que se está cotizando. Y con ella van SU posición y SU área, las
+      // mismas con las que se ha calculado el precio — si la ficha dijera un
+      // área y el importe saliera de otra, el cliente leería una cosa y pagaría
+      // otra.
+      ...(marcaje
+        ? {
+            marcajeTecnica: marcaje.nombre,
+            marcajeTintas: String(marcaje.tintas),
+            marcajePosicion: marcaje.posicion,
+            marcajeAreaMaxima: marcaje.areaMaxima ?? ficha.marcajeAreaMaxima,
+          }
+        : {}),
     });
   }
 

@@ -197,6 +197,12 @@ export type MarcajeParaLinea = {
   clicheCents: number;
   /** Área de marcaje con la que se ha tarificado, si la técnica la necesita. */
   areaCm2: number | null;
+  /** Tintas con las que se ha cotizado: cada color extra se cobra por unidad. */
+  tintas: number;
+  /** Posición de la que sale ese área. La ficha debe decir ÉSTA, no otra. */
+  posicion: string;
+  /** Esa misma área en «ancho × alto mm», para la ficha técnica. */
+  areaMaxima: string | null;
   /** Por qué no hay tarifa, cuando no la hay. */
   aviso: string | null;
 };
@@ -232,7 +238,9 @@ export function lineaDeMarcaje(
 ): CamposLineaDesdeProducto {
   const coste = marcaje.costeUnitCents ?? 0;
   return {
-    concepto: marcaje.nombre,
+    // El número de tintas va en el concepto porque cambia el precio: «a una
+    // tinta» y «a dos tintas» no son la misma línea aunque la técnica lo sea.
+    concepto: marcaje.tintas > 1 ? `${marcaje.nombre} a ${marcaje.tintas} tintas` : marcaje.nombre,
     referencia: "",
     imagenUrl: "",
     cantidad,

@@ -249,3 +249,29 @@ describe("dos opciones marcadas como recomendada (datos viejos)", () => {
     expect(esc.map((e) => e.recomendado)).toEqual([true, false]);
   });
 });
+
+describe("redondearPvpLimpio — la banda sigue al margen objetivo", () => {
+  // Con un techo absoluto del 31 % el redondeo ignoraba el margen que se le
+  // pedía. Estos dos casos son los que se rompían.
+  it("un margen bajo no se redondea hasta el 30 %", () => {
+    // 45,00 € al 22 % son 57,69 €; la cifra limpia es 58,00 € (22,4 %), no
+    // 60,00 €, que dejaría un 25 % que nadie ha pedido.
+    const pvp = redondearPvpLimpio(4500, 22);
+    expect(pvp).toBe(5800);
+    expect(margenResultantePct(4500, pvp)).toBeLessThanOrEqual(23);
+  });
+
+  it("un margen alto sigue encontrando cifra limpia", () => {
+    // Con el techo fijo del 31 % la banda [40, 31] estaba vacía y salía el
+    // exacto, 16,67 €, sin redondear. Ahora sube a 16,70 €: 17,00 € dejaría un
+    // 41,2 %, ya fuera de banda.
+    const pvp = redondearPvpLimpio(1000, 40);
+    expect(pvp).toBe(1670);
+    expect(margenResultantePct(1000, pvp)).toBeGreaterThanOrEqual(40);
+    expect(margenResultantePct(1000, pvp)).toBeLessThanOrEqual(41);
+  });
+
+  it("el 30 % de siempre no cambia", () => {
+    expect(redondearPvpLimpio(24300)).toBe(35000);
+  });
+});

@@ -31,6 +31,9 @@ export function BuscadorCatalogo({
   // La cantidad manda sobre el precio, así que se decide ANTES de elegir: con
   // 100 uds y con 2.000 el proveedor cobra distinto y el margen cambia entero.
   const [cantidad, setCantidad] = useState(cantidadInicial);
+  // Tintas del marcaje: cada color extra se cobra por unidad, así que un logo a
+  // dos tintas cotizado a una se queda corto en toda la tirada.
+  const [tintas, setTintas] = useState(1);
   const [q, setQ] = useState("");
   const [items, setItems] = useState<ProductoParaLinea[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -42,6 +45,18 @@ export function BuscadorCatalogo({
   const [tecnicas, setTecnicas] = useState<MarcajeParaLinea[] | null>(null);
   const [tecnicaCodigo, setTecnicaCodigo] = useState<string | null>(null);
   const [cargandoTecnicas, setCargandoTecnicas] = useState(false);
+
+  /**
+   * Abre el panel poniendo la cantidad al día.
+   *
+   * `useState(cantidadInicial)` solo lee la prop al montar: si se cambia la
+   * cantidad de la línea y luego se busca otro producto, sin esto se cotizaría
+   * el tramo de la cantidad vieja.
+   */
+  function abrir() {
+    setCantidad(cantidadInicial);
+    setAbierto(true);
+  }
 
   function cerrar() {
     setAbierto(false);
@@ -67,6 +82,9 @@ export function BuscadorCatalogo({
       setItems([]);
       return;
     }
+    // `vigente` es lo que evita que la respuesta lenta de una búsqueda vieja
+    // pise los resultados de la nueva —o le apague el «Buscando…»—.
+    let vigente = true;
     const id = setTimeout(async () => {
       setBuscando(true);
       setError(null);
@@ -75,15 +93,19 @@ export function BuscadorCatalogo({
           `/api/admin/presupuestos/catalogo?q=${encodeURIComponent(q)}&cantidad=${cantidad}`,
         );
         const datos = await r.json();
+        if (!vigente) return;
         if (!r.ok) throw new Error(datos?.error ?? "No se pudo buscar");
         setItems(datos.items ?? []);
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        if (vigente) setError(e instanceof Error ? e.message : String(e));
       } finally {
-        setBuscando(false);
+        if (vigente) setBuscando(false);
       }
     }, 300);
-    return () => clearTimeout(id);
+    return () => {
+      vigente = false;
+      clearTimeout(id);
+    };
   }, [q, cantidad, abierto, elegido]);
 
   // Técnicas del producto elegido, tarificadas a esta cantidad. Se vuelven a
@@ -94,7 +116,7 @@ export function BuscadorCatalogo({
     setCargandoTecnicas(true);
     setTecnicas(null);
     fetch(
-      `/api/admin/presupuestos/catalogo/marcaje?slug=${encodeURIComponent(elegido.slug)}&cantidad=${cantidad}`,
+      `/api/admin/presupuestos/catalogo/marcaje?slug=${encodeURIComponent(elegido.slug)}&cantidad=${cantidad}&tintas=${tintas}`,
     )
       .then((r) => r.json())
       .then((datos) => {
@@ -109,7 +131,7 @@ export function BuscadorCatalogo({
     return () => {
       vigente = false;
     };
-  }, [elegido, cantidad]);
+  }, [elegido, cantidad, tintas]);
 
   const eur = (cents: number) =>
     new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -120,7 +142,7 @@ export function BuscadorCatalogo({
     <div className="relative" ref={caja}>
       <button
         type="button"
-        onClick={() => (abierto ? cerrar() : setAbierto(true))}
+        onClick={() => (abierto ? cerrar() : abrir())}
         className="rounded border border-line px-2 py-1 text-xs text-ink/60 hover:border-accent hover:text-accent"
       >
         Traer del catálogo
@@ -128,16 +150,29 @@ export function BuscadorCatalogo({
 
       {abierto && (
         <div className="absolute left-0 z-20 mt-1 w-[34rem] max-w-[85vw] rounded-lg border border-line bg-white p-3 shadow-lg">
-          <label className="flex items-center gap-2 text-xs text-ink/60">
-            Cantidad para el tramo
-            <input
-              type="number"
-              min={1}
-              value={cantidad}
-              onChange={(e) => setCantidad(Math.max(1, Number(e.target.value)))}
-              className="w-24 rounded border border-line px-2 py-1 text-right tabular-nums"
-            />
-          </label>
+          <div className="flex flex-wrap items-center gap-4 text-xs text-ink/60">
+            <label className="flex items-center gap-2">
+              Cantidad para el tramo
+              <input
+                type="number"
+                min={1}
+                value={cantidad}
+                onChange={(e) => setCantidad(Math.max(1, Number(e.target.value)))}
+                className="w-24 rounded border border-line px-2 py-1 text-right tabular-nums"
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              Tintas del marcaje
+              <input
+                type="number"
+                min={1}
+                max={8}
+                value={tintas}
+                onChange={(e) => setTintas(Math.min(8, Math.max(1, Number(e.target.value))))}
+                className="w-16 rounded border border-line px-2 py-1 text-right tabular-nums"
+              />
+            </label>
+          </div>
 
           {!elegido ? (
             <>

@@ -4,7 +4,11 @@ import { isAdmin } from "@/lib/admin-session";
 import { requireAdminSecret } from "@/lib/auth";
 import { quoteMarkingNet } from "@/lib/marking-quote";
 import { pickTier } from "@/lib/pricing";
-import { desglosarMarcaje, type MarcajeParaLinea } from "@/lib/presupuesto-catalogo";
+import {
+  desglosarMarcaje,
+  formatearArea,
+  type MarcajeParaLinea,
+} from "@/lib/presupuesto-catalogo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,6 +50,7 @@ export async function GET(req: Request) {
       },
       positions: {
         select: {
+          positionId: true,
           maxWidthMm: true,
           maxHeightMm: true,
           techniques: { select: { technique: { select: { code: true, name: true } } } },
@@ -66,22 +71,38 @@ export async function GET(req: Request) {
   // tarifica con la MAYOR de ellas: las tarifas por cm² suben con el área, y
   // cotizar por la pequeña dejaría corto el presupuesto si el arte va en la
   // grande, que es justo el caso que el cliente pide.
-  const porTecnica = new Map<string, { nombre: string; areaCm2: number | null }>();
+  //
+  // Y se devuelve ESA posición, no otra. Si el documento dijera «24 × 10 mm»
+  // mientras el precio sale de un área de 500 cm², el cliente estaría leyendo
+  // una cosa y pagando otra.
+  type Candidata = {
+    nombre: string;
+    areaCm2: number | null;
+    posicion: string;
+    areaMaxima: string | null;
+  };
+  const porTecnica = new Map<string, Candidata>();
   for (const pos of producto.positions) {
     const areaCm2 =
       pos.maxWidthMm && pos.maxHeightMm ? (pos.maxWidthMm * pos.maxHeightMm) / 100 : null;
+    const candidata: Candidata = {
+      nombre: "",
+      areaCm2,
+      posicion: pos.positionId,
+      areaMaxima: formatearArea(pos.maxWidthMm, pos.maxHeightMm),
+    };
     for (const { technique } of pos.techniques) {
       const previa = porTecnica.get(technique.code);
       if (!previa) {
-        porTecnica.set(technique.code, { nombre: technique.name, areaCm2 });
+        porTecnica.set(technique.code, { ...candidata, nombre: technique.name });
       } else if (areaCm2 !== null && (previa.areaCm2 === null || areaCm2 > previa.areaCm2)) {
-        previa.areaCm2 = areaCm2;
+        porTecnica.set(technique.code, { ...candidata, nombre: previa.nombre });
       }
     }
   }
 
   const tecnicas: MarcajeParaLinea[] = [];
-  for (const [codigo, { nombre, areaCm2 }] of porTecnica) {
+  for (const [codigo, { nombre, areaCm2, posicion, areaMaxima }] of porTecnica) {
     let cotizacion;
     try {
       cotizacion = await quoteMarkingNet({
@@ -100,6 +121,9 @@ export async function GET(req: Request) {
         costeUnitCents: null,
         clicheCents: 0,
         areaCm2,
+        tintas,
+        posicion,
+        areaMaxima,
         aviso: "La técnica no se pudo tarificar: pide el coste al proveedor.",
       });
       continue;
@@ -111,12 +135,25 @@ export async function GET(req: Request) {
         costeUnitCents: null,
         clicheCents: 0,
         areaCm2,
+        tintas,
+        posicion,
+        areaMaxima,
         aviso: cotizacion.warning ?? "Sin tarifa fiable: pide el coste al proveedor.",
       });
       continue;
     }
     const { costeUnitCents, clicheCents } = desglosarMarcaje(cotizacion, cantidad);
-    tecnicas.push({ codigo, nombre, costeUnitCents, clicheCents, areaCm2, aviso: null });
+    tecnicas.push({
+      codigo,
+      nombre,
+      costeUnitCents,
+      clicheCents,
+      areaCm2,
+      tintas,
+      posicion,
+      areaMaxima,
+      aviso: null,
+    });
   }
 
   tecnicas.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));

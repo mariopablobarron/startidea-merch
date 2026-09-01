@@ -37,6 +37,46 @@ const eur = (cents: number) =>
     cents / 100,
   );
 
+/**
+ * Nombres de familia que se pueden configurar con margen propio.
+ *
+ * No basta con las categorías que tienen productos colgando: los productos
+ * cuelgan de las hojas, y `margenDeJerarquia` está hecho justo para poder
+ * poner el margen en la rama —«Bebida»— y que lo hereden «Botellas» y
+ * «Termos». Si la lista solo enseñara hojas, la única forma de usar la
+ * herencia sería escribir a ciegas el nombre del padre.
+ */
+async function familiasDelCatalogo(): Promise<string[]> {
+  try {
+    const categorias = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        parentId: true,
+        // Solo productos activos: una familia entera despublicada no tiene por
+        // qué salir en la lista.
+        _count: { select: { products: { where: { active: true } } } },
+      },
+    });
+    const porId = new Map(categorias.map((c) => [c.id, c]));
+    const conProductos = new Set<string>();
+    for (const c of categorias) {
+      if (c._count.products === 0) continue;
+      // Sube por la rama marcando también a los padres.
+      let actual: typeof c | undefined = c;
+      while (actual && !conProductos.has(actual.id)) {
+        conProductos.add(actual.id);
+        actual = actual.parentId ? porId.get(actual.parentId) : undefined;
+      }
+    }
+    const nombres = categorias.filter((c) => conProductos.has(c.id)).map((c) => c.name);
+    return [...new Set(nombres)].sort((a, b) => a.localeCompare(b, "es"));
+  } catch {
+    // En build o sin BD la pantalla sigue sirviendo: la lista es una ayuda.
+    return [];
+  }
+}
+
 export default async function PresupuestosPage() {
   if (!(await isAdmin())) redirect("/admin/login");
 
@@ -46,14 +86,7 @@ export default async function PresupuestosPage() {
     // Los nombres reales de las familias del catálogo. Sin esto había que
     // adivinar la grafía exacta y un «vasos» mal escrito no casaba con nada:
     // el margen se guardaba y no se aplicaba nunca.
-    prisma.category
-      .findMany({
-        where: { products: { some: { active: true } } },
-        select: { name: true },
-        orderBy: { name: "asc" },
-      })
-      .then((cs) => [...new Set(cs.map((c) => c.name))])
-      .catch(() => [] as string[]),
+    familiasDelCatalogo(),
   ]);
 
   return (
