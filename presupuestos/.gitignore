@@ -1,0 +1,4 @@
+# PDFs generados: son artefactos de salida, se regeneran con ./generar-pdf.sh
+*.pdf
+# Archivos de prueba de maquetación
+.qa-test.html
