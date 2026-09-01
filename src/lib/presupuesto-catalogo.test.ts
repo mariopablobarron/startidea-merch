@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   costeAlTramo,
+  desglosarMarcaje,
   fichaDesdeProducto,
   formatearArea,
   formatearMedidas,
+  lineaDeCliche,
+  lineaDeMarcaje,
   lineaDesdeProducto,
+  type MarcajeParaLinea,
   type ProductoParaLinea,
 } from "@/lib/presupuesto-catalogo";
 
@@ -162,5 +166,91 @@ describe("fichaDesdeProducto", () => {
   it("si el producto no trae el dato, la ficha se queda como estaba", () => {
     const pelado = { ...BOTELLA, material: null, medidas: null, marcaje: null };
     expect(fichaDesdeProducto(vacia, pelado)).toEqual({ ...vacia, fotoProductoUrl: "/api/m/abc123" });
+  });
+});
+
+const GRABADO: MarcajeParaLinea = {
+  codigo: "GRAB",
+  nombre: "Grabado láser",
+  costeUnitCents: 74,
+  clicheCents: 2800,
+  areaCm2: 48,
+  aviso: null,
+};
+
+describe("desglosarMarcaje", () => {
+  it("separa el cliché del coste por unidad", () => {
+    // 28,00 € de cliché + 500 × 0,74 € = 398,00 € de pedido.
+    expect(desglosarMarcaje({ netTotalCents: 39800, setupCents: 2800 }, 500)).toEqual({
+      costeUnitCents: 74,
+      clicheCents: 2800,
+    });
+  });
+
+  it("redondea el €/ud hacia arriba, nunca a la baja", () => {
+    // 100,10 € de variable entre 300 uds son 0,3336…: 34 céntimos, no 33.
+    // Un céntimo de menos por unidad sale de nuestro margen; uno de más lo
+    // absorbe.
+    expect(desglosarMarcaje({ netTotalCents: 10010, setupCents: 0 }, 300).costeUnitCents).toBe(34);
+  });
+
+  it("una técnica sin cliché deja la parte del cliché a cero", () => {
+    expect(desglosarMarcaje({ netTotalCents: 12000, setupCents: 0 }, 200)).toEqual({
+      costeUnitCents: 60,
+      clicheCents: 0,
+    });
+  });
+
+  it("no inventa un variable negativo si el setup se come el total", () => {
+    expect(desglosarMarcaje({ netTotalCents: 2800, setupCents: 2800 }, 500)).toEqual({
+      costeUnitCents: 0,
+      clicheCents: 2800,
+    });
+  });
+});
+
+describe("lineaDeMarcaje y lineaDeCliche", () => {
+  const pvp = (coste: number, margen: number) => Math.round(coste / (1 - margen / 100));
+
+  it("el marcaje va por unidades y el cliché SIEMPRE a cantidad 1", () => {
+    // Prorratear el cliché entre las unidades lo escondería, y el encargo pide
+    // producto, marcaje y cliché por separado en el documento.
+    expect(lineaDeMarcaje(GRABADO, 500, 22, 30, pvp).cantidad).toBe(500);
+    expect(lineaDeCliche(GRABADO, 22, 30, pvp).cantidad).toBe(1);
+  });
+
+  it("ambas nacen sin confirmar, como el producto", () => {
+    expect(lineaDeMarcaje(GRABADO, 500, 22, 30, pvp).costeVerificado).toBe(false);
+    expect(lineaDeCliche(GRABADO, 22, 30, pvp).costeVerificado).toBe(false);
+  });
+
+  it("aplican el margen de la familia, no el del presupuesto", () => {
+    expect(lineaDeMarcaje(GRABADO, 500, 22, 30, pvp).pvpUnitCents).toBe(95); // 74 ÷ 0,78
+    expect(lineaDeCliche(GRABADO, 22, 30, pvp).pvpUnitCents).toBe(3590); // 2800 ÷ 0,78
+  });
+
+  it("y lo guardan en la línea solo si se aparta del presupuesto", () => {
+    // Si no, la línea diría que va al 30 % mientras su PVP está calculado al
+    // 22 %: el margen que enseña la pantalla no cuadraría con el importe.
+    expect(lineaDeMarcaje(GRABADO, 500, 22, 30, pvp).margenPct).toBe(22);
+    expect(lineaDeCliche(GRABADO, 22, 30, pvp).margenPct).toBe(22);
+    expect(lineaDeMarcaje(GRABADO, 500, 30, 30, pvp).margenPct).toBeNull();
+    expect(lineaDeCliche(GRABADO, 30, 30, pvp).margenPct).toBeNull();
+  });
+
+  it("una técnica sin tarifa entra a cero, para teclearla, no con un precio inventado", () => {
+    const sinTarifa: MarcajeParaLinea = {
+      ...GRABADO,
+      costeUnitCents: null,
+      aviso: "Técnica sin tarifa registrada — pedir cotización manual.",
+    };
+    const linea = lineaDeMarcaje(sinTarifa, 500, 22, 30, pvp);
+    expect(linea.costeUnitCents).toBe(0);
+    expect(linea.pvpUnitCents).toBe(0);
+    expect(linea.costeVerificado).toBe(false);
+  });
+
+  it("el concepto del cliché dice de qué técnica es", () => {
+    expect(lineaDeCliche(GRABADO, 22, 30, pvp).concepto).toBe("Cliché / pantalla · Grabado láser");
   });
 });

@@ -6,7 +6,10 @@ import { SubidorImagen } from "@/components/admin/SubidorImagen";
 import { BuscadorCatalogo } from "@/components/admin/BuscadorCatalogo";
 import {
   fichaDesdeProducto,
+  lineaDeCliche,
+  lineaDeMarcaje,
   lineaDesdeProducto,
+  type MarcajeParaLinea,
   type ProductoParaLinea,
 } from "@/lib/presupuesto-catalogo";
 import {
@@ -201,9 +204,7 @@ export function PresupuestoEditor({
   const costesSinConfirmar = useMemo(
     () =>
       form.partidas.flatMap((p) =>
-        p.opciones.flatMap((o) =>
-          o.lineas.filter((l) => !l.costeVerificado && l.costeUnitCents > 0),
-        ),
+        p.opciones.flatMap((o) => o.lineas.filter((l) => !l.costeVerificado)),
       ).length,
     [form.partidas],
   );
@@ -281,21 +282,45 @@ export function PresupuestoEditor({
     opcion: OpcionForm,
     producto: ProductoParaLinea,
     cantidad: number,
+    marcaje: MarcajeParaLinea | null,
   ) {
-    const nueva: LineaForm = {
-      ...lineaVacia("PRODUCTO"),
-      ...lineaDesdeProducto(producto, cantidad, form.margenObjetivoPct, (coste, margen) =>
-        redondearPvpLimpio(coste, margen),
-      ),
-    };
+    const margen = producto.margenFamiliaPct;
+    const pvp = (coste: number, pct: number) => redondearPvpLimpio(coste, pct);
+
+    const nuevas: LineaForm[] = [
+      {
+        ...lineaVacia("PRODUCTO"),
+        ...lineaDesdeProducto(producto, cantidad, form.margenObjetivoPct, pvp),
+      },
+    ];
+    if (marcaje) {
+      nuevas.push({
+        ...lineaVacia("MARCAJE"),
+        ...lineaDeMarcaje(marcaje, cantidad, margen, form.margenObjetivoPct, pvp),
+      });
+      // El cliché solo si lo hay: hay técnicas (láser, DTF) que no llevan.
+      if (marcaje.clicheCents > 0) {
+        nuevas.push({
+          ...lineaVacia("CLICHE"),
+          ...lineaDeCliche(marcaje, margen, form.margenObjetivoPct, pvp),
+        });
+      }
+    }
 
     // Una línea recién creada y sin tocar se sustituye en vez de acumularse:
     // el caso normal es abrir la opción y buscar el producto acto seguido.
     const enBlanco = (l: LineaForm) =>
       l.concepto.trim() === "" && l.costeUnitCents === 0 && l.pvpUnitCents === 0;
-    const lineas = opcion.lineas.every(enBlanco) ? [nueva] : [...opcion.lineas, nueva];
+    const lineas = opcion.lineas.every(enBlanco) ? nuevas : [...opcion.lineas, ...nuevas];
 
-    editarOpcion(iP, iO, { lineas, ...fichaDesdeProducto(opcion, producto) });
+    const ficha = fichaDesdeProducto(opcion, producto);
+    editarOpcion(iP, iO, {
+      lineas,
+      ...ficha,
+      // La técnica elegida manda sobre la que traía el producto por defecto:
+      // es la que se está cotizando.
+      marcajeTecnica: marcaje ? marcaje.nombre : ficha.marcajeTecnica,
+    });
   }
 
   /**
@@ -480,8 +505,8 @@ export function PresupuestoEditor({
           <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
             {costesSinConfirmar}{" "}
             {costesSinConfirmar === 1
-              ? "línea tiene un coste traído del catálogo sin confirmar"
-              : "líneas tienen un coste traído del catálogo sin confirmar"}
+              ? "línea trae del catálogo un coste sin confirmar"
+              : "líneas traen del catálogo un coste sin confirmar"}
             .{" "}
             <span className="font-normal">
               Contrástalo en el portal del proveedor a la cantidad exacta antes de mandar el
@@ -635,7 +660,7 @@ export function PresupuestoEditor({
                       className={`rounded-lg border p-3 ${
                         totales.avisoMargen
                           ? "border-red-300 bg-red-50/50"
-                          : !linea.costeVerificado && linea.costeUnitCents > 0
+                          : !linea.costeVerificado
                             ? "border-amber-300 bg-amber-50/40"
                             : "border-line"
                       }`}
@@ -779,12 +804,14 @@ export function PresupuestoEditor({
                             al {margen} % serían {eur(pvpDesdeCoste(linea.costeUnitCents, margen))}/ud
                           </span>
                         )}
-                        {!linea.costeVerificado && linea.costeUnitCents > 0 && (
+                        {!linea.costeVerificado && (
                           <span
                             className="font-semibold text-amber-700"
                             title="El catálogo no es fuente de precio: mira el portal del proveedor a esta cantidad exacta."
                           >
-                            Coste del catálogo · sin confirmar
+                            {linea.costeUnitCents > 0
+                              ? "Coste del catálogo · sin confirmar"
+                              : "Sin tarifa en el catálogo · ponlo a mano"}
                           </span>
                         )}
                       </div>
@@ -797,8 +824,8 @@ export function PresupuestoEditor({
                     cantidadInicial={
                       opcion.lineas.find((l) => l.tipo === "PRODUCTO")?.cantidad ?? 100
                     }
-                    onElegir={(producto, cantidad) =>
-                      traerDelCatalogo(iP, iO, opcion, producto, cantidad)
+                    onElegir={(producto, cantidad, marcaje) =>
+                      traerDelCatalogo(iP, iO, opcion, producto, cantidad, marcaje)
                     }
                   />
                   <span className="text-ink/30">·</span>

@@ -135,12 +135,21 @@ export function lineaDesdeProducto(
     cantidad,
     costeUnitCents: coste,
     costeVerificado: false,
-    // Solo se fija margen propio si la familia se aparta del del presupuesto.
-    // Dejarlo en null cuando coinciden hace que la línea siga al presupuesto
-    // si luego se cambia el margen general, que es lo que se espera.
-    margenPct: margen === margenPresupuestoPct ? null : margen,
+    margenPct: margenPropio(margen, margenPresupuestoPct),
     pvpUnitCents: coste > 0 ? pvpDesdeCosteYMargen(coste, margen) : 0,
   };
+}
+
+/**
+ * Margen que se guarda en la línea: el de la familia, o null si coincide con
+ * el del presupuesto.
+ *
+ * Dejarlo en null cuando coinciden hace que la línea siga al presupuesto si
+ * luego se cambia el margen general, que es lo que se espera. Copiar un 30
+ * duplicado la dejaría anclada.
+ */
+function margenPropio(margenFamilia: number, margenPresupuesto: number): number | null {
+  return margenFamilia === margenPresupuesto ? null : margenFamilia;
 }
 
 /** Los campos de la ficha técnica de una opción que salen de un producto. */
@@ -173,5 +182,89 @@ export function fichaDesdeProducto(
     marcajeAreaMaxima: siVacio(actual.marcajeAreaMaxima, producto.marcaje?.areaMaxima),
     marcajeTecnica: siVacio(actual.marcajeTecnica, producto.marcaje?.tecnica),
     marcajePosicion: siVacio(actual.marcajePosicion, producto.marcaje?.posicion),
+  };
+}
+
+// ── Marcaje ─────────────────────────────────────────────────────────────────
+
+/** Una técnica de marcaje del producto, ya tarificada a la cantidad pedida. */
+export type MarcajeParaLinea = {
+  codigo: string;
+  nombre: string;
+  /** Coste variable NETO por unidad, ya sin el cliché. Null si no hay tarifa. */
+  costeUnitCents: number | null;
+  /** Cliché / pantalla / fotolito: cargo único del pedido. */
+  clicheCents: number;
+  /** Área de marcaje con la que se ha tarificado, si la técnica la necesita. */
+  areaCm2: number | null;
+  /** Por qué no hay tarifa, cuando no la hay. */
+  aviso: string | null;
+};
+
+/**
+ * Parte la cotización de marcaje en las dos líneas que pide el encargo: el
+ * marcaje por unidad y el cliché como cargo único.
+ *
+ * `quoteMarkingNet` devuelve el coste del pedido entero (setup + variable) y el
+ * setup por separado; aquí se saca el €/ud.
+ *
+ * Redondea SIEMPRE hacia arriba. Un céntimo de menos por unidad son 20 € en una
+ * tirada de 2.000 y siempre en nuestra contra; un céntimo de más lo absorbe el
+ * margen. Es la misma dirección que toma el redondeo del PVP.
+ */
+export function desglosarMarcaje(
+  cotizacion: { netTotalCents: number; setupCents: number },
+  cantidad: number,
+): { costeUnitCents: number; clicheCents: number } {
+  const cliche = Math.max(0, cotizacion.setupCents);
+  const variable = Math.max(0, cotizacion.netTotalCents - cliche);
+  const unidades = Math.max(1, cantidad);
+  return { costeUnitCents: Math.ceil(variable / unidades), clicheCents: cliche };
+}
+
+/** Los campos de la línea de marcaje que salen de una técnica del catálogo. */
+export function lineaDeMarcaje(
+  marcaje: MarcajeParaLinea,
+  cantidad: number,
+  margenPct: number,
+  margenPresupuestoPct: number,
+  pvpDesdeCosteYMargen: (costeCents: number, margenPct: number) => number,
+): CamposLineaDesdeProducto {
+  const coste = marcaje.costeUnitCents ?? 0;
+  return {
+    concepto: marcaje.nombre,
+    referencia: "",
+    imagenUrl: "",
+    cantidad,
+    costeUnitCents: coste,
+    costeVerificado: false,
+    margenPct: margenPropio(margenPct, margenPresupuestoPct),
+    pvpUnitCents: coste > 0 ? pvpDesdeCosteYMargen(coste, margenPct) : 0,
+  };
+}
+
+/**
+ * La línea del cliché: cantidad 1 SIEMPRE.
+ *
+ * Es un cargo único por diseño y color, no un coste por unidad. Prorratearlo
+ * entre las unidades lo escondería, y el encargo pide que producto, marcaje y
+ * cliché se vean por separado en el documento.
+ */
+export function lineaDeCliche(
+  marcaje: MarcajeParaLinea,
+  margenPct: number,
+  margenPresupuestoPct: number,
+  pvpDesdeCosteYMargen: (costeCents: number, margenPct: number) => number,
+): CamposLineaDesdeProducto {
+  const coste = marcaje.clicheCents;
+  return {
+    concepto: `Cliché / pantalla · ${marcaje.nombre}`,
+    referencia: "",
+    imagenUrl: "",
+    cantidad: 1,
+    costeUnitCents: coste,
+    costeVerificado: false,
+    margenPct: margenPropio(margenPct, margenPresupuestoPct),
+    pvpUnitCents: coste > 0 ? pvpDesdeCosteYMargen(coste, margenPct) : 0,
   };
 }
