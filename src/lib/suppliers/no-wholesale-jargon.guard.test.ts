@@ -71,13 +71,34 @@ describe("guard · jerga de mayorista en el catálogo de gran formato", () => {
 
   it("sanear no deja la descripción vacía ni mutilada", () => {
     // Borrar la frase entera es correcto; dejar «✓ ✓ .» en la ficha, no.
+    //
+    // El listón NO es de longitud. Cuando el texto del proveedor era nueve
+    // partes argumentario y una parte producto, lo que queda es corto de
+    // verdad —«Pata para carpa»— y eso no es una mutilación: es lo que había.
+    // Lo que se vigila es que empiece por texto, no por un resto de puntuación,
+    // y que no queden marcas del borrado.
     for (const item of seed()) {
       const out = sanitizeSupplierText(item.shortDescription);
       if (item.shortDescription == null) continue;
       expect(out, `${item.supplierRef} quedó sin descripción`).toBeTruthy();
-      expect(out!.length, `${item.supplierRef}: descripción demasiado corta → «${out}»`).toBeGreaterThan(15);
-      expect(out, `${item.supplierRef}: restos de la frase borrada → «${out}»`).not.toMatch(/✓\s*✓|【|】|\s,|^\W+$/);
+      expect(out!, `${item.supplierRef}: empieza por un resto → «${out}»`).toMatch(/^[\p{L}\p{N}]/u);
+      expect(out!.length, `${item.supplierRef}: se quedó en nada → «${out}»`).toBeGreaterThan(3);
+      expect(out, `${item.supplierRef}: restos de la frase borrada → «${out}»`).not.toMatch(
+        /✓\s*✓|【|】|\s,|^\W+$|\u0000/,
+      );
     }
+  });
+
+  it("y lo que queda son descripciones cortas, que es el aviso de este PR", () => {
+    // Anti-falso-verde al revés: si un día estas descripciones se escriben de
+    // verdad, este test se pone rojo y hay que borrarlo. Mientras esté verde,
+    // el catálogo de gran formato tiene 63 fichas con un renglón por
+    // descripción y eso hay que arreglarlo escribiendo, no filtrando menos.
+    const largos = seed()
+      .map((it) => (sanitizeSupplierText(it.shortDescription) ?? "").length)
+      .sort((a, b) => a - b);
+    const mediana = largos[Math.floor(largos.length / 2)];
+    expect(mediana, `mediana de la descripción saneada: ${mediana}`).toBeLessThan(60);
   });
 });
 

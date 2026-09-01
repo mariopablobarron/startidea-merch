@@ -199,9 +199,9 @@ describe("reclamos del proveedor — sus condiciones no son las nuestras", () =>
           "✓ Fabricación y entrega en 24h【30% de margen】Envío gratis. " +
           "· Medidas: 1,5×1,5 · 3×3 m",
       ),
-      // El punto que cerraba «Envío gratis.» se queda cerrando la frase del
-      // producto, que es donde tiene sentido.
-    ).toBe("Bases para carpas. · Medidas: 1,5×1,5 · 3×3 m");
+      // El punto que cerraba «Envío gratis.» se va con la frase borrada; el
+      // «·» ya separa lo que queda.
+    ).toBe("Bases para carpas · Medidas: 1,5×1,5 · 3×3 m");
   });
 
   it("corta el envío gratis en sus formas habituales", () => {
@@ -230,5 +230,35 @@ describe("reclamos del proveedor — sus condiciones no son las nuestras", () =>
     expect(() => assertNoSupplierJargon("100% Online", "shortDescription AD-155")).toThrow(
       /100% Online/,
     );
+  });
+});
+
+describe("lo que dejaba a medias el borrado", () => {
+  it("un plazo con adjetivo delante cae entero, no a trozos", () => {
+    // «Envío gratis en 24h» se partía entre dos grupos: uno se llevaba «Envío
+    // gratis» y el otro ya no encajaba con lo que quedaba, así que la ficha
+    // publicaba «en 24h» suelto y `supplierJargonHits` no lo veía.
+    for (const texto of [
+      "Envío gratis en 24h",
+      "Envío gratuito en 48 h",
+      "Portes gratuitos en 3 días",
+      "Entrega urgente en 24 horas",
+    ]) {
+      const limpio = sanitizeSupplierText(`Roll-up de 85 cm. ${texto}.`);
+      expect(limpio, texto).toBe("Roll-up de 85 cm.");
+      expect(supplierJargonHits(limpio), texto).toEqual([]);
+    }
+  });
+
+  it("dos frases borradas seguidas no dejan puntos suspensivos falsos", () => {
+    // «A. X. Y. B.» con X e Y borradas quedaba en «A... B.»: tres puntos que
+    // parecen suspensivos y no lo son.
+    expect(
+      sanitizeSupplierText("Roll-up. Exclusivamente para Distribuidores. Envío gratis. Fin."),
+    ).toBe("Roll-up. Fin.");
+  });
+
+  it("y unos suspensivos de verdad siguen intactos", () => {
+    expect(sanitizeSupplierText("Roll-up. A... B.")).toBe("Roll-up. A... B.");
   });
 });

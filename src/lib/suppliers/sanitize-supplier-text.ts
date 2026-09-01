@@ -85,8 +85,13 @@ const MAYORISTA_RES: RegExp[] = [
  * en la ficha de catálogo.
  */
 const PLAZOS_RES: RegExp[] = [
-  // "Fabricación y entrega en 24h", "entrega en 24/48 h", "envío en 3 días"
-  /\b(?:fabricaci[oó]n\s+y\s+)?(?:entrega|env[ií]o|fabricaci[oó]n|expedici[oó]n)\s+en\s+\d{1,3}\s*(?:\/\s*\d{1,3}\s*)?(?:h\b|horas?\b|d[ií]as?(?:\s+(?:h[aá]biles|laborables))?\b)/gi,
+  // "Fabricación y entrega en 24h", "entrega en 24/48 h", "envío en 3 días".
+  //
+  // El adjetivo del medio es lo que hacía falta: «Envío gratis en 24h» se
+  // partía entre dos grupos —RECLAMOS se llevaba «Envío gratis» y aquí ya no
+  // encajaba nada—, y la ficha publicaba «en 24h» suelto sin que el guard lo
+  // viera. Este grupo corre ANTES que RECLAMOS para quedarse la frase entera.
+  /\b(?:fabricaci[oó]n\s+y\s+)?(?:entrega|env[ií]os?|portes?|fabricaci[oó]n|expedici[oó]n)(?:\s+(?:gratis|gratuitos?|urgentes?|express?|inmediatos?))?\s+en\s+\d{1,3}\s*(?:\/\s*\d{1,3}\s*)?(?:h\b|horas?\b|d[ií]as?(?:\s+(?:h[aá]biles|laborables))?\b)/gi,
   // "entrega 24h", "envío 24/48h" — sin el "en"
   /\b(?:entrega|env[ií]o)\s+\d{1,3}\s*(?:\/\s*\d{1,3}\s*)?(?:h\b|horas?\b)/gi,
   // "plazo de entrega: 15 días"
@@ -115,9 +120,24 @@ const RECLAMOS_RES: RegExp[] = [
   /\b100\s*%\s*online\b/gi,
 ];
 
+/**
+ * Marca de lo borrado.
+ *
+ * Sustituir por un espacio pierde la información de DÓNDE hubo un borrado, y
+ * con ella la puntuación huérfana: «A. X. Y. B.» con X e Y borradas quedaba en
+ * «A... B.», tres puntos que parecen suspensivos y no lo son. Con la marca se
+ * sabe que ese punto cerraba una frase que ya no está y se va con ella.
+ *
+ * Es U+0000: no aparece en un feed de proveedor ni en una descripción.
+ */
+const MARCA = "\u0000";
+
 /** Restos tipográficos que deja el borrado: "()", " ,", espacios dobles. */
 function tidy(s: string): string {
   return s
+    // El punto (o el separador) que cerraba lo borrado se va con ello.
+    .replace(new RegExp(`${MARCA}\\s*[.;,·|]`, "g"), MARCA)
+    .replace(new RegExp(`${MARCA}+`, "g"), " ")
     .replace(/\(\s*\)/g, " ")
     .replace(/\[\s*\]/g, " ")
     .replace(/【\s*】/g, " ")
@@ -125,11 +145,6 @@ function tidy(s: string): string {
     .replace(/✓\s*(?=✓|[.·|]|$)/g, " ")
     .replace(/[ \t ]+/g, " ")
     .replace(/\s+([,.;:!?])/g, "$1")
-    // Borrar una frase entre dos puntos deja «algodón..». Se colapsa el par,
-    // pero NO los puntos suspensivos: los lookarounds exigen que sean
-    // exactamente dos, así que un «…» escrito como «...» sobrevive.
-    .replace(/(?<!\.)\.{2}(?!\.)/g, ".")
-    .replace(/\.\s+\./g, ".")
     .replace(/([,;:·-])\s*$/g, "")
     .replace(/^\s*[,.;:·-]\s*/g, "")
     .trim();
@@ -155,9 +170,9 @@ export function sanitizeSupplierText(value: string | null | undefined): string |
     .replace(URL_RE, " ")
     .replace(SUPPLIER_BRAND_RE, " ")
     .replace(CIFRA_BRAND_RE, " ");
-  for (const re of MAYORISTA_RES) limpio = limpio.replace(re, " ");
-  for (const re of PLAZOS_RES) limpio = limpio.replace(re, " ");
-  for (const re of RECLAMOS_RES) limpio = limpio.replace(re, " ");
+  for (const re of MAYORISTA_RES) limpio = limpio.replace(re, MARCA);
+  for (const re of PLAZOS_RES) limpio = limpio.replace(re, MARCA);
+  for (const re of RECLAMOS_RES) limpio = limpio.replace(re, MARCA);
 
   const cleaned = tidy(limpio);
 
