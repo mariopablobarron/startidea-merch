@@ -190,3 +190,45 @@ describe("plazos del proveedor — su promesa no es la nuestra", () => {
     expect(supplierJargonHits(texto)).toHaveLength(1);
   });
 });
+
+describe("reclamos del proveedor — sus condiciones no son las nuestras", () => {
+  it("la ficha de gran formato queda con el producto y las medidas, y nada más", () => {
+    expect(
+      sanitizeSupplierText(
+        "Bases para carpas ✓ Exclusivamente para Rotulistas y Distribuidores ✓ 100% Online " +
+          "✓ Fabricación y entrega en 24h【30% de margen】Envío gratis. " +
+          "· Medidas: 1,5×1,5 · 3×3 m",
+      ),
+      // El punto que cerraba «Envío gratis.» se queda cerrando la frase del
+      // producto, que es donde tiene sentido.
+    ).toBe("Bases para carpas. · Medidas: 1,5×1,5 · 3×3 m");
+  });
+
+  it("corta el envío gratis en sus formas habituales", () => {
+    for (const texto of [
+      "Envío gratis",
+      "Envíos gratuitos",
+      "Portes gratuitos",
+      "Transporte incluido",
+    ]) {
+      expect(sanitizeSupplierText(`Roll-up de 85 cm. ${texto}.`), texto).toBe("Roll-up de 85 cm.");
+    }
+  });
+
+  it("no toca un envío que sí es información del producto", () => {
+    // Conservador como el resto: solo cae la promesa, no la palabra.
+    expect(sanitizeSupplierText("Se envía plegado en su estuche.")).toBe(
+      "Se envía plegado en su estuche.",
+    );
+    expect(sanitizeSupplierText("Impresión a todo color al 100%.")).toBe(
+      "Impresión a todo color al 100%.",
+    );
+  });
+
+  it("el import se rompe si un reclamo llega hasta el campo público", () => {
+    expect(supplierJargonHits("Envío gratis")).toContain("Envío gratis");
+    expect(() => assertNoSupplierJargon("100% Online", "shortDescription AD-155")).toThrow(
+      /100% Online/,
+    );
+  });
+});

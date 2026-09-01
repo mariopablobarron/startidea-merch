@@ -93,6 +93,28 @@ const PLAZOS_RES: RegExp[] = [
   /\bplazo\s+de\s+(?:entrega|fabricaci[oó]n)\s*:?\s*\d{1,3}\s*(?:\/\s*\d{1,3}\s*)?(?:h\b|horas?\b|d[ií]as?\b)/gi,
 ];
 
+/**
+ * RECLAMOS del proveedor: sus condiciones comerciales, no las nuestras.
+ *
+ * En el mismo bloque de las 63 fichas viajaban «✓ 100% Online ✓ Envío
+ * gratis.». El envío gratis es el que Ádivin le da a su distribuidor —no una
+ * oferta de Startidea al cliente final, y publicarla es comprometer un precio
+ * que nadie ha decidido—; y «100% Online» es el modelo de venta del
+ * proveedor, que en una ficha de Startidea no dice nada. Decidido con Mario el
+ * 1-sep-2026: fuera los dos.
+ *
+ * Esto solo toca texto que viene de un feed: el saneador se aplica en los
+ * sync de proveedor y en el import de Ádivin, nunca sobre lo que se escribe en
+ * el panel. Si algún día Startidea quiere ofrecer envío gratis, lo escribe en
+ * un override del producto y no pasa por aquí.
+ */
+const RECLAMOS_RES: RegExp[] = [
+  // "Envío gratis", "envíos gratuitos", "porte gratuito", "envío gratis en 24h"
+  /\b(?:env[ií]os?|portes?|transporte)\s+(?:gratis|gratuitos?|incluidos?)\b/gi,
+  // "100% Online", "100 % online"
+  /\b100\s*%\s*online\b/gi,
+];
+
 /** Restos tipográficos que deja el borrado: "()", " ,", espacios dobles. */
 function tidy(s: string): string {
   return s
@@ -135,6 +157,7 @@ export function sanitizeSupplierText(value: string | null | undefined): string |
     .replace(CIFRA_BRAND_RE, " ");
   for (const re of MAYORISTA_RES) limpio = limpio.replace(re, " ");
   for (const re of PLAZOS_RES) limpio = limpio.replace(re, " ");
+  for (const re of RECLAMOS_RES) limpio = limpio.replace(re, " ");
 
   const cleaned = tidy(limpio);
 
@@ -163,7 +186,7 @@ export function sanitizeSupplierName(value: string | null | undefined): string {
 export function supplierJargonHits(value: string | null | undefined): string[] {
   if (!value) return [];
   const hits: string[] = [];
-  for (const re of [...MAYORISTA_RES, ...PLAZOS_RES]) {
+  for (const re of [...MAYORISTA_RES, ...PLAZOS_RES, ...RECLAMOS_RES]) {
     // Un `RegExp` nuevo por llamada: los de arriba son globales y `lastIndex`
     // se queda donde acabó la anterior, así que reutilizarlos haría que la
     // segunda ficha del import no viera lo que sí vio la primera.
@@ -179,7 +202,8 @@ export function assertNoSupplierJargon(value: string | null | undefined, context
   if (hits.length === 0) return;
   throw new Error(
     `Texto de proveedor en ${contexto}: ${hits.map((h) => `«${h}»`).join(", ")}. ` +
-      `Añade el patrón a MAYORISTA_RES o PLAZOS_RES en sanitize-supplier-text.ts — ` +
+      `Añade el patrón a MAYORISTA_RES, PLAZOS_RES o RECLAMOS_RES en ` +
+      `sanitize-supplier-text.ts — ` +
       `no lo escribas en la ficha.`,
   );
 }

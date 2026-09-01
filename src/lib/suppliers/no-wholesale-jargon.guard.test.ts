@@ -26,7 +26,8 @@ import {
  * Desde el 1-sep-2026 cubre también los PLAZOS del proveedor —«Fabricación y
  * entrega en 24h»—, que no son jerga de canal sino una promesa de producción
  * suya publicada como si fuera un compromiso de Startidea con el cliente
- * final. Decisión de Mario.
+ * final, y sus RECLAMOS comerciales —«Envío gratis», «100% Online»—, que son
+ * las condiciones que el proveedor le da a su distribuidor. Decisión de Mario.
  */
 
 type SeedItem = {
@@ -95,6 +96,9 @@ describe("los patrones que hay que cortar, uno a uno", () => {
     ["Fabricación y entrega en 24h", "Photocall ✓ Fabricación y entrega en 24h ✓ Envío gratis."],
     ["entrega en 48 h", "Roll-up con entrega en 48 h."],
     ["plazo de entrega: 15 días", "Carpa plegable. Plazo de entrega: 15 días."],
+    // Reclamos comerciales del proveedor.
+    ["Envío gratis", "Banderas de 3 m ✓ Envío gratis."],
+    ["100% Online", "Photocall ✓ 100% Online ✓ Montaje sin herramientas."],
   ])("corta «%s»", (_caso, texto) => {
     const out = sanitizeSupplierText(texto);
     expect(supplierJargonHits(out), `quedó: «${out}»`).toEqual([]);
