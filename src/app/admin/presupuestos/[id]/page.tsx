@@ -70,6 +70,7 @@ export default async function EditarPresupuestoPage({
           imagenUrl: linea.imagenUrl ?? "",
           cantidad: linea.cantidad,
           costeUnitCents: linea.costeUnitCents,
+          costeVerificado: linea.costeVerificado,
           margenPct: linea.margenPct,
           pvpUnitCents: linea.pvpUnitCents,
         })),

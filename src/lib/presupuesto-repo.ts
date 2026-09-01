@@ -79,6 +79,7 @@ export type PresupuestoEntrada = {
         imagenUrl?: string | null;
         cantidad: number;
         costeUnitCents: number;
+        costeVerificado?: boolean;
         margenPct?: number | null;
         pvpUnitCents: number;
       }>;
@@ -138,6 +139,7 @@ function partidasAnidadas(entrada: PresupuestoEntrada) {
             imagenUrl: linea.imagenUrl ?? null,
             cantidad: linea.cantidad,
             costeUnitCents: linea.costeUnitCents,
+            costeVerificado: linea.costeVerificado ?? true,
             margenPct: linea.margenPct ?? null,
             pvpUnitCents: linea.pvpUnitCents,
           })),

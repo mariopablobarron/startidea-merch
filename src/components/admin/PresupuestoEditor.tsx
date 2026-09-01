@@ -3,6 +3,12 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SubidorImagen } from "@/components/admin/SubidorImagen";
+import { BuscadorCatalogo } from "@/components/admin/BuscadorCatalogo";
+import {
+  fichaDesdeProducto,
+  lineaDesdeProducto,
+  type ProductoParaLinea,
+} from "@/lib/presupuesto-catalogo";
 import {
   calcularLinea,
   calcularEscenarios,
@@ -34,6 +40,11 @@ export type LineaForm = {
   imagenUrl: string;
   cantidad: number;
   costeUnitCents: number;
+  /**
+   * false = el coste vino del catálogo y nadie lo ha contrastado con el portal
+   * del proveedor. El catálogo sirve para no teclear, no para cotizar.
+   */
+  costeVerificado: boolean;
   margenPct: number | null;
   pvpUnitCents: number;
 };
@@ -90,6 +101,8 @@ export function lineaVacia(tipo: TipoLinea = "PRODUCTO"): LineaForm {
     imagenUrl: "",
     cantidad: tipo === "CLICHE" ? 1 : 100,
     costeUnitCents: 0,
+    // Teclear un coste a mano exige haberlo mirado en el portal: nace verificado.
+    costeVerificado: true,
     margenPct: null,
     pvpUnitCents: 0,
   };
@@ -178,6 +191,23 @@ export function PresupuestoEditor({
     [form.partidas],
   );
 
+  /**
+   * Cuántas líneas llevan un coste traído del catálogo y sin contrastar.
+   *
+   * Va en la barra fija, junto a los totales: un margen calculado sobre un
+   * coste que nadie ha mirado en el portal es un margen inventado, y eso hay
+   * que verlo antes de darle a «Descargar PDF», no después.
+   */
+  const costesSinConfirmar = useMemo(
+    () =>
+      form.partidas.flatMap((p) =>
+        p.opciones.flatMap((o) =>
+          o.lineas.filter((l) => !l.costeVerificado && l.costeUnitCents > 0),
+        ),
+      ).length,
+    [form.partidas],
+  );
+
   function editar(cambio: Partial<PresupuestoForm>) {
     setForm((f) => ({ ...f, ...cambio }));
   }
@@ -231,6 +261,41 @@ export function PresupuestoEditor({
   function aplicarMargen(iP: number, iO: number, iL: number, linea: LineaForm) {
     const margen = linea.margenPct ?? form.margenObjetivoPct;
     editarLinea(iP, iO, iL, { pvpUnitCents: redondearPvpLimpio(linea.costeUnitCents, margen) });
+  }
+
+  /**
+   * Trae un producto del catálogo a la opción.
+   *
+   * Rellena la línea (concepto, referencia STM, foto, coste del tramo) y, si la
+   * ficha técnica está vacía, también medidas, materiales, área y técnica de
+   * marcaje. Lo que ya esté escrito NO se pisa: si alguien ha ajustado la ficha
+   * a mano, su texto vale más que el del catálogo.
+   *
+   * El coste entra como `costeVerificado: false`. Es deliberado: el catálogo no
+   * es fuente de precio, y la línea sale marcada en rojo hasta que alguien lo
+   * contrasta en el portal a la cantidad exacta y lo toca.
+   */
+  function traerDelCatalogo(
+    iP: number,
+    iO: number,
+    opcion: OpcionForm,
+    producto: ProductoParaLinea,
+    cantidad: number,
+  ) {
+    const nueva: LineaForm = {
+      ...lineaVacia("PRODUCTO"),
+      ...lineaDesdeProducto(producto, cantidad, (coste) =>
+        redondearPvpLimpio(coste, form.margenObjetivoPct),
+      ),
+    };
+
+    // Una línea recién creada y sin tocar se sustituye en vez de acumularse:
+    // el caso normal es abrir la opción y buscar el producto acto seguido.
+    const enBlanco = (l: LineaForm) =>
+      l.concepto.trim() === "" && l.costeUnitCents === 0 && l.pvpUnitCents === 0;
+    const lineas = opcion.lineas.every(enBlanco) ? [nueva] : [...opcion.lineas, nueva];
+
+    editarOpcion(iP, iO, { lineas, ...fichaDesdeProducto(opcion, producto) });
   }
 
   /**
@@ -411,6 +476,20 @@ export function PresupuestoEditor({
           ))}
         </div>
 
+        {costesSinConfirmar > 0 && (
+          <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+            {costesSinConfirmar}{" "}
+            {costesSinConfirmar === 1
+              ? "línea tiene un coste traído del catálogo sin confirmar"
+              : "líneas tienen un coste traído del catálogo sin confirmar"}
+            .{" "}
+            <span className="font-normal">
+              Contrástalo en el portal del proveedor a la cantidad exacta antes de mandar el
+              presupuesto; al escribirlo en «Coste/ud» el aviso desaparece.
+            </span>
+          </p>
+        )}
+
         {error && <p className="mt-3 text-sm font-semibold text-red-600">{error}</p>}
         {mensaje && <p className="mt-3 text-sm text-ink/60">{mensaje}</p>}
       </div>
@@ -554,7 +633,11 @@ export function PresupuestoEditor({
                     <div
                       key={iL}
                       className={`rounded-lg border p-3 ${
-                        totales.avisoMargen ? "border-red-300 bg-red-50/50" : "border-line"
+                        totales.avisoMargen
+                          ? "border-red-300 bg-red-50/50"
+                          : !linea.costeVerificado && linea.costeUnitCents > 0
+                            ? "border-amber-300 bg-amber-50/40"
+                            : "border-line"
                       }`}
                     >
                       <div className="grid gap-2 md:grid-cols-[8rem_1fr_5rem_7rem_7rem]">
@@ -595,7 +678,11 @@ export function PresupuestoEditor({
                             step="0.01"
                             value={aEuros(linea.costeUnitCents)}
                             onChange={(e) =>
-                              editarLinea(iP, iO, iL, { costeUnitCents: aCents(e.target.value) })
+                              // Tocar el coste a mano es el gesto de confirmarlo.
+                              editarLinea(iP, iO, iL, {
+                                costeUnitCents: aCents(e.target.value),
+                                costeVerificado: true,
+                              })
                             }
                             className="rounded border border-line px-2 py-1 text-right text-sm tabular-nums"
                           />
@@ -692,12 +779,29 @@ export function PresupuestoEditor({
                             al {margen} % serían {eur(pvpDesdeCoste(linea.costeUnitCents, margen))}/ud
                           </span>
                         )}
+                        {!linea.costeVerificado && linea.costeUnitCents > 0 && (
+                          <span
+                            className="font-semibold text-amber-700"
+                            title="El catálogo no es fuente de precio: mira el portal del proveedor a esta cantidad exacta."
+                          >
+                            Coste del catálogo · sin confirmar
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
                 })}
 
-                <div className="flex flex-wrap gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <BuscadorCatalogo
+                    cantidadInicial={
+                      opcion.lineas.find((l) => l.tipo === "PRODUCTO")?.cantidad ?? 100
+                    }
+                    onElegir={(producto, cantidad) =>
+                      traerDelCatalogo(iP, iO, opcion, producto, cantidad)
+                    }
+                  />
+                  <span className="text-ink/30">·</span>
                   {TIPOS.map((t) => (
                     <button
                       key={t.valor}
@@ -812,7 +916,22 @@ export function PresupuestoEditor({
         </button>
         <button
           type="button"
-          onClick={() => guardar("ENVIADO")}
+          onClick={() => {
+            // Última red antes de que el precio salga de casa: marcar como
+            // enviado con un coste que nadie ha mirado en el portal es firmar
+            // un margen inventado.
+            if (
+              costesSinConfirmar > 0 &&
+              !confirm(
+                `Quedan ${costesSinConfirmar} ${
+                  costesSinConfirmar === 1 ? "línea" : "líneas"
+                } con un coste traído del catálogo sin confirmar en el portal del proveedor. ¿Marcar el presupuesto como enviado de todas formas?`,
+              )
+            ) {
+              return;
+            }
+            void guardar("ENVIADO");
+          }}
           disabled={guardando}
           className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >

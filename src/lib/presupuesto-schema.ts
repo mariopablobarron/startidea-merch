@@ -19,6 +19,7 @@ export const lineaSchema = z.object({
   imagenUrl: texto.max(2000).optional().nullable(),
   cantidad: z.number().int().min(1, "La cantidad mínima es 1").max(10_000_000),
   costeUnitCents: z.number().int().min(0).max(100_000_000),
+  costeVerificado: z.boolean().optional(),
   margenPct: z.number().min(0).max(94.9).optional().nullable(),
   pvpUnitCents: z.number().int().min(0).max(100_000_000),
 });

@@ -2651,6 +2651,13 @@ model PresupuestoLinea {
 
   cantidad       Int
   costeUnitCents Int
+  // ¿Se ha contrastado ese coste con el portal del proveedor?
+  //
+  // Lo que se trae del catálogo entra en `false`: el encargo dice que el
+  // catálogo propio NO es fuente de precio, así que el coste que llega de ahí
+  // es una sugerencia hasta que alguien la confirma. Lo tecleado a mano entra
+  // en `true`, porque para escribirlo hubo que mirarlo en el portal.
+  costeVerificado Boolean @default(true)
   // Margen de ESTA línea; null = el del presupuesto.
   margenPct      Float?
   pvpUnitCents   Int
