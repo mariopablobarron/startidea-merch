@@ -186,17 +186,45 @@ explícita** (dump + restore + cambio de nombre).
 
 | Workflow | Cuando | Qué hace |
 |---|---|---|
-| `metric-snapshot.yml` | cada hora | snapshots de KPIs para anomaly + deltas |
-| `product-view-rollup.yml` | diario 03:00 UTC | rolling de viewCount30d |
+
 | `auto-resolve-errors.yml` | diario 04:15 UTC | cierra ErrorEvent ≥30d sin nuevas |
 | `insights-digest.yml` | lunes 08:00 UTC | email digest semanal + PDF |
 | `insights-digest-monthly.yml` | día 1 09:00 UTC | comparativa M-vs-M por email |
 | `ai-usage-alert.yml` | diario 10:00 UTC | push si coste IA del día previo > umbral |
 | `cron-watchdog.yml` | diario 11:00 UTC | avisa si crons trackeados llevan >umbral sin run o último falló |
 | `lighthouse-ci.yml` | diario | Core Web Vitals |
-| `health-ping.yml` | cada 10 min | uptime ping monitor externo |
+| `health-ping.yml` | declara cada hora; **entrega 2-6 al día** desde el 26-ago | ping de vida (nadie consume el evento; la vigilancia real de caída es `merch-health.sh` cada 5 min en el VPS) |
 
 Endpoints invocados llevan header `x-cron-secret: $CRON_SECRET`.
+
+> ⚠️ **GitHub entrega estos `schedule` con retraso, medido el 2026-09-01.** Desde
+> la caída de Actions del 26-ago (cerrada el 27-ago 00:26Z, servicio
+> `operational` desde entonces) los disparos llegan 5-12 h tarde de forma
+> sostenida. No dispara falsas alertas —los umbrales de silencio son
+> `frequencyHours × 2`— pero **no confíes en la hora de esta tabla para
+> diagnosticar**: mira `/admin/insights/crons` o el propio historial del
+> workflow. Por eso `product-view-rollup` y `metric-snapshot` se mudaron al
+> crontab del VPS ese mismo día: iban emparejados y el orden entre ellos dejó
+> de estar garantizado.
+
+### En el crontab del VPS
+
+La lista canónica **no está aquí**: está en `src/lib/cron-catalog.ts`, y
+`scripts/audit-crons-vps.sh` la contrasta contra el `crontab -l` de la máquina
+(sale 0 si cuadra). Duplicarla en este fichero solo garantizaría que un día
+mienta. Hoy son 19 entradas, incluidos los tres syncs de proveedor.
+
+⚠️ El crontab del VPS es **mixto**: la mayoría de líneas van envueltas en
+`cron-global-guard <base64>` y un `grep` normal **no las ve**; alguna va en
+claro. Decodifica antes de concluir que algo "no está".
+
+Mudados aquí desde GitHub Actions el 2026-09-01, por el retraso de entrega
+descrito arriba:
+
+| Cron | Cuándo | Qué hace |
+|---|---|---|
+| `product-view-rollup` | diario 06:40 local = 04:40 UTC | ventanas rodantes de 30 d de `ProductView` |
+| `metric-snapshot` | diario 06:50 local = 04:50 UTC | snapshot de KPIs en `MetricSnapshot` (lee lo que deja el rollup, por eso va 10 min después) |
 
 ### Observabilidad de los crons
 
@@ -246,7 +274,8 @@ Para añadir más: importar `wrapCronHandler` y reemplazar
 
 ### Anomalías
 
-- Cron horario `metric-snapshot.yml` toma snapshot de KPIs en `MetricSnapshot`.
+- El cron diario `metric-snapshot` (crontab del VPS, 06:50 local = 04:50 UTC)
+  toma snapshot de KPIs en `MetricSnapshot`.
 - Comparación baseline 7d vs reciente 3d.
 - ≥30% caída en views → crítico
 - ≥50% spike en errores → oportunidad de revisión
