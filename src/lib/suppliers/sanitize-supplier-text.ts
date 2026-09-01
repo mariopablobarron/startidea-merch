@@ -37,11 +37,43 @@ const SUPPLIER_BRAND_RE = /\b(?:mid[\s-]?ocean|makito|adivin)\b/gi;
  */
 const CIFRA_BRAND_RE = /\b(?:cifra\.es|cifra[\s-]+merchandising|grupo[\s-]+cifra)\b/gi;
 
+/**
+ * Argumentario MAYORISTA: el catálogo del proveedor está escrito para su
+ * cliente, que es el distribuidor, no para el cliente final.
+ *
+ * Las 63 fichas de gran formato servían literalmente «Exclusivamente para
+ * Rotulistas y Distribuidores ✓ 100% Online ✓ Fabricación y entrega en 24h
+ * 【30% de margen】Envío gratis.» — es decir, le decían al cliente que ese
+ * producto no es para él y cuánto gana Startidea revendiéndoselo.
+ *
+ * Se borra la FRASE entera, no la palabra suelta: dejar «✓ 100% Online ✓
+ * Fabricación y entrega en 24h» descolgado es tan raro como no borrar nada.
+ */
+const MAYORISTA_RES: RegExp[] = [
+  // "【30% de margen】", "(30 % de margen)", "30% de margen"
+  /[【(\[]?\s*\d{1,3}\s*%\s*de\s*margen\s*[】)\]]?/gi,
+  // "margen comercial del 30 %", "margen para el distribuidor"
+  /\bmargen(?:\s+comercial)?(?:\s+(?:del?|para)\s+[^.·✓|]{0,40})?/gi,
+  // "Exclusivamente para Rotulistas y Distribuidores" y variantes
+  /\b(?:exclusivamente\s+)?(?:para\s+)?rotulistas?(?:\s+y\s+distribuidores?)?/gi,
+  /\bexclusivamente\s+para\s+(?:profesionales|distribuidores?|mayoristas?)[^.·✓|]{0,30}/gi,
+  /\b(?:solo|sólo)\s+(?:para\s+)?(?:distribuidores?|mayoristas?|profesionales\s+del\s+sector)/gi,
+  // Precio/tarifa que no es la del cliente final
+  /\bpvp\s+(?:recomendado|sugerido)/gi,
+  /\bprecios?\s+(?:de\s+)?(?:distribuidor(?:es)?|mayorista|de\s+coste|neto\s+de\s+distribuidor)/gi,
+  /\btarifa\s+(?:de\s+)?(?:distribuidor(?:es)?|mayorista)/gi,
+  /\bventa\s+al\s+por\s+mayor\b/gi,
+  /\b(?:precio|catálogo|zona|área)\s+mayorista\b/gi,
+];
+
 /** Restos tipográficos que deja el borrado: "()", " ,", espacios dobles. */
 function tidy(s: string): string {
   return s
     .replace(/\(\s*\)/g, " ")
     .replace(/\[\s*\]/g, " ")
+    .replace(/【\s*】/g, " ")
+    // Un "✓" sin nada detrás es el resto de una ventaja borrada.
+    .replace(/✓\s*(?=✓|[.·|]|$)/g, " ")
     .replace(/[ \t ]+/g, " ")
     .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/([,;:·-])\s*$/g, "")
@@ -64,13 +96,14 @@ export function sanitizeSupplierText(value: string | null | undefined): string |
   const raw = legacyHtmlToText(value);
   if (!raw) return null;
 
-  const cleaned = tidy(
-    raw
-      .replace(EMAIL_RE, " ")
-      .replace(URL_RE, " ")
-      .replace(SUPPLIER_BRAND_RE, " ")
-      .replace(CIFRA_BRAND_RE, " "),
-  );
+  let limpio = raw
+    .replace(EMAIL_RE, " ")
+    .replace(URL_RE, " ")
+    .replace(SUPPLIER_BRAND_RE, " ")
+    .replace(CIFRA_BRAND_RE, " ");
+  for (const re of MAYORISTA_RES) limpio = limpio.replace(re, " ");
+
+  const cleaned = tidy(limpio);
 
   return isEmptyish(cleaned) ? null : cleaned;
 }
@@ -83,4 +116,32 @@ export function sanitizeSupplierText(value: string | null | undefined): string |
 export function sanitizeSupplierName(value: string | null | undefined): string {
   const fallback = normalizeProductName(value);
   return sanitizeSupplierText(fallback) ?? fallback;
+}
+
+/**
+ * Devuelve los trozos de argumentario mayorista que hay en un texto.
+ *
+ * Es la comprobación de SALIDA del saneador: se usa en los importadores para
+ * que un patrón nuevo del proveedor no se cuele en silencio. El criterio del
+ * encargo es explícito: esto tiene que **romper el import**, no limpiarse sin
+ * que nadie se entere.
+ */
+export function supplierJargonHits(value: string | null | undefined): string[] {
+  if (!value) return [];
+  const hits: string[] = [];
+  for (const re of MAYORISTA_RES) {
+    const found = value.match(new RegExp(re.source, re.flags));
+    if (found) hits.push(...found.map((h) => h.trim()).filter(Boolean));
+  }
+  return hits;
+}
+
+/** Lanza si en un campo que va a la ficha pública queda jerga de mayorista. */
+export function assertNoSupplierJargon(value: string | null | undefined, contexto: string): void {
+  const hits = supplierJargonHits(value);
+  if (hits.length === 0) return;
+  throw new Error(
+    `Texto de mayorista en ${contexto}: ${hits.map((h) => `«${h}»`).join(", ")}. ` +
+      `Añade el patrón a MAYORISTA_RES en sanitize-supplier-text.ts — no lo escribas en la ficha.`,
+  );
 }

@@ -44,6 +44,7 @@ import { parseCifraVariantDimensions } from "./cifra-variant";
 // regla anti-supplier-leak (no exponer "cif-" en URLs públicas).
 import { resolveCleanProductSlug } from "./midocean-sync";
 import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
+import { parseFeedCount } from "./feed-units";
 import { withSyncFailureClosing } from "./sync-failure";
 // Proxy de imágenes: registra el original en MediaAsset y devuelve
 // `/api/m/<hash>` opaco. CRÍTICO: publicatalogue.com delata a Cifra,
@@ -84,9 +85,12 @@ function toQty(q: unknown): number {
   // El feed de Cifra manda quantity a veces como number y a veces como STRING
   // ("123"). El guard typeof===number colapsaba TODO el stock a 0 (auditoría
   // 2026-07-04: 100% del stock Cifra a cero con sync verde).
-  if (typeof q === "number" && Number.isFinite(q)) return Math.max(0, Math.trunc(q));
-  const n = parseInt(String(q ?? "0"), 10);
-  return Number.isFinite(n) && n > 0 ? n : 0;
+  //
+  // Y el `parseInt` que lo arregló traía el fallo de al lado: `parseInt("90.000")`
+  // se para en el punto y devuelve 90 — el mismo ÷1.000 que publicaba «90 uds»
+  // en las fichas de Makito. `parseFeedCount` sabe que ese punto son millares.
+  const n = parseFeedCount(q);
+  return n !== null && n > 0 ? n : 0;
 }
 
 export async function runCifraSync(): Promise<CifraSyncResult> {

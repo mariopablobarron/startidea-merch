@@ -9,6 +9,13 @@ export const PUBLIC_SUPPLIER_LEAK_PATTERNS = [
   { code: "slug-prefix-cif", re: /\/catalogo\/cif-[a-z0-9-]+/gi },
   { code: "slug-prefix-mak", re: /\/catalogo\/(?:mak|mk)-[a-z0-9-]+/gi },
   { code: "supplier-sku", re: /\b(ar|mo|cx|mk)[0-9]{3,5}\b/gi },
+  // Argumentario del catálogo MAYORISTA servido al cliente final: le dice que
+  // el producto no es para él y cuánto margen deja. Estuvo en las 63 fichas de
+  // gran formato hasta que el importador empezó a sanearlo.
+  { code: "wholesale-rotulistas", re: /\b(?:exclusivamente\s+)?para\s+rotulistas\b/gi },
+  { code: "wholesale-margen", re: /\d{1,3}\s*%\s*de\s*margen/gi },
+  { code: "wholesale-pvp-recomendado", re: /\bpvp\s+(?:recomendado|sugerido)\b/gi },
+  { code: "wholesale-precio-distribuidor", re: /\bprecios?\s+(?:de\s+)?distribuidor(?:es)?\b/gi },
   {
     code: "cifra-size-sku",
     re: /\b[0-9]{4,6}-(?:XXS|XS|S|M|L|XL|XXL|XXXL|[3-8]XL)-[A-Z]{2}\b/gi,

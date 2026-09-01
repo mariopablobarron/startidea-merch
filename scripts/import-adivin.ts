@@ -31,6 +31,12 @@ import { prisma } from "@/lib/prisma";
 import { ensureMediaAsset } from "@/lib/proxy-image";
 import { slugify } from "@/lib/suppliers/midocean";
 import { generateInternalRef } from "@/lib/internal-ref";
+import { detectarFamiliasSinPack } from "@/lib/suppliers/adivin-pack-gaps";
+import {
+  sanitizeSupplierText,
+  sanitizeSupplierName,
+  assertNoSupplierJargon,
+} from "@/lib/suppliers/sanitize-supplier-text";
 
 const SUPPLIER = "adivin" as const;
 const COMMIT = process.argv.includes("--commit");
@@ -146,7 +152,7 @@ async function main() {
   const prices = loadPrices();
   log(`ADIVIN import · ${COMMIT ? "COMMIT" : "DRY-RUN"} · ${seed.length} productos · ${prices.size} precios cargados${PRICES_CSV ? ` (${PRICES_CSV})` : " (sin CSV)"}`);
 
-  let created = 0, updated = 0, withPrice = 0, inactive = 0;
+  let created = 0, updated = 0, withPrice = 0, inactive = 0, saneados = 0;
   // dedup por supplierRef (el seed tenía algún duplicado de variante)
   const bySref = new Map<string, SeedItem>();
   for (const it of seed) if (!bySref.has(it.supplierRef)) bySref.set(it.supplierRef, it);
@@ -154,26 +160,44 @@ async function main() {
   for (const it of bySref.values()) {
     const cents = prices.get(it.supplierRef) ?? null;
     if (cents) withPrice++; else inactive++;
-    const desc = [it.shortDescription, it.sizes ? `Medidas: ${it.sizes}` : null].filter(Boolean).join(" · ").slice(0, 600) || null;
+    const descRaw = [it.shortDescription, it.sizes ? `Medidas: ${it.sizes}` : null].filter(Boolean).join(" · ").slice(0, 600) || null;
+
+    // El catálogo de origen es MAYORISTA: sus descripciones dicen
+    // «Exclusivamente para Rotulistas y Distribuidores【30% de margen】», es
+    // decir, que el producto no es para el cliente final y cuánto ganamos
+    // revendiéndolo. Se sanea al importar (limpiar la BD no basta: el
+    // siguiente import lo reescribe) y se comprueba el resultado: si algo
+    // sobrevive, el import PARA en vez de publicarlo.
+    const desc = sanitizeSupplierText(descRaw);
+    const material = sanitizeSupplierText(it.material);
+    const name = sanitizeSupplierName(it.name);
+    if (descRaw && desc !== descRaw) saneados++;
+    assertNoSupplierJargon(desc, `${it.supplierRef} · shortDescription`);
+    assertNoSupplierJargon(material, `${it.supplierRef} · material`);
+    assertNoSupplierJargon(name, `${it.supplierRef} · name`);
 
     if (!COMMIT) {
-      log(`  [dry] ${it.supplierRef.padEnd(8)} ${it.name.slice(0, 42).padEnd(42)} ${cents ? (cents / 100).toFixed(2) + "€ ✓" : "sin precio (inactivo)"}`);
+      log(`  [dry] ${it.supplierRef.padEnd(8)} ${name.slice(0, 42).padEnd(42)} ${cents ? (cents / 100).toFixed(2) + "€ ✓" : "sin precio (inactivo)"}`);
       continue;
     }
 
     const categoryId = await resolveRootCategory(it.category);
     const proxiedPrimary = await ensureMediaAsset(it.images[0] || null, "product-primary");
-    const slug = await uniqueSlug(it.name, it.supplierRef);
+    const slug = await uniqueSlug(name, it.supplierRef);
 
     const existing = await prisma.product.findUnique({
       where: { supplier_supplierRef: { supplier: SUPPLIER, supplierRef: it.supplierRef } },
       select: { id: true, slug: true },
     });
 
+    // El saneador se llama aquí otra vez, en el punto de escritura, y no se
+    // reutilizan `name`/`desc`/`material` de arriba: es la forma que tienen
+    // los otros tres syncs y la que el guard estático sabe leer. Escribir el
+    // valor ya limpio en una variable haría invisible el saneo.
     const data = {
-      name: it.name.trim(),
-      shortDescription: desc,
-      material: it.material,
+      name: sanitizeSupplierName(it.name),
+      shortDescription: sanitizeSupplierText(descRaw),
+      material: sanitizeSupplierText(it.material),
       category: categoryId && !categoryId.startsWith("dry-") ? { connect: { id: categoryId } } : undefined,
       supplierCategoryCode: it.category,
       primaryImageUrl: proxiedPrimary,
@@ -217,6 +241,21 @@ async function main() {
   }
 
   log(`\nRESULTADO: ${created} creados · ${updated} actualizados · ${withPrice} con precio (activos) · ${inactive} sin precio (inactivos)`);
+  log(`Texto de mayorista saneado en ${saneados} de ${bySref.size} descripciones.`);
+
+  // Familias capturadas a trozos: soporte y gráfica sueltos y ningún conjunto
+  // que comprar. El importador no las puede arreglar —el pack no está en el
+  // seed— pero sí decir cuáles faltan por capturar del catálogo de origen.
+  const huecos = detectarFamiliasSinPack(seed);
+  if (huecos.length > 0) {
+    log(`\nFamilias sin producto completo (${huecos.length}) — falta capturar su pack:`);
+    for (const h of huecos) {
+      log(`  ${h.familia}`);
+      log(`    soporte: ${h.soportes.join(", ") || "—"}`);
+      log(`    gráfica: ${h.graficas.join(", ") || "—"}`);
+    }
+    log(`  → El pack completo suele ser más barato que la suma de las piezas: mientras falte, la ficha ofrece medias piezas.`);
+  }
   if (!COMMIT) log("DRY-RUN: no se ha escrito nada. Añade --commit para aplicar.");
 }
 

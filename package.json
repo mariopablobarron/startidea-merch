@@ -17,6 +17,7 @@
     "scripts:audit-security": "bun scripts/audit-security.ts",
     "scripts:audit-headers": "bun scripts/audit-security-headers.ts",
     "scripts:import-adivin": "bun scripts/import-adivin.ts",
+    "scripts:audit-feed-units": "bun scripts/audit-feed-units.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

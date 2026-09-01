@@ -20,6 +20,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { ensureMediaAsset } from "@/lib/proxy-image";
+import { markingCmToMm, esAreaMarcajeImplausible } from "./feed-units";
 
 const API_BASE = process.env.MAKITO_API_BASE || "https://data.makito.es/api";
 const EMAIL = process.env.MAKITO_API_EMAIL || "";
@@ -296,12 +297,27 @@ export async function runMakitoMarkingEnrich(opts: {
               areaImgProxy = await ensureMediaAsset(absUrl, "marking-position");
             }
 
+            const anchoMm = markingCmToMm(first.width);
+            const altoMm = markingCmToMm(first.height);
+            if (esAreaMarcajeImplausible(anchoMm) || esAreaMarcajeImplausible(altoMm)) {
+              // Un área de menos de 5 mm no se imprime: es una conversión rota
+              // otra vez. Se registra con la ref para poder ir a la ficha.
+              errors.push({
+                ref: String(p.supplierRef),
+                message: `área de marcaje imposible: ${anchoMm} × ${altoMm} mm`,
+              });
+            }
+
             const position = await prisma.markingPosition.create({
               data: {
                 productId: p.id,
                 positionId: positionTxt.slice(0, 100),
-                maxWidthMm: first.width || null,
-                maxHeightMm: first.height || null,
+                // El API da el área en CENTÍMETROS y estas dos columnas son
+                // milímetros: guardarlo tal cual publicaba «15 × 7 mm» donde
+                // el proveedor dice 150 × 70 mm, y con ese área el cotizador
+                // busca tarifa en el tramo equivocado.
+                maxWidthMm: anchoMm,
+                maxHeightMm: altoMm,
                 imageUrl: areaImgProxy,
               },
             });
