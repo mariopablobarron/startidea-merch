@@ -17,6 +17,26 @@ import { join } from "node:path";
 
 const RAIZ = join(__dirname, "..", "..");
 
+/**
+ * Los mismos colores retirados, pero escritos en `rgb()`/`rgba()`.
+ *
+ * El barrido de la migración solo miraba hexadecimales y **se dejó 21**: el pie
+ * oscuro de todos los emails transaccionales seguía pintando el texto en crema
+ * `rgba(244,239,230,…)`. Un color no deja de ser el color retirado por estar
+ * escrito de otra manera, y en un email no hay clases de Tailwind que te
+ * salven: se escribe a mano y sobrevive a cualquier cambio de tokens.
+ */
+const RETIRADOS_RGB: Record<string, string> = {
+  "244,239,230": "255,255,255 (blanco)",
+  "234,227,211": "231,226,230 (línea)",
+  "250,247,241": "255,255,255 (blanco)",
+  "230,62,115": "196,29,81 (magenta oficial)",
+  "160,32,73": "143,16,57 (vino oficial)",
+  "42,42,42": "35,31,39 (tinta)",
+  "26,26,26": "35,31,39 (tinta)",
+  "110,110,110": "94,90,99 (gris)",
+};
+
 /** Color retirado → con qué se sustituye. */
 const RETIRADOS: Record<string, string> = {
   "#F4EFE6": "#FFFFFF (fondo blanco)",
@@ -89,6 +109,20 @@ describe("guard · la paleta retirada no vuelve", () => {
       [],
     );
   });
+
+  it.each(Object.entries(RETIRADOS_RGB))(
+    "tampoco vuelve rgb(%s) → usa %s",
+    (trio, reemplazo) => {
+      // Escapado para el punto y las comas: el trío va tal cual dentro de rgb().
+      const [r, g, b] = trio.split(",");
+      const re = new RegExp(`rgba?\\(\\s*${r}\\s*,\\s*${g}\\s*,\\s*${b}\\s*[,)]`, "i");
+      const culpables = FUENTES.filter((f) => re.test(f.codigo)).map((f) => f.rel);
+      expect(
+        culpables,
+        `rgb(${trio}) sigue en: ${culpables.join(", ")}. Sustitúyelo por ${reemplazo}.`,
+      ).toEqual([]);
+    },
+  );
 
   it("no hay negro puro: el manual lo prohíbe como fondo y como tinta", () => {
     const culpables = FUENTES.filter(

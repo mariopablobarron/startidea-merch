@@ -174,7 +174,7 @@ export function clientPaidEmailHtml(args: {
         </div>
 
         <!-- Footer brand -->
-        <div style="background:#231F27;padding:24px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+        <div style="background:#231F27;padding:24px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
           <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">
             todo<span style="color:#C41D51;">merchandising</span>
           </p>

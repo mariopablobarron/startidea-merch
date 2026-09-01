@@ -137,7 +137,7 @@ export function personalize(html: string, name: string): string {
 
 /**
  * Envuelve el contenido del broadcast en el template Startidea
- * (crema, card blanca, footer oscuro con marca y baja).
+ * (papel blanco, card, pie oscuro con marca y baja).
  *
  * Si el HTML ya viene como documento completo (`<!doctype` o `<html>`),
  * sólo asegura la baja legal — Mario puede mandar HTML totalmente custom.

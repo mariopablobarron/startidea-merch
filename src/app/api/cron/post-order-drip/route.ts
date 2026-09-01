@@ -135,7 +135,7 @@ async function sendStep(
             valorar — tarda menos de 30 segundos y nos ayuda muchísimo.
           </p>
         </div>
-        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+        <div style="background:#231F27;padding:20px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
           <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
         </div>
@@ -178,7 +178,7 @@ async function sendStep(
             Respóndenos y lo emitimos en <strong>48 h</strong>.
           </p>
         </div>
-        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+        <div style="background:#231F27;padding:20px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
           <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada</p>
         </div>
@@ -244,7 +244,7 @@ async function sendStep(
             Responde a este email con dos líneas de brief.
           </p>
         </div>
-        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+        <div style="background:#231F27;padding:20px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
           <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
         </div>

@@ -99,7 +99,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             <a href="${dashboardUrl}" style="display:inline-block;background:#C41D51;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Ver mi dashboard →</a>
             <p style="margin:12px 0 0;font-size:12px;color:#6b6b6b;">Guarda este link, es tu acceso permanente.</p>
           </div>
-          <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <div style="background:#231F27;padding:20px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
             <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
             <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
           </div>
@@ -142,7 +142,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             Si en el futuro cambia tu situación, vuelve a aplicar sin problema.
           </p>
         </div>
-        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+        <div style="background:#231F27;padding:20px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
           <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
         </div>

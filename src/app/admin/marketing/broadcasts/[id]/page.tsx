@@ -59,7 +59,7 @@ type AvailableTag = { tag: string; count: number };
 type AvailableSource = { source: string; count: number };
 
 // Plantillas-arranque: el envío aplica automáticamente el wrap Startidea
-// (crema + card blanca + footer oscuro). Aquí sólo el cuerpo editable.
+// (papel blanco + card + pie oscuro). Aquí sólo el cuerpo editable.
 const TEMPLATES = {
   blank: { subject: "", html: "" },
   promo: {
@@ -699,7 +699,7 @@ export default function BroadcastEditorPage({
               />
             </div>
             <p className="mt-2 text-[11px] text-ink/50 leading-relaxed">
-              El cuerpo se envuelve automáticamente en el template Startidea (crema,
+              El cuerpo se envuelve automáticamente en el template Startidea (papel,
               card blanca, footer con marca y baja). Si quieres mandar HTML 100% custom,
               escribe el doc completo empezando por <code>&lt;!doctype html&gt;</code>.
             </p>
@@ -725,10 +725,10 @@ function previewWithStartideaWrap(bodyHtml: string): string {
     <div style="padding:32px 32px 8px;">
 ${bodyHtml}
     </div>
-    <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+    <div style="background:#231F27;padding:20px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
       <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
       <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
-      <p style="margin:6px 0 0;color:rgba(244,239,230,0.5);">Darme de baja</p>
+      <p style="margin:6px 0 0;color:rgba(255,255,255,0.5);">Darme de baja</p>
     </div>
   </div>
 </div>`;

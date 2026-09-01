@@ -489,7 +489,7 @@ function internalCartHtml(cart: { id: string; name: string; company: string | nu
     <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:24px 12px;">
       <div style="max-width:680px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
         <div style="background:#231F27;padding:20px 24px;">
-          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(244,239,230,0.6);">— Admin · Cotización nueva</p>
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.6);">— Admin · Cotización nueva</p>
           <h1 style="margin:6px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#FFFFFF;">${escapeHtml(cart.name)}${cart.company ? ` · ${escapeHtml(cart.company)}` : ""}</h1>
         </div>
         <div style="padding:24px;">
@@ -614,14 +614,14 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
         </div>
 
         <!-- Footer -->
-        <div style="background:#231F27;padding:24px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+        <div style="background:#231F27;padding:24px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
           <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">
             todo<span style="color:#C41D51;">merchandising</span>
           </p>
           <p style="margin:8px 0 0;">
             Una iniciativa de Startidea · Agencia de Innovación Social<br>
             STARTIDEA MALAGA SL · CIF B19583632 · C/ Conde Cifuentes, 33 — 18005 Granada<br>
-            Tu cotización: <code style="background:rgba(244,239,230,0.1);padding:1px 5px;border-radius:3px;color:rgba(244,239,230,0.85);">${cart.id.slice(0, 8)}</code>
+            Tu cotización: <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;color:rgba(255,255,255,0.85);">${cart.id.slice(0, 8)}</code>
           </p>
         </div>
       </div>

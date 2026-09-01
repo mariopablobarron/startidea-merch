@@ -126,7 +126,7 @@ export function Hero({
         </motion.p>
 
         {/* Stats — patrón "15 / 90+ / 320+" de startidea.es. 3 columnas
-            con números enormes en grafito y eyebrow breve debajo. */}
+            con números enormes en tinta y eyebrow breve debajo. */}
         <motion.dl
           initial="hidden"
           whileInView="show"
