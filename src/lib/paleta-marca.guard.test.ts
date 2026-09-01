@@ -113,10 +113,18 @@ describe("guard · la paleta retirada no vuelve", () => {
   it.each(Object.entries(RETIRADOS_RGB))(
     "tampoco vuelve rgb(%s) → usa %s",
     (trio, reemplazo) => {
-      // Escapado para el punto y las comas: el trío va tal cual dentro de rgb().
-      const [r, g, b] = trio.split(",");
-      const re = new RegExp(`rgba?\\(\\s*${r}\\s*,\\s*${g}\\s*,\\s*${b}\\s*[,)]`, "i");
-      const culpables = FUENTES.filter((f) => re.test(f.codigo)).map((f) => f.rel);
+      // Búsqueda por TEXTO, no por expresión regular construida al vuelo:
+      // semgrep bloquea `new RegExp` con interpolación (regla de ReDoS) y tiene
+      // razón como norma, aunque aquí el trío sea nuestro. Quitando los espacios
+      // del código, `rgba( 244 , 239 , 230 , .7 )` y `rgba(244,239,230,0.7)` son
+      // la misma cadena, y exigir la coma o el paréntesis de cierre evita que
+      // "230" case dentro de "2300".
+      const sinEspacios = (codigo: string) => codigo.replace(/\s+/g, "");
+      const formas = [`rgb(${trio},`, `rgb(${trio})`, `rgba(${trio},`, `rgba(${trio})`];
+      const culpables = FUENTES.filter((f) => {
+        const codigo = sinEspacios(f.codigo);
+        return formas.some((forma) => codigo.includes(forma));
+      }).map((f) => f.rel);
       expect(
         culpables,
         `rgb(${trio}) sigue en: ${culpables.join(", ")}. Sustitúyelo por ${reemplazo}.`,
