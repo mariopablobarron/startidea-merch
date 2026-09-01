@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
+import { CrearPresupuestoBoton } from "@/components/admin/CrearPresupuestoBoton";
 import type { QuoteStatus } from "@prisma/client";
 
 export const metadata: Metadata = {
@@ -73,6 +74,9 @@ export default async function QuoteDetailPage({
             <p className="mt-2 text-xs text-ink/50">
               {new Date(q.createdAt).toLocaleString("es-ES")}
             </p>
+            <div className="mt-3">
+              <CrearPresupuestoBoton endpoint={`/api/admin/quotes/${q.id}/presupuesto`} />
+            </div>
           </div>
 
           <form action={changeStatus} className="flex items-center gap-2">
