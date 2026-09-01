@@ -20,6 +20,16 @@
  * No es cosmético — se diagnostica con esto delante, y ya indujo al menos dos
  * conclusiones equivocadas al investigar syncs que no habían corrido.
  *
+ * ⚠️ ESTE FICHERO NO ES SOLO DOCUMENTACIÓN — es parte del camino de ejecución
+ * de los crons del VPS. `merch-cron-runner.sh` no pega a `/api/cron/<x>`: pega
+ * a `/api/admin/crons/trigger/<etiqueta>`, y esa ruta resuelve **endpoint y
+ * método desde aquí** (`findCron`), devolviendo 404 si la etiqueta no figura.
+ * Consecuencias que conviene tener presentes al editar:
+ *   - una entrada que falte ⇒ ese cron del crontab **no corre ningún día**
+ *     (solo lo delata el aviso de Telegram del runner y `audit-crons-vps.sh`);
+ *   - un `endpointPath` equivocado ⇒ el cron diario dispara **otra cosa**, sin
+ *     que la línea del crontab lo delate: su tercer argumento es decorativo.
+ *
  * Regla: en `schedule`, escribir SIEMPRE de dónde sale la hora. Los del VPS como
  * `"diario 04:00 local VPS = 02:00 UTC"`; los de GitHub Actions, `"… UTC
  * (GitHub Actions)"`. `scheduleCron` copia LITERAL la expresión de su origen

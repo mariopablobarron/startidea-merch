@@ -218,6 +218,26 @@ mienta. Hoy son 19 entradas, incluidos los tres syncs de proveedor.
 `cron-global-guard <base64>` y un `grep` normal **no las ve**; alguna va en
 claro. Decodifica antes de concluir que algo "no está".
 
+**Cómo dispara de verdad** (`/usr/local/bin/merch-cron-runner.sh <etiqueta>
+<método> <ruta>`): NO pega a `/api/cron/<x>`. Pega a
+`/api/admin/crons/trigger/<etiqueta>` con `X-Cron-Secret`, y esa ruta resuelve
+endpoint y método **desde `CRON_CATALOG`**. De ahí tres cosas:
+
+- una etiqueta del crontab **sin entrada en el catálogo no corre ningún día**
+  (404), y solo lo delatan el aviso de Telegram del runner y
+  `scripts/audit-crons-vps.sh`;
+- el tercer argumento de la línea del crontab es **decorativo** (solo aparece
+  en el mensaje de Telegram): lo que se dispara es `endpointPath`;
+- antes de disparar, el runner **se salta** el cron si el host lleva menos de
+  15 min arrancado, si Docker/containerd no están activos o si `load1 > 20`
+  (queda escrito como `SKIP` en el log) — y **no se reintenta**.
+
+El runner apuntaba a `merchandising.hubstartidea.es` (el dominio legacy) y
+desde el 2026-09-01 apunta al canónico `merchandising.startidea.es`: el legacy
+sigue sirviendo `/api`, pero es el que retira la Fase 3 de la migración de
+dominio y se habría llevado por delante **los 19 crons a la vez**. Copia del
+script anterior en `/root/merch-cron-runner.sh.bak-20260901`.
+
 Mudados aquí desde GitHub Actions el 2026-09-01, por el retraso de entrega
 descrito arriba:
 
