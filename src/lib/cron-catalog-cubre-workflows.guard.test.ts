@@ -112,6 +112,41 @@ describe("CRON_CATALOG cubre los crons que dispara GitHub Actions", () => {
     },
   );
 
+  it("un cron que dispara el crontab del VPS no conserva además `schedule` en su workflow", () => {
+    // El fallo que cierra: DOS disparadores para el mismo cron. Ya pasó el
+    // 2026-07-20 —crontab del VPS + `schedule` de GitHub Actions a la vez— y
+    // no se vio como duplicado, se vio como AVERÍA: el segundo disparo choca
+    // con `cron-lock` y devuelve 409, así que el panel se llena de fallos de
+    // un cron que en realidad había corrido bien.
+    //
+    // Es el riesgo concreto que abre la mudanza del 2026-09-01: al mover
+    // `product-view-rollup` y `metric-snapshot` al crontab, sus workflows se
+    // quedan con `workflow_dispatch` a propósito (para poder relanzarlos a
+    // mano). Devolverles el `schedule` de un `git revert` distraído reproduce
+    // el doble disparo, y este guard lo suspende antes.
+    const mudados = disparos.filter((d) => findCron(d.name)?.schedule.includes("local VPS"));
+
+    // Cobertura: si el emparejamiento deja de encontrar mudados, lo de abajo
+    // pasaría verde sin mirar nada.
+    expect(
+      mudados.length,
+      "ningún workflow corresponde a un cron declarado en el crontab del VPS: " +
+        "el emparejamiento catálogo↔workflow se ha roto y este guard está ciego",
+    ).toBeGreaterThanOrEqual(2);
+
+    const dobles = mudados
+      .filter((d) => d.cron !== null)
+      .map(
+        (d) =>
+          `${d.file}: el catálogo dice que a "${d.name}" lo dispara el crontab ` +
+          `del VPS ("${findCron(d.name)!.schedule}") pero el workflow mantiene ` +
+          `schedule "${d.cron}". Los dos disparos chocan en cron-lock y el ` +
+          `segundo devuelve 409, que se lee como fallo del cron.`,
+      );
+
+    expect(dobles).toEqual([]);
+  });
+
   it("no deja entradas del catálogo apuntando a un endpoint inexistente", () => {
     // El reverso: el catálogo tampoco debe inventarse crons de GitHub Actions.
     const porNombre = new Map(disparos.map((d) => [d.name, d]));

@@ -334,8 +334,13 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "metric-snapshot",
     endpointPath: "/api/cron/metric-snapshot",
     method: "POST",
-    schedule: "diario 03:35 UTC (GitHub Actions)",
-    scheduleCron: "35 3 * * *",
+    // Mudado de GitHub Actions al crontab del VPS el 2026-09-01. Lee los
+    // contadores rodantes que deja `product-view-rollup`, así que tiene que
+    // correr DESPUÉS que él: van a 06:40 y 06:50 para que el orden esté
+    // garantizado por el disparador y no por la suerte. El porqué de la
+    // mudanza, en la entrada de `product-view-rollup`.
+    schedule: "diario 06:50 local VPS = 04:50 UTC",
+    scheduleCron: "50 6 * * *",
     frequencyHours: 24,
     description:
       "Guarda el snapshot diario de KPIs en MetricSnapshot (grafica historica) y purga los de mas de 180 dias",
@@ -344,8 +349,15 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "product-view-rollup",
     endpointPath: "/api/cron/product-view-rollup",
     method: "POST",
-    schedule: "diario 03:30 UTC (GitHub Actions)",
-    scheduleCron: "30 3 * * *",
+    // Mudado de GitHub Actions al crontab del VPS el 2026-09-01. Medido ese
+    // día: desde la caída de Actions del 26-ago GitHub entrega los `schedule`
+    // con 5-12 h de retraso y no ha vuelto (su estado dice `operational`).
+    // Este par declaraba 03:30 y 03:35 UTC —5 min de colchón para que el
+    // rollup corriera antes que el snapshot— y acabó disparándose los dos en
+    // el mismo minuto. 06:40 deja además ~23 min tras el final de makito-sync
+    // (06:02 + ~15 min), que es lo que pedía el "después de los syncs".
+    schedule: "diario 06:40 local VPS = 04:40 UTC",
+    scheduleCron: "40 6 * * *",
     frequencyHours: 24,
     description:
       "Mantenimiento diario de ProductView: recalcula las ventanas rodantes de 30 dias antes del snapshot",

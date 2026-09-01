@@ -1,6 +1,8 @@
 name: Auto-resolve errors stale
 
-# 04:15 UTC todos los días (después de metric-snapshot 03:35 y rollup 03:00).
+# 04:15 UTC todos los días. (El metric-snapshot y el rollup a los que aludía
+# esta línea ya no los programa GitHub: desde el 2026-09-01 los dispara el
+# crontab del VPS a las 06:40 y 06:50 locales = 04:40 y 04:50 UTC.)
 # Cierra automáticamente errores con >30 días sin ocurrencias nuevas.
 # Idempotente: si no hay nada que cerrar, devuelve groupsClosed=0.
 
