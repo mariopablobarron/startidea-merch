@@ -15,7 +15,7 @@
  */
 
 import { PUBLIC_SUPPLIER_LEAK_PATTERNS } from "@/lib/public-supplier-leak-patterns";
-import { plantillaCss, logoDataUri } from "@/lib/presupuesto-assets";
+import { plantillaCss, logoDataUri, imagenSubidaDataUri } from "@/lib/presupuesto-assets";
 import {
   calcularEscenarios,
   calcularLinea,
@@ -223,12 +223,23 @@ function aPartidaCalculo(p: PartidaRender): PartidaCalculo {
 }
 
 /**
+ * Origen de una imagen del documento.
+ *
+ * Las que se han subido desde el panel se empotran en base64; las demás (una
+ * URL del catálogo, por ejemplo) se dejan como están y ya se verán si el
+ * documento se abre con red.
+ */
+function src(url: string): string {
+  return escapeHtml(imagenSubidaDataUri(url) ?? url);
+}
+
+/**
  * Miniatura de la línea. Sin foto NO se pinta el marco de muestra de la
  * plantilla: en el documento que se manda, un recuadro con «sin foto» repetido
  * seis veces se lee como un presupuesto a medio hacer.
  */
 function miniatura(url?: string | null): string {
-  return url ? `<img class="mini" src="${escapeHtml(url)}" alt="">` : "";
+  return url ? `<img class="mini" src="${src(url)}" alt="">` : "";
 }
 
 /**
@@ -460,7 +471,7 @@ function fichaTecnica(partida: PartidaRender, opcion: OpcionRender, conAlternati
   const figuras = imagenes
     .map(
       ([url, pie]) => `    <div>
-      <img class="foto" src="${escapeHtml(url)}" alt="">
+      <img class="foto" src="${src(url)}" alt="">
       <div class="cap">${escapeHtml(pie)}</div>
     </div>`,
     )

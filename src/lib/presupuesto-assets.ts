@@ -13,7 +13,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 
 const RAIZ = join(process.cwd(), "presupuestos");
 
@@ -64,4 +64,48 @@ export function plantillaCss(): string {
 export function logoDataUri(): string {
   if (!cacheLogo) cacheLogo = dataUri("assets/logo-startidea.png", "image/png");
   return cacheLogo;
+}
+
+// ─── Imágenes subidas desde el panel ──────────────────────────────────────
+
+const UPLOADS_DIR = process.env.UPLOADS_DIR || join(process.cwd(), "uploads");
+
+const MIME_POR_EXTENSION: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+};
+
+/**
+ * Convierte una imagen subida (`/files/presupuestos/…`) en un `data:` URI.
+ *
+ * El documento tiene que poder abrirse fuera de la aplicación —el render a PDF
+ * lo carga desde un archivo temporal, y Mario puede guardarse el HTML y
+ * reenviarlo— y ahí una ruta como `/files/...` no resuelve contra nada: se vería
+ * el hueco de la imagen. Las tipografías y el logotipo ya van empotrados por lo
+ * mismo.
+ *
+ * Devuelve `null` si la ruta no es una imagen del panel o si el archivo ya no
+ * está: quien llama decide, y el documento se genera igual sin esa foto.
+ */
+export function imagenSubidaDataUri(url: string): string | null {
+  if (!url.startsWith("/files/presupuestos/")) return null;
+
+  const relativa = url.slice("/files/".length).split("?")[0];
+  const destino = resolve(join(UPLOADS_DIR, relativa));
+  const base = resolve(UPLOADS_DIR);
+  // Path traversal: el nombre viene de la base de datos, pero la base de datos
+  // la escribe un formulario.
+  if (!destino.startsWith(base + sep)) return null;
+
+  const punto = destino.lastIndexOf(".");
+  const mime = MIME_POR_EXTENSION[destino.slice(punto).toLowerCase()];
+  if (!mime) return null;
+
+  try {
+    return `data:${mime};base64,${readFileSync(destino).toString("base64")}`;
+  } catch {
+    return null;
+  }
 }

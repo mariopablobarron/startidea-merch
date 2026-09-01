@@ -42,6 +42,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ path: s
     "admin-proofs",
     "magnific-assets",
     "recursos", // lead magnets descargables HTML/PDF/DOCX (página /recursos)
+    "presupuestos", // fotos de producto y zonas de marcaje de los presupuestos
   ]);
   if (!allowedKinds.has(parts[0])) {
     return NextResponse.json({ error: "Path no permitido" }, { status: 403 });

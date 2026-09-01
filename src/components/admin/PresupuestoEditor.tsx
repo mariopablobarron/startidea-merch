@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { SubidorImagen } from "@/components/admin/SubidorImagen";
 import {
   calcularLinea,
   calcularEscenarios,
@@ -145,6 +146,7 @@ export function PresupuestoEditor({
   const router = useRouter();
   const [form, setForm] = useState<PresupuestoForm>(inicial);
   const [guardando, setGuardando] = useState(false);
+  const [descargando, setDescargando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -223,6 +225,42 @@ export function PresupuestoEditor({
   function aplicarMargen(iP: number, iO: number, iL: number, linea: LineaForm) {
     const margen = linea.margenPct ?? form.margenObjetivoPct;
     editarLinea(iP, iO, iL, { pvpUnitCents: redondearPvpLimpio(linea.costeUnitCents, margen) });
+  }
+
+  /**
+   * Guarda y descarga.
+   *
+   * Guardar antes NO es un detalle: el PDF lo arma el servidor leyendo la base
+   * de datos, así que sin guardar saldría el presupuesto anterior y nadie
+   * notaría la diferencia hasta que el cliente pregunte por un precio que no
+   * existe.
+   */
+  async function descargarPdf() {
+    setDescargando(true);
+    setError(null);
+    try {
+      await guardar();
+      const r = await fetch(`/api/admin/presupuestos/${id}/pdf`);
+      if (!r.ok) {
+        const datos = await r.json().catch(() => null);
+        throw new Error(datos?.error ?? `No se pudo generar el PDF (${r.status})`);
+      }
+      const blob = await r.blob();
+      const nombre =
+        /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") ?? "")?.[1] ??
+        `${numero}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = nombre;
+      enlace.click();
+      URL.revokeObjectURL(url);
+      setMensaje(`PDF generado: ${nombre}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDescargando(false);
+    }
   }
 
   async function guardar(estado?: PresupuestoForm["estado"]) {
@@ -305,10 +343,18 @@ export function PresupuestoEditor({
               href={`/api/admin/presupuestos/${id}/imprimir`}
               target="_blank"
               rel="noreferrer"
-              className="rounded-lg border border-accent px-4 py-2 text-sm font-semibold text-accent"
+              className="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-ink/70"
             >
               Ver documento →
             </a>
+            <button
+              type="button"
+              onClick={descargarPdf}
+              disabled={descargando}
+              className="rounded-lg border border-accent px-4 py-2 text-sm font-semibold text-accent disabled:opacity-50"
+            >
+              {descargando ? "Generando PDF…" : "Descargar PDF"}
+            </button>
           </div>
         </div>
 
@@ -578,6 +624,14 @@ export function PresupuestoEditor({
                             onChange={(e) => editarLinea(iP, iO, iL, { referencia: e.target.value })}
                             className="w-28 rounded border border-line px-2 py-1"
                           />
+                          {linea.tipo !== "CLICHE" && (
+                            <SubidorImagen
+                              compacto
+                              etiqueta="Miniatura de la línea"
+                              valor={linea.imagenUrl}
+                              onChange={(v) => editarLinea(iP, iO, iL, { imagenUrl: v })}
+                            />
+                          )}
                           <label className="flex items-center gap-1">
                             margen
                             <input
@@ -663,8 +717,16 @@ export function PresupuestoEditor({
                   <Campo etiqueta="Materiales" valor={opcion.materiales} onChange={(v) => editarOpcion(iP, iO, { materiales: v })} />
                   <Campo etiqueta="Incluye" valor={opcion.incluye} onChange={(v) => editarOpcion(iP, iO, { incluye: v })} />
                   <Campo etiqueta="Uso" valor={opcion.usoRecomendado} onChange={(v) => editarOpcion(iP, iO, { usoRecomendado: v })} />
-                  <Campo etiqueta="Foto del producto (URL)" valor={opcion.fotoProductoUrl} onChange={(v) => editarOpcion(iP, iO, { fotoProductoUrl: v })} />
-                  <Campo etiqueta="Zona de marcaje (URL)" valor={opcion.fotoMarcajeUrl} onChange={(v) => editarOpcion(iP, iO, { fotoMarcajeUrl: v })} />
+                  <SubidorImagen
+                    etiqueta="Foto del producto"
+                    valor={opcion.fotoProductoUrl}
+                    onChange={(v) => editarOpcion(iP, iO, { fotoProductoUrl: v })}
+                  />
+                  <SubidorImagen
+                    etiqueta="Zona de marcaje con cotas"
+                    valor={opcion.fotoMarcajeUrl}
+                    onChange={(v) => editarOpcion(iP, iO, { fotoMarcajeUrl: v })}
+                  />
                   <Campo etiqueta="Técnica de marcaje" valor={opcion.marcajeTecnica} onChange={(v) => editarOpcion(iP, iO, { marcajeTecnica: v })} />
                   <Campo etiqueta="Número de tintas" valor={opcion.marcajeTintas} onChange={(v) => editarOpcion(iP, iO, { marcajeTintas: v })} />
                   <Campo etiqueta="Posición" valor={opcion.marcajePosicion} onChange={(v) => editarOpcion(iP, iO, { marcajePosicion: v })} />
