@@ -22,6 +22,11 @@ import {
  * importador y exige que, después de sanear, no quede nada de eso. Si el
  * proveedor estrena una frase nueva, esto se pone rojo en CI en vez de
  * limpiarse en silencio o publicarse.
+ *
+ * Desde el 1-sep-2026 cubre también los PLAZOS del proveedor —«Fabricación y
+ * entrega en 24h»—, que no son jerga de canal sino una promesa de producción
+ * suya publicada como si fuera un compromiso de Startidea con el cliente
+ * final. Decisión de Mario.
  */
 
 type SeedItem = {
@@ -86,6 +91,10 @@ describe("los patrones que hay que cortar, uno a uno", () => {
     ["tarifa de distribuidor", "Tarifa de distribuidor bajo registro."],
     ["venta al por mayor", "Ideal para venta al por mayor."],
     ["solo para profesionales del sector", "Producto solo para profesionales del sector."],
+    // Plazos: la promesa de producción del proveedor, no la nuestra.
+    ["Fabricación y entrega en 24h", "Photocall ✓ Fabricación y entrega en 24h ✓ Envío gratis."],
+    ["entrega en 48 h", "Roll-up con entrega en 48 h."],
+    ["plazo de entrega: 15 días", "Carpa plegable. Plazo de entrega: 15 días."],
   ])("corta «%s»", (_caso, texto) => {
     const out = sanitizeSupplierText(texto);
     expect(supplierJargonHits(out), `quedó: «${out}»`).toEqual([]);

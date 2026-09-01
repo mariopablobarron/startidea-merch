@@ -66,6 +66,33 @@ const MAYORISTA_RES: RegExp[] = [
   /\b(?:precio|catálogo|zona|área)\s+mayorista\b/gi,
 ];
 
+/**
+ * PLAZOS del proveedor: su promesa de producción, no la nuestra.
+ *
+ * Las mismas 58 fichas de gran formato servían «✓ Fabricación y entrega en
+ * 24h». Ese plazo es el que Ádivin le da a su distribuidor sobre su propia
+ * producción; publicado en una ficha de Startidea se lee como un compromiso de
+ * Startidea con el cliente final, que además tendría que contar la validación
+ * del arte, la impresión y el transporte. Decidido con Mario el 1-sep-2026:
+ * fuera.
+ *
+ * Va aparte del bloque MAYORISTA a propósito: aquello es jerga de canal —el
+ * texto no era para este lector—, esto es una promesa que no podemos cumplir.
+ * Son dos motivos distintos para borrar y conviene que se lean distintos.
+ *
+ * Cualquier plazo del feed cae, no solo el de 24 h: el plazo de un pedido se
+ * fija en su presupuesto y siempre «desde la validación del arte final», nunca
+ * en la ficha de catálogo.
+ */
+const PLAZOS_RES: RegExp[] = [
+  // "Fabricación y entrega en 24h", "entrega en 24/48 h", "envío en 3 días"
+  /\b(?:fabricaci[oó]n\s+y\s+)?(?:entrega|env[ií]o|fabricaci[oó]n|expedici[oó]n)\s+en\s+\d{1,3}\s*(?:\/\s*\d{1,3}\s*)?(?:h\b|horas?\b|d[ií]as?(?:\s+(?:h[aá]biles|laborables))?\b)/gi,
+  // "entrega 24h", "envío 24/48h" — sin el "en"
+  /\b(?:entrega|env[ií]o)\s+\d{1,3}\s*(?:\/\s*\d{1,3}\s*)?(?:h\b|horas?\b)/gi,
+  // "plazo de entrega: 15 días"
+  /\bplazo\s+de\s+(?:entrega|fabricaci[oó]n)\s*:?\s*\d{1,3}\s*(?:\/\s*\d{1,3}\s*)?(?:h\b|horas?\b|d[ií]as?\b)/gi,
+];
+
 /** Restos tipográficos que deja el borrado: "()", " ,", espacios dobles. */
 function tidy(s: string): string {
   return s
@@ -76,6 +103,11 @@ function tidy(s: string): string {
     .replace(/✓\s*(?=✓|[.·|]|$)/g, " ")
     .replace(/[ \t ]+/g, " ")
     .replace(/\s+([,.;:!?])/g, "$1")
+    // Borrar una frase entre dos puntos deja «algodón..». Se colapsa el par,
+    // pero NO los puntos suspensivos: los lookarounds exigen que sean
+    // exactamente dos, así que un «…» escrito como «...» sobrevive.
+    .replace(/(?<!\.)\.{2}(?!\.)/g, ".")
+    .replace(/\.\s+\./g, ".")
     .replace(/([,;:·-])\s*$/g, "")
     .replace(/^\s*[,.;:·-]\s*/g, "")
     .trim();
@@ -102,6 +134,7 @@ export function sanitizeSupplierText(value: string | null | undefined): string |
     .replace(SUPPLIER_BRAND_RE, " ")
     .replace(CIFRA_BRAND_RE, " ");
   for (const re of MAYORISTA_RES) limpio = limpio.replace(re, " ");
+  for (const re of PLAZOS_RES) limpio = limpio.replace(re, " ");
 
   const cleaned = tidy(limpio);
 
@@ -119,7 +152,8 @@ export function sanitizeSupplierName(value: string | null | undefined): string {
 }
 
 /**
- * Devuelve los trozos de argumentario mayorista que hay en un texto.
+ * Devuelve los trozos que no deberían llegar a una ficha pública: argumentario
+ * mayorista y plazos del proveedor.
  *
  * Es la comprobación de SALIDA del saneador: se usa en los importadores para
  * que un patrón nuevo del proveedor no se cuele en silencio. El criterio del
@@ -129,19 +163,23 @@ export function sanitizeSupplierName(value: string | null | undefined): string {
 export function supplierJargonHits(value: string | null | undefined): string[] {
   if (!value) return [];
   const hits: string[] = [];
-  for (const re of MAYORISTA_RES) {
+  for (const re of [...MAYORISTA_RES, ...PLAZOS_RES]) {
+    // Un `RegExp` nuevo por llamada: los de arriba son globales y `lastIndex`
+    // se queda donde acabó la anterior, así que reutilizarlos haría que la
+    // segunda ficha del import no viera lo que sí vio la primera.
     const found = value.match(new RegExp(re.source, re.flags));
     if (found) hits.push(...found.map((h) => h.trim()).filter(Boolean));
   }
   return hits;
 }
 
-/** Lanza si en un campo que va a la ficha pública queda jerga de mayorista. */
+/** Lanza si en un campo que va a la ficha pública queda texto que no es para el cliente. */
 export function assertNoSupplierJargon(value: string | null | undefined, contexto: string): void {
   const hits = supplierJargonHits(value);
   if (hits.length === 0) return;
   throw new Error(
-    `Texto de mayorista en ${contexto}: ${hits.map((h) => `«${h}»`).join(", ")}. ` +
-      `Añade el patrón a MAYORISTA_RES en sanitize-supplier-text.ts — no lo escribas en la ficha.`,
+    `Texto de proveedor en ${contexto}: ${hits.map((h) => `«${h}»`).join(", ")}. ` +
+      `Añade el patrón a MAYORISTA_RES o PLAZOS_RES en sanitize-supplier-text.ts — ` +
+      `no lo escribas en la ficha.`,
   );
 }

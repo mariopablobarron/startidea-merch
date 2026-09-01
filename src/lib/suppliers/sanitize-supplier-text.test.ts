@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
+import {
+  assertNoSupplierJargon,
+  sanitizeSupplierName,
+  sanitizeSupplierText,
+  supplierJargonHits,
+} from "./sanitize-supplier-text";
 
 describe("sanitizeSupplierText — fugas reales", () => {
   it("convierte HTML y entidades heredadas de Cifra antes de sanear", () => {
@@ -119,5 +124,69 @@ describe("sanitizeSupplierName — Product.name es NOT NULL", () => {
   it("nunca devuelve null ni undefined", () => {
     expect(sanitizeSupplierName(null)).toBe("Producto");
     expect(sanitizeSupplierName(undefined)).toBe("Producto");
+  });
+});
+
+describe("plazos del proveedor — su promesa no es la nuestra", () => {
+  it("borra «Fabricación y entrega en 24h» de la ficha de gran formato", () => {
+    // La cadena literal de las 58 fichas de Ádivin, entera.
+    const limpio = sanitizeSupplierText(
+      "Bases para carpas ✓ Exclusivamente para Rotulistas y Distribuidores ✓ 100% Online " +
+        "✓ Fabricación y entrega en 24h【30% de margen】Envío gratis. · Medidas: 1,5×1,5 m",
+    );
+    expect(limpio).not.toMatch(/24\s*h/i);
+    expect(limpio).not.toMatch(/fabricaci[oó]n\s+y\s+entrega/i);
+    // Y lo que sí es información del producto se queda.
+    expect(limpio).toContain("Bases para carpas");
+    expect(limpio).toContain("Medidas: 1,5×1,5 m");
+  });
+
+  it("cae cualquier plazo, no solo el de 24 h", () => {
+    // El plazo de un pedido se fija en su presupuesto y siempre «desde la
+    // validación del arte final»; en una ficha de catálogo no pinta nada.
+    for (const texto of [
+      "Entrega en 48 h",
+      "Envío en 24/48 h",
+      "Fabricación en 15 días laborables",
+      "Plazo de entrega: 10 días",
+      "Entrega 24h",
+    ]) {
+      expect(sanitizeSupplierText(`Mochila de algodón. ${texto}.`), texto).toBe(
+        "Mochila de algodón.",
+      );
+    }
+  });
+
+  it("no se lleva por delante una medida ni un gramaje", () => {
+    // El saneador es conservador: solo cae lo que es un plazo de verdad.
+    expect(sanitizeSupplierText("Lona de 510 g/m² · altura máx. 3,40 m")).toBe(
+      "Lona de 510 g/m² · altura máx. 3,40 m",
+    );
+    expect(sanitizeSupplierText("Bolsa con asas de 24 cm")).toBe("Bolsa con asas de 24 cm");
+    expect(sanitizeSupplierText("Pack de 24 unidades")).toBe("Pack de 24 unidades");
+    // Y los puntos suspensivos siguen siendo tres, no uno: el colapso de «..»
+    // que limpia el hueco de una frase borrada no puede comerse un «...».
+    expect(sanitizeSupplierText("Colores: rojo, azul, verde...")).toBe(
+      "Colores: rojo, azul, verde...",
+    );
+  });
+
+  it("el import se rompe si un plazo llega hasta el campo público", () => {
+    // La regla del encargo: fallar, no limpiar en silencio.
+    expect(supplierJargonHits("Fabricación y entrega en 24h")).toContain(
+      "Fabricación y entrega en 24h",
+    );
+    expect(() => assertNoSupplierJargon("Entrega en 48 h", "shortDescription AD-155")).toThrow(
+      /Entrega en 48 h/,
+    );
+  });
+
+  it("supplierJargonHits no se queda ciego en la segunda llamada", () => {
+    // Los patrones son globales: reutilizarlos con `.test()` o sin recrearlos
+    // arrastra `lastIndex` y la segunda ficha del import pasaría limpia.
+    const texto = "Fabricación y entrega en 24h";
+    expect(supplierJargonHits(texto)).toHaveLength(1);
+    expect(supplierJargonHits(texto)).toHaveLength(1);
+    expect(supplierJargonHits(texto)).toHaveLength(1);
   });
 });
