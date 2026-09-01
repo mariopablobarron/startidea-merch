@@ -309,6 +309,116 @@ export const CRON_CATALOG: CronEntry[] = [
     description:
       "Watchdog de overrides de precio desfasados: avisa si el neto del proveedor subio y el PVP fijado quedo con margen <30% (o bajo coste)",
   },
+  // ── Crons disparados por GitHub Actions (UTC), añadidos el 2026-09-01 ──────
+  //
+  // Los nueve de abajo llevaban tiempo corriendo SIN estar en este catálogo.
+  // No estaban desatendidos —`listCronNames()` los recoge en cuanto han pasado
+  // una vez por `wrapCronHandler`, y `silenceWatchability()` trata como
+  // vigilable lo que no conoce—, pero sí les faltaba lo que este fichero da:
+  // salir en /admin/system/crons y, sobre todo, poder **relanzarse a mano**
+  // desde /api/admin/crons/trigger/[name], que responde 404 a lo que no está
+  // aquí.
+  //
+  // El día que lo demostró: el 2026-09-01 el disparo de `metric-snapshot`
+  // falló (tres intentos, la petición no llegó a salir del runner de GitHub) y
+  // la fila de ese día se perdió para siempre — el snapshot NO se puede
+  // reconstruir a posteriori, porque `views30d`/`cartAdds30d` salen de
+  // contadores rodantes que el rollup resetea. Con la entrada puesta, ese
+  // agujero se cierra con un clic el mismo día en vez de quedarse abierto.
+  //
+  // `frequencyHours` NO cambia el aviso por silencio: `expectedHoursFor()` da
+  // prioridad a `EXPECTED_HOURS_OVERRIDE` en cron-staleness.ts, que ya cubre a
+  // siete de estos nueve. Se deja así a propósito: añadir catálogo no debe
+  // mover ningún umbral de alerta.
+  {
+    name: "metric-snapshot",
+    endpointPath: "/api/cron/metric-snapshot",
+    method: "POST",
+    schedule: "diario 03:35 UTC (GitHub Actions)",
+    scheduleCron: "35 3 * * *",
+    frequencyHours: 24,
+    description:
+      "Guarda el snapshot diario de KPIs en MetricSnapshot (grafica historica) y purga los de mas de 180 dias",
+  },
+  {
+    name: "product-view-rollup",
+    endpointPath: "/api/cron/product-view-rollup",
+    method: "POST",
+    schedule: "diario 03:30 UTC (GitHub Actions)",
+    scheduleCron: "30 3 * * *",
+    frequencyHours: 24,
+    description:
+      "Mantenimiento diario de ProductView: recalcula las ventanas rodantes de 30 dias antes del snapshot",
+  },
+  {
+    name: "makito-marking-enrich",
+    endpointPath: "/api/cron/makito-marking-enrich",
+    method: "POST",
+    schedule: "diario 02:15 UTC (GitHub Actions)",
+    scheduleCron: "15 2 * * *",
+    frequencyHours: 24,
+    description:
+      "Sustituye las posiciones de marcaje virtuales por las reales del API del proveedor",
+  },
+  {
+    name: "auto-resolve-errors",
+    endpointPath: "/api/cron/auto-resolve-errors",
+    method: "POST",
+    schedule: "diario 04:15 UTC (GitHub Actions)",
+    scheduleCron: "15 4 * * *",
+    frequencyHours: 24,
+    description:
+      "Marca como resueltos los ErrorEvent con >=30 dias sin ocurrencias nuevas de la misma firma",
+  },
+  {
+    name: "ai-usage-alert",
+    endpointPath: "/api/cron/ai-usage-alert",
+    method: "POST",
+    schedule: "diario 10:00 UTC (GitHub Actions)",
+    scheduleCron: "0 10 * * *",
+    frequencyHours: 24,
+    description:
+      "Computa el coste de IA del dia anterior y avisa al admin si supera el umbral",
+  },
+  {
+    name: "cron-watchdog",
+    endpointPath: "/api/cron/cron-watchdog",
+    method: "POST",
+    schedule: "diario 11:00 UTC (GitHub Actions)",
+    scheduleCron: "0 11 * * *",
+    frequencyHours: 24,
+    description:
+      "Vigila que ningun cron lleve mas de lo esperado sin correr. Se excluye de su propio recorrido: su salud la mira evaluateWatchdogSelfRun",
+  },
+  {
+    name: "insights-digest",
+    endpointPath: "/api/cron/insights-digest",
+    method: "POST",
+    schedule: "semanal lunes 08:00 UTC (GitHub Actions)",
+    scheduleCron: "0 8 * * 1",
+    frequencyHours: 168,
+    description: "Email semanal al admin con el resumen de /admin/insights",
+  },
+  {
+    name: "insights-digest-monthly",
+    endpointPath: "/api/cron/insights-digest-monthly",
+    method: "POST",
+    schedule: "mensual dia 1 a las 09:00 UTC (GitHub Actions)",
+    scheduleCron: "0 9 1 * *",
+    frequencyHours: 720,
+    description:
+      "Email mensual al admin comparando los KPIs del mes cerrado con el anterior",
+  },
+  {
+    name: "competitor-watch",
+    endpointPath: "/api/cron/competitor-watch",
+    method: "POST",
+    schedule: "semanal lunes 06:00 UTC (GitHub Actions)",
+    scheduleCron: "0 6 * * 1",
+    frequencyHours: 168,
+    description:
+      "Compara PVP y marcaje con los de la competencia y propone subir o bajar respetando el suelo de coste",
+  },
 ];
 
 export function findCron(name: string): CronEntry | null {
