@@ -195,7 +195,11 @@ export function PresupuestoEditor({
   );
 
   /**
-   * Cuántas líneas llevan un coste traído del catálogo y sin contrastar.
+   * Cuántas líneas llevan un coste que nadie ha contrastado con el portal.
+   *
+   * Son las que vienen del catálogo y las de un presupuesto duplicado: en los
+   * dos casos el número lo ha puesto una máquina a partir de datos que pueden
+   * tener meses.
    *
    * Va en la barra fija, junto a los totales: un margen calculado sobre un
    * coste que nadie ha mirado en el portal es un margen inventado, y eso hay
@@ -505,8 +509,8 @@ export function PresupuestoEditor({
           <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
             {costesSinConfirmar}{" "}
             {costesSinConfirmar === 1
-              ? "línea trae del catálogo un coste sin confirmar"
-              : "líneas traen del catálogo un coste sin confirmar"}
+              ? "línea lleva un coste sin confirmar"
+              : "líneas llevan un coste sin confirmar"}
             .{" "}
             <span className="font-normal">
               Contrástalo en el portal del proveedor a la cantidad exacta antes de mandar el
@@ -810,8 +814,8 @@ export function PresupuestoEditor({
                             title="El catálogo no es fuente de precio: mira el portal del proveedor a esta cantidad exacta."
                           >
                             {linea.costeUnitCents > 0
-                              ? "Coste del catálogo · sin confirmar"
-                              : "Sin tarifa en el catálogo · ponlo a mano"}
+                              ? "Coste sin confirmar"
+                              : "Sin tarifa · ponlo a mano"}
                           </span>
                         )}
                       </div>
@@ -952,7 +956,7 @@ export function PresupuestoEditor({
               !confirm(
                 `Quedan ${costesSinConfirmar} ${
                   costesSinConfirmar === 1 ? "línea" : "líneas"
-                } con un coste traído del catálogo sin confirmar en el portal del proveedor. ¿Marcar el presupuesto como enviado de todas formas?`,
+                } con un coste sin confirmar en el portal del proveedor. ¿Marcar el presupuesto como enviado de todas formas?`,
               )
             ) {
               return;

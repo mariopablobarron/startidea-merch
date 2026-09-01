@@ -8,6 +8,7 @@ import { leerMargenes } from "@/lib/presupuesto-margenes";
 import { MARGEN_AVISO_PCT } from "@/lib/presupuesto-calculo";
 import { NuevoPresupuestoBoton } from "@/components/admin/NuevoPresupuestoBoton";
 import { MargenesForm } from "@/components/admin/MargenesForm";
+import { DuplicarPresupuestoBoton } from "@/components/admin/DuplicarPresupuestoBoton";
 import type { PresupuestoEstado } from "@prisma/client";
 
 export const metadata: Metadata = {
@@ -102,6 +103,9 @@ export default async function PresupuestosPage() {
                     </Link>
                     <div className="mt-0.5 text-[11px] text-ink/40">
                       {p.createdAt.toLocaleDateString("es-ES")}
+                    </div>
+                    <div className="mt-1">
+                      <DuplicarPresupuestoBoton id={p.id} numero={p.numero} />
                     </div>
                   </td>
                   <td className="px-4 py-3">
