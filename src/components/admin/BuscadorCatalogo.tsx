@@ -130,6 +130,11 @@ export function BuscadorCatalogo({
                       {p.referencia}
                       {p.marcaje?.areaMaxima ? ` · marcaje ${p.marcaje.areaMaxima}` : ""}
                     </span>
+                    {p.familias.length > 0 && (
+                      <span className="block text-[11px] text-ink/40">
+                        {p.familias[0]} · margen {p.margenFamiliaPct} %
+                      </span>
+                    )}
                   </span>
                   <span className="flex-none text-right text-xs">
                     {p.costeUnitCents != null ? (

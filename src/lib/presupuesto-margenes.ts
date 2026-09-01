@@ -66,17 +66,43 @@ export async function guardarMargenes(margenes: MargenesPresupuesto): Promise<Ma
   return limpio;
 }
 
+const sinAcentos = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 /**
- * Margen que toca a una familia. La familia se compara en minúsculas y sin
- * acentos para que «Vasos», «vasos» y «VASOS» sean la misma.
+ * Margen configurado para una familia, o null si esa familia no tiene el suyo.
+ *
+ * Se compara en minúsculas y sin acentos para que «Vasos», «vasos» y «VASOS»
+ * sean la misma: el nombre lo teclea una persona en el panel y la categoría
+ * viene del feed, y no van a coincidir carácter a carácter.
  */
-export function margenDeFamilia(margenes: MargenesPresupuesto, familia?: string | null): number {
-  if (!familia) return margenes.pordefecto;
+export function margenDeFamilia(
+  margenes: MargenesPresupuesto,
+  familia?: string | null,
+): number | null {
+  if (!familia) return null;
   const clave = familia.trim().toLowerCase();
   if (clave in margenes.familias) return margenes.familias[clave];
-  const sinAcentos = clave.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const pelada = sinAcentos(clave);
   for (const [k, v] of Object.entries(margenes.familias)) {
-    if (k.normalize("NFD").replace(/[̀-ͯ]/g, "") === sinAcentos) return v;
+    if (sinAcentos(k) === pelada) return v;
+  }
+  return null;
+}
+
+/**
+ * Margen que toca a un producto, mirando su rama de categorías de la hoja
+ * hacia la raíz.
+ *
+ * El orden importa: si hay un margen para «Vasos» y otro para «Bebida», manda
+ * el de «Vasos», que es lo más concreto. Sin ninguno, el margen por defecto.
+ */
+export function margenDeJerarquia(
+  margenes: MargenesPresupuesto,
+  familias: Array<string | null | undefined>,
+): number {
+  for (const familia of familias) {
+    const margen = margenDeFamilia(margenes, familia);
+    if (margen !== null) return margen;
   }
   return margenes.pordefecto;
 }

@@ -33,6 +33,13 @@ export type ProductoParaLinea = {
   costeUnitCents: number | null;
   /** Cantidad del tramo del que sale ese coste. */
   tramoMinQty: number | null;
+  /** Rama de categorías, de la hoja a la raíz. Es lo que decide el margen. */
+  familias: string[];
+  /**
+   * Margen sobre venta que le toca a este producto por su familia, ya
+   * resuelto en el servidor (que es donde viven los ajustes del panel).
+   */
+  margenFamiliaPct: number;
   marcaje: {
     posicion: string;
     areaMaxima: string | null;
@@ -96,6 +103,8 @@ export type CamposLineaDesdeProducto = {
   cantidad: number;
   costeUnitCents: number;
   costeVerificado: boolean;
+  /** Margen propio de la línea, o null para seguir al del presupuesto. */
+  margenPct: number | null;
   pvpUnitCents: number;
 };
 
@@ -106,15 +115,19 @@ export type CamposLineaDesdeProducto = {
  * proveedor: quien decide si ese número sirve es la persona que lo mira en el
  * portal a esta cantidad, no el feed de anoche.
  *
- * El PVP se propone al margen objetivo para no dejar la línea a cero, pero es
- * una propuesta: si el coste cambia al confirmarlo, hay que recalcularlo.
+ * El PVP se propone al margen que le toca a la familia del producto (los
+ * ajustes del panel), no al 30 % fijo: el gran formato y el textil no se
+ * cotizan al mismo punto. Es una propuesta: si el coste cambia al
+ * confirmarlo, hay que recalcular el PVP.
  */
 export function lineaDesdeProducto(
   producto: ProductoParaLinea,
   cantidad: number,
-  pvpDesdeCosteYMargen: (costeCents: number) => number,
+  margenPresupuestoPct: number,
+  pvpDesdeCosteYMargen: (costeCents: number, margenPct: number) => number,
 ): CamposLineaDesdeProducto {
   const coste = producto.costeUnitCents ?? 0;
+  const margen = producto.margenFamiliaPct;
   return {
     concepto: producto.nombre,
     referencia: producto.referencia ?? "",
@@ -122,7 +135,11 @@ export function lineaDesdeProducto(
     cantidad,
     costeUnitCents: coste,
     costeVerificado: false,
-    pvpUnitCents: coste > 0 ? pvpDesdeCosteYMargen(coste) : 0,
+    // Solo se fija margen propio si la familia se aparta del del presupuesto.
+    // Dejarlo en null cuando coinciden hace que la línea siga al presupuesto
+    // si luego se cambia el margen general, que es lo que se espera.
+    margenPct: margen === margenPresupuestoPct ? null : margen,
+    pvpUnitCents: coste > 0 ? pvpDesdeCosteYMargen(coste, margen) : 0,
   };
 }
 

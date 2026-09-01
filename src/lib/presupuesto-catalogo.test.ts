@@ -75,33 +75,49 @@ const BOTELLA: ProductoParaLinea = {
   medidas: "70 × 70 × 250 mm",
   costeUnitCents: 615,
   tramoMinQty: 500,
+  familias: ["Botellas", "Bebida"],
+  margenFamiliaPct: 30,
   marcaje: { posicion: "CUERPO", areaMaxima: "60 × 80 mm", tecnica: "Grabado láser" },
 };
 
 describe("lineaDesdeProducto", () => {
-  const pvpAl30 = (coste: number) => Math.round(coste / 0.7);
+  const pvp = (coste: number, margen: number) => Math.round(coste / (1 - margen / 100));
 
   it("el coste del catálogo NUNCA entra como verificado", () => {
     // Es la regla del encargo: los precios se miran en el portal del proveedor
     // a la cantidad exacta. El catálogo ahorra teclear, no cotiza.
-    expect(lineaDesdeProducto(BOTELLA, 500, pvpAl30).costeVerificado).toBe(false);
+    expect(lineaDesdeProducto(BOTELLA, 500, 30, pvp).costeVerificado).toBe(false);
   });
 
   it("copia identidad, foto y cantidad, y propone PVP al margen objetivo", () => {
-    expect(lineaDesdeProducto(BOTELLA, 500, pvpAl30)).toEqual({
+    expect(lineaDesdeProducto(BOTELLA, 500, 30, pvp)).toEqual({
       concepto: "Botella de acero inoxidable 500 ml",
       referencia: "STM-10022",
       imagenUrl: "/api/m/abc123",
       cantidad: 500,
       costeUnitCents: 615,
       costeVerificado: false,
+      margenPct: null,
       pvpUnitCents: 879,
     });
   });
 
+  it("cuando la familia tiene su propio margen, la línea sale con él", () => {
+    const granFormato = { ...BOTELLA, margenFamiliaPct: 22 };
+    const linea = lineaDesdeProducto(granFormato, 500, 30, pvp);
+    expect(linea.margenPct).toBe(22);
+    expect(linea.pvpUnitCents).toBe(788); // 615 ÷ 0,78
+  });
+
+  it("si la familia coincide con el presupuesto, la línea no fija margen propio", () => {
+    // Dejarlo en null hace que la línea siga al presupuesto si luego se
+    // cambia el margen general; fijar un 30 duplicado la dejaría anclada.
+    expect(lineaDesdeProducto(BOTELLA, 500, 30, pvp).margenPct).toBeNull();
+  });
+
   it("sin tarifa deja coste y PVP a cero en vez de inventarse un precio", () => {
     const sinTarifa = { ...BOTELLA, costeUnitCents: null, tramoMinQty: null };
-    const linea = lineaDesdeProducto(sinTarifa, 500, pvpAl30);
+    const linea = lineaDesdeProducto(sinTarifa, 500, 30, pvp);
     expect(linea.costeUnitCents).toBe(0);
     expect(linea.pvpUnitCents).toBe(0);
   });

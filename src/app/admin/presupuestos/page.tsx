@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
+import { prisma } from "@/lib/prisma";
 import { listarPresupuestos, resumenPresupuesto } from "@/lib/presupuesto-repo";
 import { leerMargenes } from "@/lib/presupuesto-margenes";
 import { MARGEN_AVISO_PCT } from "@/lib/presupuesto-calculo";
@@ -38,7 +39,21 @@ const eur = (cents: number) =>
 export default async function PresupuestosPage() {
   if (!(await isAdmin())) redirect("/admin/login");
 
-  const [items, margenes] = await Promise.all([listarPresupuestos(), leerMargenes()]);
+  const [items, margenes, categorias] = await Promise.all([
+    listarPresupuestos(),
+    leerMargenes(),
+    // Los nombres reales de las familias del catálogo. Sin esto había que
+    // adivinar la grafía exacta y un «vasos» mal escrito no casaba con nada:
+    // el margen se guardaba y no se aplicaba nunca.
+    prisma.category
+      .findMany({
+        where: { products: { some: { active: true } } },
+        select: { name: true },
+        orderBy: { name: "asc" },
+      })
+      .then((cs) => [...new Set(cs.map((c) => c.name))])
+      .catch(() => [] as string[]),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -115,7 +130,7 @@ export default async function PresupuestosPage() {
         </table>
       </section>
 
-      <MargenesForm inicial={margenes} />
+      <MargenesForm inicial={margenes} familiasDelCatalogo={categorias} />
     </div>
   );
 }

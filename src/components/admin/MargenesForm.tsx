@@ -11,7 +11,14 @@ import type { MargenesPresupuesto } from "@/lib/presupuesto-margenes";
  * gran formato se cotiza con el PVP recomendado del portal, que ya lleva su
  * margen, y hay familias donde el mercado no aguanta el mismo punto.
  */
-export function MargenesForm({ inicial }: { inicial: MargenesPresupuesto }) {
+export function MargenesForm({
+  inicial,
+  familiasDelCatalogo,
+}: {
+  inicial: MargenesPresupuesto;
+  /** Nombres de categoría reales, para no escribir a mano una que no existe. */
+  familiasDelCatalogo: string[];
+}) {
   const router = useRouter();
   const [pordefecto, setPordefecto] = useState(inicial.pordefecto);
   const [familias, setFamilias] = useState<Array<[string, number]>>(
@@ -54,6 +61,11 @@ export function MargenesForm({ inicial }: { inicial: MargenesPresupuesto }) {
         Margen sobre el <strong>precio de venta</strong> (PVP = coste ÷ (1 − margen)). Es el valor
         con el que sale cada línea nueva; en el presupuesto y en cada línea se puede cambiar.
       </p>
+      <p className="mt-1 text-xs text-ink/50">
+        El nombre tiene que ser el de una categoría del catálogo —la lista sale al escribir— o
+        el margen se guarda y no se aplica a nada. Al traer un producto del catálogo se busca su
+        categoría y, si no tiene margen propio, la de arriba.
+      </p>
 
       <div className="mt-4 max-w-xs">
         <label className="block">
@@ -78,6 +90,7 @@ export function MargenesForm({ inicial }: { inicial: MargenesPresupuesto }) {
           <div key={i} className="flex flex-wrap items-center gap-2">
             <input
               value={nombre}
+              list="familias-del-catalogo"
               placeholder="Familia (vasos, textil, gran formato…)"
               onChange={(e) =>
                 setFamilias((f) => f.map((x, j) => (j === i ? [e.target.value, x[1]] : x)))
@@ -105,6 +118,11 @@ export function MargenesForm({ inicial }: { inicial: MargenesPresupuesto }) {
             </button>
           </div>
         ))}
+        <datalist id="familias-del-catalogo">
+          {familiasDelCatalogo.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
         <button
           type="button"
           onClick={() => setFamilias((f) => [...f, ["", pordefecto]])}

@@ -284,8 +284,8 @@ export function PresupuestoEditor({
   ) {
     const nueva: LineaForm = {
       ...lineaVacia("PRODUCTO"),
-      ...lineaDesdeProducto(producto, cantidad, (coste) =>
-        redondearPvpLimpio(coste, form.margenObjetivoPct),
+      ...lineaDesdeProducto(producto, cantidad, form.margenObjetivoPct, (coste, margen) =>
+        redondearPvpLimpio(coste, margen),
       ),
     };
 

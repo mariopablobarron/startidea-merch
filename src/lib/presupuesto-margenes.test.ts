@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   normalizarMargenes,
   margenDeFamilia,
+  margenDeJerarquia,
   MARGENES_POR_DEFECTO,
 } from "./presupuesto-margenes";
 
@@ -42,8 +43,32 @@ describe("margenDeFamilia", () => {
     expect(margenDeFamilia(conTilde, "Escritura basica")).toBe(26);
   });
 
-  it("cae al por defecto si la familia no está o no se dice", () => {
-    expect(margenDeFamilia(margenes, "mochilas")).toBe(30);
-    expect(margenDeFamilia(margenes, null)).toBe(30);
+  it("devuelve null si la familia no está configurada o no se dice", () => {
+    // null y no el por defecto: quien pregunta necesita distinguir «esta
+    // familia vale 30» de «esta familia no tiene margen propio» para poder
+    // seguir subiendo por el árbol de categorías.
+    expect(margenDeFamilia(margenes, "mochilas")).toBeNull();
+    expect(margenDeFamilia(margenes, null)).toBeNull();
+  });
+});
+
+describe("margenDeJerarquia", () => {
+  const margenes = normalizarMargenes({
+    pordefecto: 30,
+    familias: { bebida: 25, vasos: 28 },
+  });
+
+  it("manda lo más concreto: la hoja antes que la raíz", () => {
+    expect(margenDeJerarquia(margenes, ["Vasos", "Bebida"])).toBe(28);
+  });
+
+  it("sube por el árbol cuando la hoja no tiene margen propio", () => {
+    expect(margenDeJerarquia(margenes, ["Termos de acero", "Bebida"])).toBe(25);
+  });
+
+  it("cae al por defecto cuando no hay margen en toda la rama", () => {
+    expect(margenDeJerarquia(margenes, ["Mochilas", "Viaje"])).toBe(30);
+    expect(margenDeJerarquia(margenes, [])).toBe(30);
+    expect(margenDeJerarquia(margenes, [null, undefined])).toBe(30);
   });
 });
