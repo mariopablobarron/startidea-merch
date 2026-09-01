@@ -66,7 +66,7 @@ const NAVIGABLE_GUIDES = [
     slug: "tabla-tallas-universales",
     href: "/recursos/tabla-tallas-universales",
     category: "Producción · Textil",
-    title: "Tabla tallas universales B&C / Sols / MidOcean",
+    title: "Tabla tallas universales B&C / Sols",
     description:
       "Equivalencias en cm para camiseta hombre, mujer y polo entre las marcas dominantes del textil promocional. Más reglas para medir bien antes de pedir.",
     cta: "Ver tablas",
