@@ -52,8 +52,15 @@ export type ItemResuelto = {
   costeUnitCents: number | null;
   /** Margen que le toca por su familia. */
   margenPct: number;
-  /** Marcaje elegido en la web, ya tarificado. Null si el cliente no puso. */
-  marcaje: MarcajeParaLinea | null;
+  /**
+   * Marcajes elegidos en la web, ya tarificados y en orden. Vacío si no puso.
+   *
+   * Son varios porque el carrito admite multi-marcaje: un textil con bordado
+   * en el pecho, serigrafía en la espalda y láser en la manga son tres marcas
+   * con tres costes y tres clichés. Cotizar solo la primera era regalar las
+   * otras dos.
+   */
+  marcajes: MarcajeParaLinea[];
 };
 
 /**
@@ -70,6 +77,20 @@ export function clienteDelCarrito(contacto: ContactoCarrito): {
   return empresa
     ? { clienteNombre: empresa, clienteContacto: contacto.name }
     : { clienteNombre: contacto.name, clienteContacto: "" };
+}
+
+/**
+ * Junta los valores de varias marcas en una línea de la ficha, o null.
+ *
+ * Si todas las marcas coinciden en ese campo se escribe una sola vez: dos
+ * marcas en el pecho no son «PECHO · PECHO». Cuando difieren se listan todas y
+ * en el mismo orden que las técnicas, para que se lean en paralelo.
+ */
+function unir(valores: Array<string | null>): string | null {
+  const limpios = valores.filter((v): v is string => !!v && v.trim() !== "");
+  if (limpios.length === 0) return null;
+  const distintos = new Set(limpios);
+  return distintos.size === 1 ? limpios[0] : limpios.join(" · ");
 }
 
 /** «C/ Mayor 3, 18001 Granada» a partir de los campos sueltos del carrito. */
@@ -127,16 +148,16 @@ export function entradaDesdeCarrito(args: {
           pvpUnitCents: item.costeUnitCents ? pvp(item.costeUnitCents, item.margenPct) : 0,
         },
       ];
-      if (item.marcaje) {
+      for (const marcaje of item.marcajes) {
         lineas.push({
           tipo: "MARCAJE",
-          ...lineaDeMarcaje(item.marcaje, item.quantity, item.margenPct, margenObjetivoPct, pvp),
+          ...lineaDeMarcaje(marcaje, item.quantity, item.margenPct, margenObjetivoPct, pvp),
         });
         // Hay técnicas —láser, DTF— que no llevan cliché.
-        if (item.marcaje.clicheCents > 0) {
+        if (marcaje.clicheCents > 0) {
           lineas.push({
             tipo: "CLICHE",
-            ...lineaDeCliche(item.marcaje, item.margenPct, margenObjetivoPct, pvp),
+            ...lineaDeCliche(marcaje, item.margenPct, margenObjetivoPct, pvp),
           });
         }
       }
@@ -149,10 +170,12 @@ export function entradaDesdeCarrito(args: {
             fotoProductoUrl: item.imagenUrl,
             medidas: item.medidas,
             materiales: item.materiales,
-            marcajeTecnica: item.marcaje?.nombre ?? null,
-            marcajeTintas: item.marcaje ? String(item.marcaje.tintas) : null,
-            marcajePosicion: item.marcaje?.posicion ?? null,
-            marcajeAreaMaxima: item.marcaje?.areaMaxima ?? null,
+            // La ficha resume TODAS las marcas: con tres marcajes, poner solo
+            // el primero en la página 2 diría menos de lo que se está cobrando.
+            marcajeTecnica: unir(item.marcajes.map((m) => m.nombre)),
+            marcajeTintas: unir(item.marcajes.map((m) => String(m.tintas))),
+            marcajePosicion: unir(item.marcajes.map((m) => m.posicion)),
+            marcajeAreaMaxima: unir(item.marcajes.map((m) => m.areaMaxima)),
             lineas,
           },
         ],

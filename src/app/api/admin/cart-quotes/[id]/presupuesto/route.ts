@@ -18,6 +18,7 @@ import {
   type MarcajeParaLinea,
 } from "@/lib/presupuesto-catalogo";
 import { entradaDesdeCarrito, type ItemResuelto } from "@/lib/presupuesto-desde-carrito";
+import { MAX_PARTIDAS } from "@/lib/presupuesto-schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,8 +61,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
           productSlug: true,
           productName: true,
           quantity: true,
+          // La variante y el color que el cliente eligió: el coste sale de SU
+          // variante, no de la primera por orden alfabético, y en un textil
+          // por tallas eso son precios distintos.
+          variantSku: true,
+          colorName: true,
+          // Marcaje plano (una sola marca) y multi-marcaje.
           markingTechniqueCode: true,
           markingColours: true,
+          markingPositionId: true,
+          markings: {
+            orderBy: { order: "asc" },
+            select: {
+              positionId: true,
+              positionLabel: true,
+              techniqueCode: true,
+              techniqueName: true,
+              numberOfColors: true,
+              printAreaCm2: true,
+            },
+          },
         },
       },
     },
@@ -69,6 +88,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!carrito) return NextResponse.json({ error: "Carrito no encontrado" }, { status: 404 });
   if (carrito.items.length === 0) {
     return NextResponse.json({ error: "El carrito no tiene líneas" }, { status: 400 });
+  }
+  // Una partida por línea, y un presupuesto admite MAX_PARTIDAS. Se comprueba
+  // ANTES de crear nada: si no, se creaba un documento que el editor rechazaba
+  // en cada guardado y nadie entendía por qué.
+  if (carrito.items.length > MAX_PARTIDAS) {
+    return NextResponse.json(
+      {
+        error:
+          `El carrito tiene ${carrito.items.length} líneas y un presupuesto admite ` +
+          `${MAX_PARTIDAS} partidas. Agrupa líneas en el carrito o reparte la oferta en dos presupuestos.`,
+      },
+      { status: 400 },
+    );
   }
 
   const margenes = await leerMargenes();
@@ -96,9 +128,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         },
         variants: {
           where: { priceTiers: { some: {} } },
-          take: 1,
           orderBy: { sku: "asc" },
-          select: { priceTiers: { select: { minQty: true, unitPriceCents: true } } },
+          select: { sku: true, priceTiers: { select: { minQty: true, unitPriceCents: true } } },
         },
         positions: {
           select: {
@@ -126,12 +157,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         materiales: null,
         costeUnitCents: null,
         margenPct: margenes.pordefecto,
-        marcaje: null,
+        marcajes: [],
       });
       continue;
     }
 
-    const tiers = producto.variants[0]?.priceTiers ?? [];
+    // La variante que el cliente eligió manda sobre la primera con tarifa: en
+    // un textil por tallas la XXL no cuesta lo que la S.
+    const variante =
+      producto.variants.find((v) => v.sku === item.variantSku) ?? producto.variants[0];
+    const tiers = variante?.priceTiers ?? [];
     const coste = costeAlTramo(tiers, cantidad);
     const familias = [
       producto.category?.name,
@@ -140,8 +175,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     ].filter((n): n is string => typeof n === "string" && n.trim() !== "");
     const margenPct = margenDeJerarquia(margenes, familias);
 
+    const nombre = publicProductName(producto.name, producto.override?.customName);
     items.push({
-      productName: publicProductName(producto.name, producto.override?.customName),
+      // El color va en el concepto: dos líneas del mismo producto en colores
+      // distintos son dos partidas, y en el documento tienen que distinguirse.
+      productName: item.colorName ? `${nombre} · ${item.colorName}` : nombre,
       quantity: cantidad,
       imagenUrl: proxyImageUrl(producto.primaryImageUrl),
       referencia: publicRef(producto),
@@ -149,12 +187,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       materiales: producto.material,
       costeUnitCents: coste?.costeUnitCents ?? null,
       margenPct,
-      marcaje: await marcajeDelItem({
+      marcajes: await marcajesDelItem({
         productId: producto.id,
         supplier: producto.supplier,
         posiciones: producto.positions,
-        techniqueCode: item.markingTechniqueCode,
-        tintas: Math.max(1, item.markingColours ?? 1),
+        marcas: marcasPedidas(item),
         cantidad,
         costeProducto: coste?.costeUnitCents ?? 0,
       }),
@@ -196,14 +233,65 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   return NextResponse.json({ id: creado.id, numero: creado.numero }, { status: 201 });
 }
 
+/** Una marca pedida por el cliente, venga del multi-marcaje o del campo plano. */
+type MarcaPedida = {
+  techniqueCode: string;
+  techniqueName: string | null;
+  positionId: string | null;
+  tintas: number;
+};
+
 /**
- * Tarifica la técnica que el cliente eligió en la web.
+ * Las marcas que el cliente pidió en esa línea del carrito.
+ *
+ * El carrito guarda multi-marcaje en `markings[]` y mantiene los campos planos
+ * como espejo del primero. Si hay `markings`, mandan ellos —son todas las
+ * marcas—; si no, la línea tiene como mucho la del campo plano.
+ */
+function marcasPedidas(item: {
+  markingTechniqueCode: string | null;
+  markingColours: number | null;
+  markingPositionId: string | null;
+  markings: Array<{
+    positionId: string;
+    positionLabel: string | null;
+    techniqueCode: string;
+    techniqueName: string | null;
+    numberOfColors: number;
+  }>;
+}): MarcaPedida[] {
+  if (item.markings.length > 0) {
+    return item.markings.map((m) => ({
+      techniqueCode: m.techniqueCode,
+      techniqueName: m.techniqueName,
+      positionId: m.positionId,
+      tintas: Math.max(1, m.numberOfColors),
+    }));
+  }
+  if (!item.markingTechniqueCode) return [];
+  return [
+    {
+      techniqueCode: item.markingTechniqueCode,
+      techniqueName: null,
+      positionId: item.markingPositionId,
+      tintas: Math.max(1, item.markingColours ?? 1),
+    },
+  ];
+}
+
+/**
+ * Tarifica las marcas que el cliente eligió en la web.
  *
  * Misma cascada que el buscador del editor (`quoteMarkingNet`) y mismo
  * criterio: si no hay tarifa fiable, la línea entra a cero con su nombre para
  * teclearla, nunca con un precio inventado.
+ *
+ * La posición es LA QUE PIDIÓ el cliente, no la de más área. Elegir por él la
+ * posición grande inflaría la tarifa por cm² y además pondría en la ficha un
+ * sitio distinto del que va a llevar el logo. Solo si esa posición ya no está
+ * en el catálogo se cae a la de más área, que es la prudente.
  */
-async function marcajeDelItem(args: {
+async function marcajesDelItem(args: {
   productId: string;
   supplier: Parameters<typeof quoteMarkingNet>[0]["supplier"];
   posiciones: Array<{
@@ -212,41 +300,70 @@ async function marcajeDelItem(args: {
     maxHeightMm: number | null;
     techniques: Array<{ technique: { code: string; name: string } }>;
   }>;
-  techniqueCode: string | null;
-  tintas: number;
+  marcas: MarcaPedida[];
   cantidad: number;
   costeProducto: number;
-}): Promise<MarcajeParaLinea | null> {
-  if (!args.techniqueCode) return null;
-  const codigo = args.techniqueCode.trim().toUpperCase();
-
-  // La posición con más área entre las que ofrecen esa técnica, igual que en
-  // el buscador: las tarifas por cm² suben con el área.
-  let elegida: { positionId: string; areaCm2: number | null; areaMaxima: string | null } | null =
-    null;
-  let nombre = codigo;
-  for (const pos of args.posiciones) {
-    const tec = pos.techniques.find((t) => t.technique.code.toUpperCase() === codigo);
-    if (!tec) continue;
-    nombre = tec.technique.name;
-    const areaCm2 =
-      pos.maxWidthMm && pos.maxHeightMm ? (pos.maxWidthMm * pos.maxHeightMm) / 100 : null;
-    if (!elegida || (areaCm2 !== null && (elegida.areaCm2 === null || areaCm2 > elegida.areaCm2))) {
-      elegida = {
-        positionId: pos.positionId,
-        areaCm2,
-        areaMaxima: formatearArea(pos.maxWidthMm, pos.maxHeightMm),
-      };
-    }
+}): Promise<MarcajeParaLinea[]> {
+  const marcajes: MarcajeParaLinea[] = [];
+  for (const marca of args.marcas) {
+    marcajes.push(
+      await tarificarMarca({
+        productId: args.productId,
+        supplier: args.supplier,
+        posiciones: args.posiciones,
+        marca,
+        cantidad: args.cantidad,
+        costeProducto: args.costeProducto,
+      }),
+    );
   }
+  return marcajes;
+}
+
+async function tarificarMarca(args: {
+  productId: string;
+  supplier: Parameters<typeof quoteMarkingNet>[0]["supplier"];
+  posiciones: Array<{
+    positionId: string;
+    maxWidthMm: number | null;
+    maxHeightMm: number | null;
+    techniques: Array<{ technique: { code: string; name: string } }>;
+  }>;
+  marca: MarcaPedida;
+  cantidad: number;
+  costeProducto: number;
+}): Promise<MarcajeParaLinea> {
+  const codigo = args.marca.techniqueCode.trim().toUpperCase();
+
+  const conEsaTecnica = args.posiciones.filter((pos) =>
+    pos.techniques.some((t) => t.technique.code.toUpperCase() === codigo),
+  );
+  const nombreCatalogo = conEsaTecnica[0]?.techniques.find(
+    (t) => t.technique.code.toUpperCase() === codigo,
+  )?.technique.name;
+
+  // La que pidió el cliente; si ya no existe, la de más área.
+  const pedida = conEsaTecnica.find((pos) => pos.positionId === args.marca.positionId);
+  const mayorArea = conEsaTecnica.reduce<(typeof conEsaTecnica)[number] | null>((mejor, pos) => {
+    const area = pos.maxWidthMm && pos.maxHeightMm ? pos.maxWidthMm * pos.maxHeightMm : 0;
+    const mejorArea =
+      mejor?.maxWidthMm && mejor?.maxHeightMm ? mejor.maxWidthMm * mejor.maxHeightMm : -1;
+    return area > mejorArea ? pos : mejor;
+  }, null);
+  const elegida = pedida ?? mayorArea;
+
+  const areaCm2 =
+    elegida?.maxWidthMm && elegida?.maxHeightMm
+      ? (elegida.maxWidthMm * elegida.maxHeightMm) / 100
+      : null;
 
   const base = {
     codigo,
-    nombre,
-    tintas: args.tintas,
-    areaCm2: elegida?.areaCm2 ?? null,
-    posicion: elegida?.positionId ?? "",
-    areaMaxima: elegida?.areaMaxima ?? null,
+    nombre: args.marca.techniqueName || nombreCatalogo || codigo,
+    tintas: args.marca.tintas,
+    areaCm2,
+    posicion: elegida?.positionId ?? args.marca.positionId ?? "",
+    areaMaxima: formatearArea(elegida?.maxWidthMm ?? null, elegida?.maxHeightMm ?? null),
   };
 
   try {
@@ -256,13 +373,13 @@ async function marcajeDelItem(args: {
       techniqueCode: codigo,
       quantity: args.cantidad,
       productNetUnitCents: args.costeProducto,
-      printAreaCm2: base.areaCm2,
-      numberOfColours: args.tintas,
+      printAreaCm2: areaCm2,
+      numberOfColours: args.marca.tintas,
     });
     if (!cotizacion.ok) {
       return {
         ...base,
-        nombre: cotizacion.techniqueLabel || nombre,
+        nombre: cotizacion.techniqueLabel || base.nombre,
         costeUnitCents: null,
         clicheCents: 0,
         aviso: cotizacion.warning ?? "Sin tarifa fiable: pide el coste al proveedor.",
@@ -271,7 +388,7 @@ async function marcajeDelItem(args: {
     const { costeUnitCents, clicheCents } = desglosarMarcaje(cotizacion, args.cantidad);
     return {
       ...base,
-      nombre: cotizacion.techniqueLabel || nombre,
+      nombre: cotizacion.techniqueLabel || base.nombre,
       costeUnitCents,
       clicheCents,
       aviso: null,

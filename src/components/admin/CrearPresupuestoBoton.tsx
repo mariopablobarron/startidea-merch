@@ -31,8 +31,13 @@ export function CrearPresupuestoBoton({
     setError(null);
     try {
       const r = await fetch(endpoint, { method: "POST" });
-      const datos = await r.json();
-      if (!r.ok) throw new Error(datos?.error ?? "No se pudo crear el presupuesto");
+      // El cuerpo se lee DESPUÉS de mirar el estado y con red: un 500 devuelve
+      // una página de error, y `r.json()` a secas enseñaba «Unexpected token
+      // '<'» en vez de decir que el servidor había fallado.
+      const datos = await r.json().catch(() => null);
+      if (!r.ok) {
+        throw new Error(datos?.error ?? `No se pudo crear el presupuesto (${r.status})`);
+      }
       router.push(`/admin/presupuestos/${datos.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

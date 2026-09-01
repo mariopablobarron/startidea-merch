@@ -27,7 +27,7 @@ const BOTELLA: ItemResuelto = {
   materiales: "Acero inoxidable 18/8",
   costeUnitCents: 615,
   margenPct: 22,
-  marcaje: {
+  marcajes: [{
     codigo: "SERI",
     nombre: "Serigrafía",
     costeUnitCents: 74,
@@ -37,7 +37,7 @@ const BOTELLA: ItemResuelto = {
     posicion: "CUERPO",
     areaMaxima: "60 × 80 mm",
     aviso: null,
-  },
+  }],
 };
 
 const pvp = (coste: number, margen: number) => Math.round(coste / (1 - margen / 100));
@@ -124,7 +124,7 @@ describe("entradaDesdeCarrito", () => {
   it("sin marcaje, la partida es solo el producto", () => {
     const lineas = entradaDesdeCarrito({
       ...base,
-      items: [{ ...BOTELLA, marcaje: null }],
+      items: [{ ...BOTELLA, marcajes: [] }],
     }).partidas[0].opciones[0].lineas;
     expect(lineas.map((l) => l.tipo)).toEqual(["PRODUCTO"]);
     expect(lineas[0].pvpUnitCents).toBe(788);
@@ -132,7 +132,7 @@ describe("entradaDesdeCarrito", () => {
 
   it("una técnica sin cliché no crea la línea del cliché", () => {
     // El grabado láser no lleva pantalla.
-    const sinCliche = { ...BOTELLA, marcaje: { ...BOTELLA.marcaje!, clicheCents: 0 } };
+    const sinCliche = { ...BOTELLA, marcajes: [{ ...BOTELLA.marcajes[0], clicheCents: 0 }] };
     const lineas = entradaDesdeCarrito({ ...base, items: [sinCliche] }).partidas[0].opciones[0].lineas;
     expect(lineas.map((l) => l.tipo)).toEqual(["PRODUCTO", "MARCAJE"]);
   });
@@ -142,7 +142,7 @@ describe("entradaDesdeCarrito", () => {
     const huerfano: ItemResuelto = {
       ...BOTELLA,
       costeUnitCents: null,
-      marcaje: null,
+      marcajes: [],
       margenPct: 30,
     };
     const linea = entradaDesdeCarrito({ ...base, items: [huerfano] }).partidas[0].opciones[0].lineas[0];
@@ -211,5 +211,73 @@ describe("entradaDesdeSolicitud", () => {
     expect(entrada.asunto).toBe("");
     expect(entrada.partidas[0].titulo).toBe("Partida 1");
     expect(entrada.partidas[0].opciones[0].lineas[0].cantidad).toBe(100);
+  });
+});
+
+describe("multi-marcaje", () => {
+  const TRES_MARCAS: ItemResuelto = {
+    ...BOTELLA,
+    productName: "Camiseta orgánica 180 g",
+    marcajes: [
+      { ...BOTELLA.marcajes[0], codigo: "BORD", nombre: "Bordado", posicion: "PECHO",
+        areaMaxima: "80 × 60 mm", tintas: 1, costeUnitCents: 180, clicheCents: 4500 },
+      { ...BOTELLA.marcajes[0], codigo: "SERI", nombre: "Serigrafía", posicion: "ESPALDA",
+        areaMaxima: "300 × 400 mm", tintas: 2, costeUnitCents: 95, clicheCents: 3500 },
+      // El láser no lleva cliché.
+      { ...BOTELLA.marcajes[0], codigo: "LAS", nombre: "Láser", posicion: "MANGA",
+        areaMaxima: "40 × 20 mm", tintas: 1, costeUnitCents: 60, clicheCents: 0 },
+    ],
+  };
+
+  it("cotiza TODAS las marcas, no solo la primera", () => {
+    // Un textil con bordado, serigrafía y láser son tres costes y dos clichés.
+    // Cotizar solo el bordado era regalar las otras dos marcas.
+    const lineas = entradaDesdeCarrito({ ...base, items: [TRES_MARCAS] }).partidas[0].opciones[0]
+      .lineas;
+    expect(lineas.map((l) => l.tipo)).toEqual([
+      "PRODUCTO",
+      "MARCAJE",
+      "CLICHE",
+      "MARCAJE",
+      "CLICHE",
+      "MARCAJE",
+    ]);
+    expect(lineas.filter((l) => l.tipo === "MARCAJE").map((l) => l.concepto)).toEqual([
+      "Bordado",
+      "Serigrafía a 2 tintas",
+      "Láser",
+    ]);
+  });
+
+  it("la ficha técnica resume las tres, no solo una", () => {
+    // Con tres marcajes, poner solo el primero en la página 2 diría menos de
+    // lo que se está cobrando.
+    const opcion = entradaDesdeCarrito({ ...base, items: [TRES_MARCAS] }).partidas[0].opciones[0];
+    expect(opcion.marcajeTecnica).toBe("Bordado · Serigrafía · Láser");
+    expect(opcion.marcajePosicion).toBe("PECHO · ESPALDA · MANGA");
+    expect(opcion.marcajeTintas).toBe("1 · 2 · 1");
+    expect(opcion.marcajeAreaMaxima).toBe("80 × 60 mm · 300 × 400 mm · 40 × 20 mm");
+  });
+
+  it("si todas las marcas van al mismo sitio, la ficha no lo repite", () => {
+    // «PECHO · PECHO» en el documento del cliente es ruido.
+    const mismoSitio = {
+      ...TRES_MARCAS,
+      marcajes: TRES_MARCAS.marcajes.map((m) => ({ ...m, posicion: "PECHO", areaMaxima: "80 × 60 mm" })),
+    };
+    const opcion = entradaDesdeCarrito({ ...base, items: [mismoSitio] }).partidas[0].opciones[0];
+    expect(opcion.marcajePosicion).toBe("PECHO");
+    expect(opcion.marcajeAreaMaxima).toBe("80 × 60 mm");
+    // Y lo que sí difiere se sigue listando entero.
+    expect(opcion.marcajeTecnica).toBe("Bordado · Serigrafía · Láser");
+  });
+
+  it("sin marcajes la ficha no inventa campos vacíos", () => {
+    const opcion = entradaDesdeCarrito({
+      ...base,
+      items: [{ ...BOTELLA, marcajes: [] }],
+    }).partidas[0].opciones[0];
+    expect(opcion.marcajeTecnica).toBeNull();
+    expect(opcion.marcajePosicion).toBeNull();
   });
 });

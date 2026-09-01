@@ -11,6 +11,15 @@ import { z } from "zod";
 const texto = z.string().trim();
 const textoOpcional = texto.max(4000).optional().nullable();
 
+/**
+ * Tope de partidas por presupuesto.
+ *
+ * Exportado para que quien construya un presupuesto desde otro sitio —el
+ * puente con el carrito— pueda comprobarlo ANTES de crearlo. Sin esto se
+ * creaba un documento de 21 partidas que el editor rechazaba en cada guardado.
+ */
+export const MAX_PARTIDAS = 20;
+
 export const lineaSchema = z.object({
   tipo: z.enum(["PRODUCTO", "MARCAJE", "CLICHE", "OTRO"]),
   concepto: texto.min(1, "La línea necesita un concepto").max(300),
@@ -70,7 +79,7 @@ export const presupuestoSchema = z
       .max(20)
       .optional()
       .nullable(),
-    partidas: z.array(partidaSchema).max(20),
+    partidas: z.array(partidaSchema).max(MAX_PARTIDAS),
   })
   .refine((p) => p.plazoMinDias <= p.plazoMaxDias, {
     message: "El plazo mínimo no puede ser mayor que el máximo",
