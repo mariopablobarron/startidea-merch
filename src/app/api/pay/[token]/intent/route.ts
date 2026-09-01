@@ -76,8 +76,20 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   // Persistir Payment PENDING — el webhook lo marcará PAID al confirmarse.
   // Si ya existía un PENDING para este cart (caso: usuario abrió la página
   // dos veces) no creamos duplicado, actualizamos el más reciente.
+  //
+  // `stripeSessionId: null` NO es cosmético: acota la reutilización a filas
+  // nacidas de ESTE camino (Express Checkout). Una fila creada por
+  // /checkout ya lleva su Checkout Session, y pegarle encima el
+  // PaymentIntent de otro intento deja una fila que apunta a DOS cobros
+  // distintos. El daño no es el duplicado, es el revés: si se cobra la
+  // sesión, `handleSessionCompleted` marca la fila PAID, y cuando después
+  // llega `payment_intent.succeeded` del otro cobro —real y distinto—
+  // `handleIntentSucceeded` la encuentra por su intentId, la ve PAID y sale
+  // sin registrar nada. Dos cobros, un solo Payment, sin factura ni
+  // postPaymentAutoflow para el segundo. Con este filtro cada intento tiene
+  // su fila: dos filas honestas valen más que una mentirosa.
   const existing = await prisma.payment.findFirst({
-    where: { cartId: cart.id, status: "PENDING" },
+    where: { cartId: cart.id, status: "PENDING", stripeSessionId: null },
     orderBy: { createdAt: "desc" },
   });
   if (existing) {
