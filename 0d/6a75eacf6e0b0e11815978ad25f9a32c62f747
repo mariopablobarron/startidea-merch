@@ -1,0 +1,21 @@
+src/app/api/pay/[token]/intent/route.test.ts
+  s_83bd61f0f70e59::t_c8ea93b29d4de9 1-119
+src/app/api/pay/[token]/intent/route.ts
+  s_83bd61f0f70e59::t_bfe502adaa7e46 79-90,92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "0d6a75eacf6e0b0e11815978ad25f9a32c62f747",
+  "prompts": {},
+  "sessions": {
+    "s_83bd61f0f70e59": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de16e3f5-c42f-40c7-9f82-626cdaec4dd4",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
