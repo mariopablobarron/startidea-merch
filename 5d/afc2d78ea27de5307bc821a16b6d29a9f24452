@@ -1,0 +1,19 @@
+OPERATIONS.md
+  s_fa4e23114fbd63::t_4cf1fec4706923 189,196,200-228,277-278
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "5dafc2d78ea27de5307bc821a16b6d29a9f24452",
+  "prompts": {},
+  "sessions": {
+    "s_fa4e23114fbd63": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "45cf4f8f-0611-40c5-a860-8229f012e9e4",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
