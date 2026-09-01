@@ -573,9 +573,16 @@ const CSS_GENERADOR = `
  * documento.
  */
 export function assertSinFugasDeProveedor(html: string): void {
-  const fugas = PUBLIC_SUPPLIER_LEAK_PATTERNS.filter((p) =>
-    new RegExp(p.re.source, p.re.flags).test(html),
-  ).map((p) => p.code);
+  // `html.match(re)` en vez de `re.test(html)`: los patrones son globales y
+  // `test` sobre un regex global arrastra `lastIndex` entre llamadas, así que
+  // el segundo presupuesto del proceso podría no ver una fuga que el primero sí
+  // vio. `match` reinicia el índice. Y en vez de reconstruir el regex —que es
+  // como se resolvía antes— se usa el original: semgrep bloquea `new RegExp`
+  // con un valor que viene de un parámetro (regla de ReDoS), y ya tumbó el CI
+  // del PR de la paleta por lo mismo.
+  const fugas = PUBLIC_SUPPLIER_LEAK_PATTERNS.filter((p) => html.match(p.re) !== null).map(
+    (p) => p.code,
+  );
   if (fugas.length > 0) {
     throw new Error(
       `El presupuesto menciona al proveedor (${fugas.join(", ")}). ` +

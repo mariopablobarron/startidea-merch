@@ -256,6 +256,16 @@ describe("no se nombra a ningún proveedor", () => {
   it("assertSinFugasDeProveedor deja pasar un documento limpio", () => {
     expect(() => assertSinFugasDeProveedor("<p>Vaso reutilizable de 400 ml</p>")).not.toThrow();
   });
+
+  it("pilla la fuga TAMBIÉN en la segunda llamada", () => {
+    // Los patrones de fuga son globales, y `regex.test()` sobre un regex global
+    // arrastra `lastIndex` entre llamadas: el segundo presupuesto del mismo
+    // proceso podría colar el nombre del proveedor que el primero sí detectó.
+    const sucio = "<p>Referencia Makito 2555</p>";
+    expect(() => assertSinFugasDeProveedor(sucio)).toThrow(/menciona al proveedor/i);
+    expect(() => assertSinFugasDeProveedor(sucio)).toThrow(/menciona al proveedor/i);
+    expect(() => assertSinFugasDeProveedor(sucio)).toThrow(/menciona al proveedor/i);
+  });
 });
 
 describe("el HTML no se rompe con lo que escriba Mario", () => {
