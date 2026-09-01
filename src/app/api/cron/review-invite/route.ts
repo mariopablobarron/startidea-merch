@@ -99,13 +99,13 @@ export const POST = wrapCronHandler("review-invite", async (req: Request) => {
       subject: `${firstName}, ¿qué tal tu pedido con TodoMerchandising?`,
       context: `review-invite · ${review.id}`,
       html: `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
-      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— ¿Qué tal todo?</p>
-          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
             Hola ${escapeHtml(firstName)}.<br>
-            <span style="color:#E63E73;">¿Cómo lo hemos hecho?</span>
+            <span style="color:#C41D51;">¿Cómo lo hemos hecho?</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
             ${openingLine} Tu opinión nos ayuda a mejorar
@@ -114,14 +114,14 @@ export const POST = wrapCronHandler("review-invite", async (req: Request) => {
           </p>
         </div>
         <div style="padding:0 32px;text-align:center;">
-          <a href="${reviewUrl}" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Dejar mi opinión →</a>
+          <a href="${reviewUrl}" style="display:inline-block;background:#C41D51;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Dejar mi opinión →</a>
           <p style="margin:14px 0 0;font-size:12px;color:#6b6b6b;line-height:1.5;">
             Si prefieres que sea privada (solo el equipo la lee), márcalo en el formulario.
             Tardas 30 s.
           </p>
         </div>
         <div style="padding:24px 32px 32px;">
-          <div style="padding:16px 18px;background:#F4EFE6;border-radius:12px;">
+          <div style="padding:16px 18px;background:#FFFFFF;border-radius:12px;">
             <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">¿Algo no fue perfecto?</p>
             <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:#444;">
               Responde a este email y lo arreglamos. Estamos para eso —
@@ -129,8 +129,8 @@ export const POST = wrapCronHandler("review-invite", async (req: Request) => {
             </p>
           </div>
         </div>
-        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
-          <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
         </div>
       </div>

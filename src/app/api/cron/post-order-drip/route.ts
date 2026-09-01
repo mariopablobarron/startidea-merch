@@ -110,24 +110,24 @@ async function sendStep(
       subject: `${firstName}, gracias — esto es lo que has generado`,
       context: `post-order-drip step=0 · ${cart.id}`,
       html: `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
-      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Pedido entregado</p>
-          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
             Gracias ${escapeHtml(firstName)}.<br>
-            <span style="color:#E63E73;">Esto es lo que has generado.</span>
+            <span style="color:#C41D51;">Esto es lo que has generado.</span>
           </h1>
         </div>
         <div style="padding:0 32px 32px;">
           <table style="width:100%;border-collapse:separate;border-spacing:0 8px;">
-            <tr><td style="background:#F4EFE6;padding:20px;border-radius:12px;">
+            <tr><td style="background:#FFFFFF;padding:20px;border-radius:12px;">
               <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Productos producidos</p>
-              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#2A2A2A;">${totalItems}</p>
+              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#231F27;">${totalItems}</p>
             </td></tr>
-            <tr><td style="background:#F4EFE6;padding:20px;border-radius:12px;">
+            <tr><td style="background:#FFFFFF;padding:20px;border-radius:12px;">
               <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">CO₂ ahorrado</p>
-              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#E63E73;">${co2} kg</p>
+              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#C41D51;">${co2} kg</p>
             </td></tr>
           </table>
           <p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#444;">
@@ -135,8 +135,8 @@ async function sendStep(
             valorar — tarda menos de 30 segundos y nos ayuda muchísimo.
           </p>
         </div>
-        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
-          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
         </div>
       </div>
@@ -152,11 +152,11 @@ async function sendStep(
       subject: `${firstName}, tu informe de impacto está listo para tu memoria`,
       context: `post-order-drip step=14 · ${cart.id}`,
       html: `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
-      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Informe disponible</p>
-          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
             Hola ${escapeHtml(firstName)}.<br>
             <span style="color:#a09e98;">Tu informe de impacto está listo.</span>
           </h1>
@@ -170,7 +170,7 @@ async function sendStep(
         <div style="padding:0 32px 32px;text-align:center;">
           ${
             dashUrl
-              ? `<a href="${dashUrl}" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Ver mi dashboard →</a>`
+              ? `<a href="${dashUrl}" style="display:inline-block;background:#C41D51;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Ver mi dashboard →</a>`
               : `<p style="margin:0;font-size:14px;color:#444;">Responde a este email y te enviamos acceso a tu dashboard privado.</p>`
           }
           <p style="margin:20px 0 0;font-size:12px;color:#6b6b6b;line-height:1.6;">
@@ -178,8 +178,8 @@ async function sendStep(
             Respóndenos y lo emitimos en <strong>48 h</strong>.
           </p>
         </div>
-        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
-          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada</p>
         </div>
       </div>
@@ -216,13 +216,13 @@ async function sendStep(
       subject: `${firstName}, ¿toca repetir? Tienes 10% sobre tu próxima cotización`,
       context: `post-order-drip step=45 · ${cart.id}`,
       html: `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
-      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Para tu próxima campaña</p>
-          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
             Hola ${escapeHtml(firstName)}.<br>
-            <span style="color:#E63E73;">10% para tu próxima cotización.</span>
+            <span style="color:#C41D51;">10% para tu próxima cotización.</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
             Han pasado 6 semanas desde tu último pedido. Si tienes evento, onboarding
@@ -231,21 +231,21 @@ async function sendStep(
           </p>
         </div>
         <div style="padding:0 32px;">
-          <div style="background:#FBDFE9;border:2px dashed #E63E73;padding:24px;text-align:center;border-radius:12px;">
+          <div style="background:#F8DCE6;border:2px dashed #C41D51;padding:24px;text-align:center;border-radius:12px;">
             <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Tu código personal</p>
-            <p style="margin:8px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#E63E73;letter-spacing:0.05em;">${escapeHtml(code)}</p>
+            <p style="margin:8px 0 0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#C41D51;letter-spacing:0.05em;">${escapeHtml(code)}</p>
             <p style="margin:10px 0 0;font-size:12px;color:#6b6b6b;">Válido 30 días · Solo en tu próximo carrito</p>
           </div>
         </div>
         <div style="padding:24px 32px 32px;text-align:center;">
-          <a href="${SITE_URL}/catalogo" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Volver al catálogo →</a>
+          <a href="${SITE_URL}/catalogo" style="display:inline-block;background:#C41D51;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Volver al catálogo →</a>
           <p style="margin:16px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;">
             ¿Quieres que te recomendemos novedades alineadas con tu marca?<br>
             Responde a este email con dos líneas de brief.
           </p>
         </div>
-        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
-          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
         </div>
       </div>

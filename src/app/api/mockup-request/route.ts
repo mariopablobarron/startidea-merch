@@ -94,13 +94,13 @@ export async function POST(req: Request) {
     subject: `${firstName}, recibimos tu petición de mockup — respuesta en 4h`,
     context: `mockup-request confirm · ${created.id}`,
     html: `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
-      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Petición recibida</p>
-          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
             Hola ${escapeHtml(firstName)}.<br>
-            <span style="color:#E63E73;">Te mandamos mockup técnico en 4h.</span>
+            <span style="color:#C41D51;">Te mandamos mockup técnico en 4h.</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
             Recibimos tu petición de mockup para <strong>${escapeHtml(productName)}</strong>${clientPositionLabel ? ` · ${escapeHtml(clientPositionLabel)}` : ""}.
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
           </p>
         </div>
         <div style="padding:0 32px 24px;">
-          <div style="background:#F4EFE6;padding:18px 20px;border-radius:12px;">
+          <div style="background:#FFFFFF;padding:18px 20px;border-radius:12px;">
             <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Qué pasa ahora</p>
             <ol style="margin:8px 0 0;padding-left:20px;font-size:14px;line-height:1.7;color:#444;">
               <li>Recibimos tu petición y la revisamos.</li>
@@ -124,12 +124,12 @@ export async function POST(req: Request) {
           data.brief
             ? `<div style="padding:0 32px 24px;">
                  <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Tu brief</p>
-                 <div style="background:#FBDFE9;border-left:3px solid #E63E73;padding:14px 16px;border-radius:8px;font-size:14px;line-height:1.5;color:#2A2A2A;white-space:pre-wrap;">${escapeHtml(data.brief)}</div>
+                 <div style="background:#F8DCE6;border-left:3px solid #C41D51;padding:14px 16px;border-radius:8px;font-size:14px;line-height:1.5;color:#231F27;white-space:pre-wrap;">${escapeHtml(data.brief)}</div>
                </div>`
             : ""
         }
-        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
-          <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
         </div>
       </div>
@@ -157,10 +157,10 @@ export async function POST(req: Request) {
       subject: `[Mockup 4h] ${data.name}${data.company ? ` · ${data.company}` : ""} — ${productName}`,
       context: `mockup-request internal · ${created.id}`,
       html: `
-      <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:24px 16px;color:#2A2A2A;">
+      <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:24px 16px;color:#231F27;">
         <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;padding:24px 28px;">
-          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#E63E73;">— Mockup 4h · solicitud</p>
-          <h2 style="margin:6px 0 0;font-family:Georgia,serif;font-size:22px;color:#2A2A2A;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#C41D51;">— Mockup 4h · solicitud</p>
+          <h2 style="margin:6px 0 0;font-family:Georgia,serif;font-size:22px;color:#231F27;">
             ${escapeHtml(data.name)}${data.company ? ` <span style="color:#a09e98;font-weight:400;">· ${escapeHtml(data.company)}</span>` : ""}
           </h2>
           <table style="width:100%;margin-top:16px;border-collapse:collapse;font-size:14px;">
@@ -173,7 +173,7 @@ export async function POST(req: Request) {
           ${
             data.brief
               ? `<p style="margin:16px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b6b;">Brief</p>
-                 <div style="margin-top:6px;padding:12px 14px;background:#F4EFE6;border-radius:10px;font-size:14px;line-height:1.5;white-space:pre-wrap;">${escapeHtml(data.brief)}</div>`
+                 <div style="margin-top:6px;padding:12px 14px;background:#FFFFFF;border-radius:10px;font-size:14px;line-height:1.5;white-space:pre-wrap;">${escapeHtml(data.brief)}</div>`
               : ""
           }
           <p style="margin:18px 0 0;font-size:11px;color:#a09e98;">ID: ${escapeHtml(created.id)}</p>

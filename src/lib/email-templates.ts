@@ -8,11 +8,11 @@ function escapeHtml(s: string) {
 }
 
 const COLORS = {
-  ink: "#2A2A2A",
-  bone: "#F4EFE6",
+  ink: "#231F27",
+  bone: "#FFFFFF",
   boneSoft: "#FFFFFF",
-  accent: "#E63E73",
-  accentSoft: "#FBDFE9",
+  accent: "#C41D51",
+  accentSoft: "#F8DCE6",
   divider: "#E8E2D5",
   social: "#4a9d7f",
 } as const;

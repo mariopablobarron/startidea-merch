@@ -67,44 +67,44 @@ export async function POST(req: Request) {
     subject: `Tu certificado ROI RSC · ${results.co2SavedKg} kg CO₂ ahorrados / año`,
     context: `roi-calc · ${created.id}`,
     html: `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
-      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Tu cálculo RSC</p>
-          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
             Hola ${escapeHtml(firstName)}.<br>
-            <span style="color:#E63E73;">Esto es lo que generarías.</span>
+            <span style="color:#C41D51;">Esto es lo que generarías.</span>
           </h1>
         </div>
         <div style="padding:0 32px 16px;">
           <table style="width:100%;border-collapse:separate;border-spacing:0 8px;">
-            <tr><td style="background:#FBDFE9;padding:18px 20px;border-radius:12px;">
+            <tr><td style="background:#F8DCE6;padding:18px 20px;border-radius:12px;">
               <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">CO₂ ahorrado / año</p>
-              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#E63E73;">${results.co2SavedKg} kg</p>
+              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#C41D51;">${results.co2SavedKg} kg</p>
               <p style="margin:4px 0 0;font-size:12px;color:#6b6b6b;">≈ ${results.treesEquivalent} árboles equivalentes</p>
             </td></tr>
-            <tr><td style="background:#F4EFE6;padding:18px 20px;border-radius:12px;">
+            <tr><td style="background:#FFFFFF;padding:18px 20px;border-radius:12px;">
               <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Horas trabajo digno generadas</p>
-              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#2A2A2A;">${results.workHoursDignified} h</p>
+              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#231F27;">${results.workHoursDignified} h</p>
               <p style="margin:4px 0 0;font-size:12px;color:#6b6b6b;">En Centros Especiales de Empleo Andalucía</p>
             </td></tr>
-            <tr><td style="background:#F4EFE6;padding:18px 20px;border-radius:12px;">
+            <tr><td style="background:#FFFFFF;padding:18px 20px;border-radius:12px;">
               <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">% producción en CEE</p>
-              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#2A2A2A;">${results.ceeProductionPct}%</p>
+              <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#231F27;">${results.ceeProductionPct}%</p>
               <p style="margin:4px 0 0;font-size:12px;color:#6b6b6b;">Verificable y reportable en GRI / EFRAG</p>
             </td></tr>
           </table>
         </div>
         <div style="padding:8px 32px 24px;text-align:center;">
-          <a href="${pdfUrl}" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Descargar certificado PDF →</a>
+          <a href="${pdfUrl}" style="display:inline-block;background:#C41D51;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Descargar certificado PDF →</a>
           <p style="margin:14px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;">
             ¿Quieres pasar del cálculo a un pedido real?<br>
-            Entra en <a href="https://merchandising.startidea.es/catalogo" style="color:#E63E73;">nuestro catálogo</a>
+            Entra en <a href="https://merchandising.startidea.es/catalogo" style="color:#C41D51;">nuestro catálogo</a>
             y verás precio al instante por producto.
           </p>
         </div>
-        <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
-          <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+        <div style="background:#231F27;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+          <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
           <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
         </div>
       </div>

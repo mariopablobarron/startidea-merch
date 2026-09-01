@@ -159,7 +159,7 @@ export function applyFooter(html: string, unsubscribeUrl: string, preheader?: st
   // Shell ÚNICO de marca: delegamos en el central (email-templates.ts) con
   // soporte de baja — misma fuente de verdad que el resto de emails.
   return emailShell(
-    `<tr><td style="padding:32px 40px 8px;font-size:15px;line-height:1.6;color:#2A2A2A">
+    `<tr><td style="padding:32px 40px 8px;font-size:15px;line-height:1.6;color:#231F27">
 ${html}
     </td></tr>`,
     preheader ?? "",

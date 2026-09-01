@@ -69,7 +69,7 @@ export function internalPaymentEmailHtml(args: {
       // Sin href seguro se pinta el nombre del fichero sin enlace: mejor un
       // dato menos que un enlace que no lleva a donde dice.
       const link = href
-        ? `<a href="${escapeHtml(href)}" style="color:#E63E73;">📥 ${label}</a>`
+        ? `<a href="${escapeHtml(href)}" style="color:#C41D51;">📥 ${label}</a>`
         : `📥 ${label} <span style="color:#888;">(ruta no reconocida, ábrelo desde el admin)</span>`;
       return `<li style="margin:8px 0;">
         <strong>${escapeHtml(it.productName)}</strong> (${escapeHtml(it.productRef)}) × ${it.quantity}${marking}<br>
@@ -78,7 +78,7 @@ export function internalPaymentEmailHtml(args: {
     })
     .join("");
 
-  return `<div style="font-family:-apple-system,sans-serif;max-width:680px;color:#2A2A2A;">
+  return `<div style="font-family:-apple-system,sans-serif;max-width:680px;color:#231F27;">
     <h2 style="font-family:Georgia,serif;">Pago recibido vía Stripe${viaLabel}</h2>
     <p><strong>Cliente:</strong> ${escapeHtml(customer.name)} (${escapeHtml(customer.email)})${customer.company ? `<br><strong>Empresa:</strong> ${escapeHtml(customer.company)}` : ""}</p>
     <p><strong>Importe:</strong> ${amountFmt} €</p>
@@ -90,7 +90,7 @@ export function internalPaymentEmailHtml(args: {
       : '<p style="color:#888;font-size:13px;">Sin logos personalizados subidos.</p>'}
 
     <p style="margin-top:24px;">
-      <a href="${adminUrl}" style="background:#E63E73;color:white;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:600;">Abrir cart en admin →</a>
+      <a href="${adminUrl}" style="background:#C41D51;color:white;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:600;">Abrir cart en admin →</a>
     </p>
 
     <p style="color:#888;font-size:12px;margin-top:16px;">
@@ -109,16 +109,16 @@ export function clientPaidEmailHtml(args: {
 }): string {
   const { firstName, amountFmt, cartId, portalLink, receiptUrl } = args;
   return `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
-      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
 
         <!-- Header con check verde grande -->
         <div style="padding:40px 32px 24px;text-align:center;">
           <div style="display:inline-block;width:64px;height:64px;line-height:64px;border-radius:50%;background:#4a9d7f;color:#FFFFFF;font-size:32px;font-weight:bold;margin-bottom:20px;">✓</div>
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Pago confirmado</p>
-          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15;color:#2A2A2A;">
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15;color:#231F27;">
             Gracias ${escapeHtml(firstName)}.<br>
-            <span style="color:#E63E73;">Pasamos a producción.</span>
+            <span style="color:#C41D51;">Pasamos a producción.</span>
           </h1>
           <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
             Hemos recibido tu pago de <strong>${amountFmt} €</strong>. Tu pedido entra
@@ -129,7 +129,7 @@ export function clientPaidEmailHtml(args: {
         ${portalLink ? `
         <!-- CTA portal cliente -->
         <div style="padding:0 32px 8px;text-align:center;">
-          <a href="${escapeHtml(portalLink)}" style="display:inline-block;background:#E63E73;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Ver estado de mi pedido →</a>
+          <a href="${escapeHtml(portalLink)}" style="display:inline-block;background:#C41D51;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:15px;font-weight:600;">Ver estado de mi pedido →</a>
           <p style="margin:12px 0 0;font-size:11px;color:#a09e98;line-height:1.5;">
             Acceso a tu portal: tracking, factura, mockups y proofs.<br>
             Enlace válido 7 días — después solicita uno nuevo en
@@ -139,9 +139,9 @@ export function clientPaidEmailHtml(args: {
         ` : ""}
 
         <!-- Qué pasa ahora -->
-        <div style="margin:32px;padding:24px;background:#F4EFE6;border-radius:12px;">
+        <div style="margin:32px;padding:24px;background:#FFFFFF;border-radius:12px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Qué pasa ahora</p>
-          <ol style="margin:12px 0 0;padding-left:20px;font-size:14px;line-height:1.7;color:#2A2A2A;">
+          <ol style="margin:12px 0 0;padding-left:20px;font-size:14px;line-height:1.7;color:#231F27;">
             <li><strong>Mockup de aprobación</strong> (si lleva personalización) — te lo enviamos para revisión antes de imprimir nada.</li>
             <li><strong>Producción</strong> — fabricamos en Centros Especiales de Empleo y talleres certificados.</li>
             <li><strong>Envío</strong> — recibirás email con tracking del transportista en cuanto salga.</li>
@@ -153,11 +153,11 @@ export function clientPaidEmailHtml(args: {
         <div style="padding:0 32px 24px;text-align:center;">
           <p style="margin:0;font-size:13px;color:#6b6b6b;">
             Referencia de tu pedido:
-            <code style="background:#F4EFE6;padding:2px 8px;border-radius:4px;color:#2A2A2A;font-weight:600;">${escapeHtml(cartId.slice(0, 8).toUpperCase())}</code>
+            <code style="background:#FFFFFF;padding:2px 8px;border-radius:4px;color:#231F27;font-weight:600;">${escapeHtml(cartId.slice(0, 8).toUpperCase())}</code>
           </p>
           ${receiptUrl ? `
           <p style="margin:12px 0 0;font-size:13px;">
-            <a href="${escapeHtml(receiptUrl)}" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">Descargar recibo Stripe →</a>
+            <a href="${escapeHtml(receiptUrl)}" style="color:#231F27;text-decoration:none;border-bottom:1px solid #C41D51;padding-bottom:1px;">Descargar recibo Stripe →</a>
           </p>
           ` : ""}
         </div>
@@ -168,15 +168,15 @@ export function clientPaidEmailHtml(args: {
             ¿Algo no encaja? Estamos a un email:
           </p>
           <p style="margin:8px 0 0;font-size:14px;line-height:1.8;">
-            <a href="https://wa.me/34958045789" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">WhatsApp +34 958 045 789</a><br>
-            <a href="mailto:pedidos@startidea.es" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">pedidos@startidea.es</a>
+            <a href="https://wa.me/34958045789" style="color:#231F27;text-decoration:none;border-bottom:1px solid #C41D51;padding-bottom:1px;">WhatsApp +34 958 045 789</a><br>
+            <a href="mailto:pedidos@startidea.es" style="color:#231F27;text-decoration:none;border-bottom:1px solid #C41D51;padding-bottom:1px;">pedidos@startidea.es</a>
           </p>
         </div>
 
         <!-- Footer brand -->
-        <div style="background:#2A2A2A;padding:24px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+        <div style="background:#231F27;padding:24px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
           <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">
-            todo<span style="color:#E63E73;">merchandising</span>
+            todo<span style="color:#C41D51;">merchandising</span>
           </p>
           <p style="margin:8px 0 0;">
             Una iniciativa de Startidea · Agencia de Innovación Social<br>

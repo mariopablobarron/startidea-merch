@@ -15,18 +15,18 @@ export const runtime = "edge";
  *   email-header       1200×400   (cabecera de email)
  *
  * Todas siguen el Manual de identidad Startidea v1.0:
- *   Magenta #E63E73 acento · Crema #F4EFE6 fondo · Grafito #2A2A2A tinta
+ *   Magenta #C41D51 acento · Crema #FFFFFF fondo · Grafito #231F27 tinta
  *
  * Cache: 1h CDN (Cloudflare/Vercel respeta) — cambia URL si quieres regenerar.
  */
 
 const COLORS = {
-  magenta: "#E63E73",
-  magentaDeep: "#A02049",
-  crema: "#F4EFE6",
-  hueso: "#EAE3D3",
-  grafito: "#2A2A2A",
-  grafitoSoft: "#3A3A3A",
+  magenta: "#C41D51",
+  magentaDeep: "#8F1039",
+  crema: "#FFFFFF",
+  hueso: "#E7E2E6",
+  grafito: "#231F27",
+  grafitoSoft: "#3A353E",
 };
 
 type Template = "post-square" | "story-vertical" | "linkedin-landscape" | "email-header";

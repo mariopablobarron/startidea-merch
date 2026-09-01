@@ -67,19 +67,19 @@ export function buildLeadMagnetEmailHtml(input: LeadMagnetEmailInput): string {
   const first = firstName(input.name);
   const saludo = first ? ` ${escapeHtml(first)}` : "";
   return `
-<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#2A2A2A;">
-  <h2 style="font-family:Georgia,serif;color:#2A2A2A;">Aquí tienes tu descarga</h2>
+<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#231F27;">
+  <h2 style="font-family:Georgia,serif;color:#231F27;">Aquí tienes tu descarga</h2>
   <p>Hola${saludo},</p>
   <p>Gracias por descargar <strong>${escapeHtml(input.magnetTitle)}</strong>. Aquí tienes el archivo:</p>
   <p style="margin:24px 0;">
-    <a href="${escapeHtml(input.fileUrl)}" style="display:inline-block;background:#E63E73;color:#fff;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;">Descargar PDF →</a>
+    <a href="${escapeHtml(input.fileUrl)}" style="display:inline-block;background:#C41D51;color:#fff;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;">Descargar PDF →</a>
   </p>
   <p style="color:#666;font-size:14px;">¿Te gustó? Entra al catálogo cuando quieras — verás precio al instante en cada producto.</p>
   <p style="margin:20px 0;">
-    <a href="${input.siteUrl}/catalogo" style="color:#E63E73;">Ver catálogo</a> ·
-    <a href="${input.siteUrl}/#cotizar" style="color:#E63E73;">Pedir cotización</a>
+    <a href="${input.siteUrl}/catalogo" style="color:#C41D51;">Ver catálogo</a> ·
+    <a href="${input.siteUrl}/#cotizar" style="color:#C41D51;">Pedir cotización</a>
   </p>
-  <hr style="border:none;border-top:1px solid #EAE3D3;margin:32px 0;">
+  <hr style="border:none;border-top:1px solid #E7E2E6;margin:32px 0;">
   <p style="color:#888;font-size:11px;">STARTIDEA MALAGA SL · CIF B19583632 · Granada</p>
 </div>`;
 }
