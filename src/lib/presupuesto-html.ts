@@ -328,13 +328,19 @@ function filasOferta(p: PresupuestoRender): Fila[] {
     });
 
     const conAlternativas = partida.opciones.length > 1;
+    // La marca «RECOMENDADA» la lleva UNA sola opción: la primera marcada, que
+    // es también la que usa `calcularEscenarios` para los totales. Si un
+    // presupuesto trae dos marcadas —el editor lo permitía hasta hace poco— el
+    // documento no puede enseñar dos recomendaciones y un cliente preguntándose
+    // cuál mirar.
+    const recomendada = partida.opciones.find((o) => o.recomendada);
     partida.opciones.forEach((opcion, i) => {
       if (conAlternativas) {
         const letra = String.fromCharCode(65 + i);
         filas.push({
           tipo: "encabezado",
           altoMm: 11.7,
-          html: `      <tr class="opt${opcion.recomendada ? " rec" : ""}">
+          html: `      <tr class="opt${opcion === recomendada ? " rec" : ""}">
         <td colspan="6">Opción ${letra} · ${escapeHtml(opcion.nombre)}</td>
       </tr>`,
         });

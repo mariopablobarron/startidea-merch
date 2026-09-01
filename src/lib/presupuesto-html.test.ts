@@ -157,6 +157,17 @@ describe("dinero: desglose y cuadre", () => {
   it("marca cuál es la recomendada", () => {
     expect(html).toMatch(/class="caja destacada"/);
   });
+
+  it("solo UNA opción lleva la marca de recomendada, aunque vengan dos marcadas", () => {
+    // Puede haber presupuestos guardados con las dos a true: el editor lo
+    // permitía al añadir una alternativa. Dos «RECOMENDADA» en el mismo
+    // documento dejan al cliente sin saber cuál mirar.
+    const dosMarcadas = presupuestoDemo();
+    dosMarcadas.partidas[1].opciones[1].recomendada = true;
+    const salida = renderPresupuestoHtml(dosMarcadas);
+    expect(salida.match(/<tr class="opt rec">/g)).toHaveLength(1);
+    expect(salida.match(/class="caja destacada"/g)).toHaveLength(1);
+  });
 });
 
 describe("reglas de contenido que el generador GARANTIZA", () => {

@@ -174,13 +174,25 @@ export async function actualizarPresupuesto(
   entrada: PresupuestoEntrada,
 ): Promise<PresupuestoCompleto> {
   return prisma.$transaction(async (tx) => {
+    // `enviadoAt` se sella UNA vez. El editor manda el estado en cada guardado,
+    // así que con un `new Date()` a secas la fecha de envío se reescribía cada
+    // vez que se tocaba una coma de un presupuesto ya enviado: el documento
+    // diría que se mandó hoy, y la validez de 30 días se contaría desde el
+    // último retoque en vez de desde el envío.
+    const actual = await tx.presupuesto.findUnique({
+      where: { id },
+      select: { enviadoAt: true },
+    });
+    const selloDeEnvio =
+      entrada.estado === "ENVIADO" && !actual?.enviadoAt ? { enviadoAt: new Date() } : {};
+
     await tx.presupuestoPartida.deleteMany({ where: { presupuestoId: id } });
     return tx.presupuesto.update({
       where: { id },
       data: {
         ...campos(entrada),
         ...(entrada.estado ? { estado: entrada.estado } : {}),
-        ...(entrada.estado === "ENVIADO" ? { enviadoAt: new Date() } : {}),
+        ...selloDeEnvio,
         partidas: { create: partidasAnidadas(entrada) },
       },
       include: PRESUPUESTO_INCLUDE,

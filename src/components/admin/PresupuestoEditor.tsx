@@ -95,10 +95,16 @@ export function lineaVacia(tipo: TipoLinea = "PRODUCTO"): LineaForm {
   };
 }
 
-export function opcionVacia(nombre = "única"): OpcionForm {
+/**
+ * `recomendada` va por parámetro: la primera opción de una partida lo es, y la
+ * alternativa que se añade después NO. Con las dos a true —que es lo que
+ * pasaba— el documento salía con dos bloques marcados «RECOMENDADA» y el
+ * cliente no sabe cuál mirar, que es justo lo contrario de para lo que está.
+ */
+export function opcionVacia(nombre = "única", recomendada = true): OpcionForm {
   return {
     nombre,
-    recomendada: true,
+    recomendada,
     fotoProductoUrl: "",
     fotoMarcajeUrl: "",
     medidas: "",
@@ -742,7 +748,11 @@ export function PresupuestoEditor({
               editarPartida(iP, {
                 opciones: [
                   ...partida.opciones.map((o) => ({ ...o })),
-                  opcionVacia(`Opción ${String.fromCharCode(65 + partida.opciones.length)}`),
+                  opcionVacia(
+                    `Opción ${String.fromCharCode(65 + partida.opciones.length)}`,
+                    // La recomendada ya está elegida arriba; ésta es la alternativa.
+                    false,
+                  ),
                 ],
               })
             }

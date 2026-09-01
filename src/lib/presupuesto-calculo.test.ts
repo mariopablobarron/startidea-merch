@@ -230,3 +230,22 @@ describe("calcularEscenarios — los bloques de totales del documento", () => {
     expect(esc[0].totales.totalCents).toBe(0);
   });
 });
+
+describe("dos opciones marcadas como recomendada (datos viejos)", () => {
+  it("solo una manda: la primera", () => {
+    // El editor lo permitía al añadir una alternativa, así que puede haber
+    // presupuestos guardados así. Dos recomendaciones en el mismo documento
+    // dejan al cliente sin saber cuál mirar.
+    const esc = calcularEscenarios([
+      {
+        id: "p",
+        titulo: "Vasos",
+        opciones: [
+          { id: "a", nombre: "A", recomendada: true, lineas: [{ tipo: "PRODUCTO", cantidad: 10, costeUnitCents: 70, pvpUnitCents: 100 }] },
+          { id: "b", nombre: "B", recomendada: true, lineas: [{ tipo: "PRODUCTO", cantidad: 10, costeUnitCents: 35, pvpUnitCents: 50 }] },
+        ],
+      },
+    ]);
+    expect(esc.map((e) => e.recomendado)).toEqual([true, false]);
+  });
+});

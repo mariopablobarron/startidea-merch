@@ -221,7 +221,9 @@ export function calcularEscenarios(partidas: PartidaCalculo[]): Escenario[] {
       etiqueta: `Total con opción ${letra} · ${opcion.nombre}`,
       seleccion,
       totales: calcularOpcion([...restoLineas, ...opcion.lineas]),
-      recomendado: opcion.recomendada,
+      // Una sola recomendación: si vinieran dos marcadas, manda la primera,
+      // igual que en el documento.
+      recomendado: opcion === opcionPorDefecto(conAlternativas),
     };
   });
 }
