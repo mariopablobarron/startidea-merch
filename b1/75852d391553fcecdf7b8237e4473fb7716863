@@ -1,0 +1,19 @@
+src/lib/api-publica-sin-supplierref.guard.test.ts
+  s_6867893df8f9bd::t_1405a565b112e9 1-232
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "b175852d391553fcecdf7b8237e4473fb7716863",
+  "prompts": {},
+  "sessions": {
+    "s_6867893df8f9bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5174210b-db11-4f15-a23f-59f9b83cf38d",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
