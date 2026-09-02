@@ -1,0 +1,19 @@
+.github/workflows/supplier-leak-audit.yml
+  s_4200eff83dbd2f::t_2ead08c6f642d3 17-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "3bf60f6ab6049d5782ce20ae3b3aaa923dd4d7f8",
+  "prompts": {},
+  "sessions": {
+    "s_4200eff83dbd2f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e2de28d-892e-4a7e-8387-e1e24a76bc2c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
