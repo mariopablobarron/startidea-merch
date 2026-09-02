@@ -1,0 +1,23 @@
+.github/workflows/merch-status.yml
+  s_74c8d059561dde::t_34c7b3d1e89b33 8-12,18,43-48
+src/app/api/health/route.test.ts
+  s_74c8d059561dde::t_3a0bf2b31b7d3c 8-12,27-35,45-46,53,67,75,84,88-133
+src/app/api/health/route.ts
+  s_74c8d059561dde::t_3434bc9f369a91 1,5,24-33,35,50-62,69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "26016c7898604435b868f1f2df2521b6c0604538",
+  "prompts": {},
+  "sessions": {
+    "s_74c8d059561dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bf452263-eef5-423a-b22a-a4ec870fbdb8",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
