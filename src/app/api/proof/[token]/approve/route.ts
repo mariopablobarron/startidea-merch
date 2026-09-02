@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { midoceanProofs } from "@/lib/suppliers/midocean-orders";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -33,8 +33,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       // (el equipo creería que está en producción cuando MidOcean no lo registró).
       // (bug-bounty 2026-06-17)
       console.error("[proof approve] midocean error", r);
+      // El nombre del contacto lo teclea el cliente al pedir cotización ("Muñoz & Asoc.")
+      // y esta alerta es justo la que avisa de una desincronización con el proveedor:
+      // si Telegram la rechaza con 400 nadie se entera de que el proof quedó a medias.
       void notifyTelegram(
-        `⚠️ <b>Fallo al aprobar proof en MidOcean</b>\n${proof.cart.name} · cart <code>${proof.cartId.slice(0, 8)}</code>\nNO se ha marcado APPROVED local. Revisar/reintentar manualmente.`,
+        `⚠️ <b>Fallo al aprobar proof en MidOcean</b>\n${escapeTgHtml(proof.cart.name)} · cart <code>${proof.cartId.slice(0, 8)}</code>\nNO se ha marcado APPROVED local. Revisar/reintentar manualmente.`,
       ).catch((e) =>
         console.error("[proof approve] notifyTelegram (fallo midocean) falló:", e instanceof Error ? e.message : e),
       );
@@ -74,8 +77,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     at: new Date().toISOString(),
   });
 
+  // Nombre, empresa y email del cart los escribe el cliente en el formulario público;
+  // sin escapar, un "<sin empresa>" o un "&" tumba el aviso con 400 y el equipo no se
+  // entera de que hay que lanzar producción.
   void notifyTelegram(
-    `✅ <b>Mockup aprobado</b>\n${proof.cart.name}${proof.cart.company ? ` · ${proof.cart.company}` : ""}\n📧 ${proof.cart.email}\nCart <code>${proof.cartId.slice(0, 8)}</code> · pasamos producción a marcha`,
+    `✅ <b>Mockup aprobado</b>\n${escapeTgHtml(proof.cart.name)}${proof.cart.company ? ` · ${escapeTgHtml(proof.cart.company)}` : ""}\n📧 ${escapeTgHtml(proof.cart.email)}\nCart <code>${proof.cartId.slice(0, 8)}</code> · pasamos producción a marcha`,
   ).catch((e) =>
     console.error("[proof approve] notifyTelegram falló:", e instanceof Error ? e.message : e),
   );

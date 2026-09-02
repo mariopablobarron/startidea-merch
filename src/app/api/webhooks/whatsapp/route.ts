@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,8 +70,12 @@ export async function POST(req: Request) {
       for (const msg of value?.messages ?? []) {
         const from = msg.from || value?.contacts?.[0]?.wa_id || "?";
         const text = msg.type === "text" ? msg.text?.body || "" : `[${msg.type}]`;
+        // Todo esto lo controla quien escribe por WhatsApp: el nombre de perfil se lo
+        // pone él y el cuerpo del mensaje es texto libre de un desconocido. Un "&" o
+        // un "<3" bastan para que Telegram devuelva 400 y el mensaje entrante nunca
+        // llegue al equipo (nadie mira el booleano de notifyTelegram).
         void notifyTelegram(
-          `📲 <b>WhatsApp entrante</b>\n${name ? `${name} · ` : ""}+${from}\n${text.slice(0, 500)}`,
+          `📲 <b>WhatsApp entrante</b>\n${name ? `${escapeTgHtml(name)} · ` : ""}+${escapeTgHtml(from)}\n${escapeTgHtml(text.slice(0, 500))}`,
         ).catch((e) =>
           console.error("[webhooks-whatsapp] notifyTelegram falló:", e instanceof Error ? e.message : e),
         );

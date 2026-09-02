@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { suppressEmail } from "@/lib/outbound-email";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,8 +89,12 @@ export async function POST(req: Request) {
         .catch(() => {});
     }
     if (emails.length > 0) {
+      // Las direcciones vienen del payload de Resend, que a su vez las copia de
+      // lo que se recogió en el formulario: un `+` o un `&` en la parte local
+      // ("a&b@dominio.com") es legal en RFC 5322 y aquí rompería el HTML —
+      // Telegram devolvería 400 y nos quedaríamos sin saber a quién se suprimió.
       void notifyTelegram(
-        `🧹 <b>Lista curada</b> (${reason})\n${emails.length} email(s) a supresión: ${emails.join(", ").slice(0, 200)}`,
+        `🧹 <b>Lista curada</b> (${reason})\n${emails.length} email(s) a supresión: ${escapeTgHtml(emails.join(", ").slice(0, 200))}`,
       ).catch(() => {});
     }
   }

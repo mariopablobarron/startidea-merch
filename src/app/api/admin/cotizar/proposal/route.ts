@@ -3,7 +3,7 @@ import { z } from "zod";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { computeCotizacion, type CotizarInput } from "@/lib/cotizar-core";
 import { createProposalFromCotizacion } from "@/lib/proposal-from-cotizacion";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { withIva } from "@/lib/iva";
 
 export const runtime = "nodejs";
@@ -91,9 +91,12 @@ export async function POST(req: Request) {
   // Con itemOverride el total real es el editado a mano, no el calculado —
   // avisar del importe equivocado en Telegram sería peor que no avisar.
   const totalConIva = d.itemOverride ? withIva(d.itemOverride.totalCents) : quote.pvp.totalConIva;
+  // Nombre y empresa son texto libre que teclea quien cotiza ("Martín & Hijos"):
+  // sin escapar, Telegram responde 400 y el equipo no se entera de que se ha
+  // emitido una propuesta con importe.
   void notifyTelegram(
     `📄 <b>Propuesta ${result.proposalNumber}</b> creada desde el cotizador\n` +
-      `Cliente: ${d.name || d.company || d.email}\n` +
+      `Cliente: ${escapeTgHtml(d.name || d.company || d.email)}\n` +
       `Total: ${(totalConIva / 100).toFixed(2)} € (IVA inc.)${d.itemOverride ? " · precio editado a mano" : ""}\n` +
       `${d.send ? (result.emailed ? "✉️ Enviada por email" : "⚠️ Email FALLÓ — guardada igualmente") : "💾 Borrador (revisar y enviar en /admin/propuestas)"}`,
   ).catch((e) =>

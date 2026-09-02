@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
 import { sendEmail, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { markReferralEarned } from "@/lib/referral";
 import { recordCouponRedemption } from "@/lib/affiliates";
 import { autoPlaceMidoceanOrder } from "@/lib/midocean-auto-order";
@@ -321,8 +321,12 @@ async function postPaymentAutoflow(args: {
     .catch((err) => console.error("[stripe webhook affiliate-ledger]", err));
 
   const viaLabel = via === "express-checkout" ? " (Apple/Google Pay)" : "";
+  // Nombre, empresa y email los escribió el cliente en el formulario del
+  // carrito y viajan tal cual hasta aquí: "Fernández & Cía" convierte este
+  // aviso en un 400 de Telegram, y el aviso de que ha ENTRADO DINERO es el que
+  // menos nos podemos permitir perder (nadie mira el booleano que devuelve).
   void notifyTelegram(
-    `💰 <b>Pago recibido</b>${viaLabel}\n${customer.name}${customer.company ? ` · ${customer.company}` : ""}\n<b>${amountFmt} €</b>\n📧 ${customer.email}`,
+    `💰 <b>Pago recibido</b>${viaLabel}\n${escapeTgHtml(customer.name)}${customer.company ? ` · ${escapeTgHtml(customer.company)}` : ""}\n<b>${amountFmt} €</b>\n📧 ${escapeTgHtml(customer.email)}`,
   ).catch((e) =>
     console.error("[stripe webhook] notifyTelegram pago recibido falló:", e instanceof Error ? e.message : e),
   );

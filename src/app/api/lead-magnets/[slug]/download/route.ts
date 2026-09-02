@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { resend, RESEND_FROM } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -116,8 +116,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   }
 
   // Notificar a Telegram al equipo
+  // Email, nombre y empresa vienen del formulario de descarga (texto libre del
+  // visitante) y la campaña UTM llega en la URL, que la controla quien enlaza.
+  // El título del lead magnet lo escribe el admin, pero también es texto libre.
+  // Un solo `&` o `<` en cualquiera de ellos = 400 de Telegram y aviso perdido:
+  // aquí ni siquiera se lee el booleano que devuelve notifyTelegram.
   void notifyTelegram(
-    `📥 <b>Nuevo lead</b>\n${d.email}${d.name ? ` · ${d.name}` : ""}${d.company ? ` · ${d.company}` : ""}\nDescargó: ${magnet.title}${d.utm?.campaign ? `\nCampaña: ${d.utm.campaign}` : ""}`,
+    `📥 <b>Nuevo lead</b>\n${escapeTgHtml(d.email)}${d.name ? ` · ${escapeTgHtml(d.name)}` : ""}${d.company ? ` · ${escapeTgHtml(d.company)}` : ""}\nDescargó: ${escapeTgHtml(magnet.title)}${d.utm?.campaign ? `\nCampaña: ${escapeTgHtml(d.utm.campaign)}` : ""}`,
   ).catch(() => {});
 
   return NextResponse.json({

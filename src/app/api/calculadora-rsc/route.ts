@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { computeRoi, validateRoiInputs } from "@/lib/roi-calc";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -111,10 +111,14 @@ export async function POST(req: Request) {
   });
 
   // Alerta interna Telegram
+  // Nombre, empresa y email los teclea el visitante en el formulario público de la
+  // calculadora: un "Pérez & Hijos" o un "<sin empresa>" haría que Telegram devuelva
+  // 400 y el aviso del lead se perdiera en silencio (notifyTelegram solo devuelve
+  // res.ok y aquí nadie lo mira). Las cifras del cálculo son números: no hace falta.
   await notifyTelegram(
     `<b>📊 Nuevo lead calculadora ROI RSC</b>\n` +
-      `${data.name || "(sin nombre)"}${data.company ? ` · ${data.company}` : ""}\n` +
-      `${data.email}\n` +
+      `${escapeTgHtml(data.name) || "(sin nombre)"}${data.company ? ` · ${escapeTgHtml(data.company)}` : ""}\n` +
+      `${escapeTgHtml(data.email)}\n` +
       `Empleados: ${data.employees} · Presupuesto: ${data.annualBudgetEur}€/año · Sustitución: ${data.substitutionPct}%\n` +
       `Resultado: ${results.co2SavedKg} kg CO₂ · ${results.workHoursDignified} h trabajo digno`,
     { parseMode: "HTML" },

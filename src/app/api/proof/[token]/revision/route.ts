@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { midoceanProofs } from "@/lib/suppliers/midocean-orders";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -53,8 +53,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       .catch((err) => console.error("[proof revision] resend", err));
   }
 
+  // Nombre, empresa y email los teclea el cliente; la URL del artwork también la manda
+  // él en el body y suele traer query string (`?a=1&b=2`), así que el `&` es el caso
+  // NORMAL aquí, no el raro: sin escapar, Telegram devuelve 400 y el equipo no se
+  // entera de que hay artwork nuevo esperando.
   void notifyTelegram(
-    `🎨 <b>Artwork nuevo subido</b>\n${proof.cart.name}${proof.cart.company ? ` · ${proof.cart.company}` : ""}\n📧 ${proof.cart.email}\nURL: ${parsed.data.artworkUrl.slice(0, 100)}\nCart <code>${proof.cartId.slice(0, 8)}</code>`,
+    `🎨 <b>Artwork nuevo subido</b>\n${escapeTgHtml(proof.cart.name)}${proof.cart.company ? ` · ${escapeTgHtml(proof.cart.company)}` : ""}\n📧 ${escapeTgHtml(proof.cart.email)}\nURL: ${escapeTgHtml(parsed.data.artworkUrl.slice(0, 100))}\nCart <code>${proof.cartId.slice(0, 8)}</code>`,
   ).catch(() => {});
 
   return NextResponse.json({ ok: true, status: updated.status });

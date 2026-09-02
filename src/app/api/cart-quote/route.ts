@@ -483,10 +483,15 @@ function renderMarkings(it: {
   markings?: Array<{ techniqueName: string | null; techniqueCode?: string; positionId: string; numberOfColors: number }>;
 }): string {
   // Si hay array markings con más de 1, renderizamos lista. Si 1 o 0, usamos campos planos.
+  // `techniqueName` (max 120) y `positionId` (max 60) llegan en el MISMO body
+  // público que `name` o `message`, y esta celda acaba en el correo del buzón
+  // interno: es exactamente el agujero que se cerró para el resto de campos,
+  // sólo que con otro nombre (por eso el guard, que busca `\bname\b`, no lo ve).
+  // `humanZone` recolora y capitaliza el código, pero no toca los `<`.
   const list = it.markings && it.markings.length > 1
-    ? it.markings.map((m) => `${m.techniqueName || m.techniqueCode || "—"} en ${humanZone(m.positionId)}${m.numberOfColors > 1 ? ` · ${m.numberOfColors} col.` : ""}`)
+    ? it.markings.map((m) => `${escapeHtml(m.techniqueName || m.techniqueCode || "—")} en ${escapeHtml(humanZone(m.positionId))}${m.numberOfColors > 1 ? ` · ${m.numberOfColors} col.` : ""}`)
     : it.markingTechniqueName
-      ? [`${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}${it.markingColours && it.markingColours > 1 ? ` · ${it.markingColours} col.` : ""}`]
+      ? [`${escapeHtml(it.markingTechniqueName)} en ${escapeHtml(humanZone(it.markingPositionId))}${it.markingColours && it.markingColours > 1 ? ` · ${it.markingColours} col.` : ""}`]
       : [];
   if (list.length === 0) return "—";
   if (list.length === 1) return list[0];
@@ -509,12 +514,46 @@ type CartItemRow = {
   }>;
 };
 
+/**
+ * Esta ruta es PÚBLICA (sin sesión ni secreto, sólo rate limit) y el HTML que
+ * monta más abajo va al buzón interno del equipo (RESEND_TO_INTERNAL). Todo lo
+ * que entra en él —`name`, `company`, `phone`, `deadline`, `message`, y el
+ * `productName`/`productRef` de cada línea— lo escribe quien rellena el
+ * formulario, y el schema sólo le mira la longitud. Sin escapar, un `<a
+ * href="...">Ver pedido</a>` metido en el nombre sale como enlace real en el
+ * correo que abre quien atiende los pedidos: phishing dirigido, con nuestro
+ * remitente. La ruta hermana `save-for-later` ya escapaba así desde siempre.
+ */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Dentro de un atributo no basta con `escapeHtml`: una comilla cierra el valor
+ * y deja meter atributos nuevos (`" onclick="` o un `href` distinto) sin usar
+ * ningún `<`. Por eso el email del `mailto:` pasa por aquí y no por `escapeHtml`.
+ */
+function escapeAttr(s: string): string {
+  return escapeHtml(s).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+/**
+ * `phone` es texto libre de 40 caracteres: nada impide mandar
+ * `x" href="https://banco-falso.example` y quedarse con el `<a>` del equipo.
+ * Escapar no arregla un esquema de URL, así que sólo montamos el `tel:` cuando
+ * el valor es reconociblemente un teléfono (dígitos, `+`, espacios, guiones,
+ * puntos y paréntesis). Si no lo es, el texto sale igual pero sin enlace.
+ */
+function telHref(phone: string): string | null {
+  return /^[0-9+\-.\s()]{3,40}$/.test(phone) ? `tel:${phone.replace(/[^0-9+]/g, "")}` : null;
+}
+
 function internalCartHtml(cart: { id: string; name: string; company: string | null; email: string; phone: string | null; message: string | null; deadline: string | null; estimatedTotalCents: number | null; items: CartItemRow[] }): string {
   const rows = cart.items
     .map(
       (it) => `
       <tr>
-        <td style="padding:12px;border-bottom:1px solid #E8E2D5;">${it.productName}<br><small style="color:#6b6b6b">Ref. ${it.productRef}</small></td>
+        <td style="padding:12px;border-bottom:1px solid #E8E2D5;">${escapeHtml(it.productName)}<br><small style="color:#6b6b6b">Ref. ${escapeHtml(it.productRef)}</small></td>
         <td style="padding:12px;border-bottom:1px solid #E8E2D5;text-align:center;font-weight:600;">${it.quantity}</td>
         <td style="padding:12px;border-bottom:1px solid #E8E2D5;font-size:13px;color:#444;">${renderMarkings(it)}</td>
         <td style="padding:12px;border-bottom:1px solid #E8E2D5;text-align:right;font-weight:600;">${it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : "—"}</td>
@@ -522,19 +561,25 @@ function internalCartHtml(cart: { id: string; name: string; company: string | nu
     )
     .join("");
 
+  // El orden importa: escapamos PRIMERO y convertimos los saltos DESPUÉS. Al
+  // revés, el escape convertiría en `&lt;br&gt;` los `<br>` recién metidos, y
+  // habría que dejar el `<` crudo — justo el agujero que estamos cerrando.
+  const mensajeHtml = cart.message ? escapeHtml(cart.message).replace(/\n/g, "<br>") : "";
+  const tel = cart.phone ? telHref(cart.phone) : null;
+
   return `
     <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:24px 12px;">
       <div style="max-width:680px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
         <div style="background:#2A2A2A;padding:20px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(244,239,230,0.6);">— Admin · Cotización nueva</p>
-          <h1 style="margin:6px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#FFFFFF;">${cart.name}${cart.company ? ` · ${cart.company}` : ""}</h1>
+          <h1 style="margin:6px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#FFFFFF;">${escapeHtml(cart.name)}${cart.company ? ` · ${escapeHtml(cart.company)}` : ""}</h1>
         </div>
         <div style="padding:24px;">
           <p style="margin:0;font-size:14px;color:#444;">
-            <a href="mailto:${cart.email}" style="color:#E63E73;text-decoration:none;">${cart.email}</a>${cart.phone ? ` · <a href="tel:${cart.phone}" style="color:#E63E73;text-decoration:none;">${cart.phone}</a>` : ""}
+            <a href="mailto:${escapeAttr(cart.email)}" style="color:#E63E73;text-decoration:none;">${escapeHtml(cart.email)}</a>${cart.phone ? ` · ${tel ? `<a href="${escapeAttr(tel)}" style="color:#E63E73;text-decoration:none;">${escapeHtml(cart.phone)}</a>` : escapeHtml(cart.phone)}` : ""}
           </p>
-          ${cart.deadline ? `<p style="margin:8px 0 0;font-size:14px;color:#444;">⏰ Fecha límite cliente: <strong>${cart.deadline}</strong></p>` : ""}
-          ${cart.message ? `<div style="margin-top:16px;background:#F4EFE6;border-left:3px solid #E63E73;padding:14px 16px;border-radius:8px;font-size:14px;line-height:1.5;color:#2A2A2A;">${cart.message.replace(/\n/g, "<br>")}</div>` : ""}
+          ${cart.deadline ? `<p style="margin:8px 0 0;font-size:14px;color:#444;">⏰ Fecha límite cliente: <strong>${escapeHtml(cart.deadline)}</strong></p>` : ""}
+          ${mensajeHtml ? `<div style="margin-top:16px;background:#F4EFE6;border-left:3px solid #E63E73;padding:14px 16px;border-radius:8px;font-size:14px;line-height:1.5;color:#2A2A2A;">${mensajeHtml}</div>` : ""}
 
           <table style="width:100%;border-collapse:collapse;margin-top:24px;">
             <thead>
@@ -566,17 +611,23 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
   const itemsHtml = cart.items
     .map(
       (it) => {
+        // Este correo lo lee el propio cliente, así que aquí no hay a quién
+        // suplantar; pero `techniqueName` y `positionId` los escribe él en el
+        // mismo body público (MarkingSchema: texto libre de 120 y 60), y sin
+        // escapar un "&" o un "<" le rompen la maquetación de su propio email.
+        // Va como comentario de JS, no HTML: dentro del template viajaría en el
+        // correo enviado.
         const marksText = it.markings && it.markings.length > 1
           ? it.markings
-              .map((m) => `${m.techniqueName || ""} en ${humanZone(m.positionId)}`)
+              .map((m) => `${escapeHtml(m.techniqueName || "")} en ${escapeHtml(humanZone(m.positionId))}`)
               .join(" · ")
           : it.markingTechniqueName
-            ? `${it.markingTechniqueName} en ${humanZone(it.markingPositionId)}`
+            ? `${escapeHtml(it.markingTechniqueName)} en ${escapeHtml(humanZone(it.markingPositionId))}`
             : "sin marcaje";
         return `
       <tr>
         <td style="padding:14px 0;border-bottom:1px solid #E8E2D5;font-size:14px;line-height:1.4;">
-          <strong style="color:#2A2A2A;">${it.productName}</strong><br>
+          <strong style="color:#2A2A2A;">${escapeHtml(it.productName)}</strong><br>
           <span style="color:#6b6b6b;font-size:12px;">
             ${it.quantity} uds · ${marksText}
           </span>

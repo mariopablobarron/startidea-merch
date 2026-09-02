@@ -13,7 +13,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
 export type MakitoAutoOrderResult =
@@ -63,28 +63,39 @@ export async function autoPlaceMakitoOrder(cartId: string): Promise<MakitoAutoOr
   // Validación dirección
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
     await notifyTelegram(
-      `⚠️ <b>Pago recibido sin dirección completa (Makito)</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
+      // `cart.name` lo teclea el cliente ("Fernández & Cía"): sin escapar,
+      // Telegram devuelve 400 y se pierde el aviso de un pago cobrado cuyo
+      // pedido no puede salir.
+      `⚠️ <b>Pago recibido sin dirección completa (Makito)</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
     ).catch(() => {});
     return { skipped: true, reason: "Falta dirección de envío" };
   }
 
-  // Construir desglose para Telegram
+  // Construir desglose para Telegram.
+  //
+  // Todo lo que sale de `cart` (nombre, empresa, email, teléfono, dirección)
+  // lo teclea el cliente en el formulario de presupuesto, sin validación de
+  // caracteres: un "Fernández & Cía" o un "C/ Mayor 3 <bajo>" hace que
+  // Telegram rechace el mensaje con 400. Y este mensaje es el pedido: Makito
+  // no tiene API, si no llega el aviso nadie cursa la compra.
   const lines = [
     `🚨 <b>PEDIDO MAKITO · ACCIÓN MANUAL</b>`,
     `Cart <code>${cart.id.slice(0, 8)}</code>`,
-    `Cliente: ${cart.name}${cart.company ? " · " + cart.company : ""}`,
-    `Email: ${cart.email}${cart.phone ? " · " + cart.phone : ""}`,
+    `Cliente: ${escapeTgHtml(cart.name)}${cart.company ? " · " + escapeTgHtml(cart.company) : ""}`,
+    `Email: ${escapeTgHtml(cart.email)}${cart.phone ? " · " + escapeTgHtml(cart.phone) : ""}`,
     ``,
     `<b>Envío a:</b>`,
-    `  ${cart.shippingAddress}`,
-    `  ${cart.shippingPostalCode} ${cart.shippingCity}${cart.shippingCountry ? " (" + cart.shippingCountry + ")" : ""}`,
+    `  ${escapeTgHtml(cart.shippingAddress)}`,
+    `  ${escapeTgHtml(cart.shippingPostalCode)} ${escapeTgHtml(cart.shippingCity)}${cart.shippingCountry ? " (" + escapeTgHtml(cart.shippingCountry) + ")" : ""}`,
     ``,
     `<b>Items (${makitoItems.length}):</b>`,
   ];
   for (const [index, it] of makitoItems.entries()) {
     const ref = supplierVariants.items[index].sku;
-    const marking = it.markingTechniqueName ? ` · marcaje ${it.markingTechniqueName}` : "";
-    lines.push(`  · ${it.quantity}× <code>${ref}</code> — ${it.productName}${marking}`);
+    // El nombre de producto y el de la técnica de marcaje vienen del feed de
+    // Makito, donde `&` es habitual ("Bolígrafo & lápiz", "Serigrafía 1+1").
+    const marking = it.markingTechniqueName ? ` · marcaje ${escapeTgHtml(it.markingTechniqueName)}` : "";
+    lines.push(`  · ${it.quantity}× <code>${escapeTgHtml(ref)}</code> — ${escapeTgHtml(it.productName)}${marking}`);
   }
   lines.push("");
   lines.push(`<b>Total cliente:</b> ${(makitoPO.totalClientCents / 100).toFixed(2)} €`);

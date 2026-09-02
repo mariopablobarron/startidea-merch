@@ -26,6 +26,18 @@ const EMAIL = process.env.MAKITO_API_EMAIL || "";
 const PASSWORD = process.env.MAKITO_API_PASSWORD || "";
 const FEED_TOKEN = process.env.MAKITO_FEED_TOKEN || "";
 
+/**
+ * Tope de tiempo para CUALQUIER descarga contra Makito (API REST y feeds XML).
+ *
+ * Sin `signal`, un `fetch` cuyo servidor acepta la conexión y luego gotea (o
+ * calla) se queda colgado indefinidamente: la promesa ni resuelve ni rechaza,
+ * así que el `catch` del sync nunca corre y el cron se queda mudo horas. El
+ * feed de productos son 17 MB desde un servidor de terceros que no controlamos,
+ * de ahí que el tope sea holgado (10 min) y no un timeout de request normal:
+ * queremos cortar el cuelgue infinito, no abortar una descarga lenta legítima.
+ */
+export const FEED_TIMEOUT_MS = 10 * 60_000;
+
 // ─── Auth token cache (in-memory por proceso) ────────────────────────────
 let cachedToken: { token: string; obtainedAt: number } | null = null;
 const TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min · Sanctum no expira pero rotamos
@@ -81,6 +93,9 @@ async function callApi<T>(
         ...(init.body ? { "Content-Type": "application/json" } : {}),
       },
       body: init.body ? JSON.stringify(init.body) : undefined,
+      // Mismo motivo que en los feeds: sin signal, un data.makito.es que no
+      // contesta deja colgado al llamante (el sync hace miles de estas).
+      signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
     });
   }
   let token = await getToken();
@@ -104,7 +119,12 @@ async function fetchFeedXml(endpoint: string): Promise<string> {
   if (!FEED_TOKEN) throw new Error("MAKITO_FEED_TOKEN no configurado");
   const sep = endpoint.includes("?") ? "&" : "?";
   const url = `${FEED_BASE}${endpoint}${sep}pszinternal=${FEED_TOKEN}`;
-  const res = await fetch(url, { headers: { Accept: "application/xml,text/xml" } });
+  const res = await fetch(url, {
+    headers: { Accept: "application/xml,text/xml" },
+    // print.makito.es es de un tercero: si acepta la conexión y luego se
+    // queda callado, sin este signal el cron de sync espera para siempre.
+    signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
+  });
   if (!res.ok) {
     throw new Error(`Makito feed ${endpoint} → ${res.status}`);
   }

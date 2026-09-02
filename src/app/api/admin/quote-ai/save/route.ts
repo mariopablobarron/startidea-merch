@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/admin-auth";
 import { sendEmail } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import {
   emailShell,
   emailHeader,
@@ -162,8 +162,11 @@ export async function POST(req: Request) {
   }
 
   // Telegram al equipo
+  // El nombre y la empresa del cliente los teclea quien cotiza (o los propone
+  // la IA a partir del texto del cliente): un `&` o un `<` sin escapar hace que
+  // Telegram devuelva 400 y el equipo no vea la cotización ni el link de pago.
   void notifyTelegram(
-    `✨ <b>Cotización IA guardada</b>\n${data.customerName}${data.customerCompany ? ` · ${data.customerCompany}` : ""}\n${data.lines.length} líneas · <b>${EUR.format(totalCents / 100)}</b>${paymentLinkToken ? "\n💳 Link de pago activo" : ""}\nCart <code>${cart.id.slice(0, 8)}</code>`,
+    `✨ <b>Cotización IA guardada</b>\n${escapeTgHtml(data.customerName)}${data.customerCompany ? ` · ${escapeTgHtml(data.customerCompany)}` : ""}\n${data.lines.length} líneas · <b>${EUR.format(totalCents / 100)}</b>${paymentLinkToken ? "\n💳 Link de pago activo" : ""}\nCart <code>${cart.id.slice(0, 8)}</code>`,
   ).catch((e) =>
     console.error("[quote-ai-save] notifyTelegram falló:", e instanceof Error ? e.message : e),
   );

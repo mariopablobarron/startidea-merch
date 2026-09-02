@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { midoceanProofs } from "@/lib/suppliers/midocean-orders";
 import { resend, RESEND_FROM, RESEND_TO_INTERNAL } from "@/lib/resend";
 import { emitWebhook } from "@/lib/webhooks";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -63,8 +63,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     at: new Date().toISOString(),
   });
 
+  // Nombre/empresa/email salen del formulario del cliente y el motivo lo redacta él
+  // mismo al rechazar ("el logo sale < que en la muestra", "Pérez & Cía"). Sin escapar,
+  // Telegram responde 400 y el rechazo —el aviso más urgente de todos— se pierde en
+  // silencio: notifyTelegram devuelve res.ok y aquí solo se captura la excepción.
   void notifyTelegram(
-    `❌ <b>Mockup rechazado</b>\n${proof.cart.name}${proof.cart.company ? ` · ${proof.cart.company}` : ""}\n📧 ${proof.cart.email}\nMotivo: <i>${parsed.data.reason.slice(0, 200)}</i>\nCart <code>${proof.cartId.slice(0, 8)}</code>`,
+    `❌ <b>Mockup rechazado</b>\n${escapeTgHtml(proof.cart.name)}${proof.cart.company ? ` · ${escapeTgHtml(proof.cart.company)}` : ""}\n📧 ${escapeTgHtml(proof.cart.email)}\nMotivo: <i>${escapeTgHtml(parsed.data.reason.slice(0, 200))}</i>\nCart <code>${proof.cartId.slice(0, 8)}</code>`,
   ).catch((e) =>
     console.error("[proof reject] notifyTelegram falló:", e instanceof Error ? e.message : e),
   );

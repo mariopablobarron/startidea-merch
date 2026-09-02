@@ -26,7 +26,7 @@ import { meiliEnabled, reindexAllProducts } from "@/lib/search/meili";
 import { Prisma } from "@prisma/client";
 import { colorGroupFromName, canonicalColorGroup } from "@/lib/variant-grouping";
 import { createSyncBreaker } from "@/lib/sync-circuit-breaker";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import {
   fetchProducts,
   fetchPriceTiers,
@@ -397,7 +397,11 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
     const pricelistErrors = errors.filter((er) => er.ref.startsWith("pricelist:"));
     if (pricelistErrors.length > 0) {
       void notifyTelegram(
-        `⚠️ cifra-sync: ${pricelistErrors.length} tramos de precio fallaron (ej. ${pricelistErrors[0].ref}) — revisa /admin/suppliers`,
+        // El `ref` es `pricelist:<model>@<qty>` y el model viene del feed de
+        // Cifra: un `&` en el código de modelo tumba el aviso de precios
+        // stale, que es justo el que avisa de que estamos vendiendo con la
+        // tarifa vieja.
+        `⚠️ cifra-sync: ${pricelistErrors.length} tramos de precio fallaron (ej. ${escapeTgHtml(pricelistErrors[0].ref)}) — revisa /admin/suppliers`,
       ).catch((err) =>
         console.error("[cifra-sync] notifyTelegram falló:", err instanceof Error ? err.message : err),
       );
@@ -408,7 +412,9 @@ export async function runCifraSync(): Promise<CifraSyncResult> {
       message: e instanceof Error ? e.message : String(e),
     });
     void notifyTelegram(
-      `⚠️ cifra-sync: pricelist completo falló: ${(e instanceof Error ? e.message : String(e)).slice(0, 150)}`,
+      // El mensaje de excepción puede ser el cuerpo HTML devuelto por la API
+      // de Cifra cuando responde 5xx: empieza literalmente por `<`.
+      `⚠️ cifra-sync: pricelist completo falló: ${escapeTgHtml((e instanceof Error ? e.message : String(e)).slice(0, 150))}`,
     ).catch((err) =>
       console.error("[cifra-sync] notifyTelegram falló:", err instanceof Error ? err.message : err),
     );

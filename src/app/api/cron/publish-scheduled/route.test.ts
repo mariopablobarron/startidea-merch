@@ -51,7 +51,10 @@ vi.mock("@/lib/metricool", () => ({
     channel === "EMAIL" || channel === "WEB" ? null : channel.toLowerCase(),
 }));
 
-vi.mock("@/lib/telegram", () => ({ notifyTelegram: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/telegram", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/telegram")>()),
+  notifyTelegram: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock("@/lib/auth", () => ({
   requireCronSecret: (...a: unknown[]) => requireCronSecret(...a),

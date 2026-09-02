@@ -20,7 +20,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { createOrder, type CifraOrderPayload } from "@/lib/suppliers/cifra";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { provinciaFromPostalCodeOrCity } from "@/lib/spain-postal-code";
 import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
@@ -104,7 +104,11 @@ async function cursarPedidoCifra(
   // Validación dirección
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
     await notifyTelegram(
-      `⚠️ <b>Pago recibido sin dirección completa (Cifra)</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
+      // `cart.name` lo teclea el cliente en el formulario de presupuesto:
+      // "Fernández & Cía" o "<sin empresa>" bastan para que Telegram devuelva
+      // 400. Este aviso es el único que dice que hay un pago cobrado sin
+      // dirección; perderlo significa dinero cobrado y pedido sin salir.
+      `⚠️ <b>Pago recibido sin dirección completa (Cifra)</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
     ).catch(() => {});
     return { skipped: true, reason: "Falta dirección de envío" };
   }
@@ -168,7 +172,8 @@ async function cursarPedidoCifra(
       },
     });
     await notifyTelegram(
-      `📦 <b>Pedido enviado a Cifra</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nCifra order: <code>${orderId}</code>`,
+      // Mismo `cart.name` del cliente (ver arriba).
+      `📦 <b>Pedido enviado a Cifra</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\nCifra order: <code>${orderId}</code>`,
     ).catch(() => {});
     return { ok: true, orderId };
   } catch (e) {
@@ -181,7 +186,9 @@ async function cursarPedidoCifra(
       },
     });
     await notifyTelegram(
-      `❌ <b>Cifra rechazó el pedido</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\n${errMsg.slice(0, 200)}`,
+      // Además del nombre del cliente, `errMsg` viene de la API de Cifra y
+      // puede traer un cuerpo HTML de error o un JSON con comillas y `&`.
+      `❌ <b>Cifra rechazó el pedido</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\n${escapeTgHtml(errMsg.slice(0, 200))}`,
     ).catch(() => {});
     return { ok: false, error: errMsg };
   }

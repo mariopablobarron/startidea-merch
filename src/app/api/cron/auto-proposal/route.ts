@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { wrapCronHandler } from "@/lib/cron-tracking";
 import { draftProposalFromCart } from "@/lib/auto-proposal";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { notifyAdmins } from "@/lib/notify-admin";
 
 export const runtime = "nodejs";
@@ -78,7 +78,10 @@ export const POST = wrapCronHandler("auto-proposal", async (req: Request) => {
         data: { autoProposalId: draft.proposalId },
       });
 
-      const who = `${cart.name}${cart.company ? ` · ${cart.company}` : ""}`;
+      // name/company los teclea el cliente en el formulario del carrito: una empresa
+      // como "Pérez & Hijos" o "<Sin nombre>" haría que Telegram devolviera 400 y el
+      // aviso del borrador se perdiera en silencio (notifyTelegram no lanza, devuelve false).
+      const who = `${escapeTgHtml(cart.name)}${cart.company ? ` · ${escapeTgHtml(cart.company)}` : ""}`;
       void notifyTelegram(
         `🤖 <b>Propuesta borrador lista</b> (${draft.proposalNumber})\n` +
           `${who}\n` +
@@ -103,7 +106,10 @@ export const POST = wrapCronHandler("auto-proposal", async (req: Request) => {
       // No des-reclamamos: evita reintentos infinitos + spam. Avisamos del fallo
       // para que el admin lo haga a mano si hace falta.
       void notifyTelegram(
-        `⚠️ <b>auto-proposal FALLÓ</b>\nCart ${cart.id.slice(0, 8)} · ${cart.name}\n${msg.slice(0, 200)}`,
+        // Igual aquí: el nombre del cliente y el mensaje de error (puede traer SQL o
+        // HTML del proveedor) son texto libre; sin escapar, el aviso del fallo
+        // sería justo el que se pierde.
+        `⚠️ <b>auto-proposal FALLÓ</b>\nCart ${cart.id.slice(0, 8)} · ${escapeTgHtml(cart.name)}\n${escapeTgHtml(msg.slice(0, 200))}`,
       ).catch((e) =>
         console.error("[auto-proposal] notifyTelegram (aviso de fallo) falló:", e instanceof Error ? e.message : e),
       );

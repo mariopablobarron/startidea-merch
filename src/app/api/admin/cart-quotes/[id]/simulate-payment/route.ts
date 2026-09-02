@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { createPurchaseOrdersFromCart } from "@/lib/purchase-orders";
 import { sendEmail } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { syncPaymentToFacturaScripts } from "@/lib/facturascripts-sync";
 
 export const runtime = "nodejs";
@@ -122,13 +122,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   });
 
   // 5) Alerta Telegram
+  // `cart.name` lo escribió el cliente al pedir presupuesto y el error de email
+  // lo devuelve Resend (mensajes con comillas y `<dirección>`): sin escapar,
+  // Telegram responde 400 y la simulación parece haber salido sin avisar.
   await notifyTelegram(
     `🧪 <b>Simulación de pago disparada</b>\n` +
-      `Cart <code>${cart.id.slice(0, 8)}</code> · ${cart.name}\n` +
+      `Cart <code>${cart.id.slice(0, 8)}</code> · ${escapeTgHtml(cart.name)}\n` +
       `Importe simulado: <b>${(amountCents / 100).toFixed(2)} €</b>\n` +
       `POs creados: ${purchaseOrders.length} (${purchaseOrders.map((p) => p.supplier).join(", ")})\n` +
-      `Email: ${emailResult.ok ? "✓" : "✗ " + (emailResult.error || "")}\n` +
-      `Por: ${session.email}`,
+      `Email: ${emailResult.ok ? "✓" : "✗ " + escapeTgHtml(emailResult.error || "")}\n` +
+      `Por: ${escapeTgHtml(session.email)}`,
     { parseMode: "HTML" },
   ).catch((e) =>
     console.error("[simulate-payment] notifyTelegram falló:", e instanceof Error ? e.message : e),

@@ -62,7 +62,8 @@ vi.mock("@/lib/suppliers/midocean-orders", () => ({
   },
 }));
 
-vi.mock("@/lib/telegram", () => ({
+vi.mock("@/lib/telegram", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/telegram")>()),
   notifyTelegram: (...a: unknown[]) => notifyTelegramMock(...a),
 }));
 

@@ -7,7 +7,7 @@ import {
   publishToMetricool,
   contentChannelToMetricool,
 } from "@/lib/metricool";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { wrapCronHandler } from "@/lib/cron-tracking";
 import { withCronLock } from "@/lib/cron-lock";
 
@@ -169,7 +169,10 @@ export const POST = wrapCronHandler("publish-scheduled", async (req: Request) =>
   // Notificar a Telegram si algo se publicó o falló
   if (published > 0 || failed > 0) {
     void notifyTelegram(
-      `📢 <b>Publicación auto</b>\n${published} OK · ${failed} fallidos${errors.length > 0 ? `\n${errors.slice(0, 3).join("\n")}` : ""}`,
+      // errors[] lleva el mensaje crudo que devuelve Metricool, texto libre de un
+      // tercero que puede traer "<" o "&". Se escapa solo aquí (no en el array) para
+      // no alterar lo que devuelve el JSON de la respuesta.
+      `📢 <b>Publicación auto</b>\n${published} OK · ${failed} fallidos${errors.length > 0 ? `\n${errors.slice(0, 3).map((e) => escapeTgHtml(e)).join("\n")}` : ""}`,
     ).catch((e) =>
       console.error("[publish-scheduled] notifyTelegram falló:", e instanceof Error ? e.message : e),
     );

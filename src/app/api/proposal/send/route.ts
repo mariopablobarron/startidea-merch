@@ -33,7 +33,7 @@ import { generateProposalNumber } from "@/lib/proposal-number";
 import { signProposalToken } from "@/lib/proposal-token";
 import { RecommenderProposalPdf } from "@/lib/recommender-proposal-pdf";
 import { sendProposalEmail } from "@/lib/proposal-mailer";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { notifyAdmins } from "@/lib/notify-admin";
 import { isNotificationEnabled } from "@/lib/notification-rules";
 import type { Prisma } from "@prisma/client";
@@ -150,10 +150,13 @@ export async function POST(req: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     void notifyTelegram(
+      // email lo teclea el cliente y `message` es el error crudo del renderer de PDF
+      // (suele traer fragmentos de JSX/HTML con "<"): sin escapar, Telegram devuelve 400
+      // y nos quedamos sin saber que una propuesta se quedó sin enviar.
       `⚠️ <b>Propuesta PDF render FALLÓ</b>\n` +
         `Propuesta: ${proposalNumber}\n` +
-        `To: ${parsed.email}\n` +
-        `Error: ${message.slice(0, 300)}`,
+        `To: ${escapeTgHtml(parsed.email)}\n` +
+        `Error: ${escapeTgHtml(message.slice(0, 300))}`,
     ).catch((e) =>
       console.error("[proposal-send] notifyTelegram (aviso PDF fallido) falló:", e instanceof Error ? e.message : e),
     );
@@ -264,11 +267,14 @@ export async function POST(req: Request) {
   })();
 
   // 7. Notificar a admin (Telegram + push browser)
+  // name/company/email los rellena el cliente en el formulario del recomendador; una
+  // empresa como "Pérez & Hijos" bastaba para que el aviso de propuesta enviada se
+  // perdiera en silencio. `summary` solo se usa para el mensaje de Telegram.
   const summary =
     `Nº: ${proposalNumber}\n` +
-    `A: ${parsed.email}` +
-    (parsed.name ? ` (${parsed.name})` : "") +
-    (parsed.company ? ` · ${parsed.company}` : "") +
+    `A: ${escapeTgHtml(parsed.email)}` +
+    (parsed.name ? ` (${escapeTgHtml(parsed.name)})` : "") +
+    (parsed.company ? ` · ${escapeTgHtml(parsed.company)}` : "") +
     `\n` +
     `Total: ${(totals.totalCents / 100).toFixed(2)}€ (IVA incl.)\n` +
     `Items: ${items.length}`;

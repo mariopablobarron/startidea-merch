@@ -13,7 +13,8 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("@/lib/telegram", () => ({
+vi.mock("@/lib/telegram", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/telegram")>()),
   notifyTelegram: (...args: unknown[]) => notifyTelegram(...args),
 }));
 

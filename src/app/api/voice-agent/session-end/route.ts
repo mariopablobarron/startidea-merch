@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
-import { notifyTelegram } from "@/lib/telegram";
+import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -116,7 +116,11 @@ async function notifyTranscript(d: z.infer<typeof Schema>, sourceUrl: string | n
   // hace falta un segundo mensaje vacío.
   if (transcript.length === 0) return;
 
-  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // Todo lo interpolado aquí es texto libre ajeno: la transcripción la dicta
+  // quien habla con David ("¿tenéis tazas <500 unidades?"), la página sale del
+  // Referer del navegador y los slugs vienen de la tool call del agente. Con un
+  // `<`, `>` o `&` sin escapar Telegram responde 400 y perdemos la conversación
+  // entera, que es justo lo que este aviso existe para traer.
   const page = (() => {
     if (!sourceUrl) return null;
     try {
@@ -129,9 +133,9 @@ async function notifyTranscript(d: z.infer<typeof Schema>, sourceUrl: string | n
   const tools = (d.tools_called || []).map((t) => t.tool);
   const header =
     `🎙️ <b>Conversación con David terminada</b> — ${mins}m ${d.duration_sec % 60}s` +
-    (page ? `\n📍 ${esc(page)}` : "") +
-    (tools.length ? `\n🔧 ${esc([...new Set(tools)].join(", "))}` : "") +
-    (d.product_slugs_discussed?.length ? `\n📦 ${esc(d.product_slugs_discussed.join(", "))}` : "") +
+    (page ? `\n📍 ${escapeTgHtml(page)}` : "") +
+    (tools.length ? `\n🔧 ${escapeTgHtml([...new Set(tools)].join(", "))}` : "") +
+    (d.product_slugs_discussed?.length ? `\n📦 ${escapeTgHtml(d.product_slugs_discussed.join(", "))}` : "") +
     `\n\n📝 <b>Transcripción</b>${source === "widget" ? " (del widget)" : ""}:`;
 
   // Telegram limita a 4096 chars/mensaje: troceamos con techo anti-spam.
@@ -140,7 +144,7 @@ async function notifyTranscript(d: z.infer<typeof Schema>, sourceUrl: string | n
   const chunks: string[] = [];
   let current = header;
   for (const m of transcript) {
-    const line = `${m.role === "user" ? "👤" : "💬"} ${esc(m.text)}`;
+    const line = `${m.role === "user" ? "👤" : "💬"} ${escapeTgHtml(m.text)}`;
     if (current.length + line.length + 1 > MAX_CHUNK) {
       chunks.push(current);
       current = line;

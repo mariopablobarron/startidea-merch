@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { resend, MARKETING_FROM, MARKETING_REPLY_TO } from "@/lib/resend";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { resolveAudience } from "@/lib/broadcast-audience";
 import { emailShell } from "@/lib/email-templates";
 
@@ -120,7 +120,11 @@ export async function sendBroadcast(id: string): Promise<SendBroadcastResult> {
       `⚠️ <b>Broadcast con ${failedCount}/${recipients.length} fallos (${Math.round(
         (failedCount / recipients.length) * 100,
       )}%)</b>\n` +
-        `Asunto: ${broadcast.subject.slice(0, 100)}\n` +
+        // El asunto lo escribe el admin en /admin/marketing/broadcasts y suele
+        // llevar `&` ("Ofertas & novedades"). Sin escapar, Telegram devuelve
+        // 400 y este aviso —el único que dice que medio broadcast falló— se
+        // pierde sin que nadie lo note.
+        `Asunto: ${escapeTgHtml(broadcast.subject.slice(0, 100))}\n` +
         `Broadcast ID: <code>${id}</code>\n` +
         `Audiencia: ${broadcast.audience}\n\n` +
         `Revisa /admin/marketing/broadcasts/${id} y los deliveries en BD.`,

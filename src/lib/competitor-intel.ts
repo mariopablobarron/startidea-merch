@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { computeCotizacion } from "@/lib/cotizar-core";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 
 /**
  * Inteligencia de competencia — 🔒 SOLO USO INTERNO.
@@ -574,8 +574,13 @@ export async function runCompetitorWatch(limit = 8): Promise<{
       if (a.recomendacion.accion === "SUBIR" || a.recomendacion.accion === "BAJAR") {
         accionables++;
         lines.push(
-          `${a.recomendacion.accion === "SUBIR" ? "📈 SUBIR" : "📉 BAJAR"} <b>${a.producto}</b> (${a.ref})\n` +
-            `  nuestro ${a.nuestro.pvp_unit}/ud (margen ${a.nuestro.margen_pct}) · ${a.recomendacion.detalle}`,
+          // `a.producto` es el nombre tal cual llega del feed del proveedor
+          // (MidOcean/Makito/Cifra), donde `&` es común ("Set bolígrafo & libreta"),
+          // y `detalle` incorpora el nombre del competidor configurado. Con
+          // parse_mode=HTML, cualquiera de los dos tumba el aviso entero: se
+          // perderían TODAS las recomendaciones de precio del ciclo, no solo la suya.
+          `${a.recomendacion.accion === "SUBIR" ? "📈 SUBIR" : "📉 BAJAR"} <b>${escapeTgHtml(a.producto)}</b> (${a.ref})\n` +
+            `  nuestro ${a.nuestro.pvp_unit}/ud (margen ${a.nuestro.margen_pct}) · ${escapeTgHtml(a.recomendacion.detalle)}`,
         );
       }
     } catch (e) {

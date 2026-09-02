@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/auth";
 import { wrapCronHandler } from "@/lib/cron-tracking";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { evaluarDrift } from "@/lib/override-drift";
 
 export const runtime = "nodejs";
@@ -93,7 +93,10 @@ export const POST = wrapCronHandler("override-price-drift", async (req: Request)
       .slice(0, 15)
       .map(
         (d) =>
-          `${d.belowCost ? "🔴" : "🟠"} ${d.name} (${d.slug}): PVP ${(d.clientCents / 100).toFixed(2)}€ vs neto ${(d.netCents / 100).toFixed(2)}€ → ×${d.ratio}`,
+          // El nombre viene del feed del proveedor (MidOcean/Makito) y trae "&" y "<>"
+          // con frecuencia ("Bolígrafo <negro> & azul"): sin escapar, Telegram responde
+          // 400 y el aviso de precios bajo coste no llega a nadie.
+          `${d.belowCost ? "🔴" : "🟠"} ${escapeTgHtml(d.name)} (${escapeTgHtml(d.slug)}): PVP ${(d.clientCents / 100).toFixed(2)}€ vs neto ${(d.netCents / 100).toFixed(2)}€ → ×${d.ratio}`,
       )
       .join("\n");
     void notifyTelegram(

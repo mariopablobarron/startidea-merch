@@ -38,6 +38,47 @@ const RequestSchema = z.object({
   sourceUrl: z.string().max(500).optional().nullable(),
 });
 
+/**
+ * Esta ruta es PÚBLICA (sin sesión ni secreto, sólo rate limit) y el aviso
+ * interno de más abajo va al buzón del equipo (NOTIFY_INTERNAL_EMAIL,
+ * pedidos@startidea.es). `name`, `company`, `phone` y `sourceUrl` los escribe
+ * quien rellena el formulario del producto y el schema sólo les mira la
+ * longitud: sin escapar, un `<a href="…">` metido en el nombre llega como
+ * enlace de verdad al correo que abre quien atiende los pedidos. El aviso de
+ * Telegram de esta misma ruta ya pasaba todo por `escapeTgHtml`; el email se
+ * quedó sin su equivalente.
+ */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Dentro de un atributo `escapeHtml` no basta: una comilla cierra el valor y
+ * deja añadir atributos nuevos sin necesidad de ningún `<`.
+ */
+function escapeAttr(s: string): string {
+  return escapeHtml(s).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+/**
+ * `sourceUrl` es la ficha desde la que se pidió el mockup, pero llega como
+ * texto libre de 500 caracteres: vale cualquier cosa, incluido un dominio de
+ * phishing con aspecto de enlace nuestro. Escapar no cambia a dónde apunta un
+ * href, así que sólo lo convertimos en enlace si es http(s) y del propio sitio;
+ * en cualquier otro caso el equipo ve la URL como texto y decide él.
+ */
+function ownSiteHref(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    const propio = new URL(SITE_URL).hostname;
+    if (u.hostname !== propio && !u.hostname.endsWith(`.${propio}`)) return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
   // Anti-spam: 5 peticiones de mockup/5 min por IP.
   const rl = rateLimit(req, { key: "mockup-request", max: 5, windowMs: 5 * 60_000 });
@@ -158,6 +199,7 @@ export async function POST(req: Request) {
   );
 
   // 3) Email interno al buzón pedidos@ (para tener pista en Gmail)
+  const origenHref = data.sourceUrl ? ownSiteHref(data.sourceUrl) : null;
   if (process.env.RESEND_FROM_NOTIFY || process.env.RESEND_FROM) {
     await sendEmail({
       to: process.env.NOTIFY_INTERNAL_EMAIL || "pedidos@startidea.es",
@@ -169,14 +211,14 @@ export async function POST(req: Request) {
         <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;padding:24px 28px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#E63E73;">— Mockup 4h · solicitud</p>
           <h2 style="margin:6px 0 0;font-family:Georgia,serif;font-size:22px;color:#2A2A2A;">
-            ${data.name}${data.company ? ` <span style="color:#a09e98;font-weight:400;">· ${data.company}</span>` : ""}
+            ${escapeHtml(data.name)}${data.company ? ` <span style="color:#a09e98;font-weight:400;">· ${escapeHtml(data.company)}</span>` : ""}
           </h2>
           <table style="width:100%;margin-top:16px;border-collapse:collapse;font-size:14px;">
-            <tr><td style="padding:6px 0;color:#6b6b6b;width:120px;">Email</td><td>${data.email}</td></tr>
-            ${data.phone ? `<tr><td style="padding:6px 0;color:#6b6b6b;">Teléfono</td><td>${data.phone}</td></tr>` : ""}
-            <tr><td style="padding:6px 0;color:#6b6b6b;">Producto</td><td>${productName}</td></tr>
-            ${positionLabel ? `<tr><td style="padding:6px 0;color:#6b6b6b;">Zona</td><td>${positionLabel}</td></tr>` : ""}
-            ${data.sourceUrl ? `<tr><td style="padding:6px 0;color:#6b6b6b;">Origen</td><td><a href="${data.sourceUrl}">${data.sourceUrl}</a></td></tr>` : ""}
+            <tr><td style="padding:6px 0;color:#6b6b6b;width:120px;">Email</td><td>${escapeHtml(data.email)}</td></tr>
+            ${data.phone ? `<tr><td style="padding:6px 0;color:#6b6b6b;">Teléfono</td><td>${escapeHtml(data.phone)}</td></tr>` : ""}
+            <tr><td style="padding:6px 0;color:#6b6b6b;">Producto</td><td>${escapeHtml(productName)}</td></tr>
+            ${positionLabel ? `<tr><td style="padding:6px 0;color:#6b6b6b;">Zona</td><td>${escapeHtml(positionLabel)}</td></tr>` : ""}
+            ${data.sourceUrl ? `<tr><td style="padding:6px 0;color:#6b6b6b;">Origen</td><td>${origenHref ? `<a href="${escapeAttr(origenHref)}">${escapeHtml(data.sourceUrl)}</a>` : escapeHtml(data.sourceUrl)}</td></tr>` : ""}
           </table>
           ${
             data.brief

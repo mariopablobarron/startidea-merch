@@ -19,7 +19,7 @@ import {
   type MidoceanCreateOrderPayload,
   type MidoceanOrderItem,
 } from "@/lib/suppliers/midocean-orders";
-import { notifyTelegram } from "@/lib/telegram";
+import { notifyTelegram, escapeTgHtml } from "@/lib/telegram";
 import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
@@ -123,7 +123,10 @@ async function cursarPedidoMidocean(
   if (!cart.shippingAddress || !cart.shippingPostalCode || !cart.shippingCity) {
     // Notificar admin para revisión manual
     await notifyTelegram(
-      `⚠️ <b>Pago recibido sin dirección completa</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
+      // `cart.name` lo teclea el cliente ("Fernández & Cía"). Sin escapar,
+      // Telegram responde 400 y se pierde el único aviso de que hay un pago
+      // cobrado cuyo pedido no puede salir.
+      `⚠️ <b>Pago recibido sin dirección completa</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\nFalta shippingAddress/PostalCode/City — revisar en /admin/cart-quotes`,
     ).catch(() => {});
     return { skipped: true, reason: "Falta dirección de envío" };
   }
@@ -215,7 +218,9 @@ async function cursarPedidoMidocean(
       }).catch(() => {});
     }
     await notifyTelegram(
-      `❌ <b>MidOcean rechazó el pedido</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nStatus ${result.status} — ${(result.error || "").slice(0, 200)}`,
+      // Nombre del cliente + `result.error`, que es el cuerpo de error de la
+      // API de MidOcean (JSON o HTML según el fallo): ambos traen `<` y `&`.
+      `❌ <b>MidOcean rechazó el pedido</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\nStatus ${result.status} — ${escapeTgHtml((result.error || "").slice(0, 200))}`,
     ).catch(() => {});
     return { ok: false, error: result.error || "MidOcean error" };
   }
@@ -246,7 +251,8 @@ async function cursarPedidoMidocean(
   }
 
   await notifyTelegram(
-    `📦 <b>Pedido enviado a MidOcean</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${cart.name}\nMidOcean order: <code>${result.orderId}</code>`,
+    // Mismo `cart.name` del cliente (ver arriba).
+    `📦 <b>Pedido enviado a MidOcean</b>\nCart <code>${cart.id.slice(0, 8)}</code> de ${escapeTgHtml(cart.name)}\nMidOcean order: <code>${result.orderId}</code>`,
   ).catch(() => {});
 
   return { ok: true, orderId: result.orderId };
