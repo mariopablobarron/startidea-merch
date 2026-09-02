@@ -1,0 +1,45 @@
+.github/workflows/cron-failure-alert.yml
+  s_1a290adee91309::t_4f90768171147e 47
+.github/workflows/supplier-leak-audit.yml
+  s_1a290adee91309::t_a4865966c0ba74 1-92
+scripts/audit-supplier-leaks.ts
+  s_1a290adee91309::t_3b4a2dca50f9f4 3,5-9,14,17,19-20,25,28-30,33,35-39,41,43-54,56-61,63-66,69-74,79-84,86-88
+src/lib/public-leak-audit.live.test.ts
+  s_4200eff83dbd2f::t_4bfd15e202806f 1-115
+src/lib/public-leak-scan.test.ts
+  s_9ff7f8dc57e340::t_57dc4f270f8454 1-158
+src/lib/public-leak-scan.ts
+  s_9ff7f8dc57e340::t_8e0ffc7418afa2 1-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "9509b5270f84e2d75ce6780d59c50e948345a15b",
+  "prompts": {},
+  "sessions": {
+    "s_1a290adee91309": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2ba38728-1ab4-4704-8dd5-938a406d6512",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_4200eff83dbd2f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e2de28d-892e-4a7e-8387-e1e24a76bc2c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_9ff7f8dc57e340": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b20cf73e-a42f-40b7-a56f-cb4523fece98",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
