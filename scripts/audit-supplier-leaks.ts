@@ -1,96 +1,91 @@
 #!/usr/bin/env bun
 /**
- * Escanea páginas públicas en producción buscando fugas del proveedor:
- *   - Hostnames CDN MidOcean: cdn1.midocean.com, printposition-img-api-v2.cdn.midocean.com
- *   - Hostnames CDN Cifra: publicatalogue.com, www.publicatalogue.com
- *   - Hostnames CDN Makito: imgresources.makito.es, data.makito.es, print.makito.es
- *   - Patrones SKU en URLs/HTML: ar1234, mo9812, cx1013, mk-xxxx
- *   - Slugs con prefijo proveedor: cif-XXX, mak-XXX
+ * Barrido manual anti-fuga de proveedor contra producción.
  *
- * Reporta hallazgos (página + contexto) o "limpio".
+ * La lógica vive en `src/lib/public-leak-scan.ts`, compartida con el barrido
+ * automático (`src/lib/public-leak-audit.live.test.ts`, que dispara
+ * `.github/workflows/supplier-leak-audit.yml` cada 6 h). Tener dos copias del
+ * escaneo es exactamente cómo divergieron los detectores el 2026-08-13: las
+ * listas seguían idénticas y lo que cambió fue CÓMO se buscaba.
  *
  * Uso: bun scripts/audit-supplier-leaks.ts
  */
 
-import { PUBLIC_SUPPLIER_LEAK_PATTERNS } from "../src/lib/public-supplier-leak-patterns";
+import { pickAuditRoutes, scanHtmlForLeaks, veredicto } from "../src/lib/public-leak-scan";
 
 const SITE = process.env.SITE_URL || "https://merchandising.startidea.es";
+const MUESTRA = Number(process.env.LEAK_AUDIT_SAMPLE || 40);
 
-// Páginas a auditar
-const ROUTES = [
+/** Superficies de contenido que no dependen de un slug. */
+const SEMILLAS = [
   "/",
   "/catalogo",
-  "/catalogo/target",
-  "/catalogo/boc",
-  "/catalogo/columbus",
-  "/catalogo/camiseta-adulto-runner",
   "/promociones",
   "/comparar",
+  "/recursos",
   "/sectores/tech",
   "/sectores/eventos",
-  "/sitemap.xml",
+  "/llms.txt",
+  "/docs/api",
+  "/privacidad",
 ];
 
-type Hit = { route: string; pattern: string; sample: string };
-const hits: Hit[] = [];
-
-for (const route of ROUTES) {
-  let html = "";
+async function traer(ruta: string): Promise<{ html: string } | { fallo: string }> {
   try {
-    const r = await fetch(`${SITE}${route}`);
-    if (!r.ok) {
-      hits.push({ route, pattern: "http-error", sample: `HTTP ${r.status}` });
-      console.log(`\x1b[31m  ✗ ${route} → HTTP ${r.status}\x1b[0m`);
-      continue;
-    }
-    html = await r.text();
-  } catch (e) {
-    hits.push({ route, pattern: "network-error", sample: "fetch failed" });
-    console.log(`\x1b[31m  ✗ ${route} → error de red\x1b[0m`);
-    continue;
-  }
-
-  for (const p of PUBLIC_SUPPLIER_LEAK_PATTERNS) {
-    const matches = html.match(p.re);
-    if (!matches) continue;
-    // Filtrar falsos positivos: meta name="google-site-verification" tiene patrones aleatorios
-    const real = matches.filter((m) => {
-      const lower = m.toLowerCase();
-      // ignorar si está dentro de meta verification de google
-      const ctx = html.substring(Math.max(0, html.indexOf(m) - 80), html.indexOf(m) + m.length + 80);
-      if (/google-site-verification/i.test(ctx)) return false;
-      // ignorar nombres como "claus" "atoll" que casualmente contienen mo/ar
-      if (p.code === "supplier-sku") {
-        // Solo cuenta si está delimitado por contexto técnico (.jpg, .png, /, querystring)
-        const sku = lower;
-        const next = html.charAt(html.indexOf(m) + m.length);
-        // si lo siguiente es letra, no es SKU sino parte de palabra
-        if (/[a-z]/i.test(next)) return false;
-      }
-      return true;
-    });
-    if (real.length === 0) continue;
-    const sample = real[0];
-    hits.push({ route, pattern: p.code, sample });
-  }
-
-  if (hits.filter((h) => h.route === route).length === 0) {
-    console.log(`\x1b[32m  ✓ ${route}\x1b[0m`);
-  } else {
-    console.log(`\x1b[31m  ✗ ${route}\x1b[0m`);
+    const r = await fetch(`${SITE}${ruta}`, { signal: AbortSignal.timeout(20_000) });
+    if (!r.ok) return { fallo: `HTTP ${r.status}` };
+    return { html: await r.text() };
+  } catch {
+    return { fallo: "error de red" };
   }
 }
 
-console.log("");
-if (hits.length === 0) {
+const sitemap = await traer("/sitemap.xml");
+const rutas = pickAuditRoutes({
+  sitemapXml: "html" in sitemap ? sitemap.html : "",
+  site: SITE,
+  seedRoutes: SEMILLAS,
+  sample: MUESTRA,
+  offset: Math.floor(Date.now() / 3_600_000),
+});
+
+const fugas: Array<{ ruta: string; code: string }> = [];
+let inalcanzables = 0;
+let comprobadas = 0;
+
+for (const ruta of rutas) {
+  const res = await traer(ruta);
+  if ("fallo" in res) {
+    inalcanzables++;
+    console.log(`\x1b[33m  ? ${ruta} → ${res.fallo} (sin comprobar)\x1b[0m`);
+    continue;
+  }
+  comprobadas++;
+  const hits = scanHtmlForLeaks(res.html);
+  for (const h of hits) fugas.push({ ruta, code: h.code });
+  console.log(hits.length === 0 ? `\x1b[32m  ✓ ${ruta}\x1b[0m` : `\x1b[31m  ✗ ${ruta}\x1b[0m`);
+}
+
+const v = veredicto({ fugas: fugas.length, inalcanzables, comprobadas });
+console.log(
+  `\n  ${rutas.length} rutas · ${comprobadas} comprobadas · ${inalcanzables} sin comprobar\n`,
+);
+
+if (v === "limpio") {
   console.log("\x1b[32m  → Sin fugas detectadas. Privacidad proveedor OK.\x1b[0m\n");
   process.exit(0);
 }
 
+if (v === "no-comprobado") {
+  // No es un verde, pero tampoco se afirma una fuga que no consta.
+  console.log("\x1b[33m  → NO COMPROBADO: alguna superficie no respondió.\x1b[0m\n");
+  process.exit(1);
+}
+
 console.log("\x1b[31m  → Fugas detectadas:\x1b[0m\n");
-for (const h of hits) {
-  const detail = h.pattern === "http-error" ? h.sample : "[valor oculto]";
-  console.log(`    ${h.pattern.padEnd(18)} ${h.route.padEnd(38)} ${detail}`);
+for (const f of fugas) {
+  // El valor no se imprime: sería publicar la fuga en el log.
+  console.log(`    ${f.code.padEnd(22)} ${f.ruta}`);
 }
 console.log("");
 process.exit(1);
