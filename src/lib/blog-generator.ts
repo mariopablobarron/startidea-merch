@@ -16,6 +16,7 @@
  */
 
 import { marked } from "marked";
+import { sanitizeBlogHtml } from "@/lib/blog-html";
 import { detectHowToSteps, buildHowToSchema } from "./blog-howto";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -207,7 +208,12 @@ export function mdToHtml(md: string): string {
     gfm: true,
     breaks: false,
   });
-  return marked.parse(md, { async: false }) as string;
+  // `marked` NO sanitiza: convierte el HTML crudo que venga en el Markdown tal
+  // cual (quitó su opción `sanitize` en la v7 justo para no dar falsa
+  // seguridad). El cuerpo del post vive en BD y lo editan roles distintos de
+  // CEO, y hay generación por IA en /api/admin/blog/generate, así que la
+  // allowlist se aplica aquí, en el origen, y no solo en la página.
+  return sanitizeBlogHtml(marked.parse(md, { async: false }) as string);
 }
 
 /**

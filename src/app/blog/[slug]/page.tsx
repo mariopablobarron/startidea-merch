@@ -11,6 +11,7 @@ import { NewsletterForm } from "@/components/NewsletterForm";
 import { prisma } from "@/lib/prisma";
 import { mdToHtml, buildBlogSchema } from "@/lib/blog-generator";
 import { injectInternalLinks, type LinkableEntity } from "@/lib/blog-internal-links";
+import { sanitizeBlogHtml } from "@/lib/blog-html";
 import { SECTORS } from "@/lib/sectors";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
@@ -104,6 +105,10 @@ export default async function BlogPostPage({
       })),
     ];
     html = injectInternalLinks(html, entities, { maxPerEntity: 1, minLength: 5 });
+    // Frontera final: injectInternalLinks vuelve a MONTAR HTML (los <a> que
+    // inserta) a partir de nombres de sector y de categoría que salen de BD.
+    // Sanear solo en mdToHtml dejaría fuera justo lo que se añade después.
+    html = sanitizeBlogHtml(html);
   } catch {
     // Si falla la BD, seguimos con el HTML sin linkar — no rompemos el post.
   }
