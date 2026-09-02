@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { recordExperimentEvent } from "@/lib/experiments";
+import { trackRateLimit } from "@/lib/track-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,10 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // El cupo va ANTES del parseo: el tope solo sirve si corta sin tocar BD.
+  const rl = trackRateLimit(req, "track-experiment-event");
+  if (!rl.ok) return rl.response;
+
   let body;
   try {
     body = BodySchema.parse(await req.json());

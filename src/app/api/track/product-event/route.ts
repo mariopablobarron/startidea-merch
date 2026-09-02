@@ -6,15 +6,19 @@
  * Upsert atómico en ProductView con increment del contador correspondiente.
  * Fire-and-forget desde el cliente — devuelve 200 inmediato sin esperar.
  *
- * Sin rate limit estricto a nivel servidor: el navegador del cliente solo
- * dispara 1 view por sesión (lo gestiona el componente, no la API), y
- * cart_add solo se dispara en add real. Si llegara abuso, se añade rate
- * limit con la lib existente.
+ * Rate limit por IP (TRACK_LIMITS, en @/lib/track-rate-limit). Antes no lo
+ * había, con este razonamiento: "el navegador del cliente solo dispara 1 view
+ * por sesión (lo gestiona el componente, no la API)". Pero el componente no es
+ * la API: quien llama al endpoint elige cuántas veces, y cada POST escribe en
+ * BD. Sin tope, un bucle desde una IP infla los contadores que alimentan "lo
+ * más visto" y el recomendador. El cupo es holgado (120/5min) para no tocar la
+ * navegación real: corta el bucle, no al usuario.
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveProductBySlug } from "@/lib/product-slug-resolver";
+import { trackRateLimit } from "@/lib/track-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +34,10 @@ const BodySchema = z
   });
 
 export async function POST(req: Request) {
+  // El cupo va ANTES del parseo: el tope solo sirve si corta sin tocar BD.
+  const rl = trackRateLimit(req, "track-product-event");
+  if (!rl.ok) return rl.response;
+
   let body;
   try {
     body = BodySchema.parse(await req.json());

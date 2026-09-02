@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { hasAdminClaims } from "@/lib/session-claims";
 
 export function safeEqual(a: string, b: string) {
   const ab = Buffer.from(a);
@@ -55,9 +56,18 @@ function verifyJwtCookie(token: string): boolean {
       exp?: number;
       userId?: string;
       email?: string;
+      role?: unknown;
     };
-    if (payload.exp && Date.now() / 1000 > payload.exp) return false;
-    return Boolean(payload.userId && payload.email);
+    // `exp` OBLIGATORIO: con `payload.exp &&` un token sin caducidad saltaba la
+    // comprobación entera y valía para siempre.
+    if (typeof payload.exp !== "number" || Date.now() / 1000 > payload.exp) return false;
+    // Mismo predicado que usa la sesión de cliente (`hasCustomerClaims`), pero el
+    // de admin: exige además un `role` del enum. Antes bastaba userId+email, y
+    // como los tres tipos de token (admin, cliente, afiliado) se firman con el
+    // MISMO `ADMIN_SECRET` mientras no existan sus secretos propios, una cookie
+    // de CLIENTE copiada a `merch_admin` superaba la firma y abría las 32 rutas
+    // que dependen de requireAdminSecret (incluida /api/admin/api-keys).
+    return hasAdminClaims(payload);
   } catch {
     return false;
   }
