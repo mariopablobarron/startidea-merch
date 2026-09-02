@@ -49,17 +49,41 @@ function descubrirPaginasPublicas(dir = "src/app", acc: string[] = []): string[]
   return acc;
 }
 
+/**
+ * Sin `user-agent` propio y con reintento, igual que `money-smoke-test.mjs`,
+ * que lleva meses barriendo estas mismas superficies desde los runners.
+ *
+ * El primer disparo real falló con las 70 rutas en «error de red»: el borrador
+ * mandaba un UA inventado —y el sitio tiene fail2ban, con la IP de la estación
+ * en `ignoreip` pero no la de los runners, así que en local no se vio— y el
+ * `catch` se tragaba el motivo, con lo que el log no permitía ni diagnosticarlo.
+ * De ahí las dos cosas: no inventar UA, y **decir siempre por qué falló**.
+ */
 async function traer(ruta: string): Promise<{ html: string } | { fallo: string }> {
-  try {
-    const r = await fetch(`${SITE}${ruta}`, {
-      signal: AbortSignal.timeout(20_000),
-      headers: { "user-agent": "startidea-leak-audit" },
-    });
-    if (!r.ok) return { fallo: `HTTP ${r.status}` };
-    return { html: await r.text() };
-  } catch {
-    return { fallo: "error de red" };
+  let ultimo = "";
+  for (let intento = 1; intento <= 2; intento++) {
+    try {
+      const r = await fetch(`${SITE}${ruta}`, { signal: AbortSignal.timeout(20_000) });
+      if (r.ok) return { html: await r.text() };
+      ultimo = `HTTP ${r.status}`;
+    } catch (e) {
+      ultimo = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    }
+    if (intento === 1) await new Promise((r) => setTimeout(r, 1_500));
   }
+  return { fallo: ultimo };
+}
+
+/** Barrido con concurrencia acotada: 70 superficies en serie no caben en el reloj. */
+async function enParalelo<T, R>(items: T[], limite: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+  const salida: R[] = new Array(items.length);
+  let siguiente = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limite, items.length) }, async () => {
+      for (let i = siguiente++; i < items.length; i = siguiente++) salida[i] = await fn(items[i]);
+    }),
+  );
+  return salida;
 }
 
 describe.skipIf(!VIVO)("barrido anti-fuga contra producción", () => {
@@ -88,8 +112,10 @@ describe.skipIf(!VIVO)("barrido anti-fuga contra producción", () => {
       let inalcanzables = 0;
       let comprobadas = 0;
 
-      for (const ruta of rutas) {
-        const res = await traer(ruta);
+      // 6 a la vez: amable con el sitio (el barrido corre cada 6 h) y cabe de
+      // sobra en el reloj del test.
+      const resultados = await enParalelo(rutas, 6, async (ruta) => ({ ruta, res: await traer(ruta) }));
+      for (const { ruta, res } of resultados) {
         if ("fallo" in res) {
           inalcanzables++;
           console.log(`  · sin comprobar ${ruta} (${res.fallo})`);

@@ -14,8 +14,13 @@ name: Barrido anti-fuga de proveedor (regla nº2)
 # sitemap) contra el HTML realmente servido: ~70 superficies por pasada.
 
 on:
-  schedule:
-    - cron: "47 */6 * * *" # minuto 47: fuera del smoke (:17) y de los syncs
+  # ⏸️ SIN `schedule` A PROPÓSITO, hasta verlo pasar en el runner.
+  # El primer disparo real (run 33656171652) falló con las 70 superficies en
+  # «error de red»: en la estación iba (su IP está en el `ignoreip` de
+  # fail2ban), desde el runner no. Un guard que alerta en falso cada 6 h acaba
+  # desactivado, así que primero se prueba a mano y luego se programa:
+  #   schedule: - cron: "47 */6 * * *"   ← reactivar con un dispatch en verde
+  # (minuto 47: fuera del smoke, que va al :17, y de los syncs de madrugada).
   workflow_dispatch: {}
 
 concurrency:
