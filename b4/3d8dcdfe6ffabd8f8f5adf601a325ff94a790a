@@ -1,0 +1,21 @@
+scripts/money-smoke-test.mjs
+  s_763a76f0cdaabe::t_55d7e1336ca305 21-24,31-55,311-438,444-455,457,461,466-473,476,501-503,521,535-542,564,566,578,581
+src/lib/money-smoke-descubrimiento.test.ts
+  s_763a76f0cdaabe::t_5f83c1f598efcf 1-168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "b43d8dcdfe6ffabd8f8f5adf601a325ff94a790a",
+  "prompts": {},
+  "sessions": {
+    "s_763a76f0cdaabe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7992b71f-14c1-47e3-b326-88bd339fbd89",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
