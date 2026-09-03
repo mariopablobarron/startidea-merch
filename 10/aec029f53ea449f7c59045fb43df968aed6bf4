@@ -1,0 +1,29 @@
+.github/workflows/supplier-leak-audit.yml
+  s_dfa085e3881604::t_a3687cb722a182 77-95,99
+.gitignore
+  s_dfa085e3881604::t_eba9631b7996f8 38-40
+scripts/audit-supplier-leaks.ts
+  s_dfa085e3881604::t_3013509871b065 79-85
+src/lib/public-leak-audit.live.test.ts
+  s_dfa085e3881604::t_3f44e19dcf95ef 25,39-40,137-147,149,151-156
+src/lib/public-leak-scan.test.ts
+  s_dfa085e3881604::t_13604ed2b35901 132-143
+src/lib/public-leak-scan.ts
+  s_dfa085e3881604::t_92663cd44715f0 125,134-142,146-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "10aec029f53ea449f7c59045fb43df968aed6bf4",
+  "prompts": {},
+  "sessions": {
+    "s_dfa085e3881604": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "73b23439-9b9b-446f-93eb-1d1d7607b953",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
