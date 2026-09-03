@@ -129,7 +129,18 @@ describe("veredicto", () => {
   });
 
   it("no comprobar nada no es estar limpio", () => {
-    expect(veredicto({ fugas: 0, inalcanzables: 0, comprobadas: 0 })).toBe("no-comprobado");
+    expect(veredicto({ fugas: 0, inalcanzables: 0, comprobadas: 0 })).toBe("inalcanzable");
+  });
+
+  it("que no responda NINGUNA superficie se llama distinto que alguna suelta", () => {
+    // El caso real del 03-sep (run 33751332846): 70 rutas, 70 caídas, y el
+    // aviso hablaba de una posible fuga. No son el mismo problema.
+    expect(veredicto({ fugas: 0, inalcanzables: 70, comprobadas: 0 })).toBe("inalcanzable");
+    expect(veredicto({ fugas: 0, inalcanzables: 1, comprobadas: 69 })).toBe("no-comprobado");
+  });
+
+  it("una fuga sigue mandando aunque no responda casi nada", () => {
+    expect(veredicto({ fugas: 1, inalcanzables: 69, comprobadas: 1 })).toBe("fuga");
   });
 
   it("limpio es haber comprobado y no haber encontrado nada", () => {

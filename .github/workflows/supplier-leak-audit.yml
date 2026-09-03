@@ -74,10 +74,29 @@ jobs:
           # El texto NO afirma fuga: el barrido suspende igual cuando una
           # superficie no responde, y decirlo mal manda a Mario a buscar algo
           # que no consta. La superficie y el patrón están en el log del run.
+          #
+          # El 03-sep (run 33751332846) las 70 superficies dieron `fetch
+          # failed` y este aviso habló igualmente de «posible fuga», cuando lo
+          # único que constaba era que no se llegó al sitio. El barrido deja
+          # ahora su veredicto por escrito y aquí se dice cuál de los tres es.
+          # Si el fichero no está, el job murió antes de barrer: se avisa con
+          # el texto genérico de siempre, que es lo honesto.
+          VEREDICTO="$(cut -d" " -f1 leak-audit-veredicto.txt 2>/dev/null || echo desconocido)"
+          CIFRAS="$(awk '{print $2 " rutas, " $3 " comprobadas, " $4 " sin comprobar"}' leak-audit-veredicto.txt 2>/dev/null || echo "sin cifras")"
+          case "$VEREDICTO" in
+            fuga)
+              TEXTO="🚨 FUGA DE PROVEEDOR en una superficie pública (${CIFRAS}). La ruta y el patrón están en el log — no se escriben aquí. Revisar YA: ${RUN_URL}" ;;
+            inalcanzable)
+              TEXTO="🌐 BARRIDO ANTI-FUGA sin poder comprobar NADA: no respondió ninguna superficie (${CIFRAS}). Es red o host, NO consta ninguna fuga. Revisar: ${RUN_URL}" ;;
+            no-comprobado)
+              TEXTO="⚠️ BARRIDO ANTI-FUGA incompleto: alguna superficie no respondió (${CIFRAS}). No consta ninguna fuga. Revisar: ${RUN_URL}" ;;
+            *)
+              TEXTO="🚨 BARRIDO ANTI-FUGA en rojo antes de dejar veredicto. Puede ser una fuga de proveedor o superficies que no respondieron (el log distingue las dos). Revisar: ${RUN_URL}" ;;
+          esac
           curl -sS -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             -d "chat_id=${TG_CHAT}" \
             -d "disable_web_page_preview=true" \
-            --data-urlencode "text=🚨 BARRIDO ANTI-FUGA en rojo. Puede ser una fuga de proveedor en una superficie pública, o superficies que no respondieron (el log distingue las dos). Revisar: ${RUN_URL}" \
+            --data-urlencode "text=${TEXTO}" \
             > /dev/null || echo "::warning::No se pudo avisar por Telegram"
 
       # Si el job se cancela, el paso de arriba no corre y el guard se apagaría

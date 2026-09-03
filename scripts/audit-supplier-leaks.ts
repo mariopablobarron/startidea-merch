@@ -76,6 +76,13 @@ if (v === "limpio") {
   process.exit(0);
 }
 
+if (v === "inalcanzable") {
+  // Ninguna respondió: el problema está en la red o en el host, no en una
+  // página. Decirlo como «no comprobado» manda a buscar donde no es.
+  console.log("\x1b[33m  → INALCANZABLE: no respondió NINGUNA superficie (red o host).\x1b[0m\n");
+  process.exit(1);
+}
+
 if (v === "no-comprobado") {
   // No es un verde, pero tampoco se afirma una fuga que no consta.
   console.log("\x1b[33m  → NO COMPROBADO: alguna superficie no respondió.\x1b[0m\n");

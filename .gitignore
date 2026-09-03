@@ -35,3 +35,6 @@ coverage
 .yarn
 
 prisma/migrations/dev/
+
+# Lo escribe el barrido anti-fuga para que el workflow sepa qué avisar.
+leak-audit-veredicto.txt

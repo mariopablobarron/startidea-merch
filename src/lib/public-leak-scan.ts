@@ -122,7 +122,7 @@ export function routeFromPagePath(rel: string): string | null {
   return limpio === "" ? "/" : limpio;
 }
 
-export type AuditVeredicto = "limpio" | "fuga" | "no-comprobado";
+export type AuditVeredicto = "limpio" | "fuga" | "no-comprobado" | "inalcanzable";
 
 /**
  * Una superficie que no responde NO es una fuga.
@@ -131,9 +131,19 @@ export type AuditVeredicto = "limpio" | "fuga" | "no-comprobado";
  * hallazgos, así que un corte de red del runner habría avisado a Mario de una
  * fuga que nadie ha visto. El money smoke ya aprendió esto: el trabajo falla
  * igual en los dos casos, pero no puede AFIRMAR una rotura que no consta.
+ *
+ * Y hay un tercer caso, que el 03-sep costó un diagnóstico: que no responda
+ * NINGUNA. El run 33751332846 suspendió con las 70 superficies en
+ * `TypeError: fetch failed` —cero comprobadas— y avisó con el mismo texto que
+ * usa para «alguna no respondió», así que el aviso decía «puede ser una fuga»
+ * cuando lo único que constaba era que no se había podido llegar al sitio.
+ * Son problemas distintos: uno se mira en la página, el otro en la red o en el
+ * host. Los tres siguen suspendiendo —relajar el guard sería peor—, pero cada
+ * uno se llama por su nombre.
  */
 export function veredicto(opts: { fugas: number; inalcanzables: number; comprobadas: number }): AuditVeredicto {
   if (opts.fugas > 0) return "fuga";
-  if (opts.comprobadas === 0 || opts.inalcanzables > 0) return "no-comprobado";
+  if (opts.comprobadas === 0) return "inalcanzable";
+  if (opts.inalcanzables > 0) return "no-comprobado";
   return "limpio";
 }

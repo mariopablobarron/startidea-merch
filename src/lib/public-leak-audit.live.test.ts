@@ -22,7 +22,7 @@
  * un humano tecleando `bun scripts/audit-supplier-leaks.ts`.
  */
 import { describe, expect, it } from "vitest";
-import { readdirSync } from "node:fs";
+import { readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   pickAuditRoutes,
@@ -36,6 +36,8 @@ const SITE = process.env.SITE_URL || "https://merchandising.startidea.es";
 /** Cuántas fichas del sitemap se miran por ejecución (≈10.000 en total). */
 const MUESTRA = Number(process.env.LEAK_AUDIT_SAMPLE || 40);
 const RAIZ = process.cwd();
+/** Lo lee el paso de alerta del workflow para no mandar el aviso equivocado. */
+export const VEREDICTO_FICHERO = join(RAIZ, "leak-audit-veredicto.txt");
 
 /** Mismo criterio que el guard estático: tras token o sesión no hay público. */
 const NO_PUBLICAS = ["/admin/", "/clientes/", "/pay/", "/proof/"];
@@ -132,10 +134,26 @@ describe.skipIf(!VIVO)("barrido anti-fuga contra producción", () => {
       console.log(
         `  ${rutas.length} rutas · ${comprobadas} comprobadas · ${inalcanzables} sin comprobar · ${fugas.length} fugas`,
       );
+
+      // El veredicto se deja por escrito ANTES de suspender, porque el paso que
+      // avisa por Telegram solo ve el código de salida del job y hasta hoy
+      // mandaba el mismo texto para los tres casos. La ruta no se escribe: el
+      // fichero viaja en el log del runner, y nombrar la superficie con fuga
+      // ahí sería publicarla.
+      writeFileSync(
+        VEREDICTO_FICHERO,
+        `${v} ${rutas.length} ${comprobadas} ${inalcanzables} ${fugas.length}\n`,
+      );
+
       // Se afirma lo que consta: una superficie caída no es una fuga, pero
-      // tampoco es un verde. Las dos cosas suspenden, con mensajes distintos.
+      // tampoco es un verde. Los tres casos suspenden, con mensajes distintos.
       expect(fugas, `FUGA DE PROVEEDOR en producción: ${fugas.join(", ")}`).toEqual([]);
-      expect(v, `no se pudo comprobar (${inalcanzables} superficies sin respuesta)`).toBe("limpio");
+      expect(
+        v,
+        v === "inalcanzable"
+          ? `no respondió NINGUNA de las ${rutas.length} superficies: es un problema de red o del host, no una fuga`
+          : `no se pudo comprobar (${inalcanzables} de ${rutas.length} superficies sin respuesta)`,
+      ).toBe("limpio");
     },
   );
 });
