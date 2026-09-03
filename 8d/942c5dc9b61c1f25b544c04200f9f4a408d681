@@ -1,0 +1,21 @@
+src/app/admin/marketing/broadcasts/[id]/page.tsx
+  s_2e4d4b9f246ffe::t_3ce30981839384 692-705
+src/lib/html-sink-descubrimiento.guard.test.ts
+  s_2e4d4b9f246ffe::t_3f69f5a1cca4ce 1-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "8d942c5dc9b61c1f25b544c04200f9f4a408d681",
+  "prompts": {},
+  "sessions": {
+    "s_2e4d4b9f246ffe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8639090e-1079-4102-9c26-8e2199d63a18",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
