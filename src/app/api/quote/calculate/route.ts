@@ -43,6 +43,13 @@ const MarkingSchema = z.object({
 const Schema = z.object({
   productSlug: z.string().min(1),
   quantity: z.number().int().positive().max(1_000_000),
+  // La variante elegida (talla/color). Los tramos cuelgan de la VARIANTE, así
+  // que sin esto el configurador enseñaba el precio de otra talla. Opcional:
+  // un producto de variante única no la manda y se sigue cogiendo la primera.
+  //
+  // Es el `ProductVariant.id` opaco, NUNCA el SKU del proveedor: esta ruta la
+  // llama el navegador y la referencia de proveedor no sale de casa.
+  variantId: z.string().max(64).optional(),
   // legacy
   techniqueCode: z.string().optional(),
   numberOfColours: z.number().int().min(1).max(10).optional(),
@@ -71,7 +78,7 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
 
-  // Producto + override + primera variante CON tiers (mismo criterio que la ficha).
+  // Producto + override + la variante ELEGIDA con tiers (o la primera).
   const resolved = await resolveProductBySlug(data.productSlug, (slug) =>
     prisma.product.findUnique({
       where: { slug },
@@ -79,8 +86,7 @@ export async function POST(req: Request) {
         variants: {
           where: { priceTiers: { some: {} } },
           orderBy: { sku: "asc" },
-          take: 1,
-          // Ruta pública: solo los tramos de precio. `include` traía además
+          // Ruta pública: solo SKU y tramos. `include` traía además
           // `images[]`/`variantId` (datos crudos de proveedor) sin necesidad.
           select: { id: true, priceTiers: { orderBy: { minQty: "asc" } } },
         },
@@ -96,7 +102,10 @@ export async function POST(req: Request) {
   // → override → promo). Antes este path ignoraba override y promociones y solo
   // el producto cambiaba de precio según el toggle de marcaje. El margen del
   // producto va aquí dentro; el del MARCAJE se aplica aparte (applyMargin) abajo.
-  const variantWithTiers = product.variants[0];
+  // La que pidió el cliente; si ya no tiene tarifa, la primera que la tenga.
+  const variantWithTiers =
+    (data.variantId ? product.variants.find((v) => v.id === data.variantId) : undefined) ??
+    product.variants[0];
   const activePromos = await loadActivePromotions();
   const clientPricing = computeClientPricing({
     product: {

@@ -1,18 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { applyMargin, defaultTiersFromBase, marginMultiplier, pickTier } from "@/lib/pricing";
+import { computeClientPricing } from "@/lib/product-pricing";
 
 /**
- * Qué pasa cuando un producto NO tiene tarifa del proveedor.
+ * Por qué la curva sintética ya no se aplica encima de un coste conocido.
  *
- * `product-pricing` cae entonces en `defaultTiersFromBase`, una curva de
- * volumen inventada (−68 % a 250 uds), y `quote-server-pricing` COBRA por
- * ella: el carrito deja pagar con tarjeta porque el importe es > 0, sin
- * distinguir tarifa real de estimación.
+ * `defaultTiersFromBase` descuenta hasta un −68 % a 250 uds. Aplicada sobre el
+ * «desde» —que es el MÍNIMO de los tramos del feed, o sea el precio de volumen
+ * ya— descontaba dos veces, y con el margen puesto cobraba por debajo del
+ * coste. `quote-server-pricing` cobraba por esa curva y el carrito lo dejaba
+ * pagar con tarjeta, porque su comprobación es «importe > 0» y una estimación
+ * también la cumple.
  *
- * Estos tests no arreglan nada: dejan el número por escrito y ejecutable, para
- * que la consecuencia deje de ser invisible y para que salte si alguien toca
- * la curva o el margen. La cuenta de cuántos productos están en ese estado la
- * da `scripts/audit-precios-catalogo.ts` contra la base de datos real.
+ * Desde el 3-sep-2026, sin tramos del proveedor pero con coste conocido, la
+ * tarifa es PLANA a coste+margen — la misma regla que ya se aplicaba al precio
+ * fijado a mano de Ádivin, y por el mismo motivo.
+ *
+ * Estos tests dejan la aritmética por escrito: lo que se evitaba, y que la
+ * regla nueva no baja del coste en ninguna cantidad.
  */
 describe("la curva inventada vende por debajo del coste a volumen", () => {
   it("a 250 uds cobra la mitad del coste, con el margen ya aplicado", () => {
@@ -66,5 +71,60 @@ describe("la curva inventada vende por debajo del coste a volumen", () => {
     // Ancla: si alguien cambia MARGIN_MULTIPLIER, esto lo dice.
     const m = marginMultiplier();
     expect((1 - 1 / m) * 100).toBeCloseTo(40, 1);
+  });
+});
+
+describe("la regla nueva: sin tramos reales, tarifa plana", () => {
+  const coste = 1000;
+  const producto = {
+    id: "p1",
+    name: "Producto sin tarifa",
+    brand: null,
+    categoryId: null,
+    category: null,
+    fromPriceCents: coste,
+  };
+
+  it("ninguna cantidad se cobra por debajo del coste", () => {
+    const { clientTiers } = computeClientPricing({
+      product: producto,
+      override: null,
+      providerNetTiers: undefined,
+      activePromos: [],
+    });
+    expect(clientTiers).toBeDefined();
+    for (const cantidad of [1, 10, 25, 50, 100, 250, 1000, 5000]) {
+      const unidad = pickTier(clientTiers!, cantidad)!.unitPriceCents;
+      expect(unidad, `a ${cantidad} uds`).toBeGreaterThan(coste);
+    }
+  });
+
+  it("y el precio es exactamente el coste con el margen, en todos los tramos", () => {
+    const { clientTiers } = computeClientPricing({
+      product: producto,
+      override: null,
+      providerNetTiers: undefined,
+      activePromos: [],
+    });
+    expect(clientTiers).toHaveLength(1);
+    expect(clientTiers![0].unitPriceCents).toBe(applyMargin(coste));
+    expect(pickTier(clientTiers!, 250)!.unitPriceCents).toBe(applyMargin(coste));
+  });
+
+  it("con tramos reales del proveedor la curva de volumen se respeta entera", () => {
+    // La regla nueva no aplasta el escalado real: solo evita inventárselo.
+    const { clientTiers } = computeClientPricing({
+      product: producto,
+      override: null,
+      providerNetTiers: [
+        { minQty: 50, unitPriceCents: 320 },
+        { minQty: 250, unitPriceCents: 280 },
+        { minQty: 1000, unitPriceCents: 240 },
+      ],
+      activePromos: [],
+    });
+    expect(clientTiers).toHaveLength(3);
+    expect(pickTier(clientTiers!, 1000)!.unitPriceCents).toBe(applyMargin(240));
+    expect(pickTier(clientTiers!, 50)!.unitPriceCents).toBe(applyMargin(320));
   });
 });

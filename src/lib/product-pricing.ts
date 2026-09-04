@@ -230,6 +230,22 @@ export function computeClientPricing(opts: {
       unitPriceCents: applyMargin(t.unitPriceCents),
       source: "PROVIDER" as const,
     }));
+  } else if (originalFromPriceCents != null) {
+    // Sin tramos del proveedor pero CON coste conocido → tarifa PLANA, por la
+    // misma razón que arriba con el precio fijado a mano.
+    //
+    // `fromPriceCents` es el MÍNIMO de los tramos del feed: ya es el precio de
+    // volumen. Aplicarle encima la curva sintética (−68 % a 250 uds) es
+    // descontar dos veces sobre algo que no tiene nada que descontar, y con el
+    // margen puesto sale por debajo del coste: 10,00 € de coste se cobraban a
+    // 5,33 € a 250 uds, y el carrito lo dejaba pagar porque el importe es > 0.
+    // El cruce a pérdidas empezaba en 100 uds.
+    //
+    // Sin datos reales de volumen no se inventa un descuento: si hace falta
+    // uno, lo fija el admin con `marginPct` o `customFromPriceCents`.
+    clientListTiers = [
+      { minQty: 1, unitPriceCents: originalFromPriceCents, source: "PROVIDER" as const },
+    ];
   } else {
     clientListTiers = undefined;
   }

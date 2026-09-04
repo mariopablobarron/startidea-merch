@@ -177,7 +177,16 @@ export async function POST(req: Request) {
           printAreaCm2: m.printAreaCm2,
         }));
         return computeServerLinePricing(
-          { productSlug: it.productSlug, quantity: it.quantity, markings: serverMarkings },
+          {
+            productSlug: it.productSlug,
+            quantity: it.quantity,
+            markings: serverMarkings,
+            // La variante que eligió el cliente decide su tarifa: los tramos
+            // cuelgan de la variante y en un textil por tallas no cuestan lo
+            // mismo. Sin esto se cobraba la primera por orden de SKU.
+            variantId: it.variantId ?? null,
+            variantSku: it.variantSku ?? null,
+          },
           activePromos,
         );
       }),
