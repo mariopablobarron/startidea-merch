@@ -30,6 +30,7 @@ import {
   scanHtmlForLeaks,
   veredicto,
 } from "./public-leak-scan";
+import { PUBLIC_API_BARRIDAS, urlDeBarrido } from "./public-api-surfaces";
 
 const VIVO = process.env.LEAK_AUDIT_LIVE === "1";
 const SITE = process.env.SITE_URL || "https://merchandising.startidea.es";
@@ -68,6 +69,31 @@ async function traer(ruta: string): Promise<{ html: string } | { fallo: string }
       const r = await fetch(`${SITE}${ruta}`, { signal: AbortSignal.timeout(20_000) });
       if (r.ok) return { html: await r.text() };
       ultimo = `HTTP ${r.status}`;
+    } catch (e) {
+      ultimo = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    }
+    if (intento === 1) await new Promise((r) => setTimeout(r, 1_500));
+  }
+  return { fallo: ultimo };
+}
+
+/**
+ * Igual que `traer`, pero para APIs: devuelve el cuerpo **con cualquier código
+ * HTTP**. Un 401 o un 400 no es una superficie caída, es una respuesta — y su
+ * cuerpo llega igual al cliente, así que también se escanea. Solo un fallo de
+ * red o un timeout cuentan como «sin comprobar»: eso es lo que distingue una
+ * fuga de un problema del runner, que el 03-sep costó un diagnóstico entero.
+ */
+async function traerCrudo(ruta: string): Promise<{ html: string } | { fallo: string }> {
+  let ultimo = "";
+  for (let intento = 1; intento <= 2; intento++) {
+    try {
+      const r = await fetch(`${SITE}${ruta}`, { signal: AbortSignal.timeout(20_000) });
+      const ct = r.headers.get("content-type") || "";
+      // Los binarios no se escanean como texto: convertir bytes de imagen a
+      // string produce coincidencias por combinatoria, no fugas.
+      if (!/text|json|xml|javascript/i.test(ct)) return { html: "" };
+      return { html: await r.text() };
     } catch (e) {
       ultimo = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
     }
@@ -130,9 +156,34 @@ describe.skipIf(!VIVO)("barrido anti-fuga contra producción", () => {
         }
       }
 
+      // Las APIs públicas: donde ocurrió la fuga que origina esta vigilancia
+      // (`/api/recommend` servía `cdn1.midocean.com` el 2026-07-20) y lo único
+      // que ninguna máquina miraba en vivo. El slug sale del propio sitemap,
+      // para que la consulta traiga un producto REAL sin depender de un
+      // identificador escrito a mano que caduque al cambiar el catálogo.
+      const slugDelDia =
+        rutas.find((r) => r.startsWith("/catalogo/") && r.length > "/catalogo/".length)?.slice(
+          "/catalogo/".length,
+        ) ?? null;
+      const apis = PUBLIC_API_BARRIDAS.map((a) => urlDeBarrido(a, slugDelDia));
+      const resApis = await enParalelo(apis, 4, async (ruta) => ({ ruta, res: await traerCrudo(ruta) }));
+      for (const { ruta, res } of resApis) {
+        if ("fallo" in res) {
+          inalcanzables++;
+          console.log(`  · sin comprobar ${ruta} (${res.fallo})`);
+          continue;
+        }
+        comprobadas++;
+        // La ruta lleva la consulta, y la consulta lleva un slug: se recorta
+        // para que el log no publique qué producto se miró junto al hallazgo.
+        const etiqueta = ruta.split("?")[0];
+        for (const hit of scanHtmlForLeaks(res.html)) fugas.push(`${etiqueta} → ${hit.code}`);
+      }
+
+      const total = rutas.length + apis.length;
       const v = veredicto({ fugas: fugas.length, inalcanzables, comprobadas });
       console.log(
-        `  ${rutas.length} rutas · ${comprobadas} comprobadas · ${inalcanzables} sin comprobar · ${fugas.length} fugas`,
+        `  ${total} superficies (${rutas.length} páginas + ${apis.length} APIs) · ${comprobadas} comprobadas · ${inalcanzables} sin comprobar · ${fugas.length} fugas`,
       );
 
       // El veredicto se deja por escrito ANTES de suspender, porque el paso que
@@ -142,7 +193,7 @@ describe.skipIf(!VIVO)("barrido anti-fuga contra producción", () => {
       // ahí sería publicarla.
       writeFileSync(
         VEREDICTO_FICHERO,
-        `${v} ${rutas.length} ${comprobadas} ${inalcanzables} ${fugas.length}\n`,
+        `${v} ${total} ${comprobadas} ${inalcanzables} ${fugas.length}\n`,
       );
 
       // Se afirma lo que consta: una superficie caída no es una fuga, pero
@@ -151,8 +202,8 @@ describe.skipIf(!VIVO)("barrido anti-fuga contra producción", () => {
       expect(
         v,
         v === "inalcanzable"
-          ? `no respondió NINGUNA de las ${rutas.length} superficies: es un problema de red o del host, no una fuga`
-          : `no se pudo comprobar (${inalcanzables} de ${rutas.length} superficies sin respuesta)`,
+          ? `no respondió NINGUNA de las ${total} superficies: es un problema de red o del host, no una fuga`
+          : `no se pudo comprobar (${inalcanzables} de ${total} superficies sin respuesta)`,
       ).toBe("limpio");
     },
   );
