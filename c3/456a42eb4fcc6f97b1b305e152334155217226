@@ -1,0 +1,23 @@
+src/lib/public-api-surfaces.guard.test.ts
+  s_01d4f2ec792f9b::t_d98914409a79d1 1-130
+src/lib/public-api-surfaces.ts
+  s_01d4f2ec792f9b::t_0862b498d02e5f 1-110
+src/lib/public-leak-audit.live.test.ts
+  s_01d4f2ec792f9b::t_a190647bf95a4f 33,80-104,159-183,186,196,205-206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "c3456a42eb4fcc6f97b1b305e152334155217226",
+  "prompts": {},
+  "sessions": {
+    "s_01d4f2ec792f9b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "48d7bae5-d7a5-41bc-9d82-2e9d30325d55",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
