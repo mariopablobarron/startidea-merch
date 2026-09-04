@@ -1,0 +1,25 @@
+src/app/api/cron/supplier-ref-en-descripcion/route.ts
+  s_0e6f82e4974dad::t_d0e13e49a1a021 1-137
+src/lib/cron-catalog.ts
+  s_0e6f82e4974dad::t_d8c0323fb61b86 151-166
+src/lib/supplier-ref-en-descripcion.test.ts
+  s_0e6f82e4974dad::t_cf584e5cf15e57 1-95
+src/lib/supplier-ref-en-descripcion.ts
+  s_0e6f82e4974dad::t_0275fea4389a6e 1-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "1adaea9d45487229ac6d77bf6a627ae166d0edd4",
+  "prompts": {},
+  "sessions": {
+    "s_0e6f82e4974dad": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a82517d6-1d65-49d1-aad1-3624447e2474",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
