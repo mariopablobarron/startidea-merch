@@ -8,12 +8,17 @@ Plantilla y utilidad de render para los presupuestos de merchandising.
 |---|---|
 | `plantilla-presupuesto-startidea.html` | Plantilla maestra. 3 páginas A4. No se edita para un cliente: se copia. |
 | `generar-pdf.sh` | Render a PDF con Chromium headless. Avisa si queda algún marcador sin sustituir. |
+| `calcular-precios.py` | Aplica el margen, cuadra los totales y saca las filas ya maquetadas. |
 | `assets/logo-startidea.png` | Logotipo oficial, tal cual (sin recomponer ni invertir). |
 | `assets/fonts/` | Montserrat e Inter embebidas, para que el PDF salga igual siempre y sin red. |
 
 ## Cómo se hace un presupuesto
 
 ```bash
+# 1. con los costes ya sacados del portal, calcular precios y totales
+./calcular-precios.py pedido-acme.json --html
+
+# 2. maquetar
 cp plantilla-presupuesto-startidea.html presupuesto-acme.html
 # sustituir los marcadores {{...}} y cambiar los .ph por <img src="...">
 ./generar-pdf.sh presupuesto-acme.html Presupuesto_Acme_Startidea.pdf
@@ -42,6 +47,53 @@ del catálogo propio**:
 > para la referencia interna `STM-…` y los textos comerciales. Su feed tiene un fallo
 > conocido: **stock y áreas de marcaje salen divididos por 1.000** (dice 90 uds cuando
 > hay 90.000; dice 15 × 7 mm cuando son 150 × 70 mm).
+
+## La calculadora
+
+`calcular-precios.py` toma un JSON con los **costes reales del portal** y aplica
+la regla de la casa. No inventa nada: sin costes de entrada no da salida.
+
+```json
+{
+  "asunto": "Vasos para la feria anual",
+  "lineas": [
+    {"concepto": "Vaso reutilizable 500 ml",
+     "detalle": "Cuerpo translúcido, apto para lavavajillas",
+     "cantidad": 2500, "coste_unit": 0.612},
+
+    {"concepto": "Marcaje · serigrafía a 2 tintas",
+     "detalle": "Una posición. Incluye manipulación y envasado",
+     "cantidad": 2500, "coste_unit": 0.181},
+
+    {"concepto": "Pantallas de serigrafía (2 uds.)",
+     "cantidad": 2, "coste_unit": 18.50},
+
+    {"concepto": "Photocall 2 × 2,5 m con estructura",
+     "cantidad": 1, "pvp_unit": 268.00,
+     "nota": "PVP recomendado del portal: ya lleva el 30 %"}
+  ]
+}
+```
+
+Cada línea lleva **`coste_unit`** (y calcula el PVP) o **`pvp_unit`** (y lo usa
+tal cual, para el gran formato que ya trae PVP recomendado). Nunca las dos: si
+las pones, para y lo dice.
+
+Devuelve el precio unitario, el margen de cada línea, base imponible, IVA 21 %,
+total, y el margen bruto agregado. Con `--html`, además las filas listas para
+pegar en el `<tbody>` de la plantilla, así no hay que teclear los importes dos
+veces.
+
+Dos cosas que conviene saber:
+
+- **El margen agregado solo cuenta las líneas con coste conocido.** Las de PVP
+  recomendado no traen coste, y sumarlas al mismo cálculo infla el margen como
+  si fueran ingreso puro. El informe dice cuánta base queda fuera.
+- **Por debajo de 0,48 € de coste unitario la banda 30–31 % mide menos de un
+  céntimo**, así que a dos decimales no siempre hay precio que la cumpla. En ese
+  caso redondea **al alza** —nunca por debajo del 30 %— y avisa. Pasa a menudo
+  con el marcaje por unidad; si el margen extra desvirtúa la oferta, se fusiona
+  esa línea con la del producto.
 
 ## Cómo se fija el precio de venta
 
@@ -73,6 +125,8 @@ del catálogo propio**:
    caja, imágenes sin recuadros ni restos de la web de origen.
 3. Comprobar que cada dato técnico (medida, gramaje, área de marcaje, stock) viene de la
    ficha del proveedor y no del catálogo propio.
+
+La calculadora hace el paso 1 y deja el rastro para comprobarlo.
 
 ```bash
 # para mirarlo

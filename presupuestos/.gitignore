@@ -2,3 +2,5 @@
 *.pdf
 # Archivos de prueba de maquetación
 .qa-test.html
+# Caché de Python del cálculo de precios
+__pycache__/
