@@ -60,6 +60,17 @@ Agent({ subagent_type: "stats-reporter", prompt: "reporte semanal" })
 Agent({ subagent_type: "deal-coach", prompt: "cart cmXXXX · 500 mochilas tech · cliente nuevo grande" })
 ```
 
+## Servidores MCP disponibles
+
+`.mcp.json` (raíz del repo) registra los servidores MCP que Claude Code carga en este proyecto:
+
+| Servidor | Para qué | Agentes que lo aprovechan |
+|---|---|---|
+| `getalink` | Marketplace de linkbuilding y post patrocinados (medios, precios, campañas) | `seo-auditor`, `ai-search-optimizer`, `content-creator`, `competitive-intel` |
+
+Requiere credencial propia de cada colaborador: OAuth con `/mcp` o `GETALINK_API_KEY` en el
+entorno local. Setup y verificación en [`docs/getalink-mcp.md`](../../docs/getalink-mcp.md).
+
 ## Reglas comunes a todos los agentes
 
 - **Comunicación en español** (Mario es CEO Startidea Malaga SL)
