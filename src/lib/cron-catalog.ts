@@ -149,6 +149,22 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Vigila productos activos con técnica pero sin tarifa (cotización manual) y alerta si supera umbral",
   },
   {
+    name: "supplier-ref-en-descripcion",
+    endpointPath: "/api/cron/supplier-ref-en-descripcion",
+    method: "POST",
+    // Nace SIN disparador a propósito (2026-09-05). La vigilancia se escribió
+    // de noche, y la ventana de despliegue de este agente no permite construir
+    // a esas horas; programarla en el crontab del VPS es el paso siguiente, en
+    // el mismo run que la despliegue. Mientras tanto se dispara a mano desde
+    // /admin/system/crons, que es lo que hace `publish-scheduled` más arriba.
+    // Cuando se programe: devolver aquí la expresión real junto con la línea
+    // del crontab, nunca solo una de las dos (`audit-crons-vps.sh` compara).
+    schedule: "sin disparador todavía (pendiente de programar en el crontab del VPS)",
+    scheduleCron: "—",
+    frequencyHours: 24,
+    description: "Vigila fichas activas cuya descripción pública publica una referencia del catálogo del proveedor",
+  },
+  {
     name: "auto-proposal",
     endpointPath: "/api/cron/auto-proposal",
     method: "POST",
