@@ -20,7 +20,7 @@ const cart = { id: "cart_1", email: "test@example.com", name: "Cliente", company
   paymentLinkExpiresAt: null, payments: [], items: [{ id: "i1" }] };
 async function post() {
   const { POST } = await import("./route");
-  return POST(new Request("https://example.test/api/pay/tok/intent", { method: "POST" }), {
+  return POST(new Request("https://example.test/api/pay/tok/checkout", { method: "POST" }), {
     params: Promise.resolve({ token: "tok" }),
   });
 }
@@ -29,15 +29,15 @@ beforeEach(() => {
   delete process.env.STRIPE_TAX_ENABLED;
   findCart.mockResolvedValue(cart);
   variants.mockResolvedValue({ ok: true });
-  start.mockResolvedValue({ object: "payment_intent", id: "pi_test", client_secret: "secret_test" });
+  start.mockResolvedValue({ object: "checkout.session", id: "cs_test", url: "https://checkout.stripe.test/cs_test" });
 });
 
-describe("POST /pay/[token]/intent — intento durable", () => {
+describe("POST /pay/[token]/checkout — intento durable", () => {
   it("delegación con importe e IVA vigentes, sin crear Stripe antes de reservar", async () => {
     const response = await post();
     expect(response.status).toBe(200);
     expect(start).toHaveBeenCalledTimes(1);
-    expect(start.mock.calls[0][0]).toMatchObject({ channel: "wallet", mode: "test",
+    expect(start.mock.calls[0][0]).toMatchObject({ channel: "hosted", mode: "test",
       quote: { amountCents: 6050, acceptedTotalCents: 10_000, depositPercent: 50,
         paymentLinkToken: "tok", currency: "eur", kind: "DEPOSIT", taxEnabled: false } });
     expect(create).not.toHaveBeenCalled();
@@ -46,7 +46,7 @@ describe("POST /pay/[token]/intent — intento durable", () => {
     await post();
     const { create: callback } = start.mock.calls[0][0];
     const params = { metadata: { paymentId: "pay_1" }, immutable: true };
-    const options = { idempotencyKey: "merch:test:pay_1:wallet", timeout: 10000 };
+    const options = { idempotencyKey: "merch:test:pay_1:hosted", timeout: 10000 };
     await callback({ params }, options);
     expect(create).toHaveBeenCalledWith(params, options);
   });
@@ -71,10 +71,15 @@ describe("POST /pay/[token]/intent — intento durable", () => {
     const response = await post(); expect(response.status).toBe(503);
     expect(JSON.stringify(await response.json())).not.toContain("secret-sensitive-value");
   });
-  it("wallet conserva IVA manual aunque exista Stripe Tax para hosted", async () => {
+  it("mantiene el preflight de variante antes de cualquier intento", async () => {
+    variants.mockResolvedValueOnce({ ok: false, error: "Variante ambigua", code: "AMBIGUOUS" });
+    expect((await post()).status).toBe(422);
+    expect(start).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();
+  });
+  it("con Stripe Tax conserva base sin IVA manual y lo declara en snapshot", async () => {
     process.env.STRIPE_TAX_ENABLED = "true";
     await post();
-    expect(start.mock.calls[0][0].quote).toMatchObject({ amountCents: 6050, taxEnabled: false });
-    expect(start.mock.calls[0][0].params.amount).toBe(6050);
+    expect(start.mock.calls[0][0].quote).toMatchObject({ amountCents: 5000, taxEnabled: true });
+    expect(start.mock.calls[0][0].params.automatic_tax).toEqual({ enabled: true });
   });
 });
