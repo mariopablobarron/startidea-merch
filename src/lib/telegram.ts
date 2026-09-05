@@ -51,7 +51,10 @@ export function isTelegramConfigured(): boolean {
 export async function sendTelegramTo(
   chatId: string | number,
   text: string,
-  opts?: { parseMode?: "HTML" | "MarkdownV2" },
+  opts?: {
+    parseMode?: "HTML" | "MarkdownV2";
+    replyMarkup?: { inline_keyboard: Array<Array<{ text: string; url: string }>> };
+  },
 ): Promise<boolean> {
   if (!BOT) return false;
   try {
@@ -63,13 +66,14 @@ export async function sendTelegramTo(
         text,
         parse_mode: opts?.parseMode || "HTML",
         disable_web_page_preview: true,
+        reply_markup: opts?.replyMarkup,
       }),
     });
     if (res.ok) return true;
     const retry = await fetch(`https://api.telegram.org/bot${BOT}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+      body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true, reply_markup: opts?.replyMarkup }),
     });
     return retry.ok;
   } catch (err) {
