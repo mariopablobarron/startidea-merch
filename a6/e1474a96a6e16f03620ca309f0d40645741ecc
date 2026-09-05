@@ -1,0 +1,122 @@
+vitest.payments-integration.config.ts
+  s_f63a9438f2b0d0::t_eaca7e70b12709 1-12
+  s_f63a9438f2b0d0::t_069981bf9404df 13-14
+src/lib/cifra-auto-order.test.ts
+  s_f63a9438f2b0d0::t_985407b8054a87 56,79
+  s_f63a9438f2b0d0::t_e08cffc6d0d4c1 207-242
+src/lib/stripe-payment-events.ts
+  s_f63a9438f2b0d0::t_3008c737f7fe7c 62-67,93,113-115,132-133,154-155,158-163,165-167,204-211
+  s_f63a9438f2b0d0::t_a86d032f8ec97c 102-103
+  s_f63a9438f2b0d0::t_89c8e9ef86409e 1-4,7-61,68-72,74-92,94-101,104-112,116-131,134-153,156-157,168-185,189,192-194,197,199-203,212-222
+  s_f63a9438f2b0d0::t_efb128b4b2d74b 5-6,190-191,195-196
+  s_f63a9438f2b0d0::t_8351217855e300 73,164
+  s_f63a9438f2b0d0::t_1ec3ff50ee2699 186-188,198
+src/lib/makito-auto-order.test.ts
+  s_f63a9438f2b0d0::t_985407b8054a87 24,47
+  s_f63a9438f2b0d0::t_20f60855c134c8 121-154
+src/lib/stripe-post-payment.ts
+  s_f63a9438f2b0d0::t_529042e137741e 268-269
+  s_f63a9438f2b0d0::t_1ec3ff50ee2699 75-76,215,222-224,234
+  s_f63a9438f2b0d0::t_efb128b4b2d74b 1-74,77-214,216-221,225-233,235-267,270-390
+src/lib/midocean-auto-order.ts
+  s_f63a9438f2b0d0::t_985407b8054a87 25,48,66,75,85-87
+src/lib/midocean-auto-order.test.ts
+  s_f63a9438f2b0d0::t_985407b8054a87 73
+  s_f63a9438f2b0d0::t_e9609223c4d85a 523-558
+integration/payment-db-guard.ts
+  s_f63a9438f2b0d0::t_eaca7e70b12709 1-7
+.github/workflows/ci.yml
+  s_f63a9438f2b0d0::t_53b29440cf7602 17-28,57-63
+  s_2dfbad1e4f5751::t_3157360e3e1410 64
+src/lib/facturascripts-sync.ts
+  s_f63a9438f2b0d0::t_ceddc5f533d479 4-5,7-9,79,95,127-158,222-229,233-241,253-255
+  s_f63a9438f2b0d0::t_1abfcff0c86e9b 256-260
+src/app/api/webhooks/stripe/route.test.ts
+  s_f63a9438f2b0d0::t_d99a1c5244d080 372-381
+  s_f63a9438f2b0d0::t_9329c7c8e756fb 231
+  s_f63a9438f2b0d0::t_f2d0eb5cf9f1bc 522-552,566,616-618,672-712
+  s_f63a9438f2b0d0::t_6a175ee5bffeb8 15,57,99-107,109,139-148,220,244,265,267,608-609
+  s_f63a9438f2b0d0::t_b1ab757feebe70 752-753,757-798
+  s_f63a9438f2b0d0::t_1807bf168fc152 108
+  s_f63a9438f2b0d0::t_770961b15abb17 173-180,386-394,396-401,432,737-746
+  s_f63a9438f2b0d0::t_59513fe5beea5c 1-14,16-19,22,26-38,48-56,58-62,64-95,110-134,136-138,149-153,155-164,166-172,181-185,187-193,196-204,208-217,224,227-230,232-243,245-254,271,276-297,307-346,358-371,382-385,395,446-448,459-481,520-521,713-721,747-751,754-756,799-808
+  s_f63a9438f2b0d0::t_200be76fa9ae1d 20,482-519
+  s_f63a9438f2b0d0::t_600d5ddb7aeec8 21,63,97,219,225-226,255-262,402-431,433-445,553-565,567-582,602-607,610-615
+  s_f63a9438f2b0d0::t_f36805796646aa 449-458
+  s_f63a9438f2b0d0::t_6a95adc5ae8113 583-601
+  s_f63a9438f2b0d0::t_1d96a0a79f200e 619-671
+  s_f63a9438f2b0d0::t_c5077812508626 23-25,39-47,96,186,194-195,205-207,218,221,272-275,722-736
+  s_f63a9438f2b0d0::t_bb38b4316877f4 98,135,154,165,222-223,263-264,266,268-270,298-306,347-357
+src/lib/cifra-auto-order.ts
+  s_f63a9438f2b0d0::t_985407b8054a87 27,48,64,73,78,83-85
+src/lib/stripe-post-payment.test.ts
+  s_f63a9438f2b0d0::t_05a21af57b2175 1-380
+  s_f63a9438f2b0d0::t_e9ea271423f2ff 381-382
+src/lib/payment-quote-fingerprint.ts
+  s_f63a9438f2b0d0::t_e4d769239e27c9 2,17-21
+  s_f63a9438f2b0d0::t_efb128b4b2d74b 1,3-16,22-25
+src/lib/payment-attempts.ts
+  s_f63a9438f2b0d0::t_1ee8971a17c50d 1-5,7-20,22-106,108-119,121-151,154-160,162-180,182-252,254-261,266-271,273-281
+  s_f63a9438f2b0d0::t_e277cd0a4e1316 152-153,181,253,262-263
+  s_f63a9438f2b0d0::t_efb128b4b2d74b 6,21,107,120,161,264-265,272
+integration/stripe-payments.test.ts
+  s_f63a9438f2b0d0::t_eaca7e70b12709 1-168
+  s_f63a9438f2b0d0::t_48ac5fbeac8b9b 169-223
+src/lib/makito-auto-order.ts
+  s_f63a9438f2b0d0::t_985407b8054a87 18,29,37,42-44
+src/lib/payment-attempts.test.ts
+  s_f63a9438f2b0d0::t_e12b02ee7ade83 1-7,10-12,14-28,31-62,67-85,87-92,96-106,108-112,115-122,124-125,128-292,377-378
+  s_f63a9438f2b0d0::t_05a21af57b2175 8-9,29-30,126-127,295,301-304,306-350
+  s_f63a9438f2b0d0::t_125241b37c422c 351-355
+  s_f63a9438f2b0d0::t_e277cd0a4e1316 13,63-66,86,93-95,107,113-114,123,293-294,296-300,305,356-376
+docs/estado-agente-cto.md
+  s_f63a9438f2b0d0::t_0fad17e4f05ccc 3,7,11,13,15,19,21,23,25
+integration/facturascripts.test.ts
+  s_f63a9438f2b0d0::t_b8f387216dcd3a 1-87
+prisma/schema.prisma
+  s_f63a9438f2b0d0::t_94ca30288a2839 768-769
+src/app/api/cron/webhook-retry/route.test.ts
+  s_f63a9438f2b0d0::t_73ee4829879566 1-34
+src/app/api/cron/webhook-retry/route.ts
+  s_f63a9438f2b0d0::t_c80e16598b9416 3,13-14,21-22
+src/app/api/pay/[token]/checkout/route.test.ts
+  s_f63a9438f2b0d0::t_cdeaaa9a3959a5 1-85
+src/app/api/pay/[token]/checkout/route.ts
+  s_f63a9438f2b0d0::t_d64c90c89287b1 2-3,5,19,80,124,126-149
+src/app/api/pay/[token]/intent/route.test.ts
+  s_f63a9438f2b0d0::t_7ca4dd146de257 1,3-7,9-10,13-20,23,29-32,35-43,45,47-51,53-75,77-78
+src/app/api/pay/[token]/intent/route.ts
+  s_f63a9438f2b0d0::t_048c5d75599fb6 2-3,5,22,59-78,80-88,90-95
+src/app/api/webhooks/stripe/route.ts
+  s_f63a9438f2b0d0::t_14595fef102e21 1,5-6,10,12-14,23-25,28-34,36-42,45-46
+src/lib/cron-catalog.ts
+  s_f63a9438f2b0d0::t_b468213b90d4ac 140
+src/lib/purchase-orders.ts
+  s_f63a9438f2b0d0::t_40f0ef02dee470 2,24,50,59,63,65-67
+src/lib/telegram-escape.guard.test.ts
+  s_f63a9438f2b0d0::t_d7ba22c64003e7 162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "a6e1474a96a6e16f03620ca309f0d40645741ecc",
+  "prompts": {},
+  "sessions": {
+    "s_2dfbad1e4f5751": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a071ad-a516-71e0-ba98-67c74dbc8a74",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_f63a9438f2b0d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0717e-3b2e-7491-812d-721995f4e72a",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
