@@ -1,0 +1,19 @@
+src/lib/cron-catalog.ts
+  s_cd95fbe1b683ba::t_19ced0fe5d947b 155-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "96c990eb6ec53b49c08391f1d38dbf60ad223464",
+  "prompts": {},
+  "sessions": {
+    "s_cd95fbe1b683ba": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1a9f002a-37bd-4a12-9e28-89f1e5af2ae6",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
