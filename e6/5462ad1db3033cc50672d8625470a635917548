@@ -1,0 +1,19 @@
+docs/estado-agente-cto.md
+  s_f63a9438f2b0d0::t_389d51cf36d3a3 3,7,9,11,13,15,17,19,21-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "e65462ad1db3033cc50672d8625470a635917548",
+  "prompts": {},
+  "sessions": {
+    "s_f63a9438f2b0d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0717e-3b2e-7491-812d-721995f4e72a",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
