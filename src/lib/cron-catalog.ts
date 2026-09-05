@@ -137,7 +137,7 @@ export const CRON_CATALOG: CronEntry[] = [
     schedule: "cada 15 min (crontab del VPS, hora local)",
     scheduleCron: "*/15 * * * *",
     frequencyHours: 0.25,
-    description: "Reintenta webhook deliveries fallidos",
+    description: "Recupera entregas de webhooks y tareas pendientes tras pagos confirmados",
   },
   {
     name: "tariff-coverage-watchdog",

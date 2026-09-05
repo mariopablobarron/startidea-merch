@@ -15,6 +15,7 @@
 import { prisma } from "@/lib/prisma";
 import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
+import { paymentItemsFingerprint } from "@/lib/payment-quote-fingerprint";
 
 export type MakitoAutoOrderResult =
   | { ok: true; notified: true; poId: string }
@@ -25,7 +26,7 @@ function autoEnabled(): boolean {
   return process.env.MAKITO_AUTO_PLACE_ON_PAYMENT !== "false";
 }
 
-export async function autoPlaceMakitoOrder(cartId: string): Promise<MakitoAutoOrderResult> {
+export async function autoPlaceMakitoOrder(cartId: string, expectedItemsFingerprint?: string): Promise<MakitoAutoOrderResult> {
   if (!autoEnabled()) {
     return { skipped: true, reason: "MAKITO_AUTO_PLACE_ON_PAYMENT=false" };
   }
@@ -33,11 +34,14 @@ export async function autoPlaceMakitoOrder(cartId: string): Promise<MakitoAutoOr
   const cart = await prisma.cartQuote.findUnique({
     where: { id: cartId },
     include: {
-      items: true,
+      items: { include: { markings: true } },
       purchaseOrders: { where: { supplier: "makito" } },
     },
   });
   if (!cart) return { ok: false, error: "Cart no encontrado" };
+  if (expectedItemsFingerprint && paymentItemsFingerprint(cart.items) !== expectedItemsFingerprint) {
+    return { ok: false, error: "La versión del presupuesto cambió; revisar antes de cursar el pedido" };
+  }
   if (cart.items.length === 0) return { skipped: true, reason: "Cart vacío" };
 
   const makitoPO = cart.purchaseOrders[0];
