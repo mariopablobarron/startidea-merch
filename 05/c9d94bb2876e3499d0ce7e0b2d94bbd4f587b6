@@ -1,0 +1,25 @@
+src/app/api/search/semantic/route.ts
+  s_d1606850466245::t_10502ceb894cd4 7,18-34,38-41,52-62,64-88,91,93-100,102-122
+src/lib/in-flight-limit.test.ts
+  s_d1606850466245::t_0947fb2fc0eb84 1-76
+src/lib/in-flight-limit.ts
+  s_d1606850466245::t_9c89171a949cae 1-91
+src/lib/in-flight-release.guard.test.ts
+  s_d1606850466245::t_b3649b75dde46b 1-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "05c9d94bb2876e3499d0ce7e0b2d94bbd4f587b6",
+  "prompts": {},
+  "sessions": {
+    "s_d1606850466245": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7de02c3b-901a-4bfa-8527-5fc1886a8121",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
