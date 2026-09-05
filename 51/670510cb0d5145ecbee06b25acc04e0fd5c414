@@ -1,0 +1,19 @@
+docs/estado-agente-cto.md
+  s_255468226ca806::t_03972cb2c92701 3,7,11,13,15-19,23,27,29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "51670510cb0d5145ecbee06b25acc04e0fd5c414",
+  "prompts": {},
+  "sessions": {
+    "s_255468226ca806": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a0717e-3b2e-7491-812d-721995f4e72a",
+        "model": "unknown"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
