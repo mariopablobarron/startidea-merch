@@ -152,15 +152,15 @@ export const CRON_CATALOG: CronEntry[] = [
     name: "supplier-ref-en-descripcion",
     endpointPath: "/api/cron/supplier-ref-en-descripcion",
     method: "POST",
-    // Nace SIN disparador a propósito (2026-09-05). La vigilancia se escribió
-    // de noche, y la ventana de despliegue de este agente no permite construir
-    // a esas horas; programarla en el crontab del VPS es el paso siguiente, en
-    // el mismo run que la despliegue. Mientras tanto se dispara a mano desde
-    // /admin/system/crons, que es lo que hace `publish-scheduled` más arriba.
-    // Cuando se programe: devolver aquí la expresión real junto con la línea
-    // del crontab, nunca solo una de las dos (`audit-crons-vps.sh` compara).
-    schedule: "sin disparador todavía (pendiente de programar en el crontab del VPS)",
-    scheduleCron: "—",
+    // Programada el 2026-09-05 en el mismo run que la desplegó, junto con su
+    // línea del crontab del VPS (`audit-crons-vps.sh` compara las dos: cambiar
+    // solo una de ellas rompe la auditoría). Hueco elegido a las 07:40 locales:
+    // los tres syncs de proveedor han cerrado ya (el último, makito, sobre las
+    // 06:20) y el minuto está libre — el vecino más cercano es
+    // `tariff-coverage-watchdog` a las 07:30, que es de su misma familia:
+    // vigilancia diaria que avisa en flanco de subida.
+    schedule: "diario 07:40 local VPS = 05:40 UTC",
+    scheduleCron: "40 7 * * *",
     frequencyHours: 24,
     description: "Vigila fichas activas cuya descripción pública publica una referencia del catálogo del proveedor",
   },
