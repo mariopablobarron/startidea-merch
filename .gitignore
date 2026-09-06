@@ -20,8 +20,15 @@ docker-compose.yml.bak*
 # docker-compose.prod.yml SÍ se versiona (overrides explícitos de producción
 # aplicados con flag -f). El .override.yml legacy del VPS hay que retirarlo.
 
-# User-generated content del VPS (carpeta de uploads de pedidos/proofs)
-uploads/
+# User-generated content del VPS (carpeta de uploads de pedidos/proofs).
+#
+# La BARRA INICIAL importa: `uploads/` a secas ignora CUALQUIER carpeta llamada
+# así a cualquier profundidad, incluida `src/app/api/admin/uploads/`, donde
+# viven los endpoints de subida. El de presupuestos se quedó sin commitear sin
+# un solo aviso —`git status` no lo enseña— y habría llegado a producción con el
+# botón «Subir imagen» dando 404. `src/app/api/admin/uploads/proof/route.ts`
+# solo se salvó porque ya estaba versionado antes de esta regla.
+/uploads/
 
 *.tsbuildinfo
 next-env.d.ts
@@ -35,3 +42,6 @@ coverage
 .yarn
 
 prisma/migrations/dev/
+
+# Lo escribe el barrido anti-fuga para que el workflow sepa qué avisar.
+leak-audit-veredicto.txt

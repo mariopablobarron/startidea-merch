@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Presupuesto · Startidea Málaga, S.L.</title>
+<!--
+  PLANTILLA DE PRESUPUESTO DE MERCHANDISING — Startidea Málaga, S.L. / TodoMerchandising
+  ---------------------------------------------------------------------------------
+  Cómo se usa:
+    1. Copia este archivo a  presupuesto-<cliente>.html
+    2. Sustituye TODOS los marcadores {{...}}. Si queda alguno sin sustituir se ve
+       en rojo sobre amarillo en el PDF, para que no pase inadvertido.
+    3. Sustituye los .ph (marcos de imagen de muestra) por <img src="...">.
+    4. Renderiza:
+         chromium --headless --no-sandbox --disable-gpu \
+           --print-to-pdf=Presupuesto_<Cliente>_Startidea.pdf --no-pdf-header-footer \
+           file:///ruta/presupuesto-<cliente>.html
+       (o usa ./generar-pdf.sh presupuesto-<cliente>.html)
+
+  Reglas que esta plantilla ya deja cumplidas — no las deshagas:
+    · Precios SIEMPRE de portal de proveedor. Nunca estimados. Nunca del catálogo propio.
+    · Desglose obligatorio en líneas separadas: producto / marcaje / cliché o pantalla.
+    · IVA 21 % desglosado aparte de la base imponible.
+    · Plazos en rango y «desde la validación del arte final». Nunca fechas fijas.
+    · No se nombra a ningún proveedor, fabricante ni subcontrata.
+    · Nada de impacto social salvo que sea cierto en ESE pedido.
+    · Sin punto de facturación ni menciones a VeriFactu.
+-->
+<style>
+  /* ---------- Tipografías embebidas (render offline y determinista) ---------- */
+  @font-face{font-family:'Montserrat';src:url('assets/fonts/montserrat-latin.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:block;
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+  @font-face{font-family:'Montserrat';src:url('assets/fonts/montserrat-latin-ext.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:block;
+    unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+  @font-face{font-family:'Inter';src:url('assets/fonts/inter-latin.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:block;
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+  @font-face{font-family:'Inter';src:url('assets/fonts/inter-latin-ext.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:block;
+    unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+
+  /* ---------- Identidad de marca ---------- */
+  :root{
+    --grad-a:#8F1039;          /* degradado, extremo oscuro */
+    --grad-b:#C41D51;          /* degradado, extremo claro  */
+    --magenta:#C41D51;         /* tinta de acento           */
+    --rosa:#FDEEF3;            /* rosa pálido, bandas       */
+    --tinta:#231F27;           /* texto principal           */
+    --gris:#5E5A63;            /* texto secundario          */
+    --linea:#E7E2E6;           /* filetes y bordes          */
+    --numeral:#DDA9BF;         /* numerales 01, 02…         */
+    --grad:linear-gradient(90deg,var(--grad-a) 0%,var(--grad-b) 100%);
+  }
+
+  @page{size:A4;margin:0}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#fff}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    color:var(--tinta);
+    font-size:9.2pt;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  .page{
+    position:relative;
+    width:210mm;height:297mm;
+    padding:14mm 16mm 0;
+    overflow:hidden;
+    page-break-after:always;
+    break-after:page;
+  }
+  .page:last-of-type{page-break-after:auto;break-after:auto}
+
+  h1,h2,h3,h4,.mont{font-family:'Montserrat','Inter',sans-serif}
+
+  /* ---------- Página 1 · cabecera ---------- */
+  .cab{display:flex;align-items:flex-start;justify-content:space-between;gap:10mm}
+  .cab .logo{height:29mm;width:auto;display:block;margin-left:-2mm}
+  .cab .doc{text-align:right;padding-top:1.5mm}
+  .cab .doc .titulo{
+    font-family:'Inter',sans-serif;font-weight:800;
+    font-size:25pt;line-height:1;letter-spacing:-.018em;color:var(--tinta);
+  }
+  .cab .doc .meta{margin-top:2.4mm;font-size:8.6pt;line-height:1.5;color:var(--magenta);font-weight:600}
+  .cab .doc .meta span{color:var(--gris);font-weight:500}
+
+  .filete{height:2.6mm;border-radius:1.3mm;background:var(--grad);margin:6mm 0 0}
+
+  /* ---------- Banda de asunto ---------- */
+  .asunto{
+    margin-top:6mm;background:var(--rosa);border-radius:2mm;
+    padding:4.2mm 6mm;
+  }
+  .asunto .et{
+    font-size:6.9pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--magenta);
+  }
+  .asunto .tx{font-family:'Montserrat',sans-serif;font-weight:700;font-size:12.2pt;line-height:1.28;margin-top:1.2mm}
+
+  /* ---------- Tres columnas ---------- */
+  .tres{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6mm;margin-top:6.5mm}
+  .tres .col{border-top:.5mm solid var(--linea);padding-top:2.8mm}
+  .tres .col h4{
+    font-size:6.9pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--magenta);margin-bottom:1.8mm;
+  }
+  .tres .col p{font-size:8.5pt;line-height:1.55;color:var(--gris)}
+  .tres .col p strong{color:var(--tinta);font-weight:600;display:block}
+
+  /* ---------- Partidas ---------- */
+  .partidas{width:100%;border-collapse:collapse;margin-top:7mm}
+  .partidas thead th{
+    font-size:6.9pt;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--magenta);text-align:left;
+    padding:0 0 2.2mm;border-bottom:.5mm solid var(--linea);
+  }
+  .partidas th.num{width:9mm}
+  .partidas th.img{width:17mm}
+  .partidas th.c,.partidas td.c{text-align:center;width:16mm}
+  .partidas th.d,.partidas td.d{text-align:right;width:25mm;padding-left:5mm}
+  .partidas tbody td{
+    padding:3.4mm 0;border-bottom:.3mm solid var(--linea);vertical-align:middle;
+  }
+  .partidas td.num{
+    font-family:'Montserrat',sans-serif;font-weight:700;font-size:11pt;
+    color:var(--numeral);letter-spacing:-.01em;
+  }
+  .partidas td.img{padding-right:4mm}
+  .partidas .con .t{font-weight:600;font-size:9.4pt;line-height:1.35}
+  .partidas .con .s{font-size:8.1pt;color:var(--gris);line-height:1.45;margin-top:.7mm}
+  .partidas td.c{font-size:9pt;color:var(--gris)}
+  .partidas td.d{font-size:9.4pt;font-weight:600;font-variant-numeric:tabular-nums}
+
+  /* fila cabecera de opción (usar solo si se presentan dos opciones) */
+  .partidas tr.opt td{
+    padding:4.5mm 0 2mm;border-bottom:none;
+    font-family:'Montserrat',sans-serif;font-weight:700;font-size:9.6pt;color:var(--magenta);
+  }
+  .partidas tr.opt.rec td::after{
+    content:'RECOMENDADA';margin-left:3mm;font-family:'Inter',sans-serif;font-size:6.6pt;
+    font-weight:700;letter-spacing:.12em;color:#fff;background:var(--grad-b);
+    padding:.8mm 2mm;border-radius:1mm;vertical-align:middle;
+  }
+
+  /* ---------- Totales ---------- */
+  .totales{display:flex;justify-content:flex-end;margin-top:6mm}
+  .totales .caja{width:78mm}
+  .totales .fila{display:flex;justify-content:space-between;padding:1.9mm 0;font-size:9pt;color:var(--gris)}
+  .totales .fila span:last-child{font-variant-numeric:tabular-nums;color:var(--tinta);font-weight:600}
+  .totales .fila.tot{
+    border-top:.5mm solid var(--linea);margin-top:1.4mm;padding-top:3.2mm;
+    font-family:'Montserrat',sans-serif;font-weight:700;font-size:13pt;color:var(--magenta);
+  }
+  .totales .fila.tot span:last-child{color:var(--magenta);font-weight:700}
+
+  /* ---------- Pie de página ---------- */
+  .pie{
+    position:absolute;left:16mm;right:16mm;bottom:10mm;
+    border-top:.3mm solid var(--linea);padding-top:2.6mm;
+    font-size:7.2pt;color:var(--gris);display:flex;justify-content:space-between;gap:6mm;
+  }
+
+  /* ---------- Páginas interiores ---------- */
+  .barra{
+    position:absolute;top:0;left:0;right:0;height:4.5mm;background:var(--grad);
+  }
+  .page.interior{padding-top:18mm}
+  .rot{
+    font-size:6.9pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--magenta);
+  }
+  .h2{font-family:'Montserrat',sans-serif;font-weight:700;font-size:15pt;line-height:1.2;margin-top:1.6mm}
+
+  /* ---------- Fichas técnicas ---------- */
+  .ficha{
+    display:grid;grid-template-columns:38mm 38mm 1fr;gap:6mm;
+    margin-top:6.5mm;padding-top:5mm;border-top:.3mm solid var(--linea);
+  }
+  .ficha .cap{font-size:6.6pt;letter-spacing:.1em;text-transform:uppercase;color:var(--gris);margin-top:1.6mm}
+  .ficha h3{font-family:'Montserrat',sans-serif;font-weight:700;font-size:10.6pt;line-height:1.28}
+  .ficha .ref{font-size:7.6pt;color:var(--gris);margin-top:.6mm}
+  .especs{margin-top:2.6mm;width:100%;border-collapse:collapse}
+  .especs th{
+    text-align:left;font-size:8pt;font-weight:600;color:var(--gris);
+    padding:1.5mm 4mm 1.5mm 0;vertical-align:top;white-space:nowrap;width:26mm;
+  }
+  .especs td{font-size:8pt;padding:1.5mm 0;vertical-align:top;line-height:1.45}
+  .especs tr+tr th,.especs tr+tr td{border-top:.3mm solid var(--linea)}
+
+  /* ---------- Ficha de marcaje ---------- */
+  .marcaje{
+    margin-top:7mm;background:var(--rosa);border-radius:2mm;padding:5mm 6mm;
+  }
+  .marcaje h4{
+    font-size:6.9pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--magenta);font-family:'Inter',sans-serif;
+  }
+  .marcaje .rej{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm 6mm;margin-top:3.4mm}
+  .marcaje .it .k{font-size:6.6pt;letter-spacing:.1em;text-transform:uppercase;color:var(--gris)}
+  .marcaje .it .v{font-size:8.8pt;font-weight:600;line-height:1.35;margin-top:.5mm}
+
+  /* ---------- Condiciones ---------- */
+  .cond{margin-top:6mm;counter-reset:c}
+  .cond .i{
+    display:grid;grid-template-columns:8mm 1fr;gap:4mm;
+    padding:3.4mm 0;border-bottom:.3mm solid var(--linea);
+  }
+  .cond .i::before{
+    counter-increment:c;content:counter(c,decimal-leading-zero);
+    font-family:'Montserrat',sans-serif;font-weight:700;font-size:10pt;color:var(--numeral);
+  }
+  .cond .i h4{font-family:'Montserrat',sans-serif;font-weight:700;font-size:9.4pt;margin-bottom:.9mm}
+  .cond .i p{font-size:8.4pt;color:var(--gris);line-height:1.55}
+
+  .notas{margin-top:6mm;background:var(--rosa);border-radius:2mm;padding:4.6mm 6mm}
+  .notas h4{
+    font-size:6.9pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--magenta);margin-bottom:2mm;
+  }
+  .notas p{font-size:8.4pt;line-height:1.55;color:var(--tinta)}
+  .notas p+p{margin-top:2mm}
+
+  /* ---------- Cierre ---------- */
+  .cierre{
+    position:absolute;left:16mm;right:16mm;bottom:14mm;
+    background:var(--grad);border-radius:2.5mm;color:#fff;padding:6.5mm 7mm;
+  }
+  .cierre .n{font-family:'Montserrat',sans-serif;font-weight:700;font-size:12.4pt;line-height:1.25}
+  .cierre .l{font-size:8.2pt;opacity:.9;margin-top:1.2mm}
+  .cierre .datos{
+    display:flex;flex-wrap:wrap;gap:2mm 7mm;margin-top:4mm;
+    padding-top:3.6mm;border-top:.3mm solid rgba(255,255,255,.32);
+    font-size:8.2pt;
+  }
+
+  /* ---------- Marcos de muestra (SUSTITUIR por <img>) ---------- */
+  .ph{
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    border:.4mm dashed #D8B6C4;border-radius:1.5mm;background:var(--rosa);
+    color:#B4899A;font-size:6.4pt;letter-spacing:.06em;text-transform:uppercase;
+    line-height:1.35;padding:2mm;
+  }
+  .ph.mini{width:15mm;height:15mm}
+  .ph.foto{width:38mm;height:38mm}
+  img.foto{width:38mm;height:38mm;object-fit:contain;display:block}
+  img.mini{width:15mm;height:15mm;object-fit:contain;display:block}
+
+  /* Marcador sin sustituir: imposible que se cuele en un PDF entregado */
+  mark.todo{background:#FFF2A8;color:#B01414;font-weight:700;padding:0 .6mm;border-radius:.5mm}
+</style>
+</head>
+<body>
+
+<!-- ==================== PÁGINA 1 · OFERTA ==================== -->
+<section class="page">
+
+  <header class="cab">
+    <img class="logo" src="assets/logo-startidea.png" alt="Startidea">
+    <div class="doc">
+      <div class="titulo">Presupuesto</div>
+      <div class="meta">
+        N.º <mark class="todo">{{PRESUPUESTO_NUM}}</mark><br>
+        <span>Fecha:</span> <mark class="todo">{{FECHA}}</mark>
+      </div>
+    </div>
+  </header>
+
+  <div class="filete"></div>
+
+  <div class="asunto">
+    <div class="et">Asunto</div>
+    <div class="tx"><mark class="todo">{{ASUNTO}}</mark></div>
+  </div>
+
+  <div class="tres">
+    <div class="col">
+      <h4>Cliente</h4>
+      <p>
+        <strong><mark class="todo">{{CLIENTE_NOMBRE}}</mark></strong>
+        <mark class="todo">{{CLIENTE_CIF}}</mark><br>
+        <mark class="todo">{{CLIENTE_DIRECCION}}</mark><br>
+        <mark class="todo">{{CLIENTE_CONTACTO}}</mark>
+      </p>
+    </div>
+    <div class="col">
+      <h4>Proveedor</h4>
+      <p>
+        <strong>Startidea Málaga, S.L.</strong>
+        CIF B19583632<br>
+        C/ Conde Cifuentes, 33<br>
+        18005 Granada<br>
+        958 045 789 · pedidos@startidea.es
+      </p>
+    </div>
+    <div class="col">
+      <h4>Validez</h4>
+      <p>
+        <strong>30 días naturales</strong>
+        Desde la fecha de emisión.<br>
+        Producción entre <mark class="todo">{{PLAZO_MIN}}</mark> y
+        <mark class="todo">{{PLAZO_MAX}}</mark> días laborables desde la
+        validación del arte final.
+      </p>
+    </div>
+  </div>
+
+  <!--
+    PARTIDAS. Una línea por concepto: producto / marcaje / cliché o pantalla.
+    Nunca fundas producto y marcaje en una sola línea: el cliente tiene que ver
+    de dónde sale el importe.
+    Si se presentan DOS OPCIONES, abre cada bloque con:
+      <tr class="opt rec"><td colspan="6">Opción A · {{NOMBRE}}</td></tr>   (recomendada)
+      <tr class="opt"><td colspan="6">Opción B · {{NOMBRE}}</td></tr>
+    y repite el bloque de totales para cada una.
+  -->
+  <table class="partidas">
+    <thead>
+      <tr>
+        <th class="num">#</th>
+        <th class="img"></th>
+        <th>Concepto</th>
+        <th class="c">Cant.</th>
+        <th class="d">P. unit.</th>
+        <th class="d">Importe</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="num">01</td>
+        <td class="img"><div class="ph mini">Foto<br>producto</div></td>
+        <td class="con">
+          <div class="t"><mark class="todo">{{L1_PRODUCTO}}</mark></div>
+          <div class="s"><mark class="todo">{{L1_DESCRIPCION}}</mark></div>
+        </td>
+        <td class="c"><mark class="todo">{{L1_CANT}}</mark></td>
+        <td class="d"><mark class="todo">{{L1_PU}}</mark></td>
+        <td class="d"><mark class="todo">{{L1_IMPORTE}}</mark></td>
+      </tr>
+      <tr>
+        <td class="num">02</td>
+        <td class="img"><div class="ph mini">Zona<br>marcaje</div></td>
+        <td class="con">
+          <div class="t">Marcaje · <mark class="todo">{{L2_TECNICA}}</mark></div>
+          <div class="s"><mark class="todo">{{L2_DESCRIPCION}}</mark></div>
+        </td>
+        <td class="c"><mark class="todo">{{L2_CANT}}</mark></td>
+        <td class="d"><mark class="todo">{{L2_PU}}</mark></td>
+        <td class="d"><mark class="todo">{{L2_IMPORTE}}</mark></td>
+      </tr>
+      <tr>
+        <td class="num">03</td>
+        <td class="img"></td>
+        <td class="con">
+          <div class="t"><mark class="todo">{{L3_CLICHE}}</mark></div>
+          <div class="s">Cargo único por diseño y técnica. No se repite en pedidos
+            posteriores con el mismo arte final.</div>
+        </td>
+        <td class="c"><mark class="todo">{{L3_CANT}}</mark></td>
+        <td class="d"><mark class="todo">{{L3_PU}}</mark></td>
+        <td class="d"><mark class="todo">{{L3_IMPORTE}}</mark></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="totales">
+    <div class="caja">
+      <div class="fila"><span>Base imponible</span><span><mark class="todo">{{BASE}}</mark></span></div>
+      <div class="fila"><span>IVA 21 %</span><span><mark class="todo">{{IVA}}</mark></span></div>
+      <div class="fila tot"><span>Total</span><span><mark class="todo">{{TOTAL}}</mark></span></div>
+    </div>
+  </div>
+
+  <div class="pie">
+    <span>Startidea Málaga, S.L. · CIF B19583632 · merchandising.startidea.es</span>
+    <span>Página 1 de 3</span>
+  </div>
+</section>
+
+<!-- ============ PÁGINA 2 · DETALLE TÉCNICO Y MEDIDAS DE MARCAJE ============ -->
+<section class="page interior">
+  <div class="barra"></div>
+
+  <div class="rot">Detalle técnico</div>
+  <h2 class="h2">Producto, materiales y medidas de marcaje</h2>
+
+  <!-- Duplica .ficha por cada producto presupuestado -->
+  <div class="ficha">
+    <div>
+      <div class="ph foto">Foto<br>producto</div>
+      <div class="cap">Producto</div>
+    </div>
+    <div>
+      <div class="ph foto">Zona de marcaje<br>con cotas</div>
+      <div class="cap">Zona de marcaje y cotas</div>
+    </div>
+    <div>
+      <h3><mark class="todo">{{F1_PRODUCTO}}</mark></h3>
+      <div class="ref">Ref. <mark class="todo">{{F1_REF}}</mark></div>
+      <table class="especs">
+        <tr><th>Medidas</th><td><mark class="todo">{{F1_MEDIDAS}}</mark></td></tr>
+        <tr><th>Materiales</th><td><mark class="todo">{{F1_MATERIALES}}</mark></td></tr>
+        <tr><th>Capacidad / peso</th><td><mark class="todo">{{F1_CAPACIDAD}}</mark></td></tr>
+        <tr><th>Incluye</th><td><mark class="todo">{{F1_INCLUYE}}</mark></td></tr>
+        <tr><th>Artes finales</th><td>Vectorial (.ai, .eps o .pdf) con los textos
+          trazados y los colores definidos en Pantone.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="marcaje">
+    <h4>Ficha de marcaje</h4>
+    <div class="rej">
+      <div class="it"><div class="k">Técnica</div><div class="v"><mark class="todo">{{M_TECNICA}}</mark></div></div>
+      <div class="it"><div class="k">Número de tintas</div><div class="v"><mark class="todo">{{M_TINTAS}}</mark></div></div>
+      <div class="it"><div class="k">Posición</div><div class="v"><mark class="todo">{{M_POSICION}}</mark></div></div>
+      <div class="it"><div class="k">Área máxima</div><div class="v"><mark class="todo">{{M_AREA}}</mark></div></div>
+      <div class="it"><div class="k">Formato del arte final</div><div class="v"><mark class="todo">{{M_FORMATO}}</mark></div></div>
+      <div class="it"><div class="k">Mock-up</div><div class="v">Se envía para validación<br>antes de producir</div></div>
+    </div>
+  </div>
+
+  <div class="pie">
+    <span>Startidea Málaga, S.L. · CIF B19583632 · merchandising.startidea.es</span>
+    <span>Página 2 de 3</span>
+  </div>
+</section>
+
+<!-- ==================== PÁGINA 3 · CONDICIONES ==================== -->
+<section class="page interior">
+  <div class="barra"></div>
+
+  <div class="rot">Condiciones</div>
+  <h2 class="h2">Condiciones de la oferta</h2>
+
+  <div class="cond">
+    <div class="i">
+      <div>
+        <h4>Plazo de producción</h4>
+        <p>Entre <mark class="todo">{{PLAZO_MIN}}</mark> y <mark class="todo">{{PLAZO_MAX}}</mark>
+          días laborables según el volumen final, siempre desde la validación del arte
+          final por parte del cliente.</p>
+      </div>
+    </div>
+    <div class="i">
+      <div>
+        <h4>Entrega</h4>
+        <p>Transporte a península incluido en los precios indicados. Los envíos a
+          Baleares, Canarias, Ceuta y Melilla se presupuestan aparte.</p>
+      </div>
+    </div>
+    <div class="i">
+      <div>
+        <h4>Impuestos</h4>
+        <p>Todos los precios unitarios y la base imponible se expresan sin IVA.
+          El IVA del 21 % figura desglosado en el total de la oferta.</p>
+      </div>
+    </div>
+    <div class="i">
+      <div>
+        <h4>Forma de pago</h4>
+        <p>100 % a la confirmación del presupuesto, momento en el que se pone en
+          marcha la producción.</p>
+      </div>
+    </div>
+    <div class="i">
+      <div>
+        <h4>Artes finales</h4>
+        <p>Se requiere arte final en vectorial (.ai, .eps o .pdf) con los textos
+          trazados y los colores definidos en Pantone. Antes de producir se envía un
+          mock-up para su validación por escrito.</p>
+      </div>
+    </div>
+    <div class="i">
+      <div>
+        <h4>Cantidades</h4>
+        <p>Los precios unitarios corresponden a las cantidades indicadas en la oferta;
+          modificarlas altera el precio por unidad. El cliché o pantalla se factura una
+          sola vez por diseño y técnica.</p>
+      </div>
+    </div>
+    <div class="i">
+      <div>
+        <h4>Validez de la oferta</h4>
+        <p>30 días naturales desde la fecha de emisión de este presupuesto.</p>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    NOTAS TÉCNICAS. Aquí va toda salvedad que el cliente deba conocer: una técnica
+    que no da el resultado que espera, un color que no se puede reproducir sobre ese
+    material, un stock que no cubre la cantidad… siempre con la alternativa al lado.
+    Si no hay ninguna salvedad, borra el bloque entero.
+  -->
+  <div class="notas">
+    <h4>Notas técnicas</h4>
+    <p><mark class="todo">{{NOTA_TECNICA}}</mark></p>
+  </div>
+
+  <div class="cierre">
+    <div class="n">Startidea Málaga, S.L.</div>
+    <div class="l">TodoMerchandising · merchandising.startidea.es</div>
+    <div class="datos">
+      <span>CIF B19583632</span>
+      <span>C/ Conde Cifuentes, 33 · 18005 Granada</span>
+      <span>958 045 789</span>
+      <span>pedidos@startidea.es</span>
+    </div>
+  </div>
+
+  <div class="pie" style="bottom:6mm">
+    <span>Startidea Málaga, S.L. · CIF B19583632 · merchandising.startidea.es</span>
+    <span>Página 3 de 3</span>
+  </div>
+</section>
+
+</body>
+</html>

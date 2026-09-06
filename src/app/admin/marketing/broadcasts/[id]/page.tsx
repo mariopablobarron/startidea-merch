@@ -689,13 +689,20 @@ export default function BroadcastEditorPage({
                 <p className="font-medium text-ink">{subject || "(asunto)"}</p>
                 {preheader && <p className="mt-0.5 text-ink/60">{preheader}</p>}
               </div>
-              <div
-                className="max-h-[700px] overflow-auto"
-                dangerouslySetInnerHTML={{
-                  __html: previewWithStartideaWrap(
-                    html.replace(/\{\{firstName\}\}/g, "Mario").replace(/\{\{name\}\}/g, "Mario Pablo"),
-                  ),
-                }}
+              {/* El cuerpo del broadcast es HTML ajeno (plantillas pegadas de
+                  terceros, generadores externos). Se pinta dentro de un iframe
+                  aislado y SIN `allow-scripts`: así el preview enseña exactamente
+                  lo que llega al buzón —sanearlo mentiría sobre el envío— y a la
+                  vez ningún <script> ni handler inline puede ejecutarse en el
+                  panel de quien lo edita. No usar dangerouslySetInnerHTML aquí. */}
+              <iframe
+                title="Preview del broadcast"
+                sandbox=""
+                referrerPolicy="no-referrer"
+                className="h-[700px] w-full border-0"
+                srcDoc={previewWithStartideaWrap(
+                  html.replace(/\{\{firstName\}\}/g, "Mario").replace(/\{\{name\}\}/g, "Mario Pablo"),
+                )}
               />
             </div>
             <p className="mt-2 text-[11px] text-ink/50 leading-relaxed">

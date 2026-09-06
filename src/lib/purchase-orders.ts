@@ -1,4 +1,5 @@
 import type { PurchaseOrder, SupplierCode } from "@prisma/client";
+import { paymentItemsFingerprint } from "@/lib/payment-quote-fingerprint";
 import { prisma } from "@/lib/prisma";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
@@ -20,7 +21,7 @@ import { resolveProductsBySlugs } from "@/lib/product-slug-resolver";
  *
  * Cliente ve el plazo más tardío (o desglose por PO en el dashboard).
  */
-export async function createPurchaseOrdersFromCart(cartId: string): Promise<PurchaseOrder[]> {
+export async function createPurchaseOrdersFromCart(cartId: string, expectedItemsFingerprint?: string): Promise<PurchaseOrder[]> {
   // El reparto es idempotente entre llamadas SEGUIDAS (la segunda ve los items
   // ya asignados y los salta), pero no entre llamadas SOLAPADAS: ambas leen los
   // items todavía sin asignar, ninguna encuentra PO previo y las dos crean el
@@ -46,7 +47,7 @@ export async function createPurchaseOrdersFromCart(cartId: string): Promise<Purc
     return prisma.purchaseOrder.findMany({ where: { cartId } });
   }
   try {
-    return await repartirCarritoEnPurchaseOrders(cartId);
+    return await repartirCarritoEnPurchaseOrders(cartId, expectedItemsFingerprint);
   } finally {
     await releaseCronLock(lockKey);
   }
@@ -55,17 +56,15 @@ export async function createPurchaseOrdersFromCart(cartId: string): Promise<Purc
 /** TTL corto: el reparto no hace llamadas externas, tarda milisegundos. */
 const SPLIT_LOCK_TTL_MS = 2 * 60 * 1000;
 
-async function repartirCarritoEnPurchaseOrders(cartId: string): Promise<PurchaseOrder[]> {
+async function repartirCarritoEnPurchaseOrders(cartId: string, expectedItemsFingerprint?: string): Promise<PurchaseOrder[]> {
   // Cargar items con el supplier del producto subyacente
   const items = await prisma.cartQuoteItem.findMany({
     where: { cartId },
-    select: {
-      id: true,
-      purchaseOrderId: true,
-      productSlug: true,
-      totalClientCents: true,
-    },
+    include: { markings: true },
   });
+  if (expectedItemsFingerprint && paymentItemsFingerprint(items) !== expectedItemsFingerprint) {
+    throw new Error("La versión del presupuesto cambió antes del reparto");
+  }
   if (items.length === 0) return [];
 
   // Mapeo productSlug → supplier (1 query)

@@ -70,6 +70,7 @@ vi.mock("@/lib/telegram", async (importOriginal) => ({
 }));
 
 import { autoPlaceMidoceanOrder } from "./midocean-auto-order";
+import { paymentItemsFingerprint } from "./payment-quote-fingerprint";
 
 /**
  * Tests de src/lib/midocean-auto-order.ts — el camino del dinero que SALE.
@@ -517,5 +518,41 @@ describe("autoPlaceMidoceanOrder · simulación", () => {
     await autoPlaceMidoceanOrder("cart_abcdef123456");
 
     expect([...settings.keys()].some((k) => k.includes("cart_abcdef123456"))).toBe(false);
+  });
+});
+
+
+describe("autoPlaceMidoceanOrder · versión pagada antes de producir", () => {
+  it.each(["cantidad", "variante", "marcaje"])("cambio de %s tras confirmar el pago bloquea todos los efectos", async (change) => {
+    process.env.MIDOCEAN_AUTO_PLACE_ON_PAYMENT = "true";
+    process.env.MIDOCEAN_LIVE_ORDERS = "true";
+    const original = [{ ...cart().items[0], markings: [{ id: "mark_1", positionId: "front", techniqueCode: "S1", numberOfColors: 1 }] }];
+    const expected = paymentItemsFingerprint(original as unknown as Parameters<typeof paymentItemsFingerprint>[0]);
+    const changed = structuredClone(original);
+    if (change === "cantidad") changed[0].quantity++;
+    if (change === "variante") changed[0].variantSku = "OTHER-SKU";
+    if (change === "marcaje") changed[0].markings[0].numberOfColors++;
+    cartFindUnique.mockResolvedValue(cart({ items: changed }));
+    const result = await autoPlaceMidoceanOrder("cart_abcdef123456", expected);
+    expect(result).toEqual({ ok: false, error: "La versión del presupuesto cambió; revisar antes de cursar el pedido" });
+    expect(createOrderMock).not.toHaveBeenCalled();
+    expect(notifyTelegramMock).not.toHaveBeenCalled(); expect(poUpdate).not.toHaveBeenCalled();
+    expect(productFindMany).not.toHaveBeenCalled();
+    expect(cartFindUnique).toHaveBeenCalledTimes(1);
+    expect([...settings.keys()].some((key) => key.includes("cart_abcdef123456"))).toBe(false);
+  });
+
+  it("con la misma versión usa una sola lectura y las mismas líneas en el efecto", async () => {
+    process.env.MIDOCEAN_AUTO_PLACE_ON_PAYMENT = "true";
+    process.env.MIDOCEAN_LIVE_ORDERS = "true";
+    const original = [{ ...cart().items[0], markings: [{ id: "mark_1", positionId: "front", techniqueCode: "S1", numberOfColors: 1 }] }];
+    const expected = paymentItemsFingerprint(original as unknown as Parameters<typeof paymentItemsFingerprint>[0]);
+    cartFindUnique.mockResolvedValue({ ...cart(), items: original });
+    const result = await autoPlaceMidoceanOrder("cart_abcdef123456", expected);
+    expect(result).toMatchObject({ ok: true, orderId: expect.any(String) });
+    expect(cartFindUnique).toHaveBeenCalledTimes(1);
+    expect(cartFindUnique.mock.calls[0][0].include.items).toMatchObject({ include: { markings: expect.anything() } });
+    expect(createOrderMock).toHaveBeenCalledTimes(1);
+    expect(createOrderMock.mock.calls[0][0].items[0]).toMatchObject({ sku: original[0].variantSku, quantity: original[0].quantity });
   });
 });

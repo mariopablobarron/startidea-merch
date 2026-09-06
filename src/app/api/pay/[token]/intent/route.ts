@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import type Stripe from "stripe";
+import { PaymentAttemptError, startPaymentAttempt } from "@/lib/payment-attempts";
 import { prisma } from "@/lib/prisma";
-import { stripe, STRIPE_MODE } from "@/lib/stripe";
+import { stripe as configuredStripe, STRIPE_MODE } from "@/lib/stripe";
 import { withIva } from "@/lib/iva";
 
 export const runtime = "nodejs";
@@ -18,6 +19,7 @@ export const dynamic = "force-dynamic";
  *               vía Stripe Elements (botón nativo Apple/Google Pay)
  */
 export async function POST(_req: Request, { params }: { params: Promise<{ token: string }> }) {
+  const stripe = configuredStripe;
   if (!stripe) {
     return NextResponse.json(
       { error: "Stripe no configurado", hint: "Falta STRIPE_SECRET_KEY en envs." },
@@ -54,55 +56,42 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   const amountCents = withIva(Math.round((cart.acceptedTotalCents * cart.depositPercent) / 100));
   const isFull = cart.depositPercent >= 100;
 
-  const intent = await stripe.paymentIntents.create({
-    amount: amountCents,
-    currency: "eur",
-    receipt_email: cart.email,
-    description: isFull
-      ? `Pago total cotización — ${cart.company || cart.name}`
-      : `Depósito ${cart.depositPercent}% — ${cart.company || cart.name}`,
-    // automatic_payment_methods: Stripe activa los métodos disponibles para el
-    // cliente según el browser/región (Apple Pay, Google Pay, Link, card, etc.)
-    automatic_payment_methods: { enabled: true },
-    metadata: {
-      cartId: cart.id,
-      paymentLinkToken: token,
-      depositPercent: String(cart.depositPercent),
-      kind: isFull ? "FULL" : "DEPOSIT",
-      source: "express-checkout",
-    },
-  });
+  try {
+    const intent = await startPaymentAttempt({
+      stripe, cart, mode: STRIPE_MODE, channel: "wallet",
+      quote: {
+        acceptedTotalCents: cart.acceptedTotalCents, depositPercent: cart.depositPercent,
+        paymentLinkToken: token, amountCents, currency: "eur",
+        kind: isFull ? "FULL" : "DEPOSIT", taxEnabled: false,
+      },
+      params: {
+        amount: amountCents,
+        currency: "eur",
+        receipt_email: cart.email,
+        description: isFull
+          ? `Pago total cotización — ${cart.company || cart.name}`
+          : `Depósito ${cart.depositPercent}% — ${cart.company || cart.name}`,
+        automatic_payment_methods: { enabled: true },
+      },
+      create: (snapshot, options) => stripe.paymentIntents.create(
+        snapshot.params as unknown as Stripe.PaymentIntentCreateParams, options,
+      ),
+    });
+    if (intent.object !== "payment_intent" || !intent.client_secret) {
+      throw new PaymentAttemptError(409, "No se ha podido preparar el pago. Vuelve a intentarlo.");
+    }
 
-  // Persistir Payment PENDING — el webhook lo marcará PAID al confirmarse.
-  // Si ya existía un PENDING para este cart (caso: usuario abrió la página
-  // dos veces) no creamos duplicado, actualizamos el más reciente.
-  const existing = await prisma.payment.findFirst({
-    where: { cartId: cart.id, status: "PENDING" },
-    orderBy: { createdAt: "desc" },
-  });
-  if (existing) {
-    await prisma.payment.update({
-      where: { id: existing.id },
-      data: { stripePaymentIntentId: intent.id, amountCents },
+    return NextResponse.json({
+      ok: true,
+      clientSecret: intent.client_secret,
+      amountCents,
+      publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     });
-  } else {
-    await prisma.payment.create({
-      data: {
-        cartId: cart.id,
-        amountCents,
-        currency: "EUR",
-        status: "PENDING",
-        kind: isFull ? "FULL" : "DEPOSIT",
-        stripeMode: STRIPE_MODE,
-        stripePaymentIntentId: intent.id,
-      } satisfies Prisma.PaymentUncheckedCreateInput,
-    });
+  } catch (error) {
+    if (error instanceof PaymentAttemptError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    console.error("[payment intent] No se pudo preparar el intento", error instanceof Error ? error.name : "Error");
+    return NextResponse.json({ error: "No se ha podido preparar el pago. Vuelve a intentarlo en unos instantes." }, { status: 503 });
   }
-
-  return NextResponse.json({
-    ok: true,
-    clientSecret: intent.client_secret,
-    amountCents,
-    publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-  });
 }

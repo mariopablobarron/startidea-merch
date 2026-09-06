@@ -44,6 +44,7 @@ on:
     workflows:
       - "AI usage alert diaria"
       - "Auto-resolve errors stale"
+      - "Barrido anti-fuga de proveedor (regla nº2)"
       - "Cron watchdog diario"
       - "Embeddings sync diario"
       - "Health ping cada hora"

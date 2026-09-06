@@ -1,11 +1,19 @@
 name: Metric snapshot diario
 
-# 03:35 UTC todos los días (5 min después del rollup ProductView).
 # Guarda KPIs del día en MetricSnapshot para gráficas históricas.
+#
+# ⚠️ YA NO LO PROGRAMA GITHUB. El disparador es el crontab del VPS
+# (06:50 local = 04:50 UTC), 10 min después del `product-view-rollup`, porque
+# lee los contadores rodantes que ese rollup deja. Ver el porqué completo en
+# .github/workflows/product-view-rollup.yml: GitHub entregaba los dos con
+# horas de retraso y el orden entre ellos dejó de estar garantizado.
+#
+# Se conserva el `workflow_dispatch` a propósito: el 01-sep el disparo falló
+# (la petición no salió del runner), la fila del día se perdió y no era
+# reconstruible — la única recuperación posible es volver a dispararlo el
+# mismo día.
 
 on:
-  schedule:
-    - cron: "35 3 * * *"
   workflow_dispatch: {}
 
 concurrency:

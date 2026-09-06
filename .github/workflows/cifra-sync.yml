@@ -1,7 +1,8 @@
 name: Cifra sync diario
 
-# Diario 02:30 UTC (03:30 Madrid invierno, 04:30 verano).
-# Antes del rollup (03:00) y metric-snapshot (03:35).
+# Diario 05:33 hora Madrid = 03:33 UTC (movido ahí el 2026-08-21: el lock de
+# slot que retiene restic-offsite.sh lo estaba matando cada madrugada).
+# Antes del rollup (06:40 local) y del metric-snapshot (06:50 local).
 #
 # Sincroniza catálogo + stock + precios Cifra → BD local.
 # El sync es fire-and-forget; el endpoint vuelve en 200 ms con
@@ -10,8 +11,8 @@ name: Cifra sync diario
 # Si vuelve a fallar de forma silenciosa, el cron-watchdog avisa
 # (porque cifra-sync ya pasa por wrapCronHandler).
 
-# El disparo diario lo hace el crontab del VPS (merch-cron-runner.sh, 05:00
-# hora Madrid = 03:00 UTC), más robusto (guardas de arranque/carga/docker +
+# El disparo diario lo hace el crontab del VPS (merch-cron-runner.sh, 05:33
+# hora Madrid = 03:33 UTC), más robusto (guardas de arranque/carga/docker +
 # Telegram solo en fallo real). Se retiró el schedule de GitHub Actions para no
 # duplicar el sync ni chocar con el crontab (409 del cron-lock). Queda
 # workflow_dispatch para lanzarlo a mano.

@@ -33,6 +33,16 @@ export const EXPECTED_HOURS_OVERRIDE: Record<string, number> = {
   // alarma que metric-snapshot, en la dirección contraria. El guard
   // cron-staleness-vs-workflows.guard.test.ts impide que vuelva a colarse.
   "competitor-watch": 8 * 24,
+  // cron-watchdog.yml → `0 11 * * *` diario. Estas dos entradas NO cambian
+  // nada: reproducen el valor al que ya caían por DEFAULT_HOURS cuando no
+  // estaban en CRON_CATALOG. Se escriben porque el 2026-09-01, al registrar en
+  // el catálogo los nueve crons de GitHub Actions que faltaban, el umbral pasó
+  // solo de 30h a 48h (frequencyHours 24 × STALE_MARGIN 2) — y mover un umbral
+  // de alerta como efecto colateral de un cambio de inventario es justo lo que
+  // no debe pasar. Si algún día se decide que 48h es el valor correcto, que sea
+  // una decisión con su propio commit, no un descuido.
+  "cron-watchdog": 30,
+  "makito-marking-enrich": 30, // makito-marking-enrich.yml → `15 2 * * *` diario
 };
 
 /**
