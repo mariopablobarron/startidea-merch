@@ -51,6 +51,31 @@ cp plantilla-presupuesto-startidea.html presupuesto-acme.html
 Cualquier marcador `{{...}}` que quede sin sustituir sale **en rojo sobre amarillo**
 en el PDF y el script lo avisa por consola. No puede colarse en una entrega.
 
+## Desde el panel
+
+Además de a mano, el presupuesto se puede montar en **Panel → Catálogo →
+Presupuestos ✍️**: partidas numeradas, opciones alternativas (A recomendada, B)
+y líneas de producto / marcaje / cliché, con el coste, el precio de venta y el
+**margen resultante en euros y en porcentaje** recalculados al teclear, y un
+aviso cuando una línea baja del 20 %.
+
+El botón **«Descargar PDF»** hace el render en el servidor con este mismo
+Chromium (`/api/admin/presupuestos/<id>/pdf`) y devuelve el archivo ya nombrado:
+`Presupuesto_<Cliente>_PRE-AAAA-NNNN_Startidea.pdf`. Guarda antes de generar,
+porque el PDF lo arma el servidor leyendo la base de datos.
+
+«Ver documento» abre el HTML ya relleno (`…/imprimir`) por si se prefiere
+imprimir desde el navegador (A4, sin márgenes, con gráficos de fondo). El CSS
+sale de la plantilla de aquí al lado, así que las tres vías —panel, navegador y
+`./generar-pdf.sh`— producen el mismo papel.
+
+Las fotos de producto y de zona de marcaje se suben desde el propio editor: se
+redimensionan al subir y se empotran en base64 en el documento, para que el PDF
+siga siendo autocontenido.
+
+Si la imagen no lleva Chromium, «Descargar PDF» responde 503 explicándolo y
+«Ver documento» sigue funcionando.
+
 ## De dónde salen los precios
 
 De los portales de proveedor con las cuentas de Startidea, **nunca estimados y nunca

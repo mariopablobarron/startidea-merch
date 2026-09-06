@@ -2510,3 +2510,156 @@ model NewsletterImport {
   @@index([createdAt(sort: Desc)])
   @@index([tag])
 }
+
+// ============================================================================
+// Presupuestos de merchandising (documento comercial de Startidea Málaga, S.L.)
+// ============================================================================
+//
+// No confundir con `Proposal` ni con `CartQuote`: aquellos salen del embudo web
+// (recomendador, carrito) y los redacta el sistema. Un Presupuesto lo escribe
+// Mario en el panel, con precios que vienen del portal del proveedor, y sale en
+// las tres páginas A4 del formato aprobado.
+//
+// La estructura es la del documento, no la de la base de datos:
+//   Presupuesto → Partidas numeradas (01, 02…) → Opciones (A recomendada, B) →
+//   Líneas (producto / marcaje / cliché).
+// Una partida sin alternativas tiene una única opción, así el render y el
+// cálculo no necesitan dos caminos.
+
+enum PresupuestoEstado {
+  BORRADOR
+  ENVIADO
+  ACEPTADO
+  CADUCADO
+}
+
+enum PresupuestoLineaTipo {
+  PRODUCTO
+  MARCAJE
+  CLICHE
+  OTRO
+}
+
+model Presupuesto {
+  id      String @id @default(cuid())
+  // Numeración correlativa por año: PRE-2026-0001. El par (anio, secuencia)
+  // es único para que dos presupuestos simultáneos no compartan número.
+  numero  String @unique
+  anio    Int
+  secuencia Int
+
+  estado  PresupuestoEstado @default(BORRADOR)
+  asunto  String
+
+  // Cliente
+  clienteNombre     String
+  clienteContacto   String?
+  clienteReferencia String? // "Ref. contacto: … / Club Cámara"
+  clienteCif        String?
+  clienteDireccion  String?
+  clienteEmail      String?
+
+  // Condiciones de la oferta
+  validezDias  Int @default(30)
+  // Plazo SIEMPRE en rango y desde la validación del arte final: nunca fechas.
+  plazoMinDias Int @default(8)
+  plazoMaxDias Int @default(15)
+  // Margen por defecto del presupuesto (sobre precio de VENTA). Cada línea
+  // puede llevar el suyo.
+  margenObjetivoPct Float @default(30)
+
+  // Nota técnica al cliente (imposibilidades, medidas que no coinciden, stock
+  // justo…). Vacía = el documento no lleva bloque de notas.
+  notaTecnicaTitulo String?
+  notaTecnica       String? @db.Text
+  cierreTexto       String? @db.Text
+
+  // Solo se dice si es verdad EN ESTE pedido. Por eso es un campo que alguien
+  // marca, no un texto fijo del documento.
+  produccionCentroEspecialEmpleo Boolean @default(false)
+
+  // Condiciones ya redactadas, por si hay que retocarlas antes de emitir.
+  // null = se usan las estándar del generador.
+  condiciones Json?
+
+  partidas PresupuestoPartida[]
+
+  createdBy String?
+  enviadoAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([anio, secuencia])
+  @@index([estado])
+  @@index([createdAt])
+}
+
+model PresupuestoPartida {
+  id            String      @id @default(cuid())
+  presupuesto   Presupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+  presupuestoId String
+  orden         Int // 01, 02, 03… en el documento
+  titulo        String
+  descripcion   String? @db.Text
+
+  opciones PresupuestoOpcion[]
+
+  @@index([presupuestoId])
+}
+
+model PresupuestoOpcion {
+  id          String             @id @default(cuid())
+  partida     PresupuestoPartida @relation(fields: [partidaId], references: [id], onDelete: Cascade)
+  partidaId   String
+  orden       Int
+  nombre      String // "única", "Yonrax", "Cuvak"…
+  recomendada Boolean @default(false)
+
+  // Ficha técnica de la página 2. Los datos salen de la ficha del proveedor.
+  fotoProductoUrl   String?
+  fotoMarcajeUrl    String?
+  medidas           String?
+  materiales        String?
+  incluye           String? @db.Text
+  usoRecomendado    String?
+  // Ficha de marcaje
+  marcajeTecnica     String?
+  marcajeTintas      String?
+  marcajePosicion    String?
+  marcajeAreaMaxima  String?
+  marcajeFormatoArte String?
+
+  lineas PresupuestoLinea[]
+
+  @@index([partidaId])
+}
+
+model PresupuestoLinea {
+  id        String            @id @default(cuid())
+  opcion    PresupuestoOpcion @relation(fields: [opcionId], references: [id], onDelete: Cascade)
+  opcionId  String
+  orden     Int
+  tipo      PresupuestoLineaTipo @default(PRODUCTO)
+
+  concepto    String
+  descripcion String? @db.Text
+  // Referencia interna STM-… si la línea viene del catálogo propio. NUNCA la
+  // del proveedor: el documento no nombra proveedores.
+  referencia  String?
+  imagenUrl   String?
+
+  cantidad       Int
+  costeUnitCents Int
+  // ¿Se ha contrastado ese coste con el portal del proveedor?
+  //
+  // Lo que se trae del catálogo entra en `false`: el encargo dice que el
+  // catálogo propio NO es fuente de precio, así que el coste que llega de ahí
+  // es una sugerencia hasta que alguien la confirma. Lo tecleado a mano entra
+  // en `true`, porque para escribirlo hubo que mirarlo en el portal.
+  costeVerificado Boolean @default(true)
+  // Margen de ESTA línea; null = el del presupuesto.
+  margenPct      Float?
+  pvpUnitCents   Int
+
+  @@index([opcionId])
+}

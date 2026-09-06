@@ -118,6 +118,14 @@ const SECURITY_HEADERS = [
 const config: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: process.cwd(),
+  // El generador de presupuestos lee la plantilla aprobada, sus tipografías y
+  // el logotipo de `presupuestos/` en tiempo de ejecución (ver
+  // src/lib/presupuesto-assets.ts). Sin esto, el build standalone no los
+  // copia y el panel se cae al imprimir, solo en producción.
+  outputFileTracingIncludes: {
+    "/admin/presupuestos/**": ["./presupuestos/**"],
+    "/api/admin/presupuestos/**": ["./presupuestos/**"],
+  },
   // Quita la cabecera "x-powered-by: Next.js" — info técnica innecesaria.
   poweredByHeader: false,
   images: {
