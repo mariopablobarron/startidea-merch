@@ -174,6 +174,21 @@ export function ProductOrderForm({
     () => resolveOrderVariantSelection(colorOptions, selectedColor),
     [colorOptions, selectedColor],
   );
+  /**
+   * La variante con la que se pide el precio al servidor.
+   *
+   * Los tramos cuelgan de la VARIANTE: en un textil por tallas, la 3XL no
+   * cuesta lo que la S. Sin mandarla, el servidor cogía la primera por orden
+   * de SKU, que casi nunca es la que se está configurando.
+   *
+   * En multi-talla se manda la primera talla CON unidades: el unitario que se
+   * enseña es entonces el de una de las tallas del pedido, no el de una
+   * variante que nadie ha elegido. Cada talla acaba en su propia línea de
+   * carrito y el servidor la recalcula con su tarifa al cobrar.
+   */
+  const variantIdParaPrecio =
+    (matrixActive ? currentVariantLines[0]?.variantId : orderVariant?.variantId) ?? undefined;
+
   const addRequirement: VariantSelectionPrompt | "Indica cantidades" | null =
     matrixActive
       ? matrixTotal > 0
@@ -303,6 +318,13 @@ export function ProductOrderForm({
             productSlug,
             quantity: finalQty,
             markings: markingsPayload,
+            // La variante que se está configurando: su tarifa es la que manda.
+            // En modo multi-talla se manda la primera talla con unidades — el
+            // precio unitario que se enseña es el de una de las tallas del
+            // pedido, no el de una variante que nadie ha elegido. Cada talla se
+            // cobra luego con SU tarifa, porque va en su propia línea de
+            // carrito y el servidor recalcula línea a línea.
+            variantId: variantIdParaPrecio,
           }),
           signal: ctrl.signal,
         });
@@ -338,6 +360,8 @@ export function ProductOrderForm({
     printAreaCm2,
     maxColors,
     extraMarkings,
+    // Cambiar de talla o de color cambia la tarifa: hay que volver a pedirla.
+    variantIdParaPrecio,
     positionsAvailable,
   ]);
 
