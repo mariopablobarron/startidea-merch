@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/admin-session";
-import { getAdminSession } from "@/lib/admin-auth";
-import { requireAdminSecret } from "@/lib/auth";
+import { getAdminSession, requireRole } from "@/lib/admin-auth";
 import { crearPresupuesto } from "@/lib/presupuesto-repo";
 import { leerMargenes } from "@/lib/presupuesto-margenes";
 import { entradaDesdeSolicitud } from "@/lib/presupuesto-desde-carrito";
@@ -20,10 +18,8 @@ export const dynamic = "force-dynamic";
  * exactamente el trabajo que se ahorraba a mano.
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!(await isAdmin())) {
-    const auth = requireAdminSecret(req);
-    if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
-  }
+  const auth = await requireRole(req, "COMERCIAL");
+  if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
   const { id } = await ctx.params;
   const solicitud = await prisma.quoteRequest.findUnique({
