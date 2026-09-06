@@ -1,0 +1,25 @@
+src/app/api/cron/catalog-freshness-watchdog/route.ts
+  s_299517c8a0f33a::t_7e17eb826b5913 1-130
+src/lib/catalog-freshness.test.ts
+  s_299517c8a0f33a::t_748a6159f619e4 1-98
+src/lib/catalog-freshness.ts
+  s_299517c8a0f33a::t_dd3d5d4d66b8ae 1-132
+src/lib/cron-catalog.ts
+  s_299517c8a0f33a::t_e9b85b15944b7b 167-183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "e96dca698359c723270b3083aabfc0575ceb191a",
+  "prompts": {},
+  "sessions": {
+    "s_299517c8a0f33a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "491ced06-b45a-4509-9656-cae50747ae33",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
