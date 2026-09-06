@@ -139,7 +139,7 @@ export async function POST(req: Request) {
           `<tr><td style="padding:20px 40px 0">
             <table style="width:100%;border-collapse:collapse">
               <thead>
-                <tr style="background:#F4EFE6">
+                <tr style="background:#FFFFFF">
                   <th style="padding:10px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Producto</th>
                   <th style="padding:10px;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Cant.</th>
                   <th style="padding:10px;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Total</th>
@@ -148,7 +148,7 @@ export async function POST(req: Request) {
               <tbody>${itemsHtml}</tbody>
               <tfoot>
                 <tr><td colspan="2" style="padding:12px;text-align:right;font-weight:600">Total:</td>
-                <td style="padding:12px;text-align:right;font-weight:700;font-size:18px;color:#E63E73">${EUR.format(totalCents / 100)}</td></tr>
+                <td style="padding:12px;text-align:right;font-weight:700;font-size:18px;color:#C41D51">${EUR.format(totalCents / 100)}</td></tr>
               </tfoot>
             </table>
           </td></tr>` +

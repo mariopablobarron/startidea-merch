@@ -131,7 +131,7 @@ export async function POST(req: Request) {
         <p>¡Hola! Te hemos guardado el carrito tal y como lo dejaste:</p>
         <ul>${lines}${items.length > 6 ? `<li>… y ${items.length - 6} más</li>` : ""}</ul>
         ${total > 0 ? `<p>Total estimado: <b>${EUR.format(total / 100)}</b> (sin IVA)</p>` : ""}
-        <p><a href="${recoverUrl}" style="display:inline-block;background:#1a1a1a;color:#fff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600">Retomar mi carrito</a></p>
+        <p><a href="${recoverUrl}" style="display:inline-block;background:#231f27;color:#fff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600">Retomar mi carrito</a></p>
         <p style="font-size:12px;color:#888">El enlace restaura tu carrito en cualquier dispositivo. Usamos tu email solo para enviarte tu carrito y recordártelo — nada de listas de marketing. <a href="${SITE_URL}/privacidad">Privacidad</a>.</p>
       `,
       context: `save-for-later · ${cartId}`,

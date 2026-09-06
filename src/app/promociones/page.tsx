@@ -194,7 +194,7 @@ export default async function PromocionesPage() {
                       <div className="flex-1">
                         <span
                           className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-bone shadow"
-                          style={{ background: p.badgeColor || "#E63E73" }}
+                          style={{ background: p.badgeColor || "#C41D51" }}
                         >
                           {getBadgeText(p)}
                         </span>
@@ -264,7 +264,7 @@ export default async function PromocionesPage() {
                           {hasPromo && badgePromo && (
                             <span
                               className="rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-bone shadow"
-                              style={{ background: badgePromo.badgeColor || "#E63E73" }}
+                              style={{ background: badgePromo.badgeColor || "#C41D51" }}
                             >
                               {getBadgeText(badgePromo)}
                             </span>

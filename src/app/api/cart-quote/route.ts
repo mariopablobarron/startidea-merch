@@ -495,22 +495,22 @@ function internalCartHtml(cart: { id: string; name: string; company: string | nu
     .join("");
 
   return `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:24px 12px;">
-      <div style="max-width:680px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
-        <div style="background:#2A2A2A;padding:20px 24px;">
-          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(244,239,230,0.6);">— Admin · Cotización nueva</p>
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:24px 12px;">
+      <div style="max-width:680px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
+        <div style="background:#231F27;padding:20px 24px;">
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.6);">— Admin · Cotización nueva</p>
           <h1 style="margin:6px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#FFFFFF;">${escapeHtml(cart.name)}${cart.company ? ` · ${escapeHtml(cart.company)}` : ""}</h1>
         </div>
         <div style="padding:24px;">
           <p style="margin:0;font-size:14px;color:#444;">
-            <a href="mailto:${encodeURIComponent(cart.email)}" style="color:#E63E73;text-decoration:none;">${escapeHtml(cart.email)}</a>${cart.phone ? ` · <a href="tel:${encodeURIComponent(cart.phone)}" style="color:#E63E73;text-decoration:none;">${escapeHtml(cart.phone)}</a>` : ""}
+            <a href="mailto:${encodeURIComponent(cart.email)}" style="color:#C41D51;text-decoration:none;">${escapeHtml(cart.email)}</a>${cart.phone ? ` · <a href="tel:${encodeURIComponent(cart.phone)}" style="color:#C41D51;text-decoration:none;">${escapeHtml(cart.phone)}</a>` : ""}
           </p>
           ${cart.deadline ? `<p style="margin:8px 0 0;font-size:14px;color:#444;">⏰ Fecha límite cliente: <strong>${escapeHtml(cart.deadline)}</strong></p>` : ""}
-          ${cart.message ? `<div style="margin-top:16px;background:#F4EFE6;border-left:3px solid #E63E73;padding:14px 16px;border-radius:8px;font-size:14px;line-height:1.5;color:#2A2A2A;">${escapeHtml(cart.message).replace(/\n/g, "<br>")}</div>` : ""}
+          ${cart.message ? `<div style="margin-top:16px;background:#FFFFFF;border-left:3px solid #C41D51;padding:14px 16px;border-radius:8px;font-size:14px;line-height:1.5;color:#231F27;">${escapeHtml(cart.message).replace(/\n/g, "<br>")}</div>` : ""}
 
           <table style="width:100%;border-collapse:collapse;margin-top:24px;">
             <thead>
-              <tr style="background:#F4EFE6;">
+              <tr style="background:#FFFFFF;">
                 <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b6b;">Producto</th>
                 <th style="padding:10px 12px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b6b;">Cant.</th>
                 <th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b6b;">Marcaje</th>
@@ -520,14 +520,14 @@ function internalCartHtml(cart: { id: string; name: string; company: string | nu
             <tbody>${rows}</tbody>
             <tfoot>
               <tr><td colspan="3" style="padding:16px 12px;text-align:right;font-weight:600;font-size:13px;color:#6b6b6b;">Total estimado:</td>
-              <td style="padding:16px 12px;text-align:right;font-weight:700;font-size:20px;color:#E63E73;">${cart.estimatedTotalCents != null ? EUR.format(cart.estimatedTotalCents / 100) : "—"}</td></tr>
+              <td style="padding:16px 12px;text-align:right;font-weight:700;font-size:20px;color:#C41D51;">${cart.estimatedTotalCents != null ? EUR.format(cart.estimatedTotalCents / 100) : "—"}</td></tr>
             </tfoot>
           </table>
 
           <p style="margin:32px 0 0;text-align:center;">
-            <a href="${SITE_URL}/admin/cart-quotes/${cart.id}" style="display:inline-block;background:#2A2A2A;color:#FFFFFF;text-decoration:none;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:600;">Abrir en admin →</a>
+            <a href="${SITE_URL}/admin/cart-quotes/${cart.id}" style="display:inline-block;background:#231F27;color:#FFFFFF;text-decoration:none;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:600;">Abrir en admin →</a>
           </p>
-          <p style="margin-top:24px;color:#a09e98;font-size:11px;">ID interno: <code style="background:#F4EFE6;padding:2px 6px;border-radius:4px;">${cart.id.slice(0, 12)}</code></p>
+          <p style="margin-top:24px;color:#a09e98;font-size:11px;">ID interno: <code style="background:#FFFFFF;padding:2px 6px;border-radius:4px;">${cart.id.slice(0, 12)}</code></p>
         </div>
       </div>
     </div>`;
@@ -548,12 +548,12 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
         return `
       <tr>
         <td style="padding:14px 0;border-bottom:1px solid #E8E2D5;font-size:14px;line-height:1.4;">
-          <strong style="color:#2A2A2A;">${escapeHtml(it.productName)}</strong><br>
+          <strong style="color:#231F27;">${escapeHtml(it.productName)}</strong><br>
           <span style="color:#6b6b6b;font-size:12px;">
             ${it.quantity} uds · ${marksText}
           </span>
         </td>
-        <td style="padding:14px 0;border-bottom:1px solid #E8E2D5;text-align:right;font-size:14px;font-weight:600;color:#2A2A2A;white-space:nowrap;vertical-align:top;">
+        <td style="padding:14px 0;border-bottom:1px solid #E8E2D5;text-align:right;font-size:14px;font-weight:600;color:#231F27;white-space:nowrap;vertical-align:top;">
           ${it.totalClientCents != null ? EUR.format(it.totalClientCents / 100) : "—"}
         </td>
       </tr>`;
@@ -562,13 +562,13 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
     .join("");
 
   return `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
-      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
 
         <!-- Header con eyebrow + título grande -->
         <div style="padding:32px 32px 24px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Cotización recibida</p>
-          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+          <h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
             Gracias ${escapeHtml(firstName)}.<br>
             <span style="color:#a09e98;">La estamos revisando.</span>
           </h1>
@@ -587,7 +587,7 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
             ${cart.estimatedTotalCents ? `
             <tr>
               <td style="padding:18px 0 0;font-size:13px;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;">Total orientativo</td>
-              <td style="padding:18px 0 0;text-align:right;font-size:22px;font-weight:700;color:#E63E73;font-family:Georgia,serif;">
+              <td style="padding:18px 0 0;text-align:right;font-size:22px;font-weight:700;color:#C41D51;font-family:Georgia,serif;">
                 ${EUR.format(cart.estimatedTotalCents / 100)}
               </td>
             </tr>
@@ -601,9 +601,9 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
         </div>
 
         <!-- Qué pasa ahora -->
-        <div style="margin:32px;padding:24px;background:#F4EFE6;border-radius:12px;">
+        <div style="margin:32px;padding:24px;background:#FFFFFF;border-radius:12px;">
           <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Qué pasa ahora</p>
-          <ol style="margin:12px 0 0;padding-left:20px;font-size:14px;line-height:1.7;color:#2A2A2A;">
+          <ol style="margin:12px 0 0;padding-left:20px;font-size:14px;line-height:1.7;color:#231F27;">
             <li><strong>Revisamos tu brief</strong> y producto a producto contrastamos stock, técnica de marcaje y plazo viable.</li>
             <li><strong>Te enviamos cotización cerrada</strong> con mockup técnico del fabricante, precio final y plazo de entrega.</li>
             <li>Cuando das el OK, <strong>producimos y entregamos</strong> — todo en Centros Especiales de Empleo y talleres certificados.</li>
@@ -617,20 +617,20 @@ function clientCartHtml(cart: { id: string; name: string; company: string | null
             o escríbenos directo:
           </p>
           <p style="margin:0;font-size:14px;line-height:2;">
-            <a href="https://wa.me/34627305162" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">WhatsApp +34 627 305 162</a><br>
-            <a href="mailto:pedidos@startidea.es" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px;">pedidos@startidea.es</a>
+            <a href="https://wa.me/34627305162" style="color:#231F27;text-decoration:none;border-bottom:1px solid #C41D51;padding-bottom:1px;">WhatsApp +34 627 305 162</a><br>
+            <a href="mailto:pedidos@startidea.es" style="color:#231F27;text-decoration:none;border-bottom:1px solid #C41D51;padding-bottom:1px;">pedidos@startidea.es</a>
           </p>
         </div>
 
         <!-- Footer -->
-        <div style="background:#2A2A2A;padding:24px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
+        <div style="background:#231F27;padding:24px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
           <p style="margin:0;color:#FFFFFF;font-family:Georgia,serif;font-size:16px;">
-            todo<span style="color:#E63E73;">merchandising</span>
+            todo<span style="color:#C41D51;">merchandising</span>
           </p>
           <p style="margin:8px 0 0;">
             Una iniciativa de Startidea · Agencia de Innovación Social<br>
             STARTIDEA MALAGA SL · CIF B19583632 · C/ Conde Cifuentes, 33 — 18005 Granada<br>
-            Tu cotización: <code style="background:rgba(244,239,230,0.1);padding:1px 5px;border-radius:3px;color:rgba(244,239,230,0.85);">${cart.id.slice(0, 8)}</code>
+            Tu cotización: <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;color:rgba(255,255,255,0.85);">${cart.id.slice(0, 8)}</code>
           </p>
         </div>
       </div>

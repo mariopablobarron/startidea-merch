@@ -210,7 +210,7 @@ export function SpinWheelPopup({
         <div className="grid gap-5 p-6 sm:grid-cols-[230px_1fr] sm:items-center">
           <div className="relative mx-auto w-[210px] sm:w-[230px]">
             <svg viewBox="0 0 260 270" className="w-full" role="img" aria-label="Ruleta de premios">
-              <polygon points="130,4 120,28 140,28" fill="#A02049" stroke="#FAF7F1" strokeWidth="1.5" />
+              <polygon points="130,4 120,28 140,28" fill="#8F1039" stroke="#FDEEF3" strokeWidth="1.5" />
               <g
                 style={{
                   transformOrigin: "130px 134px",
@@ -219,12 +219,12 @@ export function SpinWheelPopup({
                 }}
               >
                 <g transform="translate(0,4)">
-                  <path d="M130 130 L130 10 A120 120 0 0 1 233.92 70 Z" fill="#E63E73" />
-                  <path d="M130 130 L233.92 70 A120 120 0 0 1 233.92 190 Z" fill="#2A2A2A" />
-                  <path d="M130 130 L233.92 190 A120 120 0 0 1 130 250 Z" fill="#E63E73" />
-                  <path d="M130 130 L130 250 A120 120 0 0 1 26.08 190 Z" fill="#2A2A2A" />
-                  <path d="M130 130 L26.08 190 A120 120 0 0 1 26.08 70 Z" fill="#E63E73" />
-                  <path d="M130 130 L26.08 70 A120 120 0 0 1 130 10 Z" fill="#2A2A2A" />
+                  <path d="M130 130 L130 10 A120 120 0 0 1 233.92 70 Z" fill="#C41D51" />
+                  <path d="M130 130 L233.92 70 A120 120 0 0 1 233.92 190 Z" fill="#231F27" />
+                  <path d="M130 130 L233.92 190 A120 120 0 0 1 130 250 Z" fill="#C41D51" />
+                  <path d="M130 130 L130 250 A120 120 0 0 1 26.08 190 Z" fill="#231F27" />
+                  <path d="M130 130 L26.08 190 A120 120 0 0 1 26.08 70 Z" fill="#C41D51" />
+                  <path d="M130 130 L26.08 70 A120 120 0 0 1 130 10 Z" fill="#231F27" />
                   <text x="167.5" y="62" fill="#fff" fontSize="11.5" fontWeight="500" textAnchor="middle">Mockup</text>
                   <text x="167.5" y="76" fill="#fff" fontSize="11.5" fontWeight="500" textAnchor="middle">gratis</text>
                   <text x="201" y="134" fill="#fff" fontSize="13" fontWeight="500" textAnchor="middle">5% dto.</text>
@@ -235,8 +235,8 @@ export function SpinWheelPopup({
                   <text x="92.5" y="69" fill="#fff" fontSize="13" fontWeight="500" textAnchor="middle">10% dto.</text>
                 </g>
               </g>
-              <circle cx="130" cy="134" r="27" fill="#FAF7F1" stroke="#E63E73" strokeWidth="2.5" />
-              <text x="130" y="139" fill="#A02049" fontSize="13" fontWeight="500" textAnchor="middle">GIRA</text>
+              <circle cx="130" cy="134" r="27" fill="#FDEEF3" stroke="#C41D51" strokeWidth="2.5" />
+              <text x="130" y="139" fill="#8F1039" fontSize="13" fontWeight="500" textAnchor="middle">GIRA</text>
             </svg>
           </div>
 

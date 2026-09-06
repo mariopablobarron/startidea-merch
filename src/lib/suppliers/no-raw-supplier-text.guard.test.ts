@@ -24,6 +24,10 @@ const SYNC_FILES = [
   "src/lib/suppliers/midocean-sync.ts",
   "src/lib/suppliers/cifra-sync.ts",
   "src/lib/suppliers/makito-sync.ts",
+  // El importador de gran formato no es un "sync" pero escribe en las mismas
+  // columnas, y era el único que no pasaba por el saneador: de ahí las 63
+  // fichas publicando el argumentario mayorista del catálogo de origen.
+  "scripts/import-adivin.ts",
 ];
 
 /** Campos de texto libre que acaban en la ficha pública / meta tags. */
@@ -132,13 +136,14 @@ describe("guard: los syncs de proveedor no escriben texto crudo del feed", () =>
     }
 
     it(`${file} importa el saneador`, () => {
-      expect(src).toMatch(/from\s+"\.\/sanitize-supplier-text"/);
+      // Relativo desde src/lib/suppliers, por alias desde scripts/.
+      expect(src).toMatch(/from\s+"(?:\.\/|@\/lib\/suppliers\/)sanitize-supplier-text"/);
     });
   }
 
   // Anti-falso-verde: si el detector de asignaciones dejara de encontrar nada,
   // el guard pasaría vacío y no protegería de nada.
-  it("el guard encuentra asignaciones reales en los 3 syncs (anti-falso-verde)", () => {
+  it("el guard encuentra asignaciones reales en todos los importadores (anti-falso-verde)", () => {
     for (const file of SYNC_FILES) {
       const src = read(file);
       const total = TEXT_FIELDS.reduce((n, f) => n + assignmentLines(src, f).length, 0);
@@ -146,7 +151,7 @@ describe("guard: los syncs de proveedor no escriben texto crudo del feed", () =>
     }
   });
 
-  it("🛡️ el campo `name` se audita en LOS TRES syncs, no vale que falte", () => {
+  it("🛡️ el campo `name` se audita en TODOS los importadores, no vale que falte", () => {
     // El `continue` de arriba salta un campo cuando no encuentra asignaciones,
     // y eso confunde dos cosas muy distintas: "este proveedor no aporta el
     // campo" y "el guard no supo verlo". Para `name` —que es NOT NULL y sale

@@ -98,13 +98,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     subject: `[TEST] ${firstName}, simulación de pago confirmado · ${(amountCents / 100).toFixed(2)} €`,
     context: `simulate-payment · ${cart.id}`,
     html: `
-    <div style="font-family:Helvetica,Arial,sans-serif;background:#F4EFE6;padding:32px 16px;">
-      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#2A2A2A;">
+    <div style="font-family:Helvetica,Arial,sans-serif;background:#FFFFFF;padding:32px 16px;">
+      <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;color:#231F27;">
         <div style="padding:32px;">
-          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#E63E73;">— Simulación · entorno admin</p>
+          <p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#C41D51;">— Simulación · entorno admin</p>
           <h1 style="margin:8px 0 0;font-family:Georgia,serif;font-size:24px;line-height:1.15;">
             Hola ${escapeHtml(firstName)}.<br>
-            <span style="color:#E63E73;">Esto sería el email post-pago real.</span>
+            <span style="color:#C41D51;">Esto sería el email post-pago real.</span>
           </h1>
           <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#444;">
             Este email se envía porque alguien con acceso admin disparó la simulación

@@ -2,14 +2,14 @@ import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import type { RoiCalculation } from "@prisma/client";
 
 const styles = StyleSheet.create({
-  page: { padding: 48, fontFamily: "Helvetica", backgroundColor: "#F4EFE6", color: "#2A2A2A" },
+  page: { padding: 48, fontFamily: "Helvetica", backgroundColor: "#FFFFFF", color: "#231F27" },
   card: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 36 },
   eyebrow: { fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#6b6b6b" },
-  title: { marginTop: 6, fontSize: 24, fontWeight: 700, color: "#2A2A2A", lineHeight: 1.2 },
-  titleAccent: { color: "#E63E73" },
+  title: { marginTop: 6, fontSize: 24, fontWeight: 700, color: "#231F27", lineHeight: 1.2 },
+  titleAccent: { color: "#C41D51" },
   intro: { marginTop: 16, fontSize: 11, lineHeight: 1.6, color: "#444" },
   sectionLabel: { marginTop: 22, fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#6b6b6b" },
-  paramRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6, fontSize: 11, color: "#2A2A2A" },
+  paramRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6, fontSize: 11, color: "#231F27" },
   paramLabel: { color: "#6b6b6b" },
   resultsGrid: { marginTop: 16 },
   resultRow: {
@@ -24,8 +24,8 @@ const styles = StyleSheet.create({
   resultValue: { fontSize: 18, fontWeight: 700 },
   divider: { borderBottomWidth: 1, borderBottomColor: "#E8E2D5", marginTop: 24 },
   footnote: { marginTop: 16, fontSize: 9, color: "#6b6b6b", lineHeight: 1.5 },
-  brandFooter: { marginTop: 28, padding: 16, backgroundColor: "#2A2A2A", borderRadius: 10 },
-  brandFooterText: { color: "#F4EFE6", fontSize: 9, lineHeight: 1.5 },
+  brandFooter: { marginTop: 28, padding: 16, backgroundColor: "#231F27", borderRadius: 10 },
+  brandFooterText: { color: "#FFFFFF", fontSize: 9, lineHeight: 1.5 },
   brandTitle: { color: "#FFFFFF", fontSize: 13, marginBottom: 4 },
   signLine: { marginTop: 24, fontSize: 10, color: "#6b6b6b" },
 });
@@ -68,19 +68,19 @@ export function RoiCertificatePDF({ calc }: { calc: RoiCalculation }) {
 
           <Text style={styles.sectionLabel}>Impacto anual estimado</Text>
           <View style={styles.resultsGrid}>
-            <View style={[styles.resultRow, { backgroundColor: "#FBDFE9" }]}>
+            <View style={[styles.resultRow, { backgroundColor: "#F8DCE6" }]}>
               <Text style={styles.resultLabel}>CO₂ ahorrado</Text>
-              <Text style={[styles.resultValue, { color: "#E63E73" }]}>{num(calc.co2SavedKg)} kg</Text>
+              <Text style={[styles.resultValue, { color: "#C41D51" }]}>{num(calc.co2SavedKg)} kg</Text>
             </View>
-            <View style={[styles.resultRow, { backgroundColor: "#F4EFE6" }]}>
+            <View style={[styles.resultRow, { backgroundColor: "#FFFFFF" }]}>
               <Text style={styles.resultLabel}>Árboles equivalentes</Text>
               <Text style={styles.resultValue}>{num(calc.treesEquivalent)}</Text>
             </View>
-            <View style={[styles.resultRow, { backgroundColor: "#F4EFE6" }]}>
+            <View style={[styles.resultRow, { backgroundColor: "#FFFFFF" }]}>
               <Text style={styles.resultLabel}>Horas trabajo digno</Text>
               <Text style={styles.resultValue}>{num(calc.workHoursDignified)} h</Text>
             </View>
-            <View style={[styles.resultRow, { backgroundColor: "#F4EFE6" }]}>
+            <View style={[styles.resultRow, { backgroundColor: "#FFFFFF" }]}>
               <Text style={styles.resultLabel}>% producción en CEE</Text>
               <Text style={styles.resultValue}>{calc.ceeProductionPct}%</Text>
             </View>

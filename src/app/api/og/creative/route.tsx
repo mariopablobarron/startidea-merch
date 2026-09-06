@@ -15,18 +15,18 @@ export const runtime = "edge";
  *   email-header       1200×400   (cabecera de email)
  *
  * Todas siguen el Manual de identidad Startidea v1.0:
- *   Magenta #E63E73 acento · Crema #F4EFE6 fondo · Grafito #2A2A2A tinta
+ *   Magenta #C41D51 acento · Blanco #FFFFFF papel · Tinta #231F27 texto
  *
  * Cache: 1h CDN (Cloudflare/Vercel respeta) — cambia URL si quieres regenerar.
  */
 
 const COLORS = {
-  magenta: "#E63E73",
-  magentaDeep: "#A02049",
-  crema: "#F4EFE6",
-  hueso: "#EAE3D3",
-  grafito: "#2A2A2A",
-  grafitoSoft: "#3A3A3A",
+  magenta: "#C41D51",
+  magentaDeep: "#8F1039",
+  papel: "#FFFFFF",
+  linea: "#E7E2E6",
+  tinta: "#231F27",
+  tintaSoft: "#3A353E",
 };
 
 type Template = "post-square" | "story-vertical" | "linkedin-landscape" | "email-header";
@@ -45,15 +45,19 @@ export async function GET(req: NextRequest) {
   const subtitle = url.searchParams.get("subtitle") || "";
   const cta = url.searchParams.get("cta") || "";
   const productUrl = url.searchParams.get("product") || "";
+  // OJO: "crema-bg" es un valor que viaja en la URL y que hay GUARDADO en
+  // ContentPiece. El color que pinta ya es el blanco del manual nuevo; renombrar
+  // la variante rompería las piezas de contenido ya creadas, así que el nombre
+  // se queda como está.
   const variant = (url.searchParams.get("variant") || "magenta-bg") as "magenta-bg" | "crema-bg";
 
   const dim = DIMENSIONS[template] || DIMENSIONS["post-square"];
 
   // Decisión de colores según variante
-  const bg = variant === "magenta-bg" ? COLORS.magenta : COLORS.crema;
-  const fg = variant === "magenta-bg" ? COLORS.crema : COLORS.grafito;
-  const accent = variant === "magenta-bg" ? COLORS.crema : COLORS.magenta;
-  const subdued = variant === "magenta-bg" ? "rgba(244,239,230,0.7)" : "rgba(42,42,42,0.6)";
+  const bg = variant === "magenta-bg" ? COLORS.magenta : COLORS.papel;
+  const fg = variant === "magenta-bg" ? COLORS.papel : COLORS.tinta;
+  const accent = variant === "magenta-bg" ? COLORS.papel : COLORS.magenta;
+  const subdued = variant === "magenta-bg" ? "rgba(255,255,255,0.7)" : "rgba(35,31,39,0.6)";
 
   // Layout responsivo según template
   const isVertical = template === "story-vertical";
@@ -81,7 +85,7 @@ export async function GET(req: NextRequest) {
           position: "relative",
         }}
       >
-        {/* Decoración: arco/círculo magenta tras título (solo si fondo crema) */}
+        {/* Decoración: arco/círculo magenta tras título (solo si fondo blanco) */}
         {variant === "crema-bg" && (
           <div
             style={{
@@ -170,7 +174,7 @@ export async function GET(req: NextRequest) {
                 display: "flex",
                 alignItems: "center",
                 gap: 16,
-                background: variant === "magenta-bg" ? "rgba(244,239,230,0.95)" : COLORS.magenta,
+                background: variant === "magenta-bg" ? "rgba(255,255,255,0.95)" : COLORS.magenta,
                 color: variant === "magenta-bg" ? COLORS.magenta : "#FFF",
                 padding: isVertical ? "22px 38px" : "18px 32px",
                 borderRadius: 999,

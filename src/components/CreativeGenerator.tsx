@@ -127,7 +127,7 @@ export function CreativeGenerator({
                     : "border-line bg-bone-soft text-ink/70 hover:border-accent"
                 }`}
               >
-                Magenta sobre crema (texto)
+                Magenta sobre blanco (texto)
               </button>
               <button
                 type="button"
@@ -138,7 +138,7 @@ export function CreativeGenerator({
                     : "border-line bg-bone-soft text-ink/70 hover:border-accent"
                 }`}
               >
-                Crema (fondo) con acento magenta
+                Blanco (fondo) con acento magenta
               </button>
             </div>
           </Field>

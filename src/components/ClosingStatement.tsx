@@ -9,7 +9,7 @@ import { motion, fadeUp, stagger, viewportOnce } from "./motion";
  *  das forma a una idea."
  *
  * Manual de identidad Startidea v1.0 §08 (Jerarquía y composición):
- *  - Fondo grafito (30% peso visual de la página)
+ *  - Fondo tinta (30% peso visual de la página)
  *  - Display 72px, magenta acento en palabras clave dentro del titular
  *  - Mucho aire arriba y abajo
  *  - Alineación a la izquierda, columna única

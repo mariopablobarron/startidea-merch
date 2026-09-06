@@ -2,39 +2,65 @@ import type { Config } from "tailwindcss";
 import typography from "@tailwindcss/typography";
 
 /**
- * Paleta y tipografía alineadas con el Manual de identidad Startidea v1.0
- * (mayo 2026). Magenta es acento (10%) — nunca fondo salvo portadas.
- * Crema es papel (60%). Grafito es tinta (30%).
+ * Paleta y tipografía del Manual de identidad Startidea v1.0.
+ *
+ * ── Qué cambió y por qué ────────────────────────────────────────────────────
+ * Hasta ahora el fondo era crema `#F4EFE6` con apoyo hueso `#EAE3D3`. El manual
+ * vigente los prohíbe expresamente: el papel es BLANCO y el color entra por el
+ * degradado y por el rosa pálido de las bandas. Los presupuestos ya iban por la
+ * paleta nueva, así que la web y el panel enseñaban una marca y el documento que
+ * se manda al cliente, otra.
+ *
+ * Los NOMBRES de los tokens no cambian —`bone`, `ink`, `line`, `accent`— porque
+ * los usan casi 1.900 sitios: se cambia el valor, no las 224 plantillas. El
+ * nombre `bone` («hueso») se queda como cicatriz del color que hubo; renombrarlo
+ * a `paper` sería un diff de mil líneas sin más efecto que el estético.
+ *
+ * ── La paleta ───────────────────────────────────────────────────────────────
+ *   fondo       #FFFFFF   ·  bandas y bloques   #FDEEF3
+ *   tinta       #231F27   ·  gris secundario    #5E5A63
+ *   línea       #E7E2E6   ·  degradado  #8F1039 → #C41D51
+ *
+ * Nada de negro puro (ni como fondo ni como texto) ni de tonos hueso o crema.
+ * Los valores intermedios (`accent.dark`, `ink.soft`, `accent.mist`) son
+ * derivados de los seis oficiales para estados de hover y superficies, no
+ * colores nuevos.
  */
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        // Tinta (grafito) — cuerpo de texto, navs, footers
+        // Tinta — cuerpo de texto, navs, footers. Nunca negro puro.
         ink: {
-          DEFAULT: "#2A2A2A", // Grafito oficial
-          soft: "#3A3A3A",
-          mute: "#6E6E6E",
+          DEFAULT: "#231F27", // Tinta oficial
+          soft: "#3A353E",    // derivado: texto sobre fondos claros con menos peso
+          mute: "#5E5A63",    // Gris secundario oficial
         },
-        // Papel (crema) — fondo por defecto. 60% de la composición.
+        // Papel — el fondo es BLANCO. `soft` es la superficie neutra (cards,
+        // bandas sin énfasis): un casi-blanco FRÍO derivado de la línea, no un
+        // tono cálido. Ojo con la tentación de ponerle aquí el rosa pálido:
+        // `bg-bone-soft` sale 876 veces y el rosa es para bloques DESTACADOS
+        // (`accent.wash`, 157 usos) — con las dos cosas juntas el sitio entero
+        // se vuelve rosa y el énfasis deja de significar nada.
         bone: {
-          DEFAULT: "#F4EFE6", // Crema oficial
-          soft: "#FAF7F1",    // crema más clara para cards sobre crema
+          DEFAULT: "#FFFFFF",
+          soft: "#F7F5F7",    // derivado de #E7E2E6: superficie neutra sobre blanco
         },
-        // Apoyo (hueso) — bandas y cards, suaviza el fondo
+        // Línea — filetes, bordes y separadores.
         line: {
-          DEFAULT: "#EAE3D3", // Hueso oficial
-          dark: "#1A1A1A",
+          DEFAULT: "#E7E2E6", // Línea oficial
+          dark: "#231F27",    // superficies oscuras: tinta, nunca negro
         },
         // Acento (magenta) — CTAs, titulares cortos, datos. NUNCA fondo masivo.
+        // DEFAULT y `deep` son los dos extremos del degradado de marca.
         accent: {
-          DEFAULT: "#E63E73", // Magenta Startidea
-          dark: "#C42B5D",
-          deep: "#A02049",
-          light: "#F08AA8",
-          mist: "#FBDFE9",
-          wash: "#FDF1F5",
+          DEFAULT: "#C41D51", // Magenta oficial (extremo claro del degradado)
+          dark: "#A81845",    // derivado: hover
+          deep: "#8F1039",    // Vino oficial (extremo oscuro del degradado)
+          light: "#E58BA9",   // derivado: acentos sobre fondo oscuro
+          mist: "#F8DCE6",    // derivado: superficie rosa con algo más de cuerpo
+          wash: "#FDEEF3",    // Rosa pálido oficial
         },
         // Color "social" mantenido para alertas verdes (ok states) — Granada Social
         // tiene su azul propio (no se usa aquí por convención del manual).
@@ -44,9 +70,11 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Montserrat para todo el sistema. Alternates solo display (h1, citas).
-        display: ["var(--font-display)", "Montserrat", "system-ui", "sans-serif"],
-        sans: ["var(--font-sans)", "Montserrat", "system-ui", "sans-serif"],
+        // Montserrat en titulares, Inter en texto (manual v1.0). Antes Montserrat
+        // hacía las dos cosas: en párrafos largos cansa y no es lo que dice el
+        // manual ni lo que llevan los presupuestos.
+        display: ["var(--font-display)", "var(--font-montserrat)", "Montserrat", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
       },
       fontSize: {
         // Jerarquía manual: pocos tamaños, mucho contraste de escala.

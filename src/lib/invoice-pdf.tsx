@@ -29,12 +29,12 @@ import {
  */
 
 const C = {
-  ink: "#2A2A2A",
-  bone: "#F4EFE6",
+  ink: "#231F27",
+  bone: "#FFFFFF",
   boneSoft: "#FAF8F4",
   line: "#E6E1D6",
-  accent: "#E63E73",
-  accentDeep: "#A02049",
+  accent: "#C41D51",
+  accentDeep: "#8F1039",
   inkMute: "#6B6B6B",
 };
 

@@ -37,7 +37,7 @@ const CreateSchema = z
     badgeText: z.string().max(40).nullable().optional(),
     badgeColor: z
       .string()
-      .regex(/^#[0-9A-Fa-f]{6}$/, "Hex tipo #E63E73")
+      .regex(/^#[0-9A-Fa-f]{6}$/, "Hex tipo #C41D51")
       .nullable()
       .optional(),
     displayInList: z.boolean().default(true),

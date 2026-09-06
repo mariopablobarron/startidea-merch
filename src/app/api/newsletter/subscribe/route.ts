@@ -80,13 +80,13 @@ export async function POST(req: Request) {
   if (resend) {
     const unsubUrl = `${SITE_URL}/newsletter/unsubscribe/${sub.unsubscribeToken}`;
     const couponBlock = couponCode
-      ? `<div style="margin:24px 0;padding:20px;border:2px dashed #E63E73;border-radius:16px;text-align:center;background:#FBE9F0;">
-          <p style="margin:0;font-size:11px;font-weight:600;color:#A02049;text-transform:uppercase;letter-spacing:1px;">Cupón bienvenida — 10% descuento</p>
-          <p style="margin:12px 0 4px;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#E63E73;letter-spacing:2px;">${couponCode}</p>
+      ? `<div style="margin:24px 0;padding:20px;border:2px dashed #C41D51;border-radius:16px;text-align:center;background:#FBE9F0;">
+          <p style="margin:0;font-size:11px;font-weight:600;color:#8F1039;text-transform:uppercase;letter-spacing:1px;">Cupón bienvenida — 10% descuento</p>
+          <p style="margin:12px 0 4px;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#C41D51;letter-spacing:2px;">${couponCode}</p>
           <p style="margin:0;font-size:12px;color:#666;">Aplicable en tu primer pedido. Válido 30 días.</p>
         </div>
         <p style="text-align:center;margin:20px 0;">
-          <a href="${SITE_URL}/catalogo" style="background:#E63E73;color:white;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Empezar a configurar mi pedido →</a>
+          <a href="${SITE_URL}/catalogo" style="background:#C41D51;color:white;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Empezar a configurar mi pedido →</a>
         </p>`
       : "";
 
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
           ${couponCode
             ? `<p>Gracias por suscribirte. Como prometimos, aquí tienes tu <strong>10% de descuento</strong> en tu primer pedido:</p>${couponBlock}<p>Una vez al mes te mandamos un email corto con casos reales de empresas que han producido merchandising con impacto. Sin spam comercial.</p>`
             : `<p>Una vez al mes te mandamos un email corto con casos reales de empresas que han producido merchandising con impacto. Sin spam comercial, sin secuencias automatizadas vacías.</p>`}
-          <p style="font-size:13px;color:#6b6b6b;">Si en algún momento prefieres no recibirlos, te das de baja con un click <a href="${unsubUrl}" style="color:#E63E73;">aquí</a>.</p>
+          <p style="font-size:13px;color:#6b6b6b;">Si en algún momento prefieres no recibirlos, te das de baja con un click <a href="${unsubUrl}" style="color:#C41D51;">aquí</a>.</p>
           <p style="color:#6b6b6b;font-size:12px;margin-top:32px;">STARTIDEA MALAGA SL · CIF B19583632 · pedidos@startidea.es</p>
         </div>`,
       })

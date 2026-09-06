@@ -275,7 +275,7 @@ function PromotionsView() {
                         {p.badgeText && (
                           <span
                             className="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-bone"
-                            style={{ background: p.badgeColor || "#E63E73" }}
+                            style={{ background: p.badgeColor || "#C41D51" }}
                           >
                             {p.badgeText}
                           </span>
@@ -420,7 +420,7 @@ function PromotionForm({
   const [endsAt, setEndsAt] = useState(initial?.endsAt ? dtFromIso(initial.endsAt) : "");
   const [active, setActive] = useState(initial?.active ?? true);
   const [badgeText, setBadgeText] = useState(initial?.badgeText || "");
-  const [badgeColor, setBadgeColor] = useState(initial?.badgeColor || "#E63E73");
+  const [badgeColor, setBadgeColor] = useState(initial?.badgeColor || "#C41D51");
   const [displayInList, setDisplayInList] = useState(initial?.displayInList ?? true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

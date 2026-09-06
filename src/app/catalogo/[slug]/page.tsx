@@ -20,6 +20,7 @@ import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { type PriceTier } from "@/lib/pricing";
 import { loadActivePromotions, getBadgeText } from "@/lib/promotions";
 import { computeClientPricing } from "@/lib/product-pricing";
+import { fromPriceWithMarking } from "@/lib/product-from-price-with-marking";
 import { publicRef } from "@/lib/internal-ref";
 import { FavoriteHeart } from "@/components/portal/FavoriteHeart";
 import { AskDiego } from "@/components/AskDiego";
@@ -218,11 +219,22 @@ export default async function ProductDetailPage({
 
   const activePromo = pricing.bannerPromo;
   const promoBadgeText = activePromo ? getBadgeText(activePromo) : null;
-  const promoBadgeColor = activePromo?.badgeColor || "#E63E73";
+  const promoBadgeColor = activePromo?.badgeColor || "#C41D51";
   const originalFromPriceCents = pricing.originalFromPriceCents;
   const finalFromPriceCents = pricing.fromPriceCents;
   const tiers: PriceTier[] | undefined = pricing.clientTiers;
   const baseCents = pricing.baseCentsForEstimate;
+
+  // El «desde» de arriba es el producto SIN personalizar. Éste es el mismo
+  // producto marcado a una tinta, calculado con el pipeline del carrito para
+  // que la ficha no prometa un precio distinto del que se cobra. `null` si no
+  // hay tarifa fiable: mejor no enseñar nada que enseñar un número inventado.
+  const conMarcaje = await fromPriceWithMarking({
+    productSlug: product.slug,
+    tiers,
+    positions: product.positions,
+    activePromos,
+  });
 
   const breadcrumbs: Array<{ name: string; href?: string }> = [{ name: "Catálogo", href: "/catalogo" }];
   if (product.category?.parent?.parent) {
@@ -388,6 +400,31 @@ export default async function ProductDetailPage({
                         </span>
                       )}
                     <span className="text-[11px] text-ink/55">/ud (sin IVA)</span>
+                  </p>
+                )}
+
+                {/* El precio de arriba es el del producto liso. Decirlo aquí,
+                    pegado a la cifra, es lo que evita la sorpresa al pedir
+                    presupuesto: en un vaso de 0,13 €/ud la serigrafía cuesta
+                    más que el vaso. */}
+                {finalFromPriceCents && finalFromPriceCents > 0 && (
+                  <p className="mt-2 text-xs leading-relaxed text-ink/60">
+                    Precio del <strong className="font-semibold text-ink/75">producto sin personalizar</strong>.
+                    El marcaje se presupuesta aparte (unidad + cliché).
+                    {conMarcaje && (
+                      <>
+                        {" "}
+                        Con marcaje a una tinta,{" "}
+                        <span className="font-semibold tabular-nums text-ink/75">
+                          {(conMarcaje.unitCents / 100).toLocaleString("es-ES", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          €/ud
+                        </span>{" "}
+                        orientativos para {conMarcaje.quantity.toLocaleString("es-ES")} uds, cliché incluido.
+                      </>
+                    )}
                   </p>
                 )}
 
