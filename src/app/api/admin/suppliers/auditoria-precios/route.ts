@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { authenticateAdminRequest } from "@/lib/admin-auth";
+import { requireRole } from "@/lib/admin-auth";
 import { auditarPrecios } from "@/lib/auditoria-precios";
 
 export const runtime = "nodejs";
@@ -15,14 +15,16 @@ export const dynamic = "force-dynamic";
  * Existe porque el script pedía una `DATABASE_URL` de producción y una
  * terminal, y por eso llevaba días sin correrse. Aquí es abrir una página.
  *
- * SOLO ADMIN, y no por costumbre: la respuesta lleva COSTES NETOS de
- * proveedor. Eso no sale de casa.
+ * El rol importa: la respuesta lleva COSTES NETOS de proveedor, y el esquema
+ * es explícito sobre quién no debe verlos —«COMERCIAL … sin costes ni
+ * payments», «OPERACIONES … sin precios cliente»—. Va con `requireRole`, que
+ * además deja pasar siempre a CEO.
  *
  * Solo lee. Ni una escritura.
  */
 export async function GET(req: Request) {
-  const session = await authenticateAdminRequest(req);
-  if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  const auth = await requireRole(req, "FACTURACION");
+  if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
   try {
     const auditoria = await auditarPrecios(prisma, { ejemplos: 12 });

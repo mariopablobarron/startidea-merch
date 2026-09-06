@@ -5,7 +5,9 @@
  * prueba con sus propios números— sino las dos cosas que hacen peligrosa a
  * ESTA ruta:
  *
- *  1. Devuelve COSTES NETOS de proveedor. Sin sesión de admin no sale nada.
+ *  1. Devuelve COSTES NETOS de proveedor, y el esquema dice quién no debe
+ *     verlos: «COMERCIAL … sin costes ni payments». No basta con estar
+ *     autenticado, hace falta el rol.
  *  2. Un fallo dentro de la auditoría no puede contarle al navegador qué
  *     tablas tiene la base de datos.
  *
@@ -14,12 +16,12 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const authenticateAdminRequest = vi.fn();
+const requireRole = vi.fn();
 const auditarPrecios = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/lib/admin-auth", () => ({
-  authenticateAdminRequest: (...a: unknown[]) => authenticateAdminRequest(...a),
+  requireRole: (...a: unknown[]) => requireRole(...a),
 }));
 vi.mock("@/lib/auditoria-precios", () => ({
   auditarPrecios: (...a: unknown[]) => auditarPrecios(...a),
@@ -31,19 +33,33 @@ const PETICION = new Request("http://localhost/api/admin/suppliers/auditoria-pre
 
 beforeEach(() => {
   vi.clearAllMocks();
-  authenticateAdminRequest.mockResolvedValue({ email: "mario@startidea.es" });
+  requireRole.mockResolvedValue({ ok: true, session: { email: "mario@startidea.es", role: "CEO" } });
   auditarPrecios.mockResolvedValue({ generadaEn: "2026-09-06T00:00:00.000Z", sinPrecio: { total: 0 } });
 });
 
 describe("GET /api/admin/suppliers/auditoria-precios", () => {
-  it("sin sesión de admin devuelve 401 y NO llega a consultar costes", async () => {
-    authenticateAdminRequest.mockResolvedValue(null);
+  it("sin sesión devuelve 401 y NO llega a consultar costes", async () => {
+    requireRole.mockResolvedValue({ ok: false, status: 401, reason: "No autenticado" });
     const res = await GET(PETICION);
     expect(res.status).toBe(401);
     expect(auditarPrecios).not.toHaveBeenCalled();
   });
 
-  it("con sesión de admin devuelve la auditoría", async () => {
+  it("un rol sin acceso a costes recibe 403 y tampoco los consulta", async () => {
+    // El esquema es explícito: «COMERCIAL … sin costes ni payments». Esta
+    // respuesta lleva costes netos de proveedor.
+    requireRole.mockResolvedValue({ ok: false, status: 403, reason: "Requiere rol FACTURACION" });
+    const res = await GET(PETICION);
+    expect(res.status).toBe(403);
+    expect(auditarPrecios).not.toHaveBeenCalled();
+  });
+
+  it("se pide el rol explícitamente, no vale cualquier sesión de admin", async () => {
+    await GET(PETICION);
+    expect(requireRole).toHaveBeenCalledWith(PETICION, "FACTURACION");
+  });
+
+  it("con el rol adecuado devuelve la auditoría", async () => {
     const res = await GET(PETICION);
     expect(res.status).toBe(200);
     const cuerpo = await res.json();

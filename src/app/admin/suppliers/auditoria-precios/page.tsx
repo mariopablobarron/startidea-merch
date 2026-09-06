@@ -4,11 +4,16 @@
  * Los mismos números que imprime `bun scripts/audit-precios-catalogo.ts`,
  * sin terminal y sin credenciales de producción. El script sigue existiendo
  * para quien prefiera la consola; los dos llaman a `auditarPrecios`.
+ *
+ * Enseña COSTES NETOS de proveedor, así que va cerrada a CEO y FACTURACIÓN —
+ * el esquema dice «COMERCIAL … sin costes ni payments»—. Se responde 404 y no
+ * 403 para no confirmarle a nadie qué páginas existen, como en /admin/team.
  */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-session";
+import { getAdminSession } from "@/lib/admin-auth";
 import { AuditoriaPreciosClient } from "./AuditoriaPreciosClient";
 
 export const metadata: Metadata = {
@@ -19,6 +24,9 @@ export const dynamic = "force-dynamic";
 
 export default async function AuditoriaPreciosPage() {
   if (!(await isAdmin())) redirect("/admin/login");
+
+  const session = await getAdminSession();
+  if (session?.role !== "CEO" && session?.role !== "FACTURACION") notFound();
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">

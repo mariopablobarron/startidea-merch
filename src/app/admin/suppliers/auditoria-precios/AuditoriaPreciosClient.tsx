@@ -115,6 +115,10 @@ export function AuditoriaPreciosClient() {
   }
 
   const { sinPrecio, sinTarifa, horquillaVariantes, adivin, margenEfectivo, margen } = datos;
+  // Los de margen flojo de los cuatro proveedores, en una sola lista: son
+  // pocos y lo que interesa es verlos juntos, no buscarlos proveedor a
+  // proveedor.
+  const flojos = SUPPLIERS.flatMap((s) => margenEfectivo[s].flojos.map((f) => ({ s, f })));
 
   return (
     <>
@@ -153,10 +157,11 @@ export function AuditoriaPreciosClient() {
         titulo="Activos sin tarifa real del proveedor"
         explica={
           <>
-            En estos la web no tiene tramos del proveedor. Con el arreglo de la tarifa plana ya no se
-            vende por debajo del coste, pero <strong>tampoco hay descuento por volumen real</strong>:
-            el precio es el mismo a 10 que a 1.000 uds. Este número dice a cuántos productos les
-            falta tarifa negociada.
+            En estos la web no tiene tramos del proveedor, así que va a{" "}
+            <strong>tarifa plana</strong>: no se vende por debajo del coste, pero{" "}
+            <strong>tampoco hay descuento por volumen</strong> — el precio es el mismo a 10 que a
+            1.000 uds. Es donde perdemos pedidos grandes por precio. Este número dice a cuántos
+            productos les falta tarifa negociada.
           </>
         }
       >
@@ -262,9 +267,10 @@ export function AuditoriaPreciosClient() {
         titulo="Margen que aplica la web de verdad"
         explica={
           <>
-            Sobre los que sí tienen tarifa real. Debería salir el{" "}
+            El precio publicado contra el coste, producto a producto, pasando por la misma función
+            que calcula el precio en la ficha. Sin precio fijado a mano sale el{" "}
             <strong>{margen.sobreVentaPct.toFixed(1)} %</strong> del multiplicador; los que se
-            desvíen es que llevan precio fijado por el panel.
+            desvían llevan override del panel, y son justo los que hay que mirar.
           </>
         }
       >
@@ -295,6 +301,39 @@ export function AuditoriaPreciosClient() {
             </tbody>
           </table>
         </div>
+        {flojos.length > 0 && (
+          <div className="mt-5">
+            <p className="text-sm font-medium text-ink">
+              Por debajo del {margenEfectivo.midocean.umbralFlojoPct} % de margen
+            </p>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full min-w-[32rem] text-left text-sm">
+                <thead className="text-xs uppercase tracking-wide text-ink/50">
+                  <tr>
+                    <th className="py-2 pr-4">Producto</th>
+                    <th className="py-2 pr-4 text-right">Coste</th>
+                    <th className="py-2 pr-4 text-right">Desde</th>
+                    <th className="py-2 pr-4 text-right">Margen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flojos.map(({ s, f }) => (
+                    <tr key={`${s}-${f.slug}`} className="border-t border-line/60">
+                      <td className="py-2 pr-4">
+                        <span className="text-ink/40">{s}</span> · {f.slug}
+                      </td>
+                      <td className="py-2 pr-4 text-right tabular-nums">{EUR(f.costeCents)}</td>
+                      <td className="py-2 pr-4 text-right tabular-nums">{EUR(f.desdeCents)}</td>
+                      <td className="py-2 pr-4 text-right tabular-nums text-accent">
+                        {f.margenPct.toFixed(1)} %
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </Seccion>
     </>
   );

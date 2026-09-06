@@ -2,14 +2,14 @@
  * Tests de `auditarPrecios`.
  *
  * Se prueba con un Prisma de mentira porque lo que importa no es la SQL sino
- * lo que la función hace con lo que le devuelve: los recuentos, la aritmética
- * del bajo coste y las dos conversiones que, si faltan, revientan solo en
- * producción.
+ * lo que la función hace con lo que le devuelve: los recuentos, que el precio
+ * publicado salga de `clientFromPriceCents` y no de una fórmula propia, y las
+ * conversiones de BigInt que, si faltan, revientan solo en producción.
  */
 import { describe, it, expect, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { auditarPrecios, SUPPLIERS } from "./auditoria-precios";
-import { applyMargin } from "./pricing";
+import { clientFromPriceCents } from "./product-pricing";
 
 /**
  * Prisma de mentira. `count` y `findMany` responden según el filtro para
@@ -18,15 +18,25 @@ import { applyMargin } from "./pricing";
 function prismaFalso(over: {
   sinPrecio?: number;
   sinTarifa?: number;
-  ejemplosSinTarifa?: { slug: string; name: string; fromPriceCents: number }[];
+  ejemplosSinTarifa?: {
+    slug: string;
+    name: string;
+    fromPriceCents: number;
+    override: { customFromPriceCents: number | null; marginPct: number | null; marketingTags: string[] } | null;
+  }[];
   filasHorquilla?: Array<{
     slug: string;
     name: string;
     min_cents: number;
     max_cents: number;
     variantes: bigint;
+    total: bigint;
   }>;
-  conTarifa?: { slug: string; fromPriceCents: number; override: null }[];
+  conTarifa?: {
+    slug: string;
+    fromPriceCents: number;
+    override: { customFromPriceCents: number | null; marginPct: number | null; marketingTags: string[] } | null;
+  }[];
 } = {}) {
   const {
     sinPrecio = 0,
@@ -60,35 +70,34 @@ describe("auditarPrecios", () => {
     for (const s of SUPPLIERS) expect(a.sinPrecio.porProveedor[s]).toBe(3);
   });
 
-  it("marca el bajo coste con la aritmética de la curva inventada", async () => {
-    // 10,00 € de coste → «desde» 16,67 € → a 250 uds el 32 % = 5,33 €, que es
-    // menos de lo que cuesta. Este es el caso que motivó la tarifa plana.
+  it("el «desde» de la sección B sale de clientFromPriceCents, no de una fórmula propia", async () => {
     const a = await auditarPrecios(
       prismaFalso({
         sinTarifa: 1,
-        ejemplosSinTarifa: [{ slug: "taza", name: "Taza", fromPriceCents: 1000 }],
+        ejemplosSinTarifa: [
+          { slug: "taza", name: "Taza", fromPriceCents: 1000, override: null },
+        ],
       }),
     );
     const p = a.sinTarifa.ejemplos.midocean[0];
-    expect(p.desdeCents).toBe(applyMargin(1000));
-    expect(p.a250Cents).toBe(Math.round(applyMargin(1000) * 0.32));
-    expect(p.a250Cents).toBeLessThan(p.costeCents);
-    expect(p.bajoCoste).toBe(true);
-    // Uno por proveedor, y los cuatro cuentan.
-    expect(a.sinTarifa.bajoCoste).toBe(SUPPLIERS.length);
+    expect(p.costeCents).toBe(1000);
+    expect(p.desdeCents).toBe(clientFromPriceCents(1000, null));
   });
 
-  it("un producto barato NO se marca como bajo coste", async () => {
-    // Anti-falso-verde del test anterior: si `bajoCoste` fuera siempre true,
-    // esto lo caza. Con un coste de 1 céntimo el redondeo deja el tramo de
-    // 250 por encima.
+  it("y respeta el margen fijado por el panel, que antes se ignoraba", async () => {
+    // Con `marginPct` el precio publicado NO es el del multiplicador global.
+    // La primera versión usaba `applyMargin` a secas y enseñaba un «desde»
+    // que no era el que ve el cliente.
+    const override = { customFromPriceCents: null, marginPct: 10, marketingTags: [] };
     const a = await auditarPrecios(
       prismaFalso({
         sinTarifa: 1,
-        ejemplosSinTarifa: [{ slug: "pin", name: "Pin", fromPriceCents: 1 }],
+        ejemplosSinTarifa: [{ slug: "taza", name: "Taza", fromPriceCents: 1000, override }],
       }),
     );
-    expect(a.sinTarifa.ejemplos.midocean[0].bajoCoste).toBe(false);
+    const p = a.sinTarifa.ejemplos.midocean[0];
+    expect(p.desdeCents).toBe(1100);
+    expect(p.desdeCents).not.toBe(clientFromPriceCents(1000, null));
   });
 
   it("el COUNT(*) de Postgres llega como BigInt y sale como número", async () => {
@@ -98,7 +107,7 @@ describe("auditarPrecios", () => {
     const a = await auditarPrecios(
       prismaFalso({
         filasHorquilla: [
-          { slug: "polo", name: "Polo", min_cents: 500, max_cents: 800, variantes: 7n },
+          { slug: "polo", name: "Polo", min_cents: 500, max_cents: 800, variantes: 7n, total: 3n },
         ],
       }),
     );
@@ -106,6 +115,9 @@ describe("auditarPrecios", () => {
     expect(typeof f.variantes).toBe("number");
     expect(f.variantes).toBe(7);
     expect(f.saltoPct).toBeCloseTo(60, 5);
+    // El total viene de `COUNT(*) OVER ()`, también BigInt, y no es el número
+    // de filas devueltas: la consulta lleva LIMIT.
+    expect(a.horquillaVariantes.porProveedor.cifra).toBe(3);
     expect(() => JSON.stringify(a)).not.toThrow();
   });
 
@@ -119,18 +131,48 @@ describe("auditarPrecios", () => {
     }
   });
 
-  it("el margen efectivo sale del multiplicador configurado", async () => {
+  it("el margen efectivo incluye los que llevan override, que son los que se desvían", async () => {
+    // La primera versión los excluía del cálculo, así que la media solo podía
+    // dar el porcentaje configurado: el número de entrada, devuelto. Con un
+    // override del 10 % sobre coste el margen real es 9,1 %, no el 40 %.
     const a = await auditarPrecios(
       prismaFalso({
         conTarifa: [
-          { slug: "a", fromPriceCents: 1000, override: null },
-          { slug: "b", fromPriceCents: 2500, override: null },
+          { slug: "normal", fromPriceCents: 1000, override: null },
+          {
+            slug: "regalado",
+            fromPriceCents: 1000,
+            override: { customFromPriceCents: null, marginPct: 10, marketingTags: [] },
+          },
         ],
       }),
     );
-    const esperado = ((applyMargin(1000) - 1000) / applyMargin(1000)) * 100;
-    expect(a.margenEfectivo.makito.margenMedioPct).toBeCloseTo(esperado, 0);
-    expect(a.margenEfectivo.makito.margenMedioPct).toBeGreaterThan(35);
+    const m = a.margenEfectivo.makito;
+    expect(m.muestra).toBe(2);
+    expect(m.conPrecioFijado).toBe(1);
+    // Media de ~40 % y ~9,1 %: ni uno ni otro, que es la prueba de que ya no
+    // es una tautología.
+    expect(m.margenMedioPct!).toBeGreaterThan(20);
+    expect(m.margenMedioPct!).toBeLessThan(30);
+  });
+
+  it("y señala con el dedo los que se quedan por debajo del umbral", async () => {
+    const a = await auditarPrecios(
+      prismaFalso({
+        conTarifa: [
+          { slug: "normal", fromPriceCents: 1000, override: null },
+          {
+            slug: "regalado",
+            fromPriceCents: 1000,
+            override: { customFromPriceCents: null, marginPct: 10, marketingTags: [] },
+          },
+        ],
+      }),
+    );
+    const m = a.margenEfectivo.makito;
+    expect(m.flojos.map((f) => f.slug)).toEqual(["regalado"]);
+    expect(m.flojos[0].margenPct).toBeCloseTo(9.09, 1);
+    expect(m.flojos[0].desdeCents).toBe(1100);
   });
 
   it("no escribe nada: el Prisma de mentira no tiene ni update ni create", async () => {

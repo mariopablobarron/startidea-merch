@@ -22,10 +22,9 @@
  *      sweep no está corriendo y hay fichas publicadas sin precio.
  *
  *   B. ACTIVOS SIN TARIFA — activos con precio pero sin NINGÚN tramo real de
- *      proveedor. En esos, la web inventa la curva de volumen
- *      (`defaultTiersFromBase`: −68 % a 250 uds) y el carrito cobra por ella.
- *      Con el margen ×1,6667 encima del coste, a 250 uds eso es vender al
- *      53 % del coste. Es el hallazgo más caro de los tres.
+ *      proveedor. Van a tarifa PLANA: no se vende bajo coste, pero tampoco hay
+ *      descuento por volumen, así que el precio es el mismo a 10 que a 1.000
+ *      uds. Es donde se pierden los pedidos grandes por precio.
  *
  *   C. VARIANTES QUE NO CUESTAN LO MISMO — cuánto se separa la variante más
  *      cara de la más barata dentro del mismo producto. Con el arreglo de la
@@ -39,9 +38,10 @@
  *      real. Se cuentan para que quede dicho, no como error.
  *
  *   E. MARGEN EFECTIVO — sobre los que sí tienen tarifa real, compara el
- *      «desde» que se publica con el coste mínimo y saca el margen sobre venta
- *      que está aplicando la web de verdad. Debería dar el 40 % del
- *      multiplicador, salvo en los que tengan override del admin.
+ *      «desde» que se publica —pasando por `clientFromPriceCents`, la misma
+ *      función que lo calcula en la ficha— con el coste, y saca el margen
+ *      sobre venta real. Sin override sale el 40 % del multiplicador; los que
+ *      llevan override son los que pueden desviarse, y se listan aparte.
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -79,16 +79,15 @@ async function main() {
         : "   ✓"),
   );
 
-  titulo("B · ACTIVOS SIN TARIFA REAL (la web inventa la curva de volumen)");
-  console.log("  A 250 uds la curva inventada cobra el 32 % del «desde»:");
-  console.log("  con el margen encima del coste, eso es vender bajo coste.\n");
+  titulo("B · ACTIVOS SIN TARIFA REAL (tarifa plana: sin descuento por volumen)");
+  console.log("  El precio es el mismo a 10 uds que a 1.000. Es donde se pierden");
+  console.log("  los pedidos grandes por precio.\n");
   for (const s of SUPPLIERS) {
     console.log(`  ${s.padEnd(10)} ${String(a.sinTarifa.porProveedor[s]).padStart(6)}`);
     for (const p of a.sinTarifa.ejemplos[s]) {
       console.log(
-        `      ${p.slug.slice(0, 44).padEnd(44)} coste ${EUR(p.costeCents).padStart(9)}` +
-          ` · desde ${EUR(p.desdeCents).padStart(9)} · a 250 uds ${EUR(p.a250Cents).padStart(9)}` +
-          (p.bajoCoste ? "  ⚠ BAJO COSTE" : ""),
+        `      ${p.slug.slice(0, 48).padEnd(48)} coste ${EUR(p.costeCents).padStart(9)}` +
+          ` · desde ${EUR(p.desdeCents).padStart(9)}`,
       );
     }
   }
@@ -131,6 +130,12 @@ async function main() {
         ` · margen medio sobre venta ${m.margenMedioPct?.toFixed(1) ?? "—"} %` +
         ` · con precio fijado por admin: ${m.conPrecioFijado}`,
     );
+    for (const f of m.flojos) {
+      console.log(
+        `      ⚠ ${f.slug.slice(0, 44).padEnd(44)} coste ${EUR(f.costeCents).padStart(9)}` +
+          ` · desde ${EUR(f.desdeCents).padStart(9)} · margen ${f.margenPct.toFixed(1).padStart(6)} %`,
+      );
+    }
   }
 
   console.log("\nFin de la auditoría. Nada se ha modificado.\n");

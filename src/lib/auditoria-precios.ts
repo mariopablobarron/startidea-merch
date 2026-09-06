@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
-import { applyMargin, marginMultiplier } from "@/lib/pricing";
+import { clientFromPriceCents } from "@/lib/product-pricing";
+import { marginMultiplier } from "@/lib/pricing";
 
 /**
  * Auditoría del PRECIO PÚBLICO del catálogo, proveedor por proveedor.
@@ -13,24 +14,29 @@ import { applyMargin, marginMultiplier } from "@/lib/pricing";
  * Vive aquí y no dentro del script porque lo usan dos sitios —el script de
  * terminal y la página del panel— y una auditoría que cuenta una cosa por
  * consola y otra por pantalla no sirve para decidir nada.
+ *
+ * REGLA DE LA CASA: el precio publicado NO se modela aquí. Se pide a
+ * `clientFromPriceCents`, que es la función que lo calcula de verdad. Una
+ * auditoría con su propia idea de cómo se cobra acaba auditando su idea.
  */
 
 export const SUPPLIERS = ["midocean", "makito", "cifra", "adivin"] as const;
 export type Supplier = (typeof SUPPLIERS)[number];
 
-/** Descuento que aplica la curva inventada en el tramo de 250 uds. */
-const FACTOR_250 = 0.32;
+/**
+ * Por debajo de este margen sobre venta, una línea merece que alguien la mire.
+ * No es un umbral de negocio cerrado: es el listón para que la sección E
+ * señale con el dedo en vez de dar solo una media.
+ */
+const MARGEN_FLOJO_PCT = 25;
 
 /** Una fila de la sección B. No se exporta: se lee desde `AuditoriaPrecios`. */
 type ProductoSinTarifa = {
   slug: string;
   name: string;
   costeCents: number;
+  /** Lo que ve el cliente, con el margen o el override que le toque. */
   desdeCents: number;
-  /** Lo que cobraría la curva inventada a 250 uds. */
-  a250Cents: number;
-  /** El tramo de 250 sale por debajo de lo que nos cuesta. */
-  bajoCoste: boolean;
 };
 
 /** Una fila de la sección C. No se exporta: se lee desde `AuditoriaPrecios`. */
@@ -44,6 +50,14 @@ type ProductoConHorquilla = {
   saltoPct: number;
 };
 
+/** Una fila de la sección E. */
+type ProductoConMargenFlojo = {
+  slug: string;
+  costeCents: number;
+  desdeCents: number;
+  margenPct: number;
+};
+
 export type AuditoriaPrecios = {
   generadaEn: string;
   margen: { multiplicador: number; sobreVentaPct: number };
@@ -54,8 +68,6 @@ export type AuditoriaPrecios = {
     porProveedor: Record<Supplier, number>;
     total: number;
     ejemplos: Record<Supplier, ProductoSinTarifa[]>;
-    /** Cuántos de los contados cobrarían por debajo del coste a 250 uds. */
-    bajoCoste: number;
   };
   /** C · productos cuyas variantes no cuestan lo mismo. */
   horquillaVariantes: {
@@ -68,13 +80,20 @@ export type AuditoriaPrecios = {
   /** E · margen que está aplicando la web de verdad. */
   margenEfectivo: Record<
     Supplier,
-    { muestra: number; margenMedioPct: number | null; conPrecioFijado: number }
+    {
+      muestra: number;
+      margenMedioPct: number | null;
+      conPrecioFijado: number;
+      /** Umbral por debajo del cual se listan, para que se vea en pantalla. */
+      umbralFlojoPct: number;
+      flojos: ProductoConMargenFlojo[];
+    }
   >;
 };
 
-/** `Record<Supplier, T>` con el mismo valor de partida en los cuatro. */
-function porProveedor<T>(inicial: () => T): Record<Supplier, T> {
-  return Object.fromEntries(SUPPLIERS.map((s) => [s, inicial()])) as Record<Supplier, T>;
+/** `Record<Supplier, T>` a partir de una entrada por proveedor. */
+function porProveedor<T>(pares: Array<[Supplier, T]>): Record<Supplier, T> {
+  return Object.fromEntries(pares) as Record<Supplier, T>;
 }
 
 /**
@@ -96,133 +115,187 @@ function filtroSinTarifa(supplier: Supplier) {
   } as const;
 }
 
+/**
+ * El override tal y como lo espera `clientFromPriceCents`. `marketingTags` no
+ * interviene en el precio «desde» —lo usan las promos—, pero se pide a la base
+ * de datos en vez de rellenarlo a mano: un campo inventado para contentar al
+ * tipo es un campo que un día alguien lee y se cree.
+ */
+type OverrideLeido = {
+  customFromPriceCents: number | null;
+  marginPct: number | null;
+  marketingTags: string[];
+} | null;
+
+/** Margen sobre VENTA que deja un coste a un precio publicado. */
+function margenSobreVenta(costeCents: number, desdeCents: number): number {
+  return desdeCents > 0 ? ((desdeCents - costeCents) / desdeCents) * 100 : 0;
+}
+
+async function auditarProveedor(prisma: PrismaClient, supplier: Supplier, EJEMPLOS: number) {
+  // ── A · activos sin precio ─────────────────────────────────────────────
+  const sinPrecio = prisma.product.count({
+    where: {
+      supplier,
+      active: true,
+      OR: [{ fromPriceCents: null }, { fromPriceCents: { lte: 0 } }],
+    },
+  });
+
+  // ── B · activos con precio pero sin tarifa real ────────────────────────
+  const filtro = filtroSinTarifa(supplier);
+  const sinTarifaCuenta = prisma.product.count({ where: filtro });
+  const sinTarifaMuestra = prisma.product.findMany({
+    where: filtro,
+    select: {
+      slug: true,
+      name: true,
+      fromPriceCents: true,
+      override: { select: { customFromPriceCents: true, marginPct: true, marketingTags: true } },
+    },
+    orderBy: { fromPriceCents: "desc" },
+    take: EJEMPLOS,
+  });
+
+  // ── C · variantes que no cuestan lo mismo ──────────────────────────────
+  //
+  // El total viaja en cada fila con `COUNT(*) OVER ()` y la consulta lleva
+  // LIMIT: antes se traía el catálogo entero para acabar usando `.length`, que
+  // en producción son miles de filas por proveedor y cuatro consultas.
+  const horquilla = prisma.$queryRaw<
+    Array<{
+      slug: string;
+      name: string;
+      min_cents: number;
+      max_cents: number;
+      variantes: bigint;
+      total: bigint;
+    }>
+  >`
+    WITH por_variante AS (
+      SELECT pv."productId" AS product_id, pv.id, MIN(pt."unitPriceCents") AS min_cents
+      FROM "ProductVariant" pv
+      JOIN "PriceTier" pt ON pt."variantId" = pv.id
+      GROUP BY pv."productId", pv.id
+    ), por_producto AS (
+      SELECT p.slug, p.name,
+             MIN(v.min_cents) AS min_cents,
+             MAX(v.min_cents) AS max_cents,
+             COUNT(*)         AS variantes
+      FROM "Product" p
+      JOIN por_variante v ON v.product_id = p.id
+      WHERE p.active = true AND p.supplier::text = ${supplier}
+      GROUP BY p.slug, p.name
+      HAVING MIN(v.min_cents) <> MAX(v.min_cents)
+    )
+    SELECT *, COUNT(*) OVER () AS total
+    FROM por_producto
+    ORDER BY (max_cents - min_cents) DESC
+    LIMIT ${EJEMPLOS}
+  `;
+
+  // ── E · margen efectivo sobre los que sí tienen tarifa ─────────────────
+  //
+  // Se miran TAMBIÉN los que llevan override. Excluirlos dejaba una cuenta
+  // que solo podía dar el porcentaje configurado —el mismo número de entrada,
+  // devuelto— y precisamente los que pueden desviarse son esos.
+  const conTarifa = prisma.product.findMany({
+    where: {
+      supplier,
+      active: true,
+      fromPriceCents: { gt: 0 },
+      variants: { some: { priceTiers: { some: {} } } },
+    },
+    select: {
+      slug: true,
+      fromPriceCents: true,
+      override: { select: { customFromPriceCents: true, marginPct: true, marketingTags: true } },
+    },
+    take: 400,
+  });
+
+  const [nSinPrecio, nSinTarifa, muestraSinTarifa, filas, muestraConTarifa] = await Promise.all([
+    sinPrecio,
+    sinTarifaCuenta,
+    sinTarifaMuestra,
+    horquilla,
+    conTarifa,
+  ]);
+
+  const ejemplosSinTarifa: ProductoSinTarifa[] = muestraSinTarifa.map((p) => {
+    const costeCents = p.fromPriceCents ?? 0;
+    return {
+      slug: p.slug,
+      name: p.name,
+      costeCents,
+      desdeCents: clientFromPriceCents(costeCents, p.override as OverrideLeido) ?? 0,
+    };
+  });
+
+  const ejemplosHorquilla: ProductoConHorquilla[] = filas.map((f) => ({
+    slug: f.slug,
+    name: f.name,
+    // `COUNT(*)` de Postgres llega como BigInt y JSON.stringify revienta con
+    // él: se convierte aquí, que es donde se sabe de dónde viene.
+    variantes: Number(f.variantes),
+    minCents: f.min_cents,
+    maxCents: f.max_cents,
+    saltoPct: f.min_cents > 0 ? ((f.max_cents - f.min_cents) / f.min_cents) * 100 : 0,
+  }));
+
+  const margenes = muestraConTarifa.map((p) => {
+    const costeCents = p.fromPriceCents ?? 0;
+    const desdeCents = clientFromPriceCents(costeCents, p.override as OverrideLeido) ?? 0;
+    return { slug: p.slug, costeCents, desdeCents, margenPct: margenSobreVenta(costeCents, desdeCents) };
+  });
+
+  return {
+    supplier,
+    sinPrecio: nSinPrecio,
+    sinTarifa: nSinTarifa,
+    ejemplosSinTarifa,
+    horquilla: filas.length ? Number(filas[0].total) : 0,
+    ejemplosHorquilla,
+    margenEfectivo: {
+      muestra: muestraConTarifa.length,
+      margenMedioPct: margenes.length
+        ? margenes.reduce((a, b) => a + b.margenPct, 0) / margenes.length
+        : null,
+      conPrecioFijado: muestraConTarifa.filter(
+        (p) => p.override?.customFromPriceCents != null || p.override?.marginPct != null,
+      ).length,
+      umbralFlojoPct: MARGEN_FLOJO_PCT,
+      flojos: margenes
+        .filter((m) => m.margenPct < MARGEN_FLOJO_PCT)
+        .sort((a, b) => a.margenPct - b.margenPct)
+        .slice(0, EJEMPLOS),
+    },
+  };
+}
+
 export async function auditarPrecios(
   prisma: PrismaClient,
   opciones: { ejemplos?: number } = {},
 ): Promise<AuditoriaPrecios> {
   const EJEMPLOS = opciones.ejemplos ?? 8;
 
-  const sinPrecioPorProveedor = porProveedor(() => 0);
-  const sinTarifaPorProveedor = porProveedor(() => 0);
-  const sinTarifaEjemplos = porProveedor<ProductoSinTarifa[]>(() => []);
-  const horquillaPorProveedor = porProveedor(() => 0);
-  const horquillaEjemplos = porProveedor<ProductoConHorquilla[]>(() => []);
-  const margenEfectivo = porProveedor(() => ({
-    muestra: 0,
-    margenMedioPct: null as number | null,
-    conPrecioFijado: 0,
-  }));
-  let bajoCoste = 0;
-
-  for (const supplier of SUPPLIERS) {
-    // ── A · activos sin precio ───────────────────────────────────────────
-    sinPrecioPorProveedor[supplier] = await prisma.product.count({
-      where: {
-        supplier,
-        active: true,
-        OR: [{ fromPriceCents: null }, { fromPriceCents: { lte: 0 } }],
-      },
-    });
-
-    // ── B · activos con precio pero sin tarifa real ──────────────────────
-    const filtro = filtroSinTarifa(supplier);
-    sinTarifaPorProveedor[supplier] = await prisma.product.count({ where: filtro });
-    const muestraSinTarifa = await prisma.product.findMany({
-      where: filtro,
-      select: { slug: true, name: true, fromPriceCents: true },
-      orderBy: { fromPriceCents: "desc" },
-      take: EJEMPLOS,
-    });
-    sinTarifaEjemplos[supplier] = muestraSinTarifa.map((p) => {
-      const costeCents = p.fromPriceCents ?? 0;
-      const desdeCents = applyMargin(costeCents);
-      const a250Cents = Math.round(desdeCents * FACTOR_250);
-      return {
-        slug: p.slug,
-        name: p.name,
-        costeCents,
-        desdeCents,
-        a250Cents,
-        bajoCoste: a250Cents < costeCents,
-      };
-    });
-    bajoCoste += sinTarifaEjemplos[supplier].filter((p) => p.bajoCoste).length;
-
-    // ── C · variantes que no cuestan lo mismo ────────────────────────────
-    const filas = await prisma.$queryRaw<
-      Array<{ slug: string; name: string; min_cents: number; max_cents: number; variantes: bigint }>
-    >`
-      SELECT p.slug, p.name,
-             MIN(v.min_cents) AS min_cents,
-             MAX(v.min_cents) AS max_cents,
-             COUNT(*)         AS variantes
-      FROM "Product" p
-      JOIN (
-        SELECT pv."productId" AS product_id, pv.id, MIN(pt."unitPriceCents") AS min_cents
-        FROM "ProductVariant" pv
-        JOIN "PriceTier" pt ON pt."variantId" = pv.id
-        GROUP BY pv."productId", pv.id
-      ) v ON v.product_id = p.id
-      WHERE p.active = true AND p.supplier::text = ${supplier}
-      GROUP BY p.slug, p.name
-      HAVING MIN(v.min_cents) <> MAX(v.min_cents)
-      ORDER BY (MAX(v.min_cents) - MIN(v.min_cents)) DESC
-    `;
-    horquillaPorProveedor[supplier] = filas.length;
-    horquillaEjemplos[supplier] = filas.slice(0, EJEMPLOS).map((f) => ({
-      slug: f.slug,
-      name: f.name,
-      // `COUNT(*)` de Postgres llega como BigInt y JSON.stringify revienta con
-      // él: se convierte aquí, que es donde se sabe de dónde viene.
-      variantes: Number(f.variantes),
-      minCents: f.min_cents,
-      maxCents: f.max_cents,
-      saltoPct: f.min_cents > 0 ? ((f.max_cents - f.min_cents) / f.min_cents) * 100 : 0,
-    }));
-
-    // ── E · margen efectivo sobre los que sí tienen tarifa ───────────────
-    const muestra = await prisma.product.findMany({
-      where: {
-        supplier,
-        active: true,
-        fromPriceCents: { gt: 0 },
-        variants: { some: { priceTiers: { some: {} } } },
-      },
-      select: {
-        slug: true,
-        fromPriceCents: true,
-        override: { select: { customFromPriceCents: true, marginPct: true } },
-      },
-      take: 400,
-    });
-    const conPrecioFijado = muestra.filter(
-      (p) => p.override?.customFromPriceCents != null || p.override?.marginPct != null,
-    ).length;
-    const margenes = muestra
-      .filter((p) => p.override?.customFromPriceCents == null && p.override?.marginPct == null)
-      .map((p) => {
-        const coste = p.fromPriceCents ?? 0;
-        const venta = applyMargin(coste);
-        return venta > 0 ? ((venta - coste) / venta) * 100 : 0;
-      });
-    margenEfectivo[supplier] = {
-      muestra: muestra.length,
-      margenMedioPct: margenes.length
-        ? margenes.reduce((a, b) => a + b, 0) / margenes.length
-        : null,
-      conPrecioFijado,
-    };
-  }
-
-  // ── D · Ádivin ─────────────────────────────────────────────────────────
-  const [adivinActivos, adivinConCustom] = await Promise.all([
+  // Los cuatro proveedores a la vez: en serie eran veinte consultas seguidas
+  // contra el catálogo de producción, con el tiempo de la petición sumándolas.
+  const [porSupplier, adivinActivos, adivinConCustom] = await Promise.all([
+    Promise.all(SUPPLIERS.map((s) => auditarProveedor(prisma, s, EJEMPLOS))),
     prisma.product.count({ where: { supplier: "adivin", active: true } }),
     prisma.productOverride.count({
       where: { customFromPriceCents: { not: null }, product: { supplier: "adivin" } },
     }),
   ]);
 
+  const campo = <T>(f: (r: (typeof porSupplier)[number]) => T) =>
+    porProveedor(porSupplier.map((r) => [r.supplier, f(r)] as [Supplier, T]));
   const suma = (r: Record<Supplier, number>) => SUPPLIERS.reduce((t, s) => t + r[s], 0);
+
+  const sinPrecioPorProveedor = campo((r) => r.sinPrecio);
+  const sinTarifaPorProveedor = campo((r) => r.sinTarifa);
+  const horquillaPorProveedor = campo((r) => r.horquilla);
 
   return {
     generadaEn: new Date().toISOString(),
@@ -234,15 +307,14 @@ export async function auditarPrecios(
     sinTarifa: {
       porProveedor: sinTarifaPorProveedor,
       total: suma(sinTarifaPorProveedor),
-      ejemplos: sinTarifaEjemplos,
-      bajoCoste,
+      ejemplos: campo((r) => r.ejemplosSinTarifa),
     },
     horquillaVariantes: {
       porProveedor: horquillaPorProveedor,
       total: suma(horquillaPorProveedor),
-      ejemplos: horquillaEjemplos,
+      ejemplos: campo((r) => r.ejemplosHorquilla),
     },
     adivin: { activos: adivinActivos, conPrecioFijado: adivinConCustom },
-    margenEfectivo,
+    margenEfectivo: campo((r) => r.margenEfectivo),
   };
 }
