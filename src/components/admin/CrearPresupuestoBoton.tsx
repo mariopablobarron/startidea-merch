@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { puedeCotizar } from "@/lib/permisos-presupuesto";
 
 /**
  * Convierte un lead —un carrito de cotización o un formulario— en un
@@ -11,6 +12,14 @@ import { useRouter } from "next/navigation";
  * precio que el cliente vio en la web: ese lleva el margen automático de la
  * tienda, y un presupuesto se cotiza al margen del encargo sobre el coste
  * mirado en el portal. Los costes entran del catálogo sin verificar.
+ *
+ * Se esconde solo si el rol de quien mira no puede crear presupuestos. El
+ * endpoint ya lo rechazaba con un 403, pero enseñar el botón y contestar
+ * «Requiere rol COMERCIAL» al pulsarlo convierte una regla en un error: a
+ * OPERACIONES y FACTURACION no se les ofrece la acción, y punto. La
+ * comprobación va aquí dentro, no en cada página, porque los dos sitios que
+ * lo usan son uno de servidor y otro de cliente y ninguno debe poder
+ * olvidarse.
  */
 export function CrearPresupuestoBoton({
   endpoint,
@@ -25,6 +34,24 @@ export function CrearPresupuestoBoton({
   const router = useRouter();
   const [creando, setCreando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // null = todavía no sabemos el rol. Mientras tanto no se pinta nada: es
+  // preferible que el botón aparezca tarde a que aparezca y desaparezca.
+  const [permitido, setPermitido] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    fetch("/api/admin/auth/me", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (vivo) setPermitido(puedeCotizar(d?.session?.role));
+      })
+      .catch(() => {
+        if (vivo) setPermitido(false);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
   async function crear() {
     setCreando(true);
@@ -44,6 +71,8 @@ export function CrearPresupuestoBoton({
       setCreando(false);
     }
   }
+
+  if (!permitido) return null;
 
   return (
     <span className={className}>
