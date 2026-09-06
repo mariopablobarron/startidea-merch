@@ -36,6 +36,7 @@ import {
   sanitizeSupplierText,
   sanitizeSupplierName,
   assertNoSupplierJargon,
+  supplierJargonHits,
 } from "@/lib/suppliers/sanitize-supplier-text";
 
 const SUPPLIER = "adivin" as const;
@@ -49,6 +50,12 @@ type SeedItem = {
   category: string;
   material: string | null;
   sizes: string | null;
+  /**
+   * La descripción escrita por nosotros. Manda sobre `shortDescription`, que
+   * es la del catálogo de origen y está redactada para un distribuidor, no
+   * para el cliente. Se conserva aquella solo como rastro de la captura.
+   */
+  descripcion: string | null;
   shortDescription: string | null;
   images: string[];
   sourceUrl: string;
@@ -153,14 +160,65 @@ async function main() {
   log(`ADIVIN import · ${COMMIT ? "COMMIT" : "DRY-RUN"} · ${seed.length} productos · ${prices.size} precios cargados${PRICES_CSV ? ` (${PRICES_CSV})` : " (sin CSV)"}`);
 
   let created = 0, updated = 0, withPrice = 0, inactive = 0, saneados = 0;
-  // dedup por supplierRef (el seed tenía algún duplicado de variante)
+
+  // El upsert va por (supplier, supplierRef): dos filas con la misma referencia
+  // son un solo producto. Se queda la primera — pero callarse el resto es lo
+  // que hacía que dos artículos del catálogo no llegaran nunca a la tienda sin
+  // que nadie se enterara. Se separan los dos casos:
+  //
+  //   · misma ref y mismo nombre → fila repetida en la captura, sobra y ya.
+  //   · misma ref y OTRO nombre  → dos artículos distintos compartiendo
+  //     referencia. Uno se queda fuera. Pasó con «Base Deluxe con ruedas» y
+  //     con «Estructura Cubo Publicitario», que llevaban el número corto del
+  //     catálogo de origen en vez del suyo. No se inventa una: la referencia
+  //     es la que se usa para PEDIR la pieza, así que una inventada haría
+  //     llegar la equivocada. La buena suele estar ya capturada en
+  //     src/data/adivin-import-data.json, que trae las 60 sin repetir.
   const bySref = new Map<string, SeedItem>();
-  for (const it of seed) if (!bySref.has(it.supplierRef)) bySref.set(it.supplierRef, it);
+  const repetidos: SeedItem[] = [];
+  const colisiones: { ref: string; entra: string; fuera: string }[] = [];
+  for (const it of seed) {
+    const yaEsta = bySref.get(it.supplierRef);
+    if (!yaEsta) { bySref.set(it.supplierRef, it); continue; }
+    if (yaEsta.name === it.name) repetidos.push(it);
+    else colisiones.push({ ref: it.supplierRef, entra: yaEsta.name, fuera: it.name });
+  }
+  if (repetidos.length) {
+    log(`\n  ${repetidos.length} fila(s) repetida(s) en la captura, ignoradas.`);
+  }
+  if (colisiones.length) {
+    log(`\n⚠️  ${colisiones.length} producto(s) NO se importan: comparten referencia con otro.`);
+    for (const c of colisiones) {
+      log(`     ref ${c.ref} → entra «${c.entra}», se queda fuera «${c.fuera}»`);
+    }
+    log(`     Su referencia propia suele estar en src/data/adivin-import-data.json.`);
+  }
 
   for (const it of bySref.values()) {
     const cents = prices.get(it.supplierRef) ?? null;
     if (cents) withPrice++; else inactive++;
-    const descRaw = [it.shortDescription, it.sizes ? `Medidas: ${it.sizes}` : null].filter(Boolean).join(" · ").slice(0, 600) || null;
+    // La descripción de origen se SANEA; la nuestra, NO.
+    //
+    // El saneador está hecho para borrar el argumentario de un catálogo
+    // mayorista, y borrando no distingue: «margen» le vale para 【30% de
+    // margen】 y para «un margen de 5 cm en el borde»; «envío gratis» y
+    // «envío incluido en el pack» comparten arranque. Sobre el texto del
+    // proveedor eso es aceptable —lo que se pierde no queríamos publicarlo—,
+    // pero sobre una frase escrita por nosotros deja cosas como
+    //
+    //     «Se entrega en 48 h de uso continuo.» → «Se de uso continuo.»
+    //
+    // en la ficha, sin avisar a nadie. Así que a lo nuestro se le aplica el
+    // mismo criterio, pero al revés: se COMPRUEBA y el import PARA si algo
+    // huele a catálogo de origen (assertNoSupplierJargon, más abajo). Nunca
+    // se reescribe en silencio una frase que hemos escrito a propósito.
+    //
+    // Y cuando la descripción es nuestra no se le pega detrás el «Medidas: …»:
+    // las medidas que importan ya están dentro de la frase, puestas donde se
+    // leen. Pegarlas otra vez dejaba fichas diciendo el dato dos veces.
+    const propia = it.descripcion?.slice(0, 600) || null;
+    const deOrigen = [it.shortDescription, it.sizes ? `Medidas: ${it.sizes}` : null]
+      .filter(Boolean).join(" · ").slice(0, 600) || null;
 
     // El catálogo de origen es MAYORISTA: sus descripciones dicen
     // «Exclusivamente para Rotulistas y Distribuidores【30% de margen】», es
@@ -168,11 +226,30 @@ async function main() {
     // revendiéndolo. Se sanea al importar (limpiar la BD no basta: el
     // siguiente import lo reescribe) y se comprueba el resultado: si algo
     // sobrevive, el import PARA en vez de publicarlo.
-    const desc = sanitizeSupplierText(descRaw);
+    const desc = propia ?? sanitizeSupplierText(deOrigen);
     const material = sanitizeSupplierText(it.material);
     const name = sanitizeSupplierName(it.name);
-    if (descRaw && desc !== descRaw) saneados++;
-    assertNoSupplierJargon(desc, `${it.supplierRef} · shortDescription`);
+    if (!propia && deOrigen && desc !== deOrigen) saneados++;
+    if (propia) {
+      // Nuestra prosa se comprueba, no se reescribe. El aviso genérico dice
+      // «añade el patrón», que es el consejo correcto cuando el texto viene
+      // del proveedor y el equivocado cuando lo hemos escrito nosotros: los
+      // filtros son deliberadamente amplios y «un margen de 5 cm» o «envío
+      // incluido» dan positivo siendo frases legítimas. Aquí lo que toca es
+      // reescribir la frase, y eso es lo que hay que leer al toparse con esto.
+      const hits = supplierJargonHits(propia);
+      if (hits.length) {
+        throw new Error(
+          `La descripción de ${it.supplierRef} · ${it.name} contiene ` +
+            `${hits.map((h) => `«${h}»`).join(", ")}, que el filtro de texto de ` +
+            `proveedor da por jerga de mayorista. Si de verdad lo es, quítalo. Si ` +
+            `es una frase legítima que se le parece, reescríbela: el filtro es ` +
+            `ancho a propósito y no se va a estrechar por una ficha.`,
+        );
+      }
+    } else {
+      assertNoSupplierJargon(desc, `${it.supplierRef} · shortDescription`);
+    }
     assertNoSupplierJargon(material, `${it.supplierRef} · material`);
     assertNoSupplierJargon(name, `${it.supplierRef} · name`);
 
@@ -196,7 +273,8 @@ async function main() {
     // valor ya limpio en una variable haría invisible el saneo.
     const data = {
       name: sanitizeSupplierName(it.name),
-      shortDescription: sanitizeSupplierText(descRaw),
+      // La nuestra entra tal cual (ya comprobada arriba); la de origen, saneada.
+      shortDescription: propia ?? sanitizeSupplierText(deOrigen),
       material: sanitizeSupplierText(it.material),
       category: categoryId && !categoryId.startsWith("dry-") ? { connect: { id: categoryId } } : undefined,
       supplierCategoryCode: it.category,
