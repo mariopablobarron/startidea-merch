@@ -57,6 +57,7 @@ on:
       - "ProductView rollup diario"
       - "Security audit"
       - "Vigilancia de competencia semanal"
+      - "Vigilancia de unidades del feed"
 
 permissions: {}
 
