@@ -1,0 +1,23 @@
+src/app/api/calculadora-rsc/pdf/route.ts
+  s_9a4665d5b7a67a::t_f128c2f5a5ceae 4-5,17-31,34-36,44-51,53-68
+src/app/api/mockup/generate/route.ts
+  s_9a4665d5b7a67a::t_068cfcb87cfc21 8,37-63
+src/app/api/trabajo-caro-con-cerrojo.guard.test.ts
+  s_9a4665d5b7a67a::t_5de152231ffe05 1-85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "eb7631f805aa40c45b8c0651f1c121369a179e9c",
+  "prompts": {},
+  "sessions": {
+    "s_9a4665d5b7a67a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce36bd49-a930-433b-84b5-11f98698d1c1",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
