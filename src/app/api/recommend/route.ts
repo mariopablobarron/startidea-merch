@@ -12,6 +12,7 @@ import { computeClientPricing } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 import { legacyHtmlToText, normalizeProductName, publicProductName } from "@/lib/product-name";
 import { RecommendSchema } from "@/lib/recommend-request";
+import { descripcionPublica } from "@/lib/public-description";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -130,7 +131,7 @@ export async function POST(req: Request) {
   const catalogBlock = products
     .map(
       (p, i) =>
-        `[${i + 1}] ${normalizeProductName(p.name)} · ref ${publicRef(p)} · ${p.category?.name || "—"} · ${legacyHtmlToText(p.material) || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${legacyHtmlToText(p.enhancedShortDescription || p.shortDescription)}`,
+        `[${i + 1}] ${normalizeProductName(p.name)} · ref ${publicRef(p)} · ${p.category?.name || "—"} · ${legacyHtmlToText(p.material) || "—"} · stock ${p.variants[0]?.stockQty ?? 0} · slug=${p.slug}\n   ${descripcionPublica(p.enhancedShortDescription || p.shortDescription)}`,
     )
     .join("\n");
 

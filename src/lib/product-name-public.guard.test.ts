@@ -53,8 +53,11 @@ describe("guard: nombres públicos sin HTML heredado", () => {
   it("la ficha limpia también metadata, descripciones y material", () => {
     const src = read("src/app/catalogo/[slug]/page.tsx");
     expect(src).toMatch(/const customMetaDescription = legacyHtmlToText/);
-    expect(src).toMatch(/const supplierDescription = legacyHtmlToText/);
-    expect(src).toMatch(/const displayDescription = legacyHtmlToText/);
+    // Desde el 07-sep-2026 el texto de proveedor sale por la frontera de
+    // `public-description.ts`, que sanea ADEMÁS de quitar el HTML. La garantía
+    // que pedía esta línea sigue en pie, y es más fuerte.
+    expect(src).toMatch(/const supplierDescription = descripcionPublica/);
+    expect(src).toMatch(/descripcionPublica\(product\.longDescription\)/);
     expect(src).toMatch(/const displayMaterial = legacyHtmlToText/);
   });
 
@@ -70,14 +73,14 @@ describe("guard: nombres públicos sin HTML heredado", () => {
       /material: legacyHtmlToText\(p\.material\)/,
     );
     expect(read("src/app/api/search/semantic/route.ts")).toMatch(
-      /description:\s*legacyHtmlToText/,
+      /description: descripcionPublicaONull\(/,
     );
   });
 
   it("el documento de Meilisearch no indexa nombre ni descripción crudos", () => {
     const src = read("src/lib/search/meili.ts");
     expect(src).toMatch(/name: normalizeProductName\(p\.name\)/);
-    expect(src).toMatch(/shortDescription: legacyHtmlToText\(p\.shortDescription\)/);
+    expect(src).toMatch(/shortDescription: descripcionPublica\(p\.shortDescription\)/);
   });
 
   it("el snapshot compartido normaliza nombres agregados", () => {

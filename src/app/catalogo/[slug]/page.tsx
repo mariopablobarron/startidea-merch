@@ -31,6 +31,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { productJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { ProductViewTracker } from "@/components/ProductViewTracker";
 import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
+import { descripcionPublica } from "@/lib/public-description";
 
 export const revalidate = 3600;
 
@@ -56,7 +57,7 @@ export async function generateMetadata({
   const customMetaTitle = legacyHtmlToText(p.override?.metaTitle);
   const title = customMetaTitle || `${name}${visibleBrand ? ` · ${visibleBrand}` : ""}`;
   const customMetaDescription = legacyHtmlToText(p.override?.metaDescription);
-  const supplierDescription = legacyHtmlToText(p.shortDescription).slice(0, 160);
+  const supplierDescription = descripcionPublica(p.shortDescription).slice(0, 160);
   const description =
     customMetaDescription ||
     supplierDescription ||
@@ -156,10 +157,14 @@ export default async function ProductDetailPage({
   // Aplicar overrides admin (si existen) sobre los datos base
   const ov = product.override;
   const displayName = publicProductName(product.name, ov?.customName);
-  const displayDescription = legacyHtmlToText(ov?.customDescription || product.longDescription);
-  const displayShortDescription = legacyHtmlToText(
-    ov?.customDescription || product.enhancedShortDescription || product.shortDescription,
-  );
+  // El texto del panel (`customDescription`) lo escribe Startidea y va intacto;
+  // solo el que viene del feed pasa por la frontera de salida.
+  const displayDescription = ov?.customDescription
+    ? legacyHtmlToText(ov.customDescription)
+    : descripcionPublica(product.longDescription);
+  const displayShortDescription = ov?.customDescription
+    ? legacyHtmlToText(ov.customDescription)
+    : descripcionPublica(product.enhancedShortDescription || product.shortDescription);
   const displayMaterial = legacyHtmlToText(product.material);
   const extraImages = ov?.extraImages ?? [];
   const marketingTags = ov?.marketingTags ?? [];

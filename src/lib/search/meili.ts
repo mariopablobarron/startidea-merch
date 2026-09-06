@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { publicRef } from "@/lib/internal-ref";
 import { legacyHtmlToText, normalizeProductName } from "@/lib/product-name";
+import { descripcionPublica } from "@/lib/public-description";
 
 const HOST = process.env.MEILI_HOST || "http://merch-meili:7700";
 const KEY = process.env.MEILI_MASTER_KEY || "";
@@ -91,7 +92,7 @@ export function buildProductSearchDocument(p: ProductRow): ProductSearchDocument
     ref: publicRef(p),
     categoryPath: [p.category?.parent?.name, p.category?.name].filter(Boolean).join(" › "),
     tags: p.tags ?? [],
-    shortDescription: legacyHtmlToText(p.shortDescription).slice(0, 300),
+    shortDescription: descripcionPublica(p.shortDescription).slice(0, 300),
     imageUrl: p.primaryImageUrl ? proxyImageUrl(p.primaryImageUrl) : null,
   };
 }

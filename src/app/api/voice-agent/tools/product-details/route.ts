@@ -9,6 +9,7 @@ import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 import { displayFromPrice } from "@/lib/product-pricing";
 import { loadActivePromotions } from "@/lib/promotions";
 import { resolveProductBySlug } from "@/lib/product-slug-resolver";
+import { descripcionPublica } from "@/lib/public-description";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,8 +73,8 @@ export async function POST(req: Request) {
     slug: p.slug,
     name: publicProductName(p.name, p.override?.customName),
     brand: publicBrand(p.brand),
-    short_description: legacyHtmlToText(p.shortDescription).slice(0, 300) || null,
-    long_description: legacyHtmlToText(p.longDescription).slice(0, 800) || null,
+    short_description: descripcionPublica(p.shortDescription).slice(0, 300) || null,
+    long_description: descripcionPublica(p.longDescription).slice(0, 800) || null,
     material: legacyHtmlToText(p.material) || null,
     dimensions_mm: {
       length: p.lengthMm,

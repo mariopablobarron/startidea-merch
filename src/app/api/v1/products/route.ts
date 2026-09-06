@@ -5,6 +5,7 @@ import { publicRef } from "@/lib/internal-ref";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 import { normalizeLegacyCifraVariant } from "@/lib/suppliers/cifra-variant";
+import { descripcionPublicaONull } from "@/lib/public-description";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,7 +89,7 @@ export async function GET(req: Request) {
       slug: p.slug,
       name: publicProductName(p.name, p.override?.customName),
       brand: p.brand,
-      description: legacyHtmlToText(p.enhancedShortDescription || p.shortDescription) || null,
+      description: descripcionPublicaONull(p.enhancedShortDescription || p.shortDescription),
       material: legacyHtmlToText(p.material) || null,
       countryOfOrigin: p.countryOfOrigin,
       dimensions: { length_mm: p.lengthMm, width_mm: p.widthMm, height_mm: p.heightMm, weight_g: p.weightG },

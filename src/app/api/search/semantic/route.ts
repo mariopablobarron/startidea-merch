@@ -6,6 +6,7 @@ import { publicRef } from "@/lib/internal-ref";
 import { rateLimit } from "@/lib/rate-limit";
 import { acquireInFlight } from "@/lib/in-flight-limit";
 import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
+import { descripcionPublicaONull } from "@/lib/public-description";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -110,10 +111,9 @@ export async function GET(req: Request) {
         name: publicProductName(r.product!.name, r.product!.override?.customName),
         category: r.product!.category?.name,
         image: proxyImageUrl(r.product!.primaryImageUrl), // nunca URL cruda de proveedor
-        description:
-          legacyHtmlToText(
-            r.product!.enhancedShortDescription || r.product!.shortDescription,
-          ) || null,
+        description: descripcionPublicaONull(
+          r.product!.enhancedShortDescription || r.product!.shortDescription,
+        ),
         score: Math.round(r.score * 1000) / 1000,
       })),
     });

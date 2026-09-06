@@ -8,6 +8,7 @@ import { semanticSearch } from "@/lib/embeddings";
 import { displayFromPrice } from "@/lib/product-pricing";
 import { legacyHtmlToText, publicProductName } from "@/lib/product-name";
 import { loadActivePromotions } from "@/lib/promotions";
+import { descripcionPublica } from "@/lib/public-description";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -133,7 +134,7 @@ export async function POST(req: Request) {
         name: publicProductName(p.name, p.override?.customName),
         brand: publicBrand(p.brand),
         short_description:
-          legacyHtmlToText(p.enhancedShortDescription || p.shortDescription).slice(0, 200) ||
+          descripcionPublica(p.enhancedShortDescription || p.shortDescription).slice(0, 200) ||
           null,
         category: p.category?.name || null,
         from_price_eur: price.finalCents != null ? price.finalCents / 100 : null,
