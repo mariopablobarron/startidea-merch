@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { removeLogoBackgroundSafe } from "@/lib/logo-tools";
 import { prisma } from "@/lib/prisma";
 import { getMarkingBase } from "@/lib/marking-base-cache";
+import { mensajeErrorPublico } from "@/lib/mensaje-error-publico";
 import { rateLimit } from "@/lib/rate-limit";
 import { resolveProductBySlug } from "@/lib/product-slug-resolver";
 
@@ -122,8 +123,11 @@ export async function POST(req: Request) {
       }
       baseBuffer = Buffer.from(await baseRes.arrayBuffer());
     } catch (e) {
+      // El mensaje NO se interpola crudo: `baseFetchUrl` puede ser la URL real
+      // del CDN del proveedor y `fetch` la mete dentro de su propio mensaje
+      // ("Failed to parse URL from ..."). Ver `mensaje-error-publico.ts`.
       return NextResponse.json(
-        { error: `Error descargando imagen base: ${e instanceof Error ? e.message : "network"}` },
+        { error: `Error descargando imagen base: ${mensajeErrorPublico(e, "error de red")}` },
         { status: 502 },
       );
     }

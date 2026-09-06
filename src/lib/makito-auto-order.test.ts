@@ -21,6 +21,7 @@ vi.mock("@/lib/telegram", async (importOriginal) => ({
 }));
 
 import { autoPlaceMakitoOrder } from "./makito-auto-order";
+import { paymentItemsFingerprint } from "./payment-quote-fingerprint";
 
 function cart(variantSku: string | null = "MK-RED") {
   return {
@@ -43,6 +44,7 @@ function cart(variantSku: string | null = "MK-RED") {
         quantity: 25,
         purchaseOrderId: "po_makito",
         markingTechniqueName: null,
+        markings: [],
       },
     ],
     purchaseOrders: [
@@ -114,5 +116,39 @@ describe("autoPlaceMakitoOrder · variante de proveedor", () => {
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining("variante exacta") });
     expect(notifyTelegram).not.toHaveBeenCalled();
     expect(poUpdate).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("autoPlaceMakitoOrder · versión pagada antes de producir", () => {
+  it.each(["cantidad", "variante", "marcaje"])("cambio de %s tras confirmar el pago bloquea todos los efectos", async (change) => {
+    process.env.MAKITO_AUTO_PLACE_ON_PAYMENT = "true";
+    const original = [{ ...cart().items[0], markings: [{ id: "mark_1", positionId: "front", techniqueCode: "S1", numberOfColors: 1 }] }];
+    const expected = paymentItemsFingerprint(original as unknown as Parameters<typeof paymentItemsFingerprint>[0]);
+    const changed = structuredClone(original);
+    if (change === "cantidad") changed[0].quantity++;
+    if (change === "variante") changed[0].variantSku = "OTHER-SKU";
+    if (change === "marcaje") changed[0].markings[0].numberOfColors++;
+    cartFindUnique.mockResolvedValue({ ...cart(), items: changed });
+    const result = await autoPlaceMakitoOrder("cart_makito", expected);
+    expect(result).toEqual({ ok: false, error: "La versión del presupuesto cambió; revisar antes de cursar el pedido" });
+
+    expect(notifyTelegram).not.toHaveBeenCalled(); expect(poUpdate).not.toHaveBeenCalled();
+    expect(productFindMany).not.toHaveBeenCalled();
+    expect(cartFindUnique).toHaveBeenCalledTimes(1);
+
+  });
+
+  it("con la misma versión usa una sola lectura y las mismas líneas en el efecto", async () => {
+    process.env.MAKITO_AUTO_PLACE_ON_PAYMENT = "true";
+    const original = [{ ...cart().items[0], markings: [{ id: "mark_1", positionId: "front", techniqueCode: "S1", numberOfColors: 1 }] }];
+    const expected = paymentItemsFingerprint(original as unknown as Parameters<typeof paymentItemsFingerprint>[0]);
+    cartFindUnique.mockResolvedValue({ ...cart(), items: original });
+    const result = await autoPlaceMakitoOrder("cart_makito", expected);
+    expect(result).toMatchObject({ ok: true, notified: true });
+    expect(cartFindUnique).toHaveBeenCalledTimes(1);
+    expect(cartFindUnique.mock.calls[0][0].include.items).toMatchObject({ include: { markings: expect.anything() } });
+    expect(notifyTelegram).toHaveBeenCalledTimes(1);
+
   });
 });

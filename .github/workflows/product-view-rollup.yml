@@ -1,15 +1,22 @@
-# Cron diario: mantenimiento de ProductView.
+# Mantenimiento de ProductView.
 # - Resetea contadores 30d para productos sin actividad reciente
 # - Limpia entries de productos desactivados
 #
-# Programado 03:30 UTC todos los días (después de los syncs de proveedores).
-# Permite también disparo manual desde GitHub Actions UI.
+# ⚠️ YA NO LO PROGRAMA GITHUB. El disparador es el crontab del VPS
+# (06:40 local = 04:40 UTC), justo antes del `metric-snapshot` de las 06:50.
+# Motivo (medido el 2026-09-01): desde la caída de Actions del 26-ago, GitHub
+# entrega estos `schedule` con 5-12 h de retraso — este rollup declaraba 03:30
+# UTC y cayó a las 08:52, 10:01, 09:26, 10:22 y 15:36 en días seguidos. El
+# snapshot lee los contadores que este cron deja, así que el orden entre los
+# dos importa: el colchón de 5 min declarado se quedó en 0 (el 01-sep los dos
+# se dispararon en el mismo minuto). El crontab del VPS sí dispara a su hora.
+#
+# Se conserva el `workflow_dispatch` a propósito: es la vía de relanzarlo a
+# mano desde GitHub si el VPS no lo disparó.
 
 name: ProductView rollup diario
 
 on:
-  schedule:
-    - cron: "30 3 * * *"
   workflow_dispatch: {}
 
 concurrency:

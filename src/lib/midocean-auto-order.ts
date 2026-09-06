@@ -22,6 +22,7 @@ import {
 import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
+import { paymentItemsFingerprint } from "@/lib/payment-quote-fingerprint";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.startidea.es";
@@ -44,7 +45,7 @@ function autoEnabled(): boolean {
 
 const SUPPLIER = "midocean";
 
-export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderResult> {
+export async function autoPlaceMidoceanOrder(cartId: string, expectedItemsFingerprint?: string): Promise<AutoOrderResult> {
   if (!autoEnabled()) {
     return { skipped: true, reason: "MIDOCEAN_AUTO_PLACE_ON_PAYMENT=false" };
   }
@@ -62,7 +63,7 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
   // vez" — antes un pedido parado que uno duplicado.
   const contacto = { hecho: false };
   try {
-    return await cursarPedidoMidocean(cartId, contacto);
+    return await cursarPedidoMidocean(cartId, contacto, expectedItemsFingerprint);
   } finally {
     if (!contacto.hecho) await releaseSupplierOrderClaim(SUPPLIER, cartId);
   }
@@ -71,6 +72,7 @@ export async function autoPlaceMidoceanOrder(cartId: string): Promise<AutoOrderR
 async function cursarPedidoMidocean(
   cartId: string,
   contacto: { hecho: boolean },
+  expectedItemsFingerprint?: string,
 ): Promise<AutoOrderResult> {
   const cart = await prisma.cartQuote.findUnique({
     where: { id: cartId },
@@ -80,6 +82,9 @@ async function cursarPedidoMidocean(
     },
   });
   if (!cart) return { ok: false, error: "Cart no encontrado" };
+  if (expectedItemsFingerprint && paymentItemsFingerprint(cart.items) !== expectedItemsFingerprint) {
+    return { ok: false, error: "La versión del presupuesto cambió; revisar antes de cursar el pedido" };
+  }
 
   if (cart.midoceanOrderId) {
     return { skipped: true, reason: `Ya tiene orderId ${cart.midoceanOrderId}` };

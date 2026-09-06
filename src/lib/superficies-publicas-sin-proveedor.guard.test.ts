@@ -17,20 +17,80 @@
  * ruidoso acaba desactivado. Se vigilan solo los ficheros cuyo contenido SALE
  * hacia el cliente, y para el contrato de la API se prueba el comportamiento
  * en `public-quote-view.test.ts`, no el texto.
+ *
+ * POR DESCUBRIMIENTO, no por lista blanca (02-sep). Hasta hoy este guard
+ * miraba tres ficheros escritos a mano, así que solo probaba que no volvía lo
+ * ya arreglado. Mientras tanto `/recursos`, `/recursos/calculadora-rsc` y
+ * `/recursos/tabla-tallas-universales` servían 26 menciones de MidOcean y
+ * Makito en abierto — la última con dos columnas de tabla enteras. Ninguna
+ * estaba en la lista, así que ninguna falló. Ahora se recorren TODAS las
+ * páginas públicas de `src/app`: si alguien crea una página nueva que nombra
+ * a un proveedor, este guard la ve sin que nadie lo apunte en ningún sitio.
+ *
+ * Decisión de Mario (02-sep), sin excepción: «el cliente que nunca sepa el
+ * nombre de dónde compramos o de nuestros proveedores». Antes había una zona
+ * gris —nombrarlos como marcas del sector en contenido SEO comparativo—; ya
+ * no la hay. Ver [[rule_no_supplier_exposure]].
+ *
+ * Límite honesto: esto lee el TEXTO FUENTE del repo. El contenido que se monta
+ * con datos de BD no lo ve, y de eso responde el smoke contra producción.
  */
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { findSupplierLeak } from "./supplier-leak-terms";
+import { findSupplierLeak, SUPPLIER_LEAK_HOSTS } from "./supplier-leak-terms";
 
 const RAIZ = process.cwd();
 
-/** Ficheros cuyo texto se sirve tal cual al cliente. */
-const SUPERFICIES_DE_CONTENIDO = [
-  "src/app/llms.txt/route.ts",
-  "src/app/docs/api/page.tsx",
-  "src/app/privacidad/page.tsx",
-];
+/**
+ * Superficies de texto que no son una `page.tsx` y que hay que nombrar a mano.
+ */
+const SUPERFICIES_SUELTAS = ["src/app/llms.txt/route.ts"];
+
+/**
+ * Rutas de `src/app` que NO ve un cliente anónimo: panel, área privada y los
+ * flujos con token. Se excluyen porque ahí el nombre del proveedor es
+ * legítimo y necesario —el equipo cursa el pedido con él—, que es justo la
+ * distinción que separa una fuga de un dato interno.
+ */
+const NO_PUBLICAS = ["/admin/", "/clientes/", "/pay/", "/proof/"];
+
+/** Todas las páginas públicas del árbol, descubiertas — no enumeradas. */
+function descubrirPaginasPublicas(dir = "src/app", acc: string[] = []): string[] {
+  for (const e of readdirSync(join(RAIZ, dir), { withFileTypes: true })) {
+    const rel = `${dir}/${e.name}`;
+    if (e.isDirectory()) descubrirPaginasPublicas(rel, acc);
+    else if (e.name === "page.tsx" && !NO_PUBLICAS.some((p) => rel.includes(p))) acc.push(rel);
+  }
+  return acc;
+}
+
+const PAGINAS_PUBLICAS = descubrirPaginasPublicas();
+const SUPERFICIES_DE_CONTENIDO = [...SUPERFICIES_SUELTAS, ...PAGINAS_PUBLICAS];
+
+/**
+ * Sobre una página se busca el NOMBRE del proveedor, no todo `findSupplierLeak`.
+ *
+ * No es una rebaja: es lo que hace que este guard sobreviva. Una `page.tsx` de
+ * servidor lee datos, y las del catálogo manejan `supplierRef` en su lógica
+ * interna —`normalizeLegacyCifraVariant(variant, product.supplierRef)`— sin
+ * imprimirlo. Comprobar el texto entero marca hoy mismo cuatro páginas
+ * núcleo (`/`, `/catalogo`, `/catalogo/[slug]`, `/comparar`) que no filtran
+ * nada, y un guard que nace con cuatro falsos positivos se desactiva en una
+ * semana. Lo mismo con «cifra», que es palabra corriente en los comentarios.
+ *
+ * Lo que sí es indefendible en una página pública —y lo que de verdad
+ * filtraba— es escribir «MidOcean» o «Makito»: no existen dentro de ninguna
+ * palabra española, así que aquí no hay falso positivo posible. Que
+ * `supplierRef` no se IMPRIMA se prueba donde se puede probar de verdad: en
+ * el smoke contra producción y en `public-quote-view.test.ts`.
+ */
+function nombreDeProveedorEn(texto: string): string | null {
+  const h = texto.toLowerCase();
+  for (const host of SUPPLIER_LEAK_HOSTS) if (h.includes(host)) return host;
+  for (const nombre of ["midocean", "makito"]) if (h.includes(nombre)) return nombre;
+  return null;
+}
 
 const RUTA_V1 = "src/app/api/v1/quotes/[id]/route.ts";
 const LIB_VISTA = "src/lib/public-quote-view.ts";
@@ -46,13 +106,48 @@ describe("guard · superficies públicas sin nombre de proveedor", () => {
     }
   });
 
-  for (const f of SUPERFICIES_DE_CONTENIDO) {
-    it(`${f} no nombra a ningún proveedor`, () => {
+  it("el descubrimiento encuentra el árbol entero (si esto baja, el guard se quedó ciego)", () => {
+    // Un glob roto devolvería [] y TODOS los tests de abajo pasarían sin mirar
+    // nada. El número no es un objetivo: es el suelo por debajo del cual hay
+    // que sospechar del recorrido, no del código vigilado.
+    expect(SUPERFICIES_DE_CONTENIDO.length).toBeGreaterThan(25);
+    // Y que efectivamente entren las que motivaron el cambio.
+    for (const esperada of [
+      "src/app/recursos/page.tsx",
+      "src/app/recursos/tabla-tallas-universales/page.tsx",
+      "src/app/recursos/calculadora-rsc/page.tsx",
+      "src/app/privacidad/page.tsx",
+      "src/app/docs/api/page.tsx",
+    ]) {
+      expect(SUPERFICIES_DE_CONTENIDO, `${esperada} no entró en el descubrimiento`).toContain(
+        esperada,
+      );
+    }
+  });
+
+  it("el panel y el área privada NO se vigilan (ahí el nombre es legítimo)", () => {
+    expect(SUPERFICIES_DE_CONTENIDO.some((f) => f.includes("/admin/"))).toBe(false);
+  });
+
+  for (const f of SUPERFICIES_SUELTAS) {
+    it(`${f} está limpio del todo (texto puro, comprobación completa)`, () => {
       const leak = findSupplierLeak(leer(f));
       expect(
         leak,
-        `${f} menciona «${leak}». Este fichero se sirve al cliente en abierto: el nombre del proveedor ` +
+        `${f} menciona «${leak}». Este fichero se sirve al cliente tal cual: el nombre del proveedor ` +
           `no puede aparecer. Si hace falta describir el origen, vale «fabricantes europeos».`,
+      ).toBeNull();
+    });
+  }
+
+  for (const f of PAGINAS_PUBLICAS) {
+    it(`${f} no NOMBRA a ningún proveedor`, () => {
+      const nombre = nombreDeProveedorEn(leer(f));
+      expect(
+        nombre,
+        `${f} escribe «${nombre}» y es una página pública. Decisión de Mario (02-sep), sin ` +
+          `excepción: el cliente nunca ve de dónde compramos — tampoco como «marca del sector» ` +
+          `en contenido comparativo. Si hay que hablar del origen, «fabricantes europeos».`,
       ).toBeNull();
     });
   }
