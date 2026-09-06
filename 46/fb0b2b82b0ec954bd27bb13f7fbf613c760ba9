@@ -1,0 +1,37 @@
+src/app/api/recommend/route.ts
+  s_1e62444e2defd6::t_70fe3dd0a3d9ac 15,134
+src/app/api/search/semantic/route.ts
+  s_1e62444e2defd6::t_6beb551b58a0cf 9,114-116
+src/app/api/v1/products/route.ts
+  s_1e62444e2defd6::t_c718c15d273014 8,92
+src/app/api/voice-agent/tools/product-details/route.ts
+  s_1e62444e2defd6::t_c632d305d7fa74 12,76-77
+src/app/api/voice-agent/tools/search-products/route.ts
+  s_1e62444e2defd6::t_15ad766b408e86 11,137
+src/app/catalogo/[slug]/page.tsx
+  s_1e62444e2defd6::t_a8806750be55f7 34,60,160-167
+src/lib/descripcion-publica.guard.test.ts
+  s_1e62444e2defd6::t_1ab8657b115073 1-116
+src/lib/product-name-public.guard.test.ts
+  s_1e62444e2defd6::t_9cf63d5d0885b5 56-60,76,83
+src/lib/public-description.ts
+  s_1e62444e2defd6::t_68c617b2f58ff5 1-43
+src/lib/search/meili.ts
+  s_1e62444e2defd6::t_7c4057ad737e13 21,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "46fb0b2b82b0ec954bd27bb13f7fbf613c760ba9",
+  "prompts": {},
+  "sessions": {
+    "s_1e62444e2defd6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "169f0a9f-6b32-436c-8505-43f5c334506a",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
