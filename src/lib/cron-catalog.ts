@@ -165,6 +165,23 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Vigila fichas activas cuya descripción pública publica una referencia del catálogo del proveedor",
   },
   {
+    name: "catalog-freshness-watchdog",
+    endpointPath: "/api/cron/catalog-freshness-watchdog",
+    method: "POST",
+    // Programada el 2026-09-06 junto con su línea del crontab del VPS
+    // (`audit-crons-vps.sh` compara las dos: cambiar solo una rompe la
+    // auditoría). Hueco a las 07:50 locales, elegido mirando el crontab real:
+    // el minuto 50 de esa hora estaba libre y los tres syncs de proveedor han
+    // cerrado hace más de una hora (el último, makito, sobre las 06:20). Va
+    // detrás de sus dos hermanas de familia — `tariff-coverage-watchdog`
+    // (07:30) y `supplier-ref-en-descripcion` (07:40) —: las tres son
+    // vigilancias diarias que cuentan y avisan en flanco de subida.
+    schedule: "diario 07:50 local VPS = 05:50 UTC",
+    scheduleCron: "50 7 * * *",
+    frequencyHours: 24,
+    description: "Vigila fichas activas cuyo sync automático ya no refresca (siguen a la venta con precio y stock viejos)",
+  },
+  {
     name: "auto-proposal",
     endpointPath: "/api/cron/auto-proposal",
     method: "POST",
