@@ -49,6 +49,12 @@ type SeedItem = {
   category: string;
   material: string | null;
   sizes: string | null;
+  /**
+   * La descripción escrita por nosotros. Manda sobre `shortDescription`, que
+   * es la del catálogo de origen y está redactada para un distribuidor, no
+   * para el cliente. Se conserva aquella solo como rastro de la captura.
+   */
+  descripcion: string | null;
   shortDescription: string | null;
   images: string[];
   sourceUrl: string;
@@ -153,14 +159,54 @@ async function main() {
   log(`ADIVIN import · ${COMMIT ? "COMMIT" : "DRY-RUN"} · ${seed.length} productos · ${prices.size} precios cargados${PRICES_CSV ? ` (${PRICES_CSV})` : " (sin CSV)"}`);
 
   let created = 0, updated = 0, withPrice = 0, inactive = 0, saneados = 0;
-  // dedup por supplierRef (el seed tenía algún duplicado de variante)
+
+  // El upsert va por (supplier, supplierRef): dos filas con la misma referencia
+  // son un solo producto. Se queda la primera — pero callarse el resto es lo
+  // que hacía que dos artículos del catálogo no llegaran nunca a la tienda sin
+  // que nadie se enterara. Se separan los dos casos:
+  //
+  //   · misma ref y mismo nombre → fila repetida en la captura, sobra y ya.
+  //   · misma ref y OTRO nombre  → dos artículos distintos compartiendo
+  //     referencia. Uno se queda fuera. No se le puede inventar una: la
+  //     referencia es la que se usa para PEDIRLO al proveedor, así que una
+  //     inventada haría llegar la pieza equivocada. Hay que capturar la buena.
   const bySref = new Map<string, SeedItem>();
-  for (const it of seed) if (!bySref.has(it.supplierRef)) bySref.set(it.supplierRef, it);
+  const repetidos: SeedItem[] = [];
+  const colisiones: { ref: string; entra: string; fuera: string }[] = [];
+  for (const it of seed) {
+    const yaEsta = bySref.get(it.supplierRef);
+    if (!yaEsta) { bySref.set(it.supplierRef, it); continue; }
+    if (yaEsta.name === it.name) repetidos.push(it);
+    else colisiones.push({ ref: it.supplierRef, entra: yaEsta.name, fuera: it.name });
+  }
+  if (repetidos.length) {
+    log(`\n  ${repetidos.length} fila(s) repetida(s) en la captura, ignoradas.`);
+  }
+  if (colisiones.length) {
+    log(`\n⚠️  ${colisiones.length} producto(s) NO se importan: comparten referencia con otro.`);
+    for (const c of colisiones) {
+      log(`     ref ${c.ref} → entra «${c.entra}», se queda fuera «${c.fuera}»`);
+    }
+    log(`     Hay que capturar la referencia propia de cada uno en el catálogo de origen.`);
+  }
 
   for (const it of bySref.values()) {
     const cents = prices.get(it.supplierRef) ?? null;
     if (cents) withPrice++; else inactive++;
-    const descRaw = [it.shortDescription, it.sizes ? `Medidas: ${it.sizes}` : null].filter(Boolean).join(" · ").slice(0, 600) || null;
+    // Nuestra descripción si la hay; si no, la de origen con las medidas
+    // pegadas detrás, que es como se venía montando.
+    //
+    // Cuando la escribimos nosotros NO se le pega el «Medidas: …»: las medidas
+    // que importan ya están dentro de la frase, puestas donde se leen. Pegarlas
+    // otra vez dejaba fichas que decían el mismo dato dos veces seguidas.
+    //
+    // El saneo se aplica a las dos por igual: la nuestra no debería
+    // necesitarlo, y precisamente por eso pasarla por el filtro no cuesta nada
+    // y cubre el día que alguien copie una frase del catálogo de origen.
+    const descRaw = it.descripcion
+      ? it.descripcion.slice(0, 600)
+      : [it.shortDescription, it.sizes ? `Medidas: ${it.sizes}` : null]
+          .filter(Boolean).join(" · ").slice(0, 600) || null;
 
     // El catálogo de origen es MAYORISTA: sus descripciones dicen
     // «Exclusivamente para Rotulistas y Distribuidores【30% de margen】», es

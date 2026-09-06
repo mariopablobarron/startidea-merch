@@ -34,11 +34,18 @@ type SeedItem = {
   supplierRef: string;
   name: string;
   material: string | null;
+  descripcion: string | null;
   shortDescription: string | null;
 };
 
-/** Campos del seed que acaban en la ficha pública. */
-const CAMPOS_PUBLICOS = ["name", "material", "shortDescription"] as const;
+/**
+ * Campos del seed que acaban en la ficha pública.
+ *
+ * `descripcion` es la nuestra y `shortDescription` la del catálogo de origen.
+ * Se vigilan las dos: la de origen porque no debe publicarse, y la nuestra
+ * porque se escribe leyendo aquella y una frase se copia sin querer.
+ */
+const CAMPOS_PUBLICOS = ["name", "material", "descripcion", "shortDescription"] as const;
 
 function seed(): SeedItem[] {
   return JSON.parse(readFileSync(join(process.cwd(), "src/data/adivin-seed.json"), "utf8"));
@@ -89,16 +96,89 @@ describe("guard · jerga de mayorista en el catálogo de gran formato", () => {
     }
   });
 
-  it("y lo que queda son descripciones cortas, que es el aviso de este PR", () => {
-    // Anti-falso-verde al revés: si un día estas descripciones se escriben de
-    // verdad, este test se pone rojo y hay que borrarlo. Mientras esté verde,
-    // el catálogo de gran formato tiene 63 fichas con un renglón por
-    // descripción y eso hay que arreglarlo escribiendo, no filtrando menos.
-    const largos = seed()
-      .map((it) => (sanitizeSupplierText(it.shortDescription) ?? "").length)
-      .sort((a, b) => a - b);
-    const mediana = largos[Math.floor(largos.length / 2)];
-    expect(mediana, `mediana de la descripción saneada: ${mediana}`).toBeLessThan(60);
+  it("todos los productos tienen descripción escrita por nosotros", () => {
+    // Lo que sustituye al aviso que había aquí. Durante un tiempo este bloque
+    // afirmaba lo contrario —que la mediana de la descripción no llegaba a 60
+    // caracteres— para dejar constancia de que el filtrado había dejado el
+    // catálogo en un renglón por ficha. Ya están escritas; ahora el guard
+    // sirve para que no se pierdan ni vuelvan a ser un renglón.
+    const sin = seed().filter((it) => !it.descripcion || it.descripcion.trim().length === 0);
+    expect(sin.map((it) => `${it.supplierRef} · ${it.name}`)).toEqual([]);
+  });
+
+  it("y no son un renglón: ninguna baja de 80 caracteres", () => {
+    const cortas = seed()
+      .filter((it) => (it.descripcion ?? "").length < 80)
+      .map((it) => `${it.supplierRef} · ${it.name} → ${(it.descripcion ?? "").length}`);
+    expect(
+      cortas,
+      `Descripciones que se han quedado en un renglón:\n${cortas.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("la descripción propia no repite el argumentario de origen", () => {
+    // Escribirlas mirando el texto del proveedor es lo natural; copiar una
+    // frase suya, el accidente. Si la nuestra contiene la de origen entera,
+    // no se ha escrito: se ha pegado.
+    for (const it of seed()) {
+      const origen = (it.shortDescription ?? "").split("✓")[0].trim();
+      if (origen.length < 20) continue;
+      expect(
+        it.descripcion,
+        `${it.supplierRef}: la descripción propia es la del catálogo de origen`,
+      ).not.toBe(origen);
+    }
+  });
+});
+
+describe("guard · referencias del catálogo de gran formato", () => {
+  // El import hace upsert por (supplier, supplierRef): dos filas con la misma
+  // referencia son un solo producto y el resto se queda fuera de la tienda.
+  //
+  // Estas dos parejas comparten referencia en la captura y hay que resolverlas
+  // en el origen, no aquí: la referencia es la que se usa para PEDIR la pieza
+  // al proveedor, así que inventarle una haría llegar la equivocada.
+  const COLISIONES_CONOCIDAS = new Set(["32", "550"]);
+
+  it("no hay filas repetidas (misma referencia y mismo nombre)", () => {
+    const vistas = new Set<string>();
+    const repes: string[] = [];
+    for (const it of seed()) {
+      const k = `${it.supplierRef}\u0000${it.name}`;
+      if (vistas.has(k)) repes.push(`${it.supplierRef} · ${it.name}`);
+      vistas.add(k);
+    }
+    expect(repes).toEqual([]);
+  });
+
+  it("no aparecen colisiones de referencia nuevas", () => {
+    const porRef = new Map<string, Set<string>>();
+    for (const it of seed()) {
+      if (!porRef.has(it.supplierRef)) porRef.set(it.supplierRef, new Set());
+      porRef.get(it.supplierRef)!.add(it.name);
+    }
+    const nuevas = [...porRef.entries()]
+      .filter(([ref, nombres]) => nombres.size > 1 && !COLISIONES_CONOCIDAS.has(ref))
+      .map(([ref, nombres]) => `${ref} → ${[...nombres].join(" / ")}`);
+    expect(
+      nuevas,
+      `Referencias compartidas por productos distintos. El segundo NO llega a ` +
+        `la tienda; hay que capturar su referencia propia:\n${nuevas.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("y las conocidas siguen ahí (si se arreglan, hay que quitarlas de la lista)", () => {
+    const porRef = new Map<string, Set<string>>();
+    for (const it of seed()) {
+      if (!porRef.has(it.supplierRef)) porRef.set(it.supplierRef, new Set());
+      porRef.get(it.supplierRef)!.add(it.name);
+    }
+    for (const ref of COLISIONES_CONOCIDAS) {
+      expect(
+        porRef.get(ref)?.size ?? 0,
+        `La colisión de la ref ${ref} ya no existe: bórrala de COLISIONES_CONOCIDAS`,
+      ).toBeGreaterThan(1);
+    }
   });
 });
 
