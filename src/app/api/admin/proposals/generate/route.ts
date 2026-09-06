@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdminSecret } from "@/lib/auth";
+import { requireRole } from "@/lib/admin-auth";
 import { extractJsonFromAIResponse } from "@/lib/json-extract";
 import { generateEmbedding, cosineSimilarity } from "@/lib/embeddings";
 import { defaultTiersFromBase, pickTier } from "@/lib/pricing";
@@ -56,7 +56,7 @@ const Schema = z.object({
  * pueda revisar/editar antes de enviar PDF al cliente.
  */
 export async function POST(req: Request) {
-  const auth = requireAdminSecret(req);
+  const auth = await requireRole(req, "COMERCIAL");
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
   if (!OPENROUTER_KEY) {

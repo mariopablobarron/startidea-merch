@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/admin-session";
 import { getAdminSession } from "@/lib/admin-auth";
-import { requireAdminSecret } from "@/lib/auth";
+import { requireRole } from "@/lib/admin-auth";
 import { crearPresupuesto } from "@/lib/presupuesto-repo";
 import { leerMargenes, margenDeJerarquia } from "@/lib/presupuesto-margenes";
 import { redondearPvpLimpio } from "@/lib/presupuesto-calculo";
@@ -39,7 +39,7 @@ const PLAZO_MAX_DIAS = 15;
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   if (!(await isAdmin())) {
-    const auth = requireAdminSecret(req);
+    const auth = await requireRole(req, "COMERCIAL");
     if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
   }
 

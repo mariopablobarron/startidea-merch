@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/admin-session";
-import { requireAdminSecret } from "@/lib/auth";
+import { requireRole } from "@/lib/admin-auth";
 import { leerMargenes, guardarMargenes } from "@/lib/presupuesto-margenes";
 import { margenesSchema } from "@/lib/presupuesto-schema";
 
@@ -8,8 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function autorizado(req: Request) {
-  if (await isAdmin()) return null;
-  const auth = requireAdminSecret(req);
+  const auth = await requireRole(req, "COMERCIAL");
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
   return null;
 }
