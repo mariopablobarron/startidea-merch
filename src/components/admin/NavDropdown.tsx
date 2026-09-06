@@ -80,7 +80,20 @@ export function NavDropdown({
       )}
 
       {open && isMega && sections && (
-        <div className="absolute left-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-line bg-bone shadow-2xl">
+        // El ancho es EXPLÍCITO y no se puede quitar. Este panel está
+        // posicionado en absoluto, así que se dimensiona por su contenido; y
+        // dentro lleva un grid cuyas columnas en Tailwind son
+        // `minmax(0, 1fr)`, que pueden encogerse hasta cero. Sin un ancho de
+        // referencia que repartir, las cuatro columnas colapsaban y los
+        // títulos se pintaban unos encima de otros: el menú medía 114 px en
+        // una pantalla de 1400 y se leía «AUDCONTENIDO».
+        //
+        // Las medidas salen de la cuenta, no del ojo: 170 px por columna
+        // (el `min-w` de abajo) + 24 de hueco (`gap-x-6`) + 40 de padding
+        // (`p-5` a los dos lados). Tres columnas piden 598 px y cuatro, 792.
+        <div className="absolute left-0 top-full z-50 mt-2 w-[38rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-line bg-bone shadow-2xl lg:w-[50rem]">
+          {/* El nav de escritorio solo existe desde `md`; por debajo hay
+              hamburguesa, así que `grid-cols-2` nunca llega a aplicarse. */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 p-5 md:grid-cols-3 lg:grid-cols-4">
             {sections.map((sec) => (
               <div key={sec.title} className="min-w-[170px]">
