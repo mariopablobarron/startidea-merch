@@ -1,0 +1,116 @@
+name: Barrido anti-fuga de proveedor (regla nº2)
+
+# Vigila que NINGUNA superficie pública sirva un identificador de proveedor.
+#
+# Existía el detector y no lo disparaba nadie: `PUBLIC_SUPPLIER_LEAK_PATTERNS`
+# solo lo leía `scripts/audit-supplier-leaks.ts`, que corre cuando un humano lo
+# teclea. Las dos vigilancias automáticas dejaban un hueco justo en medio:
+#   · el guard estático recorre todas las páginas de `src/app`, pero lee el
+#     texto FUENTE — no ve el contenido montado con datos de BD;
+#   · el money smoke sí mira producción, pero sobre SIETE rutas escritas a mano
+#     — las tres de `/recursos` que en agosto sirvieron 26 menciones de
+#     proveedor en abierto no estaban en la lista, y por eso ninguna falló.
+# Esto barre por DESCUBRIMIENTO (páginas del repo + muestra rotatoria del
+# sitemap) contra el HTML realmente servido: ~70 superficies por pasada.
+
+on:
+  schedule:
+    # Minuto 47: fuera del money smoke (:17) y de los syncs de madrugada.
+    # Estuvo en pausa hasta verlo pasar en el runner y no solo en la estación
+    # —cuya IP está en el `ignoreip` de fail2ban, que fue justo lo que ocultó
+    # el fallo del primer disparo—. Verde en el runner el 02-sep 16:50Z:
+    # 70 rutas · 70 comprobadas · 0 sin comprobar · 0 fugas (run 33657348772).
+    - cron: "47 */6 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: supplier-leak-audit
+  # No se mata el run en curso: un job cancelado NO dispara `if: failure()`, y
+  # así fue como el money smoke murió en silencio el 2026-08-05.
+  cancel-in-progress: false
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    # Holgado a propósito: ~70 peticiones secuenciales con timeout de 20 s cada
+    # una. El caso peor real medido es ~7 s; el margen es para que decida el
+    # barrido y no el reloj del job (un job cancelado avisa a nadie).
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      # Mismo arranque que `ci.yml`: el repo va con pnpm y Node 22. Con `npm ci`
+      # no hay `package-lock.json` que valga y el barrido moriría en el primer
+      # disparo — un guard que no arranca es peor que no tenerlo.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Barrer superficies públicas
+        env:
+          LEAK_AUDIT_LIVE: "1"
+          SITE_URL: https://merchandising.startidea.es
+        run: pnpm vitest run src/lib/public-leak-audit.live.test.ts --reporter=verbose
+
+      - name: Alerta Telegram si falla
+        if: failure()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
+            echo "::warning::Sin secrets Telegram — no se envía alerta"
+            exit 0
+          fi
+          RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # El texto NO afirma fuga: el barrido suspende igual cuando una
+          # superficie no responde, y decirlo mal manda a Mario a buscar algo
+          # que no consta. La superficie y el patrón están en el log del run.
+          #
+          # El 03-sep (run 33751332846) las 70 superficies dieron `fetch
+          # failed` y este aviso habló igualmente de «posible fuga», cuando lo
+          # único que constaba era que no se llegó al sitio. El barrido deja
+          # ahora su veredicto por escrito y aquí se dice cuál de los tres es.
+          # Si el fichero no está, el job murió antes de barrer: se avisa con
+          # el texto genérico de siempre, que es lo honesto.
+          VEREDICTO="$(cut -d" " -f1 leak-audit-veredicto.txt 2>/dev/null || echo desconocido)"
+          CIFRAS="$(awk '{print $2 " rutas, " $3 " comprobadas, " $4 " sin comprobar"}' leak-audit-veredicto.txt 2>/dev/null || echo "sin cifras")"
+          case "$VEREDICTO" in
+            fuga)
+              TEXTO="🚨 FUGA DE PROVEEDOR en una superficie pública (${CIFRAS}). La ruta y el patrón están en el log — no se escriben aquí. Revisar YA: ${RUN_URL}" ;;
+            inalcanzable)
+              TEXTO="🌐 BARRIDO ANTI-FUGA sin poder comprobar NADA: no respondió ninguna superficie (${CIFRAS}). Es red o host, NO consta ninguna fuga. Revisar: ${RUN_URL}" ;;
+            no-comprobado)
+              TEXTO="⚠️ BARRIDO ANTI-FUGA incompleto: alguna superficie no respondió (${CIFRAS}). No consta ninguna fuga. Revisar: ${RUN_URL}" ;;
+            *)
+              TEXTO="🚨 BARRIDO ANTI-FUGA en rojo antes de dejar veredicto. Puede ser una fuga de proveedor o superficies que no respondieron (el log distingue las dos). Revisar: ${RUN_URL}" ;;
+          esac
+          curl -sS -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            -d "chat_id=${TG_CHAT}" \
+            -d "disable_web_page_preview=true" \
+            --data-urlencode "text=${TEXTO}" \
+            > /dev/null || echo "::warning::No se pudo avisar por Telegram"
+
+      # Si el job se cancela, el paso de arriba no corre y el guard se apagaría
+      # sin decir nada — el modo de fallo mudo que ya nos mordió.
+      - name: Avisar si el barrido NI SIQUIERA llegó a comprobar
+        if: cancelled()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then exit 0; fi
+          RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          curl -sS -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            -d "chat_id=${TG_CHAT}" \
+            -d "disable_web_page_preview=true" \
+            --data-urlencode "text=⚠️ BARRIDO ANTI-FUGA CANCELADO — no comprobó nada (ninguna fuga confirmada, pero tampoco ninguna superficie verificada): ${RUN_URL}" \
+            > /dev/null || true

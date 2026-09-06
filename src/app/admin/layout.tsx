@@ -60,6 +60,7 @@ function buildNav(role: string): MobileNavEntry[] {
         { href: "/admin/promotions", label: "Promociones 🏷", title: "Descuentos automáticos programados" },
         { href: "/admin/suppliers/cifra/marking-rates", label: "Tarifa marcaje Cifra", title: "% por técnica · cotización aproximada Cifra" },
         { href: "/admin/cotizar", label: "Cotización rápida 💸", title: "Presupuesto por cualquier referencia (nuestra o proveedor) — coste, PVP, IVA y documento", highlight: true },
+        { href: "/admin/presupuestos", label: "Presupuestos ✍️", title: "Documento de 3 páginas con partidas, opciones y margen en vivo", highlight: true },
         { href: "/admin/suppliers/cifra/quote", label: "Cotizador Cifra ✨", title: "Cotización rápida producto+marcaje en 1 vista" },
         { href: "/admin/products/auto-describe", label: "IA descripciones ✨", title: "Auto-generar descripciones con IA" },
         { href: "/admin/recomendador", label: "Consultas IA", title: "Historial del recomendador" },

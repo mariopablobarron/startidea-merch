@@ -5,12 +5,17 @@ name: Consultar estado de un cron (ops)
 # makito-sync, midocean-sync…) usando el secret del repo, e imprime el JSON
 # en el log del workflow. Útil cuando el SSH estación→VPS está caído
 # (anti-abuso de Hostinger) — los runners de GH siempre llegan.
+#
+# Caso especial `health`: pega a /api/health en vez de /api/cron/*, y con el
+# secret esa respuesta trae además la CARGA del anfitrión. Es lo que permite
+# cumplir la regla de "no construir con load1 > 12" mientras el SSH está caído,
+# que si no obliga a elegir entre desplegar a ciegas o no desplegar.
 
 on:
   workflow_dispatch:
     inputs:
       endpoint:
-        description: "Nombre del cron (ej. competitor-watch, makito-sync)"
+        description: "Nombre del cron (ej. competitor-watch, makito-sync) o 'health' para la carga del anfitrión"
         required: true
         default: "competitor-watch"
 
@@ -35,7 +40,11 @@ jobs:
           fi
           # Sin pipe curl→intérprete: json.tool solo FORMATEA (no ejecuta),
           # pero el patrón dispara el SAST del audit. A fichero y listo.
-          curl -sS --max-time 30 \
-            "https://merchandising.startidea.es/api/cron/${ENDPOINT}" \
+          if [ "$ENDPOINT" = "health" ]; then
+            URL="https://merchandising.startidea.es/api/health"
+          else
+            URL="https://merchandising.startidea.es/api/cron/${ENDPOINT}"
+          fi
+          curl -sS --max-time 30 "$URL" \
             -H "x-cron-secret: $CRON_SECRET" -o /tmp/status.json
           python3 -m json.tool /tmp/status.json

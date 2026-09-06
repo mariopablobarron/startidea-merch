@@ -5,6 +5,7 @@ import Link from "next/link";
 import { OrderTimeline, type TimelineEvent } from "@/components/OrderTimeline";
 import { PurchaseOrdersBlock } from "@/components/admin/PurchaseOrdersBlock";
 import { ResendProposalButton } from "@/components/ResendProposalButton";
+import { CrearPresupuestoBoton } from "@/components/admin/CrearPresupuestoBoton";
 import { extractSize } from "@/lib/variant-grouping";
 
 type CartItem = {
@@ -263,6 +264,12 @@ export default function AdminCartQuoteDetail({ params }: { params: Promise<{ id:
             <p className="mt-1 text-xs text-ink/50">
               {new Date(cart.createdAt).toLocaleString("es-ES")} · ID <code>{cart.id}</code>
             </p>
+            <div className="mt-3">
+              <CrearPresupuestoBoton
+                endpoint={`/api/admin/cart-quotes/${cart.id}/presupuesto`}
+                etiqueta="Crear presupuesto de merchandising"
+              />
+            </div>
           </div>
           <div className="text-right">
             <p className="text-xs uppercase tracking-wider text-ink/50">Total estimado</p>

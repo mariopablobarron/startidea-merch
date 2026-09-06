@@ -12,6 +12,14 @@
 #
 # Sale 0 si todo cuadra, 1 si hay desajuste. SOLO LEE: nunca escribe en el VPS.
 #
+# ⚠️ Aquí el catálogo no es documentación: es PARTE DEL CAMINO. El runner del
+# VPS no llama a /api/cron/<x>; llama a /api/admin/crons/trigger/<etiqueta>, y
+# esa ruta resuelve endpoint y método con `findCron()` — devuelve 404 si la
+# etiqueta no está. Por eso una etiqueta del crontab sin entrada no es un
+# apunte desactualizado: es un cron que no corre. Y por eso el tercer argumento
+# de la línea del crontab ("POST /api/cron/x") es decorativo: solo sale en el
+# aviso de Telegram. Lo que se dispara de verdad es `endpointPath` del catálogo.
+#
 # ⚠️ El crontab del VPS es MIXTO y por eso el barrido hace las dos cosas:
 #   - la mayoría de crons de merch van envueltos en `cron-global-guard <base64>`
 #     (un `grep` normal NO los ve — hay que decodificar);
@@ -88,6 +96,9 @@ while IFS=$'\t' read -r nombre expr; do
   esperado="$(printf "%s\n" "$cat_entries" | awk -F'\t' -v n="$nombre" '$1==n {print $2}')"
   if [ -z "$esperado" ]; then
     echo "  ✗ $nombre: dispara en el VPS ($expr) y NO está en CRON_CATALOG"
+    echo "     └─ esto NO es un desajuste de papeles: merch-cron-runner.sh pega a"
+    echo "        /api/admin/crons/trigger/$nombre, que responde 404 a lo que no"
+    echo "        esté en el catálogo ⇒ ese cron NO CORRE NINGÚN DÍA."
     fallos=$((fallos + 1))
   elif [ "$esperado" != "$expr" ]; then
     echo "  ✗ $nombre: VPS «$expr» vs catálogo «$esperado»"

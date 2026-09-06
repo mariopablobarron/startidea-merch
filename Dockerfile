@@ -54,7 +54,22 @@ ARG GIT_SHA=dev
 ENV GIT_SHA=$GIT_SHA
 
 # postgresql-client → pg_dump para el endpoint /api/cron/backup-db
-RUN apk add --no-cache postgresql-client
+#
+# chromium → PDF de los presupuestos (/api/admin/presupuestos/<id>/pdf). Son
+# ~300 MB de imagen y es una decisión consciente: el documento son tres páginas
+# A4 con @page, degradados, tipografías empotradas y saltos de página
+# controlados, o sea justo lo que sabe hacer un motor de navegador. La
+# alternativa —imprimir a mano desde el navegador— funciona, pero deja el
+# archivo con el nombre que decida el sistema y hay que acordarse de quitar
+# márgenes y activar gráficos de fondo en cada presupuesto que se manda.
+#
+# nss/freetype/harfbuzz son las dependencias de Chromium en Alpine;
+# ttf-dejavu es el fallback cuando un texto se sale de los subsets embebidos.
+# Si un día sobra: quitar chromium de aquí deja el panel funcionando, solo que
+# el botón «Descargar PDF» responde 503 explicando que falta el binario.
+RUN apk add --no-cache postgresql-client \
+    chromium nss freetype harfbuzz ttf-dejavu
+ENV CHROMIUM_PATH=/usr/bin/chromium-browser
 
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 

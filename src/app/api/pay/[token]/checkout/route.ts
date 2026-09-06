@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import type Stripe from "stripe";
+import { PaymentAttemptError, startPaymentAttempt } from "@/lib/payment-attempts";
 import { prisma } from "@/lib/prisma";
-import { stripe, STRIPE_MODE } from "@/lib/stripe";
+import { stripe as configuredStripe, STRIPE_MODE } from "@/lib/stripe";
 import { withIva } from "@/lib/iva";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
 
@@ -15,6 +16,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://merchandising.star
  * Devuelve la URL de la sesión hosted (redirect desde el cliente).
  */
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
+  const stripe = configuredStripe;
   if (!stripe) {
     return NextResponse.json(
       { error: "Stripe no configurado", hint: "Falta STRIPE_SECRET_KEY en envs." },
@@ -75,7 +77,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   // IVA doble). (decisión Mario 2026-06-17 + caza de bugs)
   const amountCents = taxEnabled ? baseDepositCents : withIva(baseDepositCents);
 
-  const session = await stripe.checkout.sessions.create({
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: "payment",
     // Sin payment_method_types: Stripe muestra automáticamente todos los métodos
     // activos en Dashboard (card, Apple Pay, Google Pay, Link, SEPA, etc.) según
@@ -99,12 +101,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     customer_email: cart.email,
     success_url: `${SITE_URL}/pay/${token}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${SITE_URL}/pay/${token}/cancel`,
-    metadata: {
-      cartId: cart.id,
-      paymentLinkToken: token,
-      depositPercent: String(cart.depositPercent),
-      kind: isFull ? "FULL" : "DEPOSIT",
-    },
     // Capturamos dirección + teléfono en Stripe para pasárselos a MidOcean
     // sin necesidad de un step extra en la web (más conversión).
     shipping_address_collection: {
@@ -125,20 +121,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
           billing_address_collection: "required" as const,
         }
       : {}),
-  });
+  };
 
-  // Persistir Payment PENDING para luego matchear en webhook
-  await prisma.payment.create({
-    data: {
-      cartId: cart.id,
-      amountCents,
-      currency: "EUR",
-      status: "PENDING",
-      kind: isFull ? "FULL" : "DEPOSIT",
-      stripeMode: STRIPE_MODE,
-      stripeSessionId: session.id,
-    } satisfies Prisma.PaymentUncheckedCreateInput,
-  });
-
-  return NextResponse.json({ ok: true, url: session.url });
+  try {
+    const session = await startPaymentAttempt({
+      stripe, cart, mode: STRIPE_MODE, channel: "hosted",
+      quote: {
+        acceptedTotalCents: cart.acceptedTotalCents, depositPercent: cart.depositPercent,
+        paymentLinkToken: token, amountCents, currency: "eur",
+        kind: isFull ? "FULL" : "DEPOSIT", taxEnabled,
+      },
+      params: sessionParams,
+      create: (snapshot, options) => stripe.checkout.sessions.create(
+        snapshot.params as unknown as Stripe.Checkout.SessionCreateParams, options,
+      ),
+    });
+    if (session.object !== "checkout.session" || !session.url) {
+      throw new PaymentAttemptError(409, "No se ha podido preparar el pago. Vuelve a intentarlo.");
+    }
+    return NextResponse.json({ ok: true, url: session.url });
+  } catch (error) {
+    if (error instanceof PaymentAttemptError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    console.error("[payment checkout] No se pudo preparar el intento", error instanceof Error ? error.name : "Error");
+    return NextResponse.json({ error: "No se ha podido preparar el pago. Vuelve a intentarlo en unos instantes." }, { status: 503 });
+  }
 }

@@ -159,7 +159,7 @@ const ESCAPES_ESPERADOS: Record<string, number> = {
   "app/api/voice-agent/signed-url/route.ts": 1,
   "app/api/voice-agent/tools/request-callback/route.ts": 5,
   "app/api/webhooks/resend/route.ts": 1,
-  "app/api/webhooks/stripe/route.ts": 2,
+  "lib/stripe-post-payment.ts": 3, // El aviso Stripe vive ahora en el motor durable.
   "app/api/webhooks/whatsapp/route.ts": 3,
   "lib/broadcast-send.ts": 1,
   "lib/cifra-auto-order.ts": 4,
