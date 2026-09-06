@@ -34,6 +34,18 @@ export default async function SuppliersLandingPage() {
       <p className="mb-6 text-sm text-ink/60">
         Contacto, condiciones comerciales y estado del catálogo de cada proveedor.
       </p>
+      <Link
+        href="/admin/suppliers/auditoria-precios"
+        className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-line bg-bone-soft px-5 py-4 transition-colors hover:border-accent/40"
+      >
+        <span>
+          <span className="block font-medium text-ink">Auditoría de precios →</span>
+          <span className="mt-0.5 block text-sm text-ink/60">
+            Si el precio público sale de la tarifa real del proveedor y lleva nuestro margen, y en
+            qué productos no.
+          </span>
+        </span>
+      </Link>
       <SuppliersClient />
     </div>
   );
