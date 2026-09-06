@@ -63,6 +63,8 @@ function makeProduct(over?: {
     marketingTags: string[];
   } | null;
   positions?: Position[];
+  /** false = producto de variante única. */
+  variantes2?: boolean;
 }) {
   const netTiers = over?.netTiers;
   return {
@@ -70,7 +72,9 @@ function makeProduct(over?: {
     name: "Camiseta test",
     brand: "BrandX",
     categoryId: "cat-1",
-    fromPriceCents: over?.fromPriceCents ?? 200,
+    // `??` no vale: con él, pasar null explícito seguía dando 200 y no se
+    // podía montar el caso "producto sin coste de ninguna clase".
+    fromPriceCents: over?.fromPriceCents === undefined ? 200 : over.fromPriceCents,
     supplier: over?.supplier ?? "midocean",
     category: { name: "Textil" },
     override: over?.override ?? null,
@@ -80,12 +84,28 @@ function makeProduct(over?: {
         : [
             {
               id: "var-1",
+              sku: "SKU-1",
               priceTiers: netTiers ?? [
                 { minQty: 10, unitPriceCents: 100 },
                 { minQty: 50, unitPriceCents: 80 },
                 { minQty: 100, unitPriceCents: 60 },
               ],
             },
+            // Segunda variante MÁS CARA, como una talla grande de textil: es el
+            // caso que hacía cobrar de menos cuando se ignoraba la elegida.
+            ...(over?.variantes2 === false
+              ? []
+              : [
+                  {
+                    id: "var-2",
+                    sku: "SKU-2",
+                    priceTiers: [
+                      { minQty: 10, unitPriceCents: 150 },
+                      { minQty: 50, unitPriceCents: 130 },
+                      { minQty: 100, unitPriceCents: 110 },
+                    ],
+                  },
+                ]),
           ],
     positions: over?.positions ?? [],
   };
@@ -371,14 +391,32 @@ describe("computeServerLinePricing — composición del precio cliente (camino f
     expect(r.unitClientCents).toBe(Math.round(r.totalClientCents / 100));
   });
 
-  it("sin tiers de proveedor → priceSource 'estimate' (curva sintética sobre el 'desde' cliente)", async () => {
+  it("sin tiers de proveedor pero CON coste conocido → tarifa plana, no curva", async () => {
+    // `fromPriceCents` es el MÍNIMO de los tramos del feed: ya es el precio de
+    // volumen. La curva sintética encima descontaba dos veces y, con el margen
+    // puesto, cobraba por debajo del coste a partir de 100 uds. Ahora la tarifa
+    // es plana a coste+margen, como la del precio fijado a mano.
     productFindUnique.mockResolvedValueOnce(makeProduct({ netTiers: null, fromPriceCents: 200 }));
     const r = await computeServerLinePricing(lineNoMarking, []);
 
     expect(r.ok).toBe(true);
     if (!r.ok) return;
+    expect(r.priceSource).toBe("provider");
+    const esperado = applyMargin(200);
+    expect(esperado).toBeGreaterThan(200); // nunca por debajo del coste
+    expect(r.unitClientCents).toBe(esperado);
+  });
+
+  it("sin coste de ninguna clase → sigue siendo 'estimate'", async () => {
+    // Aquí no hay nada que respetar: el precio sale de una heurística sobre el
+    // nombre del producto. El barrido posterior al sync desactiva estos
+    // productos, así que no deberían llegar a la web; si llegan, se marcan.
+    productFindUnique.mockResolvedValueOnce(makeProduct({ netTiers: null, fromPriceCents: null }));
+    const r = await computeServerLinePricing(lineNoMarking, []);
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
     expect(r.priceSource).toBe("estimate");
-    // El precio estimado nunca es negativo ni cero (hay un "desde" con margen).
     expect(r.totalClientCents).toBeGreaterThan(0);
   });
 });
@@ -442,5 +480,61 @@ describe("computeServerLinePricing — REGRESIÓN producto a 0 € por override 
     // Tarifa PLANA: 999 por unidad a cualquier cantidad, sin curva sintética.
     expect(r.unitClientCents).toBe(999);
     expect(r.totalClientCents).toBe(999 * 100);
+  });
+});
+
+describe("computeServerLinePricing — se cobra la tarifa de la variante COMPRADA", () => {
+  /**
+   * Los `PriceTier` cuelgan de la VARIANTE, no del producto: en un textil por
+   * tallas la 3XL no cuesta lo que la S. Hasta el 3-sep-2026 el recálculo del
+   * checkout cogía `product.variants[0]` —la primera por orden de SKU— y
+   * cobraba esa tarifa comprara el cliente lo que comprara.
+   *
+   * El carrito ya guarda la variante en cada línea (una línea por talla), así
+   * que el dato estaba: solo no se usaba.
+   */
+  it("con variantId, cobra los tramos de ESA variante", async () => {
+    productFindUnique.mockResolvedValueOnce(makeProduct());
+    const r = await computeServerLinePricing(
+      { ...lineNoMarking, variantId: "var-2" },
+      [],
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // var-2 a 100 uds cuesta 110, no los 60 de var-1.
+    expect(r.unitClientCents).toBe(applyMargin(110));
+  });
+
+  it("con variantSku legacy, también", async () => {
+    productFindUnique.mockResolvedValueOnce(makeProduct());
+    const r = await computeServerLinePricing(
+      { ...lineNoMarking, variantSku: "SKU-2" },
+      [],
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.unitClientCents).toBe(applyMargin(110));
+  });
+
+  it("sin variante en la línea, sigue cogiendo la primera con tarifa", async () => {
+    // Comportamiento de siempre para las líneas que no la traen.
+    productFindUnique.mockResolvedValueOnce(makeProduct());
+    const r = await computeServerLinePricing(lineNoMarking, []);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.unitClientCents).toBe(applyMargin(60));
+  });
+
+  it("si la variante comprada ya no tiene tarifa, no se queda sin cobrar", async () => {
+    // Descatalogada entre que se añadió al carrito y el cobro: mejor la tarifa
+    // de otra variante del mismo producto que un pedido sin precio.
+    productFindUnique.mockResolvedValueOnce(makeProduct());
+    const r = await computeServerLinePricing(
+      { ...lineNoMarking, variantId: "var-fantasma" },
+      [],
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.unitClientCents).toBe(applyMargin(60));
   });
 });

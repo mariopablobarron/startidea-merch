@@ -31,6 +31,14 @@ export type ServerLineInput = {
   productSlug: string;
   quantity: number;
   markings: ServerMarkingInput[];
+  /**
+   * La variante que eligió el cliente. Es lo que decide el precio: los tramos
+   * cuelgan de la VARIANTE, no del producto, y en un textil por tallas la 3XL
+   * no cuesta lo que la S. Sin esto se cobraba la primera variante por orden
+   * de SKU, que casi nunca es la que se está comprando.
+   */
+  variantId?: string | null;
+  variantSku?: string | null;
 };
 
 export type ServerLinePricing =
@@ -45,6 +53,30 @@ export type ServerLinePricing =
   | { ok: false; reason: string };
 
 type ActivePromos = Awaited<ReturnType<typeof loadActivePromotions>>;
+
+/**
+ * La variante cuya tarifa manda: la que compró el cliente.
+ *
+ * Se busca por id y, si no, por SKU —el carrito guarda uno u otro según por
+ * dónde entrara la línea—. Si esa variante ya no tiene tarifa (descatalogada
+ * entre que se añadió al carrito y el cobro), se cae a la primera con tarifa,
+ * que es lo que se hacía siempre: mejor cobrar un precio del mismo producto
+ * que no cobrar.
+ */
+function elegirVariante<T extends { id: string; sku: string }>(
+  variantes: T[],
+  line: { variantId?: string | null; variantSku?: string | null },
+): T | undefined {
+  if (line.variantId) {
+    const porId = variantes.find((v) => v.id === line.variantId);
+    if (porId) return porId;
+  }
+  if (line.variantSku) {
+    const porSku = variantes.find((v) => v.sku === line.variantSku);
+    if (porSku) return porSku;
+  }
+  return variantes[0];
+}
 
 /**
  * Recalcula una línea. `activePromos` se pasa desde fuera para cargarlo UNA vez
@@ -62,10 +94,11 @@ export async function computeServerLinePricing(
         variants: {
           where: { priceTiers: { some: {} } },
           orderBy: { sku: "asc" },
-          take: 1,
+          // Todas las que tengan tarifa, no la primera: hay que poder elegir la
+          // que compró el cliente. Son decenas por producto como mucho.
           // Solo tramos de precio: este recálculo alimenta el checkout del
-          // cliente y no debe arrastrar `images[]`/`variantId` del proveedor.
-          select: { id: true, priceTiers: { orderBy: { minQty: "asc" } } },
+          // cliente y no debe arrastrar `images[]` del proveedor.
+          select: { id: true, sku: true, priceTiers: { orderBy: { minQty: "asc" } } },
         },
         category: { select: { name: true } },
         override: true,
@@ -84,7 +117,7 @@ export async function computeServerLinePricing(
   if (!product) return { ok: false, reason: `Producto no encontrado: ${line.productSlug}` };
   if (line.quantity < 1) return { ok: false, reason: "Cantidad inválida" };
 
-  const variantWithTiers = product.variants[0];
+  const variantWithTiers = elegirVariante(product.variants, line);
   const clientPricing = computeClientPricing({
     product: {
       id: product.id,

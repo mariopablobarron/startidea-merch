@@ -20,7 +20,8 @@
     "scripts:audit-feed-units": "bun scripts/audit-feed-units.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "scripts:audit-precios": "bun scripts/audit-precios-catalogo.ts"
   },
   "dependencies": {
     "@elevenlabs/react": "^1.6.0",

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<!--
+  EJEMPLO REAL ENTREGADO · Tus Territorios · presupuesto PRE-2026-0901
+  ====================================================================
+  Sirve de referencia de redacción y de estructura: cómo se titula una
+  partida, cómo se describe un producto sin nombrar al proveedor, cómo se
+  presentan dos opciones, cómo se escribe una nota técnica.
+
+  Las imágenes se han sustituido por nombres de archivo (imagen-01.png…)
+  para no arrastrar 780 KB de base64 al repositorio: este archivo se lee,
+  no se imprime. La plantilla de trabajo está en
+  ../assets/plantilla-presupuesto-startidea.html
+-->
+
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --vino:#8F1039;
+    --magenta:#C41D51;
+    --tinta:#231F27;
+    --gris:#5E5A63;
+    --linea:#E7E2E6;
+    --rosa:#FDEEF3;
+  }
+  body { font-family: 'Inter', sans-serif; color: var(--tinta); font-size: 9.6pt; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .page { width: 210mm; height: 297mm; position: relative; overflow: hidden; page-break-after: always; background:#fff; }
+  .page:last-child { page-break-after: auto; }
+
+  /* ---------- Cabecera ---------- */
+  .hero { background:#fff; padding: 8mm 16mm 4mm 16mm; }
+  .hero .brandline { display:flex; justify-content:space-between; align-items:flex-end; }
+  .hero .brandline img { width: 30mm; height:auto; display:block; }
+  .doc { text-align:right; }
+  .doc .t { font-family:'Inter',sans-serif; font-weight:800; font-size:20pt; letter-spacing:-0.4pt; line-height:1; color:var(--tinta); }
+  .doc .n { font-family:'Inter',sans-serif; font-weight:600; font-size:8.8pt; color:var(--magenta); margin-top:2mm; }
+  .rule { height:1.6mm; background: linear-gradient(90deg, var(--vino) 0%, var(--magenta) 100%); }
+  .asunto { background:var(--rosa); padding:2.8mm 16mm; font-family:'Montserrat',sans-serif; font-weight:600; font-size:11pt; color:var(--vino); letter-spacing:-0.2pt; }
+
+  /* ---------- Cuerpo ---------- */
+  .body { padding: 4.5mm 16mm 0 16mm; }
+  .meta { display:flex; gap:8mm; padding-bottom:4mm; border-bottom:0.4mm solid var(--linea); }
+  .meta div { flex:1; }
+  .meta .lbl { font-size:6.9pt; letter-spacing:1.5pt; text-transform:uppercase; color:var(--magenta); font-weight:600; margin-bottom:1.6mm; }
+  .meta .val { font-size:9.2pt; color:var(--gris); line-height:1.45; }
+  .meta .val strong { color:var(--tinta); font-weight:600; display:block; }
+
+  h2 { font-family:'Montserrat',sans-serif; font-weight:600; font-size:11pt; margin: 5mm 0 1mm 0; letter-spacing:-0.2pt; }
+  h2 .num { color:var(--magenta); font-weight:700; margin-right:2mm; }
+  .sub { font-size:8.6pt; color:var(--gris); margin-bottom:2.4mm; }
+
+  table { width:100%; border-collapse:collapse; }
+  th { font-size:6.9pt; letter-spacing:1.2pt; text-transform:uppercase; color:var(--gris); font-weight:600; text-align:left; padding:0 0 1.8mm 0; border-bottom:0.4mm solid var(--linea); }
+  th.r, td.r { text-align:right; }
+  td { padding:2mm 0; border-bottom:0.3mm solid var(--linea); vertical-align:top; font-size:9.2pt; }
+  td .name { font-weight:600; }
+  td .desc { font-size:8.1pt; color:var(--gris); line-height:1.4; margin-top:0.6mm; }
+  td .ref { font-size:7.3pt; color:var(--gris); letter-spacing:0.4pt; }
+  .subtotal td { border-bottom:none; padding-top:2.6mm; font-weight:600; }
+  .subtotal td.r { color:var(--magenta); }
+
+  .optrow { display:flex; gap:5mm; margin-top:3mm; }
+  .optrow > .opt { flex:1; margin-top:0; }
+  .opt { border:0.4mm solid var(--linea); border-radius:2.4mm; padding:3mm 4mm; margin-top:3mm; }
+  .line { display:flex; justify-content:space-between; gap:3mm; padding:1.7mm 0; border-bottom:0.3mm solid var(--linea); font-size:8.8pt; }
+  .opt.rec .line { border-bottom-color:#F3D3DF; }
+  .line .l .name { font-weight:600; }
+  .line .l .desc { font-size:7.7pt; color:var(--gris); line-height:1.35; margin-top:0.5mm; }
+  .line .l .ref { font-size:7pt; color:var(--gris); letter-spacing:0.4pt; }
+  .line .q { white-space:nowrap; text-align:right; font-size:8.4pt; color:var(--gris); }
+  .line .q b { display:block; color:var(--tinta); font-weight:600; font-size:9pt; }
+  .line.sum { border-bottom:none; font-weight:600; padding-top:2.2mm; }
+  .line.sum span:last-child { color:var(--magenta); }
+  .opt.rec { border-color:var(--magenta); background:#fff; }
+  .opt .head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:1mm; }
+  .opt .title { font-family:'Montserrat',sans-serif; font-weight:600; font-size:10pt; }
+  .opt .tag { font-size:6.8pt; letter-spacing:1.2pt; text-transform:uppercase; font-weight:600; color:#fff; background:var(--magenta); padding:0.9mm 2.4mm; border-radius:6mm; }
+  .opt table td { border-bottom-color:#EFD9E2; }
+  .opt.rec table td { border-bottom-color:#F3D3DF; }
+
+  /* ---------- Totales ---------- */
+  .totales { margin-top:5mm; display:flex; gap:5mm; }
+  .tot { flex:1; border-radius:2.4mm; padding:3.4mm 4.5mm; background:#F7F5F7; border:0.5mm solid transparent; }
+  .tot.main { background: var(--rosa); border:0.5mm solid var(--magenta); }
+  .tot .k { font-size:6.9pt; letter-spacing:1.2pt; text-transform:uppercase; font-weight:600; color:var(--magenta); }
+  .tot .row { display:flex; justify-content:space-between; font-size:8.4pt; margin-top:1.8mm; color:var(--gris); }
+  .tot.main .row { color:var(--gris); }
+  .tot .row.big { font-family:'Montserrat',sans-serif; font-weight:700; font-size:12.5pt; color:var(--magenta); margin-top:2mm; padding-top:2mm; border-top:0.3mm solid var(--linea); align-items:baseline; }
+  .tot.main .row.big { color:var(--magenta); border-top-color:#F3D3DF; }
+
+  .thumb { width:20mm; float:left; margin:0 3.5mm 1mm 0; }
+  .minithumb { width:10mm; margin-right:3mm; flex:0 0 auto; align-self:flex-start; }
+  .line .l.withimg { display:flex; }
+
+  /* ---------- Ficha técnica ---------- */
+  .tcard { border:0.4mm solid var(--linea); border-radius:2.4mm; padding:5mm; margin-top:3.5mm; }
+  .tcard h3 { font-family:'Montserrat',sans-serif; font-size:10.4pt; font-weight:600; margin-bottom:1mm; }
+  .tcard .lead { font-size:8.6pt; color:var(--gris); margin-bottom:3.5mm; line-height:1.45; }
+  .frow { display:flex; gap:6mm; align-items:center; }
+  .fig { text-align:center; }
+  .fig img { display:block; margin:0 auto; }
+  .fig .cap { font-size:6.9pt; letter-spacing:1pt; text-transform:uppercase; color:var(--magenta); font-weight:600; margin-top:2mm; }
+  .fig .sub { font-size:8pt; color:var(--gris); margin-top:0.6mm; }
+  .dl2 { flex:1; }
+  .dl2 dt { color:var(--gris); font-size:6.9pt; letter-spacing:1pt; text-transform:uppercase; font-weight:600; margin-top:2.2mm; }
+  .dl2 dd { font-size:8.6pt; }
+  .dl2 dt:first-child { margin-top:0; }
+  .grabado { background:var(--rosa); border-radius:2mm; padding:2.6mm 3.4mm; margin-top:3mm; font-size:8.4pt; color:var(--vino); }
+  .grabado b { font-weight:700; }
+
+  .foot { position:absolute; bottom:0; left:0; right:0; padding: 3.4mm 16mm; border-top:0.4mm solid var(--linea); display:flex; justify-content:space-between; font-size:7.4pt; color:var(--gris); }
+  .foot .pg { font-weight:600; color:var(--magenta); }
+
+  /* ---------- Página 2 ---------- */
+  .hero2 { height:8mm; background: linear-gradient(90deg, var(--vino) 0%, var(--magenta) 100%); }
+  .body2 { padding: 10mm 16mm 0 16mm; }
+  .cols { display:flex; gap:7mm; margin-top:2mm; }
+  .cols > div { flex:1; }
+  .spec { border-top:0.6mm solid var(--magenta); padding-top:3mm; margin-bottom:5mm; }
+  .spec h3 { font-family:'Montserrat',sans-serif; font-size:9.6pt; font-weight:600; margin-bottom:2mm; }
+  .spec dl { font-size:8.4pt; }
+  .spec dt { color:var(--gris); font-size:6.9pt; letter-spacing:1pt; text-transform:uppercase; font-weight:600; margin-top:2.2mm; }
+  .spec dd { color:var(--tinta); }
+  ul.cond { list-style:none; font-size:8.6pt; color:var(--gris); }
+  ul.cond li { padding-left:4.5mm; position:relative; margin-bottom:1.8mm; line-height:1.45; }
+  ul.cond li:before { content:''; position:absolute; left:0; top:1.6mm; width:1.6mm; height:1.6mm; border-radius:50%; background:var(--magenta); }
+  ul.cond li strong { color:var(--tinta); font-weight:600; }
+  .nota { background:var(--rosa); border-radius:2.4mm; padding:4mm 5mm; margin-top:4mm; font-size:8.6pt; color:var(--gris); line-height:1.5; }
+  .nota strong { display:block; font-family:'Montserrat',sans-serif; font-size:9.4pt; color:var(--vino); font-weight:600; margin-bottom:1.4mm; }
+  .cierre { margin-top:5mm; padding:5mm 6mm; border-radius:2.4mm; background: linear-gradient(160deg, var(--vino) 0%, var(--magenta) 100%); color:#fff; }
+  .cierre h3 { font-family:'Montserrat',sans-serif; font-size:10.4pt; font-weight:600; margin-bottom:1.6mm; }
+  .cierre p { font-size:8.8pt; opacity:.9; line-height:1.5; }
+  .cierre .contact { margin-top:3mm; font-size:8.8pt; font-weight:600; }
+</style>
+</head>
+<body>
+
+<!-- ============ PÁGINA 1 ============ -->
+<div class="page">
+  <div class="hero">
+    <div class="brandline">
+      <img src="imagen-01.png" alt="Startidea">
+      <div class="doc">
+        <div class="t">Presupuesto</div>
+        <div class="n">Nº PRE-2026-0901 · 1 de septiembre de 2026</div>
+      </div>
+    </div>
+  </div>
+  <div class="rule"></div>
+  <div class="asunto">Photocall transportable de 3 m y 2.000 vasos reutilizables de 400 ml</div>
+
+  <div class="body">
+    <div class="meta">
+      <div>
+        <div class="lbl">Cliente</div>
+        <div class="val"><strong>Tus Territorios</strong>A la atención de Jose<br>Ref. contacto: Rosa Baena / Club Cámara</div>
+      </div>
+      <div>
+        <div class="lbl">Proveedor</div>
+        <div class="val"><strong>Startidea Málaga, S.L.</strong>CIF B19583632<br>C/ Conde Cifuentes, 33 · 18005 Granada<br>958 045 789 · pedidos@startidea.es</div>
+      </div>
+      <div>
+        <div class="lbl">Validez</div>
+        <div class="val"><strong>30 días naturales</strong>Precios sin IVA salvo indicación<br>Transporte a península incluido</div>
+      </div>
+    </div>
+
+    <h2><span class="num">01</span>Photocall transportable</h2>
+    <div class="sub">Pack completo de 3 m de ancho × 2,3 m de alto (la altura estándar del sistema es 2,3 m, algo superior a los 2 m solicitados). Fabricación bajo pedido.</div>
+    <table>
+      <thead><tr><th style="width:52%">Concepto</th><th class="r">Uds.</th><th class="r">Precio ud.</th><th class="r">Importe</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>
+            <img class="thumb" src="imagen-02.png" alt="Photocall">
+            <div style="overflow:hidden">
+            <div class="name">Photocall pack completo 300 × 230 cm</div>
+            <div class="desc">Incluye lona frontlit PVC 510 g/m² impresa a una cara en UV con el diseño del cliente, estructura de tubo de aluminio lacado en plateado (Ø 30-35 mm) con unión por botón de presión, tensores de goma y estuche de transporte.</div>
+            </div>
+          </td>
+          <td class="r">1</td><td class="r">262,86 €</td><td class="r">262,86 €</td>
+        </tr>
+        <tr class="subtotal"><td colspan="3">Subtotal photocall</td><td class="r">262,86 €</td></tr>
+      </tbody>
+    </table>
+
+    <h2><span class="num">02</span>2.000 vasos reutilizables de 400 ml</h2>
+    <div class="sub">Dos alternativas según el uso previsto. Ambas en polipropileno, con serigrafía circular a una tinta alrededor del vaso. Disponibilidad de stock confirmada para la cantidad solicitada.</div>
+
+    <div class="optrow">
+      <div class="opt rec">
+        <div class="head"><div class="title">Opción A · «Yonrax»</div><div class="tag">Recomendada</div></div>
+        <div class="line">
+          <div class="l withimg">
+            <img class="minithumb" src="imagen-03.png" alt="Yonrax">
+            <div>
+            <div class="name">Vaso PP esmerilado, 36 g</div>
+            <div class="desc">Pared gruesa, libre de BPA, apto para lavado y reutilización repetida.</div>
+            <div class="ref">REF. STM-4D2GEK</div>
+            </div>
+          </div>
+          <div class="q">2.000 × 0,28 €<b>560,00 €</b></div>
+        </div>
+        <div class="line">
+          <div class="l"><div class="name">Serigrafía circular 1 tinta</div><div class="desc">Alrededor del vaso, hasta 150 × 70 mm. Manipulación y envasado incluidos.</div></div>
+          <div class="q">2.000 × 0,22 €<b>440,00 €</b></div>
+        </div>
+        <div class="line">
+          <div class="l"><div class="name">Pantalla y fotolito</div><div class="desc">Cargo único por diseño y color.</div></div>
+          <div class="q">1 × 40,00 €<b>40,00 €</b></div>
+        </div>
+        <div class="line sum"><span>Subtotal opción A</span><span>1.040,00 €</span></div>
+      </div>
+
+      <div class="opt">
+        <div class="head"><div class="title">Opción B · «Cuvak»</div></div>
+        <div class="line">
+          <div class="l withimg">
+            <img class="minithumb" src="imagen-04.png" alt="Cuvak">
+            <div>
+            <div class="name">Vaso PP translúcido, 14 g</div>
+            <div class="desc">Formato económico de alta rotación, menor grosor de pared.</div>
+            <div class="ref">REF. STM-GBA9TZ</div>
+            </div>
+          </div>
+          <div class="q">2.000 × 0,11 €<b>220,00 €</b></div>
+        </div>
+        <div class="line">
+          <div class="l"><div class="name">Serigrafía circular 1 tinta</div><div class="desc">Hasta 170 × 70 mm. Manipulación y envasado incluidos.</div></div>
+          <div class="q">2.000 × 0,22 €<b>440,00 €</b></div>
+        </div>
+        <div class="line">
+          <div class="l"><div class="name">Pantalla y fotolito</div><div class="desc">Cargo único por diseño y color.</div></div>
+          <div class="q">1 × 40,00 €<b>40,00 €</b></div>
+        </div>
+        <div class="line sum"><span>Subtotal opción B</span><span>700,00 €</span></div>
+      </div>
+    </div>
+
+    <div class="totales">
+      <div class="tot main">
+        <div class="k">Total con opción A · Yonrax</div>
+        <div class="row"><span>Base imponible</span><span>1.302,86 €</span></div>
+        <div class="row"><span>IVA 21 %</span><span>273,60 €</span></div>
+        <div class="row big"><span>Total</span><span>1.576,46 €</span></div>
+      </div>
+      <div class="tot">
+        <div class="k">Total con opción B · Cuvak</div>
+        <div class="row"><span>Base imponible</span><span>962,86 €</span></div>
+        <div class="row"><span>IVA 21 %</span><span>202,20 €</span></div>
+        <div class="row big"><span>Total</span><span>1.165,06 €</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Startidea Málaga, S.L. · B19583632 · Todo Merchandising · merchandising.startidea.es</span>
+    <span class="pg">1 / 3</span>
+  </div>
+</div>
+
+<!-- ============ PÁGINA 2 ============ -->
+<div class="page">
+  <div class="hero2"></div>
+  <div class="body2">
+    <h2 style="margin-top:0"><span class="num">03</span>Detalle técnico y medidas de marcaje</h2>
+
+    <div class="tcard">
+      <h3>Photocall pack completo</h3>
+      <div class="lead">Estructura tubular de aluminio lacado en plateado de 30 a 35 mm de diámetro, con unión por botón de presión y montaje sin herramientas. La lona se sujeta con tensores de goma a los ojales perimetrales.</div>
+      <div class="frow">
+        <div class="fig">
+          <img src="imagen-05.png" style="width:62mm">
+          <div class="cap">Montado</div>
+          <div class="sub">300 × 230 cm</div>
+        </div>
+        <dl class="dl2">
+          <dt>Medida montada</dt><dd>300 cm de ancho × 230 cm de alto</dd>
+          <dt>Gráfica</dt><dd>Lona frontlit PVC 510 g/m², impresión UV a todo color a una cara</dd>
+          <dt>Incluye</dt><dd>Estructura, lona impresa, tensores de goma y estuche de transporte</dd>
+          <dt>Uso</dt><dd>Interior</dd>
+          <dt>Artes finales</dt><dd>PDF o AI vectorial según plantilla, con textos trazados</dd>
+          <dt>Reposición</dt><dd>Se pueden imprimir lonas nuevas para la misma estructura en campañas posteriores</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="tcard">
+      <h3>Vasos reutilizables de 400 ml · zonas de marcaje</h3>
+      <div class="lead">Serigrafía circular a una tinta. La zona imprimible rodea el vaso, de modo que el logotipo se ve desde cualquier ángulo. En verde, el área máxima disponible en cada modelo.</div>
+      <div class="frow" style="justify-content:space-around; align-items:flex-end">
+        <div class="fig">
+          <img src="imagen-06.png" style="height:34mm">
+          <div class="cap">Opción A · Yonrax</div>
+          <div class="sub">PP esmerilado · 36 g</div>
+        </div>
+        <div class="fig">
+          <img src="imagen-07.png" style="height:34mm">
+          <div class="cap">Área de marcaje</div>
+          <div class="sub">150 × 70 mm</div>
+        </div>
+        <div class="fig">
+          <img src="imagen-08.png" style="height:34mm">
+          <div class="cap">Opción B · Cuvak</div>
+          <div class="sub">PP translúcido · 14 g</div>
+        </div>
+        <div class="fig">
+          <img src="imagen-09.png" style="height:34mm">
+          <div class="cap">Área de marcaje</div>
+          <div class="sub">170 × 70 mm</div>
+        </div>
+      </div>
+      <div class="grabado"><b>Ficha de marcaje:</b> serigrafía circular, 1 tinta plana, una posición · área máxima 150 × 70 mm en Yonrax y 170 × 70 mm en Cuvak · arte final vectorial (AI, EPS o PDF) con el Pantone definido · mock-up digital para validación antes de producción · manipulación y envasado incluidos.</div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    <span>Presupuesto PRE-2026-0901 · Tus Territorios · 1 de septiembre de 2026</span>
+    <span class="pg">2 / 3</span>
+  </div>
+</div>
+
+<!-- ============ PÁGINA 3 ============ -->
+<div class="page">
+  <div class="hero2"></div>
+  <div class="body2">
+    <h2 style="margin-top:0"><span class="num">04</span>Condiciones</h2>
+    <ul class="cond">
+      <li><strong>Plazo de producción:</strong> el photocall se produce en 24 horas desde la validación del arte final. Los vasos, entre 8 y 15 días según el volumen. El plazo conjunto se confirma por escrito al aceptar el presupuesto.</li>
+      <li><strong>Entrega:</strong> transporte a península incluido en los importes indicados. Envíos a Baleares, Canarias, Ceuta y Melilla se presupuestan aparte.</li>
+      <li><strong>Impuestos:</strong> todos los importes se expresan sin IVA; el 21 % de IVA se detalla en el bloque de totales y se repercute en factura.</li>
+      <li><strong>Forma de pago:</strong> 100 % a la confirmación del presupuesto, momento en el que se pone en marcha la producción.</li>
+      <li><strong>Artes finales:</strong> la producción arranca una vez el cliente valida por escrito el boceto o mock-up remitido. Las modificaciones posteriores a la validación pueden alterar plazo y coste.</li>
+      <li><strong>Cantidades:</strong> los precios unitarios corresponden a las cantidades indicadas. Variaciones en la cantidad modifican el precio por unidad.</li>
+      <li><strong>Validez de la oferta:</strong> 30 días naturales desde la fecha del presupuesto, sujeta a disponibilidad de stock en el momento de la confirmación.</li>
+    </ul>
+
+    <div class="nota">
+      <strong>Sobre la «tinta transparente» de los vasos</strong>
+      Los dos modelos propuestos son de polipropileno translúcido y la técnica disponible es la serigrafía a tinta plana, de modo que un marcaje con tinta transparente resultaría prácticamente invisible sobre el material. Si lo que se busca es el efecto de logotipo mate o «esmerilado» sobre el vaso transparente, se resuelve con una tinta blanca opaca. Confírmanos el efecto deseado y ajustamos el marcaje sin cambiar el precio de esta oferta.
+    </div>
+
+    <div class="cierre">
+      <h3>¿Seguimos?</h3>
+      <p>Con la confirmación de la opción de vaso y el logotipo en vectorial preparamos el mock-up de los vasos y el boceto a escala del photocall para tu validación, sin compromiso.</p>
+      <div class="contact">pedidos@startidea.es · 958 045 789 · merchandising.startidea.es</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Presupuesto PRE-2026-0901 · Tus Territorios · 1 de septiembre de 2026</span>
+    <span class="pg">3 / 3</span>
+  </div>
+</div>
+
+</body>
+</html>
