@@ -41,6 +41,13 @@ import { ensureMediaAsset } from "@/lib/proxy-image";
 import { sanitizeSupplierText, sanitizeSupplierName } from "./sanitize-supplier-text";
 import { colorGroupFromName } from "@/lib/variant-grouping";
 import { marcarFase, withSyncFailureClosing } from "./sync-failure";
+import {
+  parseFeedCount,
+  normalizeFeedRef,
+  parseFeedFlag,
+  esStockImplausible,
+  STOCK_MINIMO_PLAUSIBLE,
+} from "./feed-units";
 
 const SUPPLIER = "makito" as const;
 const CHUNK = 25; // productos por batch (Makito tiene 4482, son ~180 chunks)
@@ -151,8 +158,18 @@ type XmlVariant = {
   imagemain?: string;
 };
 
+/**
+ * ⚠️ Los tres parsers leen el XML **en crudo** (`parseTagValue: false`).
+ *
+ * Con `true`, fast-xml-parser decidía por su cuenta qué era número, y
+ * `<stock>90.000</stock>` le parecía noventa: el catálogo entero publicaba el
+ * stock dividido por mil. Con el texto intacto, cada campo se convierte donde
+ * se sabe qué es —`parseFeedCount` para cantidades, `toNum`/`priceToCents`
+ * para dinero y medidas, `normalizeFeedRef` para referencias— y esa decisión
+ * queda testeada en `feed-units.test.ts`.
+ */
 function parseXmlProducts(xml: string): XmlProduct[] {
-  const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
+  const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: false });
   const data = measureSyncBlocking("makito · parse XML productos", () => parser.parse(xml)) as {
     catalog?: { product?: XmlProduct | XmlProduct[] };
   };
@@ -180,7 +197,7 @@ type XmlPrice = {
 };
 
 function parseXmlPrices(xml: string): XmlPrice[] {
-  const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
+  const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: false });
   const data = measureSyncBlocking("makito · parse XML precios", () => parser.parse(xml)) as {
     catalog?: { product?: XmlPrice | XmlPrice[] };
   };
@@ -199,7 +216,7 @@ type XmlStock = {
 };
 
 function parseXmlStock(xml: string): XmlStock[] {
-  const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: true });
+  const parser = new XMLParser({ ignoreAttributes: true, parseTagValue: false });
   const data = measureSyncBlocking("makito · parse XML stock", () => parser.parse(xml)) as {
     catalog?: { product?: XmlStock | XmlStock[] };
   };
@@ -232,6 +249,8 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
   let variantsUpserted = 0;
   let tiersUpserted = 0;
   let stockUpdated = 0;
+  let stockImplausible = 0;
+  const stockImplausibleSample: string[] = [];
   let techniquesUpserted = 0;
   let scalesUpserted = 0;
 
@@ -329,7 +348,9 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
     const chunk = products.slice(i, i + CHUNK);
     await Promise.all(
       chunk.map(async (p) => {
-        const ref = String(p.ref);
+        // Leído en crudo, "0034" ya no llega como número 34: se normaliza aquí
+        // para no duplicar el producto que ya está en BD como "34".
+        const ref = normalizeFeedRef(p.ref);
         if (!ref || !p.name) return;
         try {
           // Categoría primaria (level 1)
@@ -421,7 +442,7 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
           const rawVariants = p.variants?.variant;
           const variantList = !rawVariants ? [] : Array.isArray(rawVariants) ? rawVariants : [rawVariants];
           for (const v of variantList) {
-            const matnr = String(v.matnr);
+            const matnr = normalizeFeedRef(v.matnr);
             if (!matnr || matnr === "0") continue;
             const variantImg = await ensureMediaAsset(
               String(v.image500px || v.image500pxlogo || "").trim() || null,
@@ -480,7 +501,7 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
     const tarifs = parseXmlPrices(xml);
     // Mapeo ref → primer variant.id (Makito tiene tarifa por producto, no por variante;
     // aplicamos los tiers a todas las variantes del producto)
-    const productRefs = Array.from(new Set(tarifs.map((t) => String(t.ref))));
+    const productRefs = Array.from(new Set(tarifs.map((t) => normalizeFeedRef(t.ref))));
     const variantsByRef = new Map<string, string[]>();
     if (productRefs.length > 0) {
       const variants = await prisma.productVariant.findMany({
@@ -497,7 +518,7 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
     }
 
     for (const t of tarifs) {
-      const variantIds = variantsByRef.get(String(t.ref)) || [];
+      const variantIds = variantsByRef.get(normalizeFeedRef(t.ref)) || [];
       if (variantIds.length === 0) continue;
       const tiers: Array<{ minQty: number; cents: number }> = [];
       for (let i = 1; i <= 6; i++) {
@@ -505,7 +526,7 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
         // Además section1 puede venir como "-500" (negativo = "hasta 500" pero
         // lo guardamos como minQty=1 para que el tier cubra desde 1 unidad).
         const rawSec = (t as unknown as Record<string, number | string>)[`section${i}`];
-        const price = (t as unknown as Record<string, number>)[`price${i}`];
+        const price = (t as unknown as Record<string, number | string>)[`price${i}`];
         // El primer tramo llega NEGATIVO ("-500" = "hasta 500") y lo guardamos
         // como minQty=1 para que cubra desde 1 unidad. El parser XML puede
         // entregarlo como number o string, con o sin espacios: normalizamos a
@@ -519,11 +540,17 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
         if (secStr.startsWith("-")) {
           sec = 1; // primer tramo ("hasta N", cualquier negativo)
         } else {
-          const n = parseInt(secStr, 10);
-          sec = Number.isFinite(n) ? n : 0;
+          // `parseInt("1.000")` devolvía 1: el tramo de mil unidades se
+          // guardaba como tramo desde 1 y su precio (el más barato) cotizaba
+          // a cualquier cantidad.
+          sec = parseFeedCount(secStr) ?? 0;
         }
-        if (sec > 0 && price > 0) {
-          tiers.push({ minQty: sec, cents: priceToCents(price) });
+        // El precio se valida ya convertido: leído en crudo llega como texto
+        // ("0,52"), y `price > 0` sobre un texto con coma es false — habría
+        // descartado la tarifa entera.
+        const cents = priceToCents(price);
+        if (sec > 0 && cents > 0) {
+          tiers.push({ minQty: sec, cents });
         }
       }
       if (tiers.length === 0) continue;
@@ -556,6 +583,12 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
   await fase(5, "stock");
 
   // 5. Stock · XML
+  //
+  // El stock llega como texto europeo ("90.000" son noventa mil, no noventa) y
+  // se convierte con `parseFeedCount`. Los valores imposibles —producto que el
+  // feed da como disponible y quedan menos de 10 uds— NO se escriben: se
+  // cuentan y se reportan. Machacar el stock bueno con uno dividido por mil es
+  // peor que quedarse con el del sync anterior.
   try {
     const xml = await fetchStockXml();
     const stocks = parseXmlStock(xml);
@@ -565,16 +598,31 @@ async function runMakitoSyncInner(): Promise<MakitoSyncResult> {
       await Promise.all(
         chunkStocks.map(async (s) => {
           if (!s.matnr) return;
-          const qty = toNum(s.stock) || 0;
+          const qty = parseFeedCount(s.stock);
+          if (esStockImplausible({ qty, disponible: parseFeedFlag(s.available) })) {
+            stockImplausible++;
+            if (stockImplausibleSample.length < 5) {
+              stockImplausibleSample.push(`${normalizeFeedRef(s.matnr)}=${String(s.stock)}`);
+            }
+            return;
+          }
           await prisma.productVariant
             .update({
-              where: { sku: String(s.matnr) },
-              data: { stockQty: Math.max(0, Math.round(qty)), stockUpdatedAt: new Date() },
+              where: { sku: normalizeFeedRef(s.matnr) },
+              data: { stockQty: Math.max(0, qty ?? 0), stockUpdatedAt: new Date() },
             })
             .catch(() => {});
           stockUpdated++;
         }),
       );
+    }
+    if (stockImplausible > 0) {
+      errors.push({
+        ref: "_stock_implausible",
+        message:
+          `${stockImplausible} variantes con stock imposible (disponibles con menos de ` +
+          `${STOCK_MINIMO_PLAUSIBLE} uds): no se han escrito. Muestra: ${stockImplausibleSample.join(", ")}`,
+      });
     }
   } catch (e) {
     errors.push({ ref: "_stock", message: e instanceof Error ? e.message : String(e) });
