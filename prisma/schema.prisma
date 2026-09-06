@@ -765,9 +765,8 @@ model RoiCalculation {
 /// respondió tarde a la primera entrega). Sin esta tabla, procesar duplicado
 /// = duplicar email + duplicar pedido a MidOcean + duplicar referral.
 ///
-/// El webhook intenta `create` antes de procesar. Si la constraint unique
-/// salta (P2002), sabemos que el evento ya se procesó → respondemos 200
-/// sin hacer nada.
+/// Recibo, confirmación local y trabajo pospago se guardan en una misma
+/// transacción. Una entrega fallida no conserva el recibo y puede repetirse.
 model ProcessedStripeEvent {
   eventId     String   @id // evt_xxx (Stripe event id)
   eventType   String // checkout.session.completed, etc.

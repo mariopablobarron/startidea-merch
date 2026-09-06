@@ -18,15 +18,41 @@
  * Un invariante sobre una respuesta que NO llegó no es ni verde ni rojo: es
  * NO COMPROBADO. Y "no comprobado" jamás cuenta como verde — ver `unchecked()`.
  *
- * Uso: BASE=https://merchandising.startidea.es SLUG=taza TECH=P5 node scripts/money-smoke-test.mjs
+ * Uso: BASE=https://merchandising.startidea.es node scripts/money-smoke-test.mjs
+ *      (SLUG y TECH son opcionales: solo cambian por dónde EMPIEZA la búsqueda
+ *       del producto de prueba, que se descubre del sitemap si el preferido
+ *       ya no cotiza.)
  */
 
 import { pathToFileURL } from "node:url";
 import { appendFileSync } from "node:fs";
 
 const BASE = process.env.BASE || "https://merchandising.startidea.es";
-const SLUG = process.env.SLUG || "taza";
-const TECH = process.env.TECH || "P5"; // técnica de marcaje válida para SLUG
+// El producto de prueba se DESCUBRE, no se fija. Un slug escrito a mano
+// caduca solo: el 2026-09-02 a las 21:03 UTC este guard salió rojo gritando
+// "INVARIANTE DE NEGOCIO ROTA" porque `taza` había pasado a `active=false` en
+// un sync — 4 invariantes de dinero en falso rojo, con su alerta de Telegram.
+// El catálogo cambia todos los días; el guard no puede depender de que una
+// fila concreta siga viva. Estas dos variables son solo la PREFERENCIA: si el
+// producto preferido ya no cotiza, se busca otro en el sitemap y el barrido
+// sigue. Lo que sí es rojo es que NINGÚN producto del catálogo cotice.
+const SLUG_PREFERIDO = process.env.SLUG || "taza-con-mosqueton-venture-plus";
+const TECH_PREFERIDA = process.env.TECH || "P5";
+/** Cuántos productos del sitemap se prueban antes de rendirse. */
+const MAX_CANDIDATOS = Number(process.env.SMOKE_MAX_CANDIDATOS || 6);
+/**
+ * Respaldo para la técnica de marcaje: no hay endpoint público que liste las
+ * técnicas de un producto, así que se prueban por orden hasta que una responda
+ * 200 (= está declarada para ese producto). Son las más extendidas del
+ * catálogo, medidas en producción el 03-sep sobre `MarkingTechniqueOnPosition`
+ * (de 847 a 410 productos cada una). Que la técnica COBRE no se decide aquí:
+ * eso lo comprueba el barrido, y tiene que poder salir rojo.
+ */
+const TECNICAS_CANDIDATAS = ["P5", "P4", "T1", "TD1", "S3", "L3", "TR", "DL", "DO1"];
+
+/** Producto y técnica en uso; los fija `elegirProductoCotizable()`. */
+let SLUG = SLUG_PREFERIDO;
+let TECH = TECH_PREFERIDA;
 // DOS grupos, porque los términos no son de la misma naturaleza. Réplica
 // literal de lib/supplier-leak-terms.ts (fuente TS que este script no puede
 // importar — Node suelto); el guard de concepto-propuesta-cableado compara las
@@ -282,25 +308,172 @@ async function getJson(path, opts) {
   return { status: r.status, json, text };
 }
 
+/**
+ * Slugs de PRODUCTO que anuncia el sitemap. Pura y exportada: es la lista de
+ * la que sale el producto de prueba, y equivocarse aquí (colar categorías, o
+ * URLs con dos segmentos) haría fallar el guard por donde no es.
+ *
+ * El sitemap ya filtra por `active` —7.082 URLs frente a 9.637 filas el
+ * 03-sep—, así que es justo la fuente que NO se queda con productos muertos.
+ */
+export function slugsDeProductoDelSitemap(xml) {
+  const slugs = [];
+  const re = /<loc>\s*([^<\s]+)\s*<\/loc>/g;
+  let m;
+  while ((m = re.exec(xml))) {
+    const path = m[1].replace(/^https?:\/\/[^/]+/, "");
+    const partes = path.split("/").filter(Boolean);
+    // Solo `/catalogo/<slug>`: `/catalogo` a secas es el listado y
+    // `/categorias/<x>` es otra cosa que también tiene fichas.
+    if (partes.length === 2 && partes[0] === "catalogo") slugs.push(partes[1]);
+  }
+  return slugs;
+}
+
+/**
+ * Muestra REPARTIDA por toda la lista, no las primeras N. Pura y exportada.
+ *
+ * El sitemap va en orden alfabético y su cabeza son slugs numéricos raros
+ * (`1l`, `40-l-m2`): quedarse con los primeros probaría siempre el mismo
+ * rincón del catálogo. `desplazamiento` mueve la ventana para que dos pasadas
+ * seguidas no caigan en los mismos productos.
+ */
+export function muestraRepartida(lista, n, desplazamiento = 0) {
+  if (lista.length === 0 || n <= 0) return [];
+  if (lista.length <= n) return [...lista];
+  const paso = lista.length / n;
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    out.push(lista[Math.floor((i * paso + desplazamiento) % lista.length)]);
+  }
+  return out;
+}
+
+/** ¿Este slug es un producto vivo Y cotizable? Dos peticiones, sin secretos. */
+async function productoCotiza(slug) {
+  const cards = await getJson(`/api/products/cards?slugs=${encodeURIComponent(slug)}`);
+  const card = cards.status === 200 ? cards.json?.items?.[0] : null;
+  if (!card || typeof card.priceFromCents !== "number" || card.priceFromCents <= 0) return false;
+  const bare = await getJson("/api/quote/calculate", {
+    method: "POST",
+    body: JSON.stringify({ productSlug: slug, quantity: 100 }),
+  });
+  return bare.status === 200 && typeof bare.json?.unitClientCents === "number" && bare.json.unitClientCents > 0;
+}
+
+/**
+ * Primera técnica DECLARADA para el producto. 200 significa "el catálogo la
+ * admite aquí"; un código que no aplica devuelve 4xx («Técnica de marcaje no
+ * encontrada»). A propósito NO se exige que cobre: si una técnica declarada
+ * deja de cobrar, eso es el P0 del 2026-07-15 y tiene que salir ROJO en el
+ * barrido, no desaparecer eligiendo otra técnica hasta que alguna cuadre.
+ */
+async function tecnicaDeclarada(slug) {
+  const vistas = new Set();
+  for (const t of [TECH_PREFERIDA, ...TECNICAS_CANDIDATAS]) {
+    if (vistas.has(t)) continue;
+    vistas.add(t);
+    const r = await getJson("/api/quote/calculate", {
+      method: "POST",
+      body: JSON.stringify({ productSlug: slug, quantity: 100, techniqueCode: t, numberOfColours: 1, positionCount: 1 }),
+    });
+    if (r.status === 200) return t;
+  }
+  return null;
+}
+
+/** Par elegido, para que el barrido de confirmación no vuelva a buscarlo. */
+let parElegido = null;
+
+/**
+ * Fija SLUG y TECH con un producto que HOY cotiza. Devuelve el motivo del
+ * fallo si no encuentra ninguno — y eso sí es una invariante de dinero rota:
+ * significa que el catálogo entero no da precio.
+ */
+async function elegirProductoCotizable() {
+  if (parElegido) {
+    ({ slug: SLUG, tech: TECH } = parElegido);
+    return null;
+  }
+  const candidatos = [SLUG_PREFERIDO];
+  const intentar = async () => {
+    for (const slug of candidatos) {
+      if (!(await productoCotiza(slug))) continue;
+      const tech = await tecnicaDeclarada(slug);
+      if (!tech) continue;
+      parElegido = { slug, tech };
+      SLUG = slug;
+      TECH = tech;
+      if (slug !== SLUG_PREFERIDO) {
+        console.log(
+          `::warning::El producto de prueba \`${SLUG_PREFERIDO}\` ya no cotiza (¿desactivado en un sync?); ` +
+            `el barrido usa \`${slug}\` (técnica ${tech}), descubierto del sitemap.`,
+        );
+      }
+      return true;
+    }
+    return false;
+  };
+
+  if (await intentar()) return null;
+
+  // El preferido ya no vale: se buscan sustitutos entre los productos que el
+  // propio sitio anuncia como vivos.
+  const mapa = await safeFetch(`${BASE}/sitemap.xml`);
+  if (mapa.status !== 200) {
+    return { motivo: `el producto preferido no cotiza y el sitemap no respondió (status ${mapa.status})`, disponibilidad: true };
+  }
+  const todos = slugsDeProductoDelSitemap(await mapa.text());
+  if (todos.length === 0) {
+    return { motivo: "el sitemap no anuncia ningún producto", disponibilidad: false };
+  }
+  candidatos.length = 0;
+  candidatos.push(...muestraRepartida(todos, MAX_CANDIDATOS, Math.floor(Math.random() * todos.length)));
+  if (await intentar()) return null;
+  return {
+    motivo: `ninguno de ${candidatos.length + 1} productos del catálogo devolvió precio cotizable`,
+    disponibilidad: false,
+  };
+}
+
 async function barrido() {
   // Cada barrido parte de cero: presupuesto nuevo y sin arrastrar resultados.
   results.length = 0;
   deadline = Date.now() + BUDGET_MS;
 
+  // ── 0. Producto de prueba: se descubre, no se supone ─────────────
+  const sinProducto = await elegirProductoCotizable();
+  if (sinProducto) {
+    // Si lo que falló fue la RED (el sitemap no llegó), no se puede afirmar
+    // que el catálogo no cotice: es "no comprobado", no una rotura de dinero.
+    if (sinProducto.disponibilidad) {
+      check("elegir producto de prueba", false, sinProducto.motivo, KIND_AVAILABILITY);
+    } else {
+      check("hay al menos un producto cotizable en el catálogo", false, sinProducto.motivo);
+    }
+  }
+
   // ── 1. Marcaje se cobra ──────────────────────────────────────────
-  const bare = await getJson("/api/quote/calculate", {
+  const bare = sinProducto ? { status: 0, json: null } : await getJson("/api/quote/calculate", {
     method: "POST",
     body: JSON.stringify({ productSlug: SLUG, quantity: 100 }),
   });
-  const marked = await getJson("/api/quote/calculate", {
+  const marked = sinProducto ? { status: 0, json: null } : await getJson("/api/quote/calculate", {
     method: "POST",
     body: JSON.stringify({ productSlug: SLUG, quantity: 100, techniqueCode: TECH, numberOfColours: 1, positionCount: 1 }),
   });
   const quoteRespondio = bare.status === 200 && marked.status === 200;
-  check("quote/calculate responde", quoteRespondio, `status ${bare.status}/${marked.status}`, KIND_AVAILABILITY);
+  // Sin producto elegido no hay nada que preguntarle a `quote`: el fallo ya
+  // está registrado arriba y repetirlo como "superficie caída" sería mentir
+  // sobre una ruta que no se ha llegado a llamar.
+  if (!sinProducto) {
+    check("quote/calculate responde", quoteRespondio, `status ${bare.status}/${marked.status}`, KIND_AVAILABILITY);
+  } else {
+    unchecked("quote/calculate responde", sinProducto.motivo);
+  }
   if (!quoteRespondio) {
     // Sin respuesta no se puede afirmar nada del precio: no comprobado.
-    const razon = `status ${bare.status}/${marked.status}`;
+    const razon = sinProducto ? sinProducto.motivo : `status ${bare.status}/${marked.status}`;
     unchecked("precio base > 0", razon);
     unchecked("el marcaje incrementa el precio (P0)", razon);
     unchecked("quote devuelve markings[] al pasar técnica (P0)", razon);
@@ -325,9 +498,9 @@ async function barrido() {
   // POST. Antes solo había 3 GET, y por eso /api/recommend (POST) filtró el
   // CDN del proveedor durante meses sin que el guard se enterase.
   const publicSurfaces = [
-    { path: `/api/products/cards?slugs=${encodeURIComponent(SLUG)}` },
-    { path: `/catalogo/${encodeURIComponent(SLUG)}` },
-    { path: `/comparar?slugs=${encodeURIComponent(SLUG)}` },
+    { path: `/api/products/cards?slugs=${encodeURIComponent(SLUG)}`, necesitaProducto: true },
+    { path: `/catalogo/${encodeURIComponent(SLUG)}`, necesitaProducto: true },
+    { path: `/comparar?slugs=${encodeURIComponent(SLUG)}`, necesitaProducto: true },
     {
       path: "/api/recommend",
       method: "POST",
@@ -345,6 +518,7 @@ async function barrido() {
       path: "/api/quote/calculate",
       method: "POST",
       body: { productSlug: SLUG, quantity: 100, techniqueCode: TECH, numberOfColours: 1, positionCount: 1 },
+      necesitaProducto: true,
     },
     // Superficies de CONTENIDO, no de producto. Se añaden el 13-ago tras
     // encontrarlas filtrando: llms.txt llegó a listar a los tres proveedores
@@ -358,7 +532,14 @@ async function barrido() {
     { path: "/privacidad" },
   ];
   for (const surface of publicSurfaces) {
-    const { path, method = "GET", body } = surface;
+    const { path, method = "GET", body, necesitaProducto } = surface;
+    if (necesitaProducto && sinProducto) {
+      // La regla nº2 se sigue vigilando en las superficies de CONTENIDO, que
+      // no dependen de ningún producto: quedarse sin producto de prueba no
+      // puede apagar el barrido de fuga entero.
+      unchecked(`sin proveedor en ${method} ${path}`, sinProducto.motivo);
+      continue;
+    }
     const r = await safeFetch(BASE + path, {
       method,
       ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
@@ -380,9 +561,9 @@ async function barrido() {
   }
 
   // ── 3. Tarjetas Diego: precio cliente + ref pública ──────────────
-  const cards = await getJson(`/api/products/cards?slugs=${encodeURIComponent(SLUG)}`);
+  const cards = sinProducto ? { status: 0, json: null } : await getJson(`/api/products/cards?slugs=${encodeURIComponent(SLUG)}`);
   if (cards.status !== 200) {
-    const razon = `status ${cards.status}`;
+    const razon = sinProducto ? sinProducto.motivo : `status ${cards.status}`;
     unchecked("tarjeta Diego existe", razon);
     unchecked("tarjeta con precio cliente > 0", razon);
     unchecked("tarjeta con ref pública STM-", razon);
@@ -394,10 +575,10 @@ async function barrido() {
   }
 
   // ── 4. /comparar con precio real ─────────────────────────────────
-  const cmp = await safeFetch(`${BASE}/comparar?slugs=${encodeURIComponent(SLUG)}`);
+  const cmp = sinProducto ? { status: 0, text: async () => "" } : await safeFetch(`${BASE}/comparar?slugs=${encodeURIComponent(SLUG)}`);
   const cmpBody = await cmp.text();
   if (cmp.status !== 200) {
-    unchecked("/comparar muestra un precio con €", `status ${cmp.status}`);
+    unchecked("/comparar muestra un precio con €", sinProducto ? sinProducto.motivo : `status ${cmp.status}`);
   } else {
     check("/comparar muestra un precio con €", /\d+,\d{2}\s*€/.test(cmpBody), "no se encontró patrón de precio");
   }

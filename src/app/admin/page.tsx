@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminPushPanel } from "@/components/AdminPushPanel";
 import { StatCard } from "@/components/admin/StatCard";
+import { DailyWorkPanel } from "@/components/admin/DailyWorkPanel";
 
 const EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -68,7 +69,8 @@ export default function AdminDashboardPage() {
   const [secret, setSecret] = useState("");
   const [data, setData] = useState<Dashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   // Cookie-first: la sesión nueva (Sprint 23) viaja en la cookie merch_admin HttpOnly.
   // Si está, /api/admin/dashboard responde sin necesidad de X-Admin-Secret.
@@ -93,17 +95,21 @@ export default function AdminDashboardPage() {
         const json = await res.json();
         if (!alive) return;
         if (!res.ok) {
-          setUsingCookie(false);
-          setError(secret ? json.error || "Error" : null);
-          setData(null);
+          if (res.status === 401 || res.status === 403) {
+            setUsingCookie(false);
+            setData(null);
+            setError("Inicia sesión para consultar las cotizaciones.");
+          } else {
+            setError("No se han podido cargar las cotizaciones. Inténtalo de nuevo.");
+          }
         } else {
           setData(json);
           if (secret) sessionStorage.setItem("merch:admin", secret);
           setError(null);
           setUsingCookie(true);
         }
-      } catch (e) {
-        if (alive) setError(e instanceof Error ? e.message : "Error de red");
+      } catch {
+        if (alive) setError("No se ha podido conectar con el panel. Comprueba la conexión y reintenta.");
       } finally {
         if (alive) setLoading(false);
       }
@@ -114,23 +120,25 @@ export default function AdminDashboardPage() {
       alive = false;
       clearInterval(t);
     };
-  }, [secret]);
+  }, [secret, refreshVersion]);
 
   return (
-    <main className="min-h-screen bg-bone-soft p-8">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen min-w-0 bg-bone-soft px-4 py-6 sm:p-8">
+      <div className="mx-auto min-w-0 max-w-7xl">
         <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink/60">Admin</p>
             <h1 className="mt-1 font-display text-3xl font-semibold text-ink">Panel general</h1>
             {data && (
-              <p className="mt-1 text-xs text-ink/50">
-                Actualizado {new Date(data.generatedAt).toLocaleTimeString("es-ES")} · auto-refresh 60s
-              </p>
+              <p className="mt-2 text-base text-ink/70">Se actualiza cada minuto.</p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <nav className="flex gap-2 text-xs">
+          <div className="w-full min-w-0">
+            <details className="group">
+              <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-line bg-bone px-4 py-3 text-base font-medium text-ink transition-colors duration-150 hover:border-ink/40 active:bg-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-deep">
+                Más herramientas <span aria-hidden="true" className="ml-3 group-open:rotate-180">⌄</span>
+              </summary>
+            <nav aria-label="Todas las herramientas" className="mt-3 flex min-w-0 flex-wrap gap-2 text-base [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:px-4 [&_a]:py-3 [&_a]:transition-colors [&_a]:duration-150 [&_a:active]:bg-line [&_a:focus-visible]:outline [&_a:focus-visible]:outline-2 [&_a:focus-visible]:outline-offset-2 [&_a:focus-visible]:outline-accent-deep">
               <Link href="/admin/cotizar" className="rounded-full bg-social px-3 py-1.5 font-medium text-bone hover:opacity-90">
                 💸 Cotizar
               </Link>
@@ -168,23 +176,29 @@ export default function AdminDashboardPage() {
                 ⚡ Nueva propuesta IA
               </Link>
             </nav>
+            </details>
             {!usingCookie && (
-              <input
-                type="password"
-                placeholder="X-Admin-Secret (legacy)"
-                value={secret}
-                onChange={(e) => setSecret(e.target.value)}
-                className="w-72 rounded-xl border border-line bg-bone px-3 py-2 text-sm outline-none focus:border-accent"
-              />
+              <label className="mt-4 block text-base text-ink/75">
+                Acceso heredado
+                <input
+                  type="password"
+                  placeholder="X-Admin-Secret (legacy)"
+                  value={secret}
+                  onChange={(e) => setSecret(e.target.value)}
+                  className="mt-2 block min-h-11 w-full max-w-sm rounded-xl border border-line bg-bone px-3 py-3 text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-deep"
+                />
+              </label>
             )}
           </div>
         </header>
 
-        {error && <p className="mb-4 rounded-lg bg-accent-wash p-3 text-sm text-accent-deep">⚠ {error}</p>}
-        {!data && loading && <p className="text-sm text-ink/60">Cargando KPIs…</p>}
-        {!data && !secret && !loading && !usingCookie && (
-          <p className="text-sm text-ink/60">Pega tu X-Admin-Secret arriba o inicia sesión en <Link href="/admin/login" className="text-accent hover:underline">/admin/login</Link>.</p>
-        )}
+        <DailyWorkPanel
+          data={data}
+          loading={loading}
+          error={error}
+          loginRequired={!usingCookie && !secret}
+          onRetry={() => setRefreshVersion((value) => value + 1)}
+        />
 
         {data && (
           <>
@@ -222,54 +236,16 @@ export default function AdminDashboardPage() {
               <FunnelBar funnel={data.funnel} />
             </section>
 
-            <div className="mt-10 grid gap-6 lg:grid-cols-2">
-              {/* Stale */}
-              <section className="rounded-3xl border border-line bg-bone p-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-display text-lg font-semibold text-ink">
-                    Pendientes de revisar (más de 24h)
-                  </h2>
-                  <span className="rounded-full bg-accent-wash px-2.5 py-0.5 text-[11px] font-medium text-accent-deep">
-                    {data.staleCarts.length}
-                  </span>
-                </div>
-                {data.staleCarts.length === 0 ? (
-                  <p className="mt-4 text-sm text-ink/60">¡Bien! Todo está al día.</p>
-                ) : (
-                  <ul className="mt-4 space-y-2 text-sm">
-                    {data.staleCarts.map((c) => (
-                      <li key={c.id}>
-                        <Link
-                          href={`/admin/cart-quotes/${c.id}`}
-                          className="flex items-center justify-between gap-3 rounded-lg p-2 hover:bg-bone-soft"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-ink">
-                              {c.name}{c.company && <span className="text-ink/60"> · {c.company}</span>}
-                            </p>
-                            <p className="truncate text-[11px] text-ink/50">
-                              {c.email} · {Math.floor((Date.now() - new Date(c.createdAt).getTime()) / 3.6e6)}h sin tocar
-                            </p>
-                          </div>
-                          <span className="shrink-0 text-xs font-semibold tabular-nums">
-                            {c.estimatedTotalCents != null ? EUR2.format(c.estimatedTotalCents / 100) : "—"}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
+            <div className="mt-10">
               {/* Top productos */}
               <section className="rounded-3xl border border-line bg-bone p-5">
                 <h2 className="font-display text-lg font-semibold text-ink">
                   Top productos cotizados
                 </h2>
                 {data.topItems.length === 0 ? (
-                  <p className="mt-4 text-sm text-ink/60">Aún no hay datos.</p>
+                  <p className="mt-4 text-base text-ink/75">Aún no hay datos.</p>
                 ) : (
-                  <ul className="mt-4 space-y-2 text-sm">
+                  <ul className="mt-4 space-y-2 text-base">
                     {data.topItems.map((it) => (
                       <li key={it.productSlug}>
                         <Link
@@ -296,7 +272,8 @@ export default function AdminDashboardPage() {
             {/* Recientes */}
             <section className="mt-6 rounded-3xl border border-line bg-bone p-5">
               <h2 className="font-display text-lg font-semibold text-ink">Últimos carritos recibidos</h2>
-              <table className="mt-4 w-full text-sm">
+              <div className="mt-4 overflow-x-auto rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-deep" role="region" aria-label="Últimos carritos, tabla desplazable" tabIndex={0}>
+              <table className="w-full min-w-[640px] text-base">
                 <thead>
                   <tr className="text-left text-[10px] uppercase tracking-wider text-ink/50">
                     <th className="pb-2 font-medium">Fecha</th>
@@ -333,6 +310,7 @@ export default function AdminDashboardPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </section>
 
             <div className="mt-6">
@@ -377,19 +355,19 @@ function FunnelBar({
                 ? "bg-accent text-bone"
                 : "bg-ink/10 text-ink";
         return (
-          <div key={o.key} className="flex items-center gap-3">
-            <span className="w-32 shrink-0 text-right text-xs uppercase tracking-wider text-ink/60">
+          <div key={o.key} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[8rem_minmax(0,1fr)_8rem]">
+            <span className="text-base text-ink/75 sm:text-right">
               {o.label}
             </span>
-            <div className="flex-1">
+            <div className="col-span-2 row-start-2 min-w-0 sm:col-span-1 sm:row-start-auto">
               <div
-                className={`flex h-7 items-center rounded-full px-3 text-xs font-medium tabular-nums ${barClass}`}
+                className={`flex min-h-8 min-w-fit items-center whitespace-nowrap rounded-full px-3 py-1 text-base font-medium tabular-nums ${barClass}`}
                 style={{ width: `${width}%` }}
               >
                 {f.count} {f.count === 1 ? "carrito" : "carritos"}
               </div>
             </div>
-            <span className="w-32 shrink-0 text-right text-xs tabular-nums text-ink/60">
+            <span className="col-start-2 row-start-1 text-right text-base tabular-nums text-ink/75 sm:col-start-3">
               {EUR.format((f.accepted || f.estimated) / 100)}
             </span>
           </div>

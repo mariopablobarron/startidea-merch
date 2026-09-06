@@ -24,6 +24,7 @@ import { escapeTgHtml, notifyTelegram } from "@/lib/telegram";
 import { provinciaFromPostalCodeOrCity } from "@/lib/spain-postal-code";
 import { claimSupplierOrder, releaseSupplierOrderClaim } from "@/lib/supplier-order-claim";
 import { resolveSupplierOrderVariants } from "@/lib/supplier-order-variant";
+import { paymentItemsFingerprint } from "@/lib/payment-quote-fingerprint";
 
 export type CifraAutoOrderResult =
   | { ok: true; orderId: string }
@@ -44,7 +45,7 @@ function liveOrdersEnabled(): boolean {
 
 const SUPPLIER = "cifra";
 
-export async function autoPlaceCifraOrder(cartId: string): Promise<CifraAutoOrderResult> {
+export async function autoPlaceCifraOrder(cartId: string, expectedItemsFingerprint?: string): Promise<CifraAutoOrderResult> {
   if (!autoEnabled()) {
     return { skipped: true, reason: "CIFRA_AUTO_PLACE_ON_PAYMENT=false" };
   }
@@ -60,7 +61,7 @@ export async function autoPlaceCifraOrder(cartId: string): Promise<CifraAutoOrde
 
   const contacto = { hecho: false };
   try {
-    return await cursarPedidoCifra(cartId, contacto);
+    return await cursarPedidoCifra(cartId, contacto, expectedItemsFingerprint);
   } finally {
     if (!contacto.hecho) await releaseSupplierOrderClaim(SUPPLIER, cartId);
   }
@@ -69,15 +70,19 @@ export async function autoPlaceCifraOrder(cartId: string): Promise<CifraAutoOrde
 async function cursarPedidoCifra(
   cartId: string,
   contacto: { hecho: boolean },
+  expectedItemsFingerprint?: string,
 ): Promise<CifraAutoOrderResult> {
   const cart = await prisma.cartQuote.findUnique({
     where: { id: cartId },
     include: {
-      items: true,
+      items: { include: { markings: true } },
       purchaseOrders: { where: { supplier: "cifra" } },
     },
   });
   if (!cart) return { ok: false, error: "Cart no encontrado" };
+  if (expectedItemsFingerprint && paymentItemsFingerprint(cart.items) !== expectedItemsFingerprint) {
+    return { ok: false, error: "La versión del presupuesto cambió; revisar antes de cursar el pedido" };
+  }
   if (cart.items.length === 0) return { skipped: true, reason: "Cart vacío" };
 
   const cifraPO = cart.purchaseOrders[0];

@@ -20,6 +20,16 @@
  * No es cosmético — se diagnostica con esto delante, y ya indujo al menos dos
  * conclusiones equivocadas al investigar syncs que no habían corrido.
  *
+ * ⚠️ ESTE FICHERO NO ES SOLO DOCUMENTACIÓN — es parte del camino de ejecución
+ * de los crons del VPS. `merch-cron-runner.sh` no pega a `/api/cron/<x>`: pega
+ * a `/api/admin/crons/trigger/<etiqueta>`, y esa ruta resuelve **endpoint y
+ * método desde aquí** (`findCron`), devolviendo 404 si la etiqueta no figura.
+ * Consecuencias que conviene tener presentes al editar:
+ *   - una entrada que falte ⇒ ese cron del crontab **no corre ningún día**
+ *     (solo lo delata el aviso de Telegram del runner y `audit-crons-vps.sh`);
+ *   - un `endpointPath` equivocado ⇒ el cron diario dispara **otra cosa**, sin
+ *     que la línea del crontab lo delate: su tercer argumento es decorativo.
+ *
  * Regla: en `schedule`, escribir SIEMPRE de dónde sale la hora. Los del VPS como
  * `"diario 04:00 local VPS = 02:00 UTC"`; los de GitHub Actions, `"… UTC
  * (GitHub Actions)"`. `scheduleCron` copia LITERAL la expresión de su origen
@@ -127,7 +137,7 @@ export const CRON_CATALOG: CronEntry[] = [
     schedule: "cada 15 min (crontab del VPS, hora local)",
     scheduleCron: "*/15 * * * *",
     frequencyHours: 0.25,
-    description: "Reintenta webhook deliveries fallidos",
+    description: "Recupera entregas de webhooks y tareas pendientes tras pagos confirmados",
   },
   {
     name: "tariff-coverage-watchdog",
@@ -137,6 +147,22 @@ export const CRON_CATALOG: CronEntry[] = [
     scheduleCron: "30 7 * * *",
     frequencyHours: 24,
     description: "Vigila productos activos con técnica pero sin tarifa (cotización manual) y alerta si supera umbral",
+  },
+  {
+    name: "supplier-ref-en-descripcion",
+    endpointPath: "/api/cron/supplier-ref-en-descripcion",
+    method: "POST",
+    // Programada el 2026-09-05 en el mismo run que la desplegó, junto con su
+    // línea del crontab del VPS (`audit-crons-vps.sh` compara las dos: cambiar
+    // solo una de ellas rompe la auditoría). Hueco elegido a las 07:40 locales:
+    // los tres syncs de proveedor han cerrado ya (el último, makito, sobre las
+    // 06:20) y el minuto está libre — el vecino más cercano es
+    // `tariff-coverage-watchdog` a las 07:30, que es de su misma familia:
+    // vigilancia diaria que avisa en flanco de subida.
+    schedule: "diario 07:40 local VPS = 05:40 UTC",
+    scheduleCron: "40 7 * * *",
+    frequencyHours: 24,
+    description: "Vigila fichas activas cuya descripción pública publica una referencia del catálogo del proveedor",
   },
   {
     name: "auto-proposal",
@@ -308,6 +334,128 @@ export const CRON_CATALOG: CronEntry[] = [
     frequencyHours: 168,
     description:
       "Watchdog de overrides de precio desfasados: avisa si el neto del proveedor subio y el PVP fijado quedo con margen <30% (o bajo coste)",
+  },
+  // ── Crons disparados por GitHub Actions (UTC), añadidos el 2026-09-01 ──────
+  //
+  // Los nueve de abajo llevaban tiempo corriendo SIN estar en este catálogo.
+  // No estaban desatendidos —`listCronNames()` los recoge en cuanto han pasado
+  // una vez por `wrapCronHandler`, y `silenceWatchability()` trata como
+  // vigilable lo que no conoce—, pero sí les faltaba lo que este fichero da:
+  // salir en /admin/system/crons y, sobre todo, poder **relanzarse a mano**
+  // desde /api/admin/crons/trigger/[name], que responde 404 a lo que no está
+  // aquí.
+  //
+  // El día que lo demostró: el 2026-09-01 el disparo de `metric-snapshot`
+  // falló (tres intentos, la petición no llegó a salir del runner de GitHub) y
+  // la fila de ese día se perdió para siempre — el snapshot NO se puede
+  // reconstruir a posteriori, porque `views30d`/`cartAdds30d` salen de
+  // contadores rodantes que el rollup resetea. Con la entrada puesta, ese
+  // agujero se cierra con un clic el mismo día en vez de quedarse abierto.
+  //
+  // `frequencyHours` NO cambia el aviso por silencio: `expectedHoursFor()` da
+  // prioridad a `EXPECTED_HOURS_OVERRIDE` en cron-staleness.ts, que ya cubre a
+  // siete de estos nueve. Se deja así a propósito: añadir catálogo no debe
+  // mover ningún umbral de alerta.
+  {
+    name: "metric-snapshot",
+    endpointPath: "/api/cron/metric-snapshot",
+    method: "POST",
+    // Mudado de GitHub Actions al crontab del VPS el 2026-09-01. Lee los
+    // contadores rodantes que deja `product-view-rollup`, así que tiene que
+    // correr DESPUÉS que él: van a 06:40 y 06:50 para que el orden esté
+    // garantizado por el disparador y no por la suerte. El porqué de la
+    // mudanza, en la entrada de `product-view-rollup`.
+    schedule: "diario 06:50 local VPS = 04:50 UTC",
+    scheduleCron: "50 6 * * *",
+    frequencyHours: 24,
+    description:
+      "Guarda el snapshot diario de KPIs en MetricSnapshot (grafica historica) y purga los de mas de 180 dias",
+  },
+  {
+    name: "product-view-rollup",
+    endpointPath: "/api/cron/product-view-rollup",
+    method: "POST",
+    // Mudado de GitHub Actions al crontab del VPS el 2026-09-01. Medido ese
+    // día: desde la caída de Actions del 26-ago GitHub entrega los `schedule`
+    // con 5-12 h de retraso y no ha vuelto (su estado dice `operational`).
+    // Este par declaraba 03:30 y 03:35 UTC —5 min de colchón para que el
+    // rollup corriera antes que el snapshot— y acabó disparándose los dos en
+    // el mismo minuto. 06:40 deja además ~23 min tras el final de makito-sync
+    // (06:02 + ~15 min), que es lo que pedía el "después de los syncs".
+    schedule: "diario 06:40 local VPS = 04:40 UTC",
+    scheduleCron: "40 6 * * *",
+    frequencyHours: 24,
+    description:
+      "Mantenimiento diario de ProductView: recalcula las ventanas rodantes de 30 dias antes del snapshot",
+  },
+  {
+    name: "makito-marking-enrich",
+    endpointPath: "/api/cron/makito-marking-enrich",
+    method: "POST",
+    schedule: "diario 02:15 UTC (GitHub Actions)",
+    scheduleCron: "15 2 * * *",
+    frequencyHours: 24,
+    description:
+      "Sustituye las posiciones de marcaje virtuales por las reales del API del proveedor",
+  },
+  {
+    name: "auto-resolve-errors",
+    endpointPath: "/api/cron/auto-resolve-errors",
+    method: "POST",
+    schedule: "diario 04:15 UTC (GitHub Actions)",
+    scheduleCron: "15 4 * * *",
+    frequencyHours: 24,
+    description:
+      "Marca como resueltos los ErrorEvent con >=30 dias sin ocurrencias nuevas de la misma firma",
+  },
+  {
+    name: "ai-usage-alert",
+    endpointPath: "/api/cron/ai-usage-alert",
+    method: "POST",
+    schedule: "diario 10:00 UTC (GitHub Actions)",
+    scheduleCron: "0 10 * * *",
+    frequencyHours: 24,
+    description:
+      "Computa el coste de IA del dia anterior y avisa al admin si supera el umbral",
+  },
+  {
+    name: "cron-watchdog",
+    endpointPath: "/api/cron/cron-watchdog",
+    method: "POST",
+    schedule: "diario 11:00 UTC (GitHub Actions)",
+    scheduleCron: "0 11 * * *",
+    frequencyHours: 24,
+    description:
+      "Vigila que ningun cron lleve mas de lo esperado sin correr. Se excluye de su propio recorrido: su salud la mira evaluateWatchdogSelfRun",
+  },
+  {
+    name: "insights-digest",
+    endpointPath: "/api/cron/insights-digest",
+    method: "POST",
+    schedule: "semanal lunes 08:00 UTC (GitHub Actions)",
+    scheduleCron: "0 8 * * 1",
+    frequencyHours: 168,
+    description: "Email semanal al admin con el resumen de /admin/insights",
+  },
+  {
+    name: "insights-digest-monthly",
+    endpointPath: "/api/cron/insights-digest-monthly",
+    method: "POST",
+    schedule: "mensual dia 1 a las 09:00 UTC (GitHub Actions)",
+    scheduleCron: "0 9 1 * *",
+    frequencyHours: 720,
+    description:
+      "Email mensual al admin comparando los KPIs del mes cerrado con el anterior",
+  },
+  {
+    name: "competitor-watch",
+    endpointPath: "/api/cron/competitor-watch",
+    method: "POST",
+    schedule: "semanal lunes 06:00 UTC (GitHub Actions)",
+    scheduleCron: "0 6 * * 1",
+    frequencyHours: 168,
+    description:
+      "Compara PVP y marcaje con los de la competencia y propone subir o bajar respetando el suelo de coste",
   },
 ];
 
