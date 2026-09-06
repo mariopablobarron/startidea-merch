@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
     padding: 36,
     fontFamily: "Helvetica",
     fontSize: 10,
-    color: "#1a1a1a",
+    color: "#231f27",
   },
   header: {
     flexDirection: "row",
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   table: { marginTop: 6, borderWidth: 0.5, borderColor: "#e6e1d6" },
   trHeader: {
     flexDirection: "row",
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#231f27",
     paddingVertical: 4,
     paddingHorizontal: 6,
   },

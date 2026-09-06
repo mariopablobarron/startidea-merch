@@ -8,11 +8,11 @@ function escapeHtml(s: string) {
 }
 
 const COLORS = {
-  ink: "#2A2A2A",
-  bone: "#F4EFE6",
+  ink: "#231F27",
+  bone: "#FFFFFF",
   boneSoft: "#FFFFFF",
-  accent: "#E63E73",
-  accentSoft: "#FBDFE9",
+  accent: "#C41D51",
+  accentSoft: "#F8DCE6",
   divider: "#E8E2D5",
   social: "#4a9d7f",
 } as const;
@@ -40,12 +40,12 @@ ${preheader ? `<div style="display:none;font-size:1px;line-height:1px;max-height
   <tr><td align="center">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:${COLORS.boneSoft};border-radius:16px;overflow:hidden">
       ${content}
-      <tr><td style="background:${COLORS.ink};padding:20px 40px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6">
+      <tr><td style="background:${COLORS.ink};padding:20px 40px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6">
         <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px">
           todo<span style="color:${COLORS.accent}">merchandising</span>
         </p>
         <p style="margin:6px 0 0">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
-        ${opts?.unsubscribeUrl ? `<p style="margin:6px 0 0"><a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:rgba(244,239,230,0.7);text-decoration:underline">Darme de baja</a></p>` : ""}
+        ${opts?.unsubscribeUrl ? `<p style="margin:6px 0 0"><a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:rgba(255,255,255,0.7);text-decoration:underline">Darme de baja</a></p>` : ""}
       </td></tr>
     </table>
   </td></tr>

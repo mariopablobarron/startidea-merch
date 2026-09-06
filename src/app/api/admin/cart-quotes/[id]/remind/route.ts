@@ -119,7 +119,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .map(
       (it) => `
       <tr>
-        <td style="padding:12px 0;border-bottom:1px solid #E8E2D5;font-size:14px;color:#2A2A2A;">
+        <td style="padding:12px 0;border-bottom:1px solid #E8E2D5;font-size:14px;color:#231F27;">
           <strong>${it.quantity}×</strong> ${escapeHtml(it.productName)}
         </td>
         <td style="padding:12px 0;border-bottom:1px solid #E8E2D5;text-align:right;font-size:14px;color:#6b6b6b;font-weight:600;white-space:nowrap;">
@@ -133,12 +133,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     ? `
     <tr>
       <td style="padding:18px 0 0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Total estimado</td>
-      <td style="padding:18px 0 0;text-align:right;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#E63E73;">${EUR.format(cart.estimatedTotalCents / 100)}</td>
+      <td style="padding:18px 0 0;text-align:right;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#C41D51;">${EUR.format(cart.estimatedTotalCents / 100)}</td>
     </tr>`
     : "";
 
   const customBlock = body.customMessage
-    ? `<tr><td style="padding:20px 40px 0"><div style="padding:16px;background:#FBDFE9;border-left:3px solid #E63E73;border-radius:8px;font-size:14px;line-height:1.5;color:#2A2A2A;">${escapeHtml(body.customMessage)}</div></td></tr>`
+    ? `<tr><td style="padding:20px 40px 0"><div style="padding:16px;background:#F8DCE6;border-left:3px solid #C41D51;border-radius:8px;font-size:14px;line-height:1.5;color:#231F27;">${escapeHtml(body.customMessage)}</div></td></tr>`
     : "";
 
   const subject =
@@ -165,7 +165,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         emailButton(recoverUrl, "Retomar mi cotización →") +
         `<tr><td style="padding:0 40px;text-align:center">
           <p style="margin:0;font-size:13px;color:#6b6b6b;line-height:1.5">Si necesitas mockup técnico, plazo cerrado o condiciones especiales, te lo cerramos en menos de 24h laborables.</p>
-          <p style="margin:12px 0 0;font-size:14px"><a href="https://wa.me/34958045789" style="color:#2A2A2A;text-decoration:none;border-bottom:1px solid #E63E73;padding-bottom:1px">WhatsApp +34 958 045 789</a></p>
+          <p style="margin:12px 0 0;font-size:14px"><a href="https://wa.me/34958045789" style="color:#231F27;text-decoration:none;border-bottom:1px solid #C41D51;padding-bottom:1px">WhatsApp +34 958 045 789</a></p>
         </td></tr>` +
         emailFinePrint(`Si no quieres más recordatorios, responde "BAJA" a este email.`),
       "Tu cotización sigue guardada — retómala cuando quieras",

@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 /*
-  Tipografía oficial Manual Startidea v1.0
-  Las CSS vars vienen de next/font (Montserrat + Alternates) seteadas en
-  <html className> en layout.tsx. Aquí solo definimos fallbacks.
+  Tipografía oficial Manual Startidea v1.0: Montserrat en titulares, Inter en
+  texto. Las CSS vars las setea next/font en <html className> (layout.tsx);
+  esto es solo el fallback para cuando la fuente local aún no ha cargado.
 */
 :root {
-  --font-sans: "Montserrat", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Montserrat Alternates", "Montserrat", system-ui, sans-serif;
 }
 

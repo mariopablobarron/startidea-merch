@@ -64,7 +64,7 @@ export async function ActivePromotionBar() {
   return (
     <div
       className="border-y border-bone/20 text-bone"
-      style={{ background: promo.badgeColor || "#E63E73" }}
+      style={{ background: promo.badgeColor || "#C41D51" }}
     >
       <div className="mx-auto flex max-w-8xl flex-wrap items-center justify-between gap-3 px-6 py-3 text-sm lg:px-10">
         <p className="flex flex-wrap items-center gap-3">

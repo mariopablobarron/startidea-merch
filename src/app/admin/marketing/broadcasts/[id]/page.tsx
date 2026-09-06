@@ -59,61 +59,61 @@ type AvailableTag = { tag: string; count: number };
 type AvailableSource = { source: string; count: number };
 
 // Plantillas-arranque: el envío aplica automáticamente el wrap Startidea
-// (crema + card blanca + footer oscuro). Aquí sólo el cuerpo editable.
+// (papel blanco + card + pie oscuro). Aquí sólo el cuerpo editable.
 const TEMPLATES = {
   blank: { subject: "", html: "" },
   promo: {
     subject: "Promoción por volumen para tu próximo pedido",
     html: `<p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Promoción activa</p>
-<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
   Hola {{firstName}}.<br>
-  <span style="color:#E63E73;">-15% por volumen este mes.</span>
+  <span style="color:#C41D51;">-15% por volumen este mes.</span>
 </h1>
 <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
   Si tienes evento, lanzamiento o cierre de Q a la vista, aplicamos un -15% sobre
   cualquier pedido superior a 250 unidades. Cotización cerrada en menos de 24h.
 </p>
-<div style="margin:24px 0;background:#FBDFE9;border:2px dashed #E63E73;padding:20px;text-align:center;border-radius:12px;">
+<div style="margin:24px 0;background:#F8DCE6;border:2px dashed #C41D51;padding:20px;text-align:center;border-radius:12px;">
   <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Tu cupón este mes</p>
-  <p style="margin:8px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#E63E73;letter-spacing:0.05em;">VOLUMEN15</p>
+  <p style="margin:8px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#C41D51;letter-spacing:0.05em;">VOLUMEN15</p>
   <p style="margin:8px 0 0;font-size:12px;color:#6b6b6b;">Válido en pedidos &gt; 250 uds · este mes</p>
 </div>
 <p style="margin:24px 0;text-align:center;">
-  <a href="https://merchandising.startidea.es/catalogo" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver catálogo →</a>
+  <a href="https://merchandising.startidea.es/catalogo" style="display:inline-block;background:#C41D51;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver catálogo →</a>
 </p>`,
   },
   novedad: {
     subject: "Novedades en catálogo que pueden encajar con vuestra próxima campaña",
     html: `<p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Nuevos en catálogo</p>
-<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
   Hola {{firstName}}.<br>
-  <span style="color:#E63E73;">Hemos sumado tres referencias.</span>
+  <span style="color:#C41D51;">Hemos sumado tres referencias.</span>
 </h1>
 <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
   Tres productos nuevos que pueden encajar con vuestra próxima campaña corporativa:
 </p>
 <table style="width:100%;border-collapse:separate;border-spacing:0 8px;margin:16px 0 0;">
-  <tr><td style="background:#F4EFE6;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.5;color:#2A2A2A;">
+  <tr><td style="background:#FFFFFF;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.5;color:#231F27;">
     <strong>Termos térmicos doble pared</strong><br>
     <span style="color:#6b6b6b;font-size:13px;">Láser hasta 4 colores · desde 4,50 €/ud</span>
   </td></tr>
-  <tr><td style="background:#F4EFE6;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.5;color:#2A2A2A;">
+  <tr><td style="background:#FFFFFF;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.5;color:#231F27;">
     <strong>Mochilas RPET reciclado</strong><br>
     <span style="color:#6b6b6b;font-size:13px;">Capacidad 18 L · etiqueta GRS · desde 8 €/ud</span>
   </td></tr>
-  <tr><td style="background:#F4EFE6;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.5;color:#2A2A2A;">
+  <tr><td style="background:#FFFFFF;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.5;color:#231F27;">
     <strong>Polos técnicos algodón orgánico</strong><br>
     <span style="color:#6b6b6b;font-size:13px;">Bordado o DTF · desde 9 €/ud</span>
   </td></tr>
 </table>
 <p style="margin:24px 0;text-align:center;">
-  <a href="https://merchandising.startidea.es/catalogo?sort=recent" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver novedades →</a>
+  <a href="https://merchandising.startidea.es/catalogo?sort=recent" style="display:inline-block;background:#C41D51;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Ver novedades →</a>
 </p>`,
   },
   recordatorio: {
     subject: "Una pregunta rápida sobre vuestro próximo merchandising",
     html: `<p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Hace tiempo que no hablamos</p>
-<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
   Hola {{firstName}}.<br>
   <span style="color:#a09e98;">¿Hay próxima campaña en mente?</span>
 </h1>
@@ -123,7 +123,7 @@ const TEMPLATES = {
   tarifas en menos de 24h laborables.
 </p>
 <p style="margin:24px 0;text-align:center;">
-  <a href="https://merchandising.startidea.es/cotizar" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Pedir cotización →</a>
+  <a href="https://merchandising.startidea.es/cotizar" style="display:inline-block;background:#C41D51;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Pedir cotización →</a>
 </p>
 <p style="margin:16px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;text-align:center;">
   Si prefieres hablar antes, responde a este email y te marcamos.
@@ -132,9 +132,9 @@ const TEMPLATES = {
   reactivar: {
     subject: "¿Seguimos en contacto?",
     html: `<p style="margin:0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#6b6b6b;">— Queremos respetar tu bandeja</p>
-<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#2A2A2A;">
+<h1 style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;color:#231F27;">
   Hola {{firstName}}.<br>
-  <span style="color:#E63E73;">¿Te seguimos escribiendo?</span>
+  <span style="color:#C41D51;">¿Te seguimos escribiendo?</span>
 </h1>
 <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#444;">
   Hace tiempo que no sabemos de ti, y no queremos llenar tu bandeja si ya no te
@@ -143,7 +143,7 @@ const TEMPLATES = {
   Empleo de Granada—, solo tienes que echar un vistazo:
 </p>
 <p style="margin:24px 0;text-align:center;">
-  <a href="https://merchandising.startidea.es/catalogo?utm_source=newsletter&utm_medium=email&utm_campaign=reactivacion" style="display:inline-block;background:#E63E73;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Sí, sigo interesado/a →</a>
+  <a href="https://merchandising.startidea.es/catalogo?utm_source=newsletter&utm_medium=email&utm_campaign=reactivacion" style="display:inline-block;background:#C41D51;color:#FFFFFF;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;">Sí, sigo interesado/a →</a>
 </p>
 <p style="margin:16px 0 0;font-size:13px;color:#6b6b6b;line-height:1.5;text-align:center;">
   Si no haces nada, no pasa nada: dejaremos de escribirte pronto para no molestar.
@@ -706,7 +706,7 @@ export default function BroadcastEditorPage({
               />
             </div>
             <p className="mt-2 text-[11px] text-ink/50 leading-relaxed">
-              El cuerpo se envuelve automáticamente en el template Startidea (crema,
+              El cuerpo se envuelve automáticamente en el template Startidea (papel,
               card blanca, footer con marca y baja). Si quieres mandar HTML 100% custom,
               escribe el doc completo empezando por <code>&lt;!doctype html&gt;</code>.
             </p>
@@ -727,15 +727,15 @@ function previewWithStartideaWrap(bodyHtml: string): string {
   const isFullDoc = /^<!doctype/i.test(trimmed) || /^<html[\s>]/i.test(trimmed);
   if (isFullDoc) return bodyHtml;
   return `
-<div style="background:#F4EFE6;padding:24px 16px;font-family:Helvetica,Arial,sans-serif;color:#2A2A2A;">
+<div style="background:#FFFFFF;padding:24px 16px;font-family:Helvetica,Arial,sans-serif;color:#231F27;">
   <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;">
     <div style="padding:32px 32px 8px;">
 ${bodyHtml}
     </div>
-    <div style="background:#2A2A2A;padding:20px 32px;color:rgba(244,239,230,0.7);font-size:11px;line-height:1.6;">
-      <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#E63E73;">merchandising</span></p>
+    <div style="background:#231F27;padding:20px 32px;color:rgba(255,255,255,0.7);font-size:11px;line-height:1.6;">
+      <p style="margin:0;color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:16px;">todo<span style="color:#C41D51;">merchandising</span></p>
       <p style="margin:6px 0 0;">STARTIDEA MALAGA SL · CIF B19583632 · Granada · pedidos@startidea.es</p>
-      <p style="margin:6px 0 0;color:rgba(244,239,230,0.5);">Darme de baja</p>
+      <p style="margin:6px 0 0;color:rgba(255,255,255,0.5);">Darme de baja</p>
     </div>
   </div>
 </div>`;

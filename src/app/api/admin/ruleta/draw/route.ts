@@ -122,7 +122,7 @@ export async function POST(req: Request) {
         html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
           <h2 style="font-family:Georgia,serif;">¡Enhorabuena${winner.name ? `, ${winner.name.split(" ")[0]}` : ""}!</h2>
           <p>Has ganado el <strong>sorteo del mes</strong> de TodoMerchandising. En breve te contactamos por este email para darte los detalles de tu premio.</p>
-          <p style="text-align:center;margin:24px 0;"><a href="${SITE_URL}/catalogo" style="background:#E63E73;color:white;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Ver el catálogo →</a></p>
+          <p style="text-align:center;margin:24px 0;"><a href="${SITE_URL}/catalogo" style="background:#C41D51;color:white;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Ver el catálogo →</a></p>
           <p style="color:#6b6b6b;font-size:12px;margin-top:32px;">STARTIDEA MALAGA SL · CIF B19583632 · pedidos@startidea.es</p>
         </div>`,
       });

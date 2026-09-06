@@ -44,21 +44,21 @@ function welcomeHtml(opts: {
   const firstName = name ? ` ${name.split(" ")[0]}` : "";
 
   const rewardBlock = code
-    ? `<div style="margin:24px 0;padding:20px;border:2px dashed #E63E73;border-radius:16px;text-align:center;background:#FBE9F0;">
-        <p style="margin:0;font-size:11px;font-weight:600;color:#A02049;text-transform:uppercase;letter-spacing:1px;">Tu premio — ${prize.label}</p>
-        <p style="margin:12px 0 4px;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#E63E73;letter-spacing:2px;">${code}</p>
+    ? `<div style="margin:24px 0;padding:20px;border:2px dashed #C41D51;border-radius:16px;text-align:center;background:#FBE9F0;">
+        <p style="margin:0;font-size:11px;font-weight:600;color:#8F1039;text-transform:uppercase;letter-spacing:1px;">Tu premio — ${prize.label}</p>
+        <p style="margin:12px 0 4px;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#C41D51;letter-spacing:2px;">${code}</p>
         <p style="margin:0;font-size:12px;color:#666;">Aplícalo en tu primer pedido. Un solo uso · válido ${COUPON_DAYS} días.</p>
       </div>
       <p style="text-align:center;margin:20px 0;">
-        <a href="${SITE_URL}/catalogo" style="background:#E63E73;color:white;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Empezar a configurar mi pedido →</a>
+        <a href="${SITE_URL}/catalogo" style="background:#C41D51;color:white;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Empezar a configurar mi pedido →</a>
       </p>`
-    : `<div style="margin:24px 0;padding:20px;border:2px dashed #E63E73;border-radius:16px;background:#FBE9F0;">
-        <p style="margin:0;font-size:11px;font-weight:600;color:#A02049;text-transform:uppercase;letter-spacing:1px;">Tu premio</p>
-        <p style="margin:8px 0 6px;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#E63E73;">${prize.label}</p>
+    : `<div style="margin:24px 0;padding:20px;border:2px dashed #C41D51;border-radius:16px;background:#FBE9F0;">
+        <p style="margin:0;font-size:11px;font-weight:600;color:#8F1039;text-transform:uppercase;letter-spacing:1px;">Tu premio</p>
+        <p style="margin:8px 0 6px;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#C41D51;">${prize.label}</p>
         <p style="margin:0;font-size:13px;color:#555;">${prize.perkNote ?? "Menciona este email al hacer tu pedido y te lo aplicamos."}</p>
       </div>
       <p style="text-align:center;margin:20px 0;">
-        <a href="${SITE_URL}/catalogo" style="background:#E63E73;color:white;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Ver el catálogo →</a>
+        <a href="${SITE_URL}/catalogo" style="background:#C41D51;color:white;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Ver el catálogo →</a>
       </p>`;
 
   return `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#0a0a0b;">
@@ -66,7 +66,7 @@ function welcomeHtml(opts: {
     <p>Gracias por girar la ruleta de TodoMerchandising. Este es tu premio:</p>
     ${rewardBlock}
     <p>Una vez al mes te mandamos un email corto con casos reales y novedades. Sin spam.</p>
-    <p style="font-size:13px;color:#6b6b6b;">¿Prefieres no recibirlos? Te das de baja con un click <a href="${unsubUrl}" style="color:#E63E73;">aquí</a>.</p>
+    <p style="font-size:13px;color:#6b6b6b;">¿Prefieres no recibirlos? Te das de baja con un click <a href="${unsubUrl}" style="color:#C41D51;">aquí</a>.</p>
     <p style="color:#6b6b6b;font-size:12px;margin-top:32px;">STARTIDEA MALAGA SL · CIF B19583632 · pedidos@startidea.es</p>
   </div>`;
 }

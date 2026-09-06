@@ -103,7 +103,7 @@ export async function GET() {
       kind: p.kind,
       value: p.value,
       badge: getBadgeText(p),
-      badge_color: p.badgeColor || "#E63E73",
+      badge_color: p.badgeColor || "#C41D51",
       scope: p.scope,
       target_names,
       target_links,

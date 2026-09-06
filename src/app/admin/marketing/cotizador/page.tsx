@@ -23,17 +23,17 @@ type Settings = {
   showOnHome: boolean;
 };
 
-const DEFAULT_AUTO_HTML = `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#2A2A2A;">
-  <h2 style="font-family:Georgia,serif;color:#2A2A2A;">Hola {firstName},</h2>
+const DEFAULT_AUTO_HTML = `<div style="font-family:-apple-system,sans-serif;max-width:560px;color:#231F27;">
+  <h2 style="font-family:Georgia,serif;color:#231F27;">Hola {firstName},</h2>
   <p>Hemos recibido tu solicitud de cotización. Estamos revisándola y te enviaremos respuesta en menos de {hours} horas laborables.</p>
   <p>Mientras tanto puedes:</p>
   <ul>
-    <li><a href="https://merchandising.startidea.es/recursos" style="color:#E63E73;">Descargar nuestras guías</a></li>
-    <li><a href="https://merchandising.startidea.es/trabajos" style="color:#E63E73;">Ver trabajos realizados</a></li>
+    <li><a href="https://merchandising.startidea.es/recursos" style="color:#C41D51;">Descargar nuestras guías</a></li>
+    <li><a href="https://merchandising.startidea.es/trabajos" style="color:#C41D51;">Ver trabajos realizados</a></li>
   </ul>
   <p>Si es urgente, contesta a este email o escríbenos por WhatsApp.</p>
   <p>Un saludo,<br>El equipo de TodoMerchandising</p>
-  <hr style="border:none;border-top:1px solid #EAE3D3;margin:32px 0;">
+  <hr style="border:none;border-top:1px solid #E7E2E6;margin:32px 0;">
   <p style="color:#888;font-size:11px;">STARTIDEA MALAGA SL · CIF B19583632 · Granada</p>
 </div>`;
 

@@ -34,7 +34,7 @@ export type ConfettiOptions = {
 };
 
 const DEFAULT_COLORS = [
-  "#E63E73", // magenta brand
+  "#C41D51", // magenta brand
   "#F472B6", // magenta light
   "#FBBF24", // amber accent
   "#F5F0E6", // bone

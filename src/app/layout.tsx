@@ -21,14 +21,20 @@ import { VoiceAgentGate } from "@/components/VoiceAgentGate";
 import { FloatingSurfaceCoordinator } from "@/components/FloatingSurfaceCoordinator";
 import { floatingSurfacePriorityCss } from "@/lib/floating-surfaces";
 
-// Tipografía oficial Manual de identidad Startidea v1.0
-// Montserrat para todo el sistema · Alternates solo display (h1, citas).
-// Fuentes auto-alojadas (subset latin descargado de Google Fonts el 11-jun-2026).
-// next/font/google descargaba en CADA build: dos builds cayeron por timeouts
-// de la red del VPS hacia fonts.googleapis.com. Con next/font/local el build
-// no toca la red. Montserrat es fuente variable (un archivo cubre 400-700).
-const montserrat = localFont({
-  src: "../fonts/montserrat-latin-var.woff2",
+// Tipografía oficial Manual de identidad Startidea v1.0:
+// **Montserrat en titulares, Inter en texto**. Hasta ahora Montserrat hacía las
+// dos cosas; en párrafos largos cansa, y no es lo que dicen ni el manual ni los
+// presupuestos que ya se mandan a cliente.
+//
+// Fuentes auto-alojadas (subsets latin y latin-ext). next/font/google descargaba
+// en CADA build: dos builds cayeron por timeouts de la red del VPS hacia
+// fonts.googleapis.com. Con next/font/local el build no toca la red. Las dos son
+// variables: un archivo cubre 400-700.
+const inter = localFont({
+  src: [
+    { path: "../fonts/inter-latin.woff2" },
+    { path: "../fonts/inter-latin-ext.woff2" },
+  ],
   weight: "400 700",
   variable: "--font-sans",
   display: "swap",
@@ -40,6 +46,14 @@ const montserratAlt = localFont({
     { path: "../fonts/montserrat-alt-latin-700.woff2", weight: "700" },
   ],
   variable: "--font-display",
+  display: "swap",
+});
+// Montserrat variable sigue cargada: la usan los titulares que piden peso
+// intermedio y es el fallback de `font-display`.
+const montserrat = localFont({
+  src: "../fonts/montserrat-latin-var.woff2",
+  weight: "400 700",
+  variable: "--font-montserrat",
   display: "swap",
 });
 
@@ -94,13 +108,13 @@ export const metadata: Metadata = {
 // Next.js 15 movió themeColor, viewport y colorScheme a un export aparte.
 // Antes vivía en `metadata.themeColor` (deprecated en 14, warning en 15).
 export const viewport: Viewport = {
-  themeColor: "#F4EFE6", // crema — fondo por defecto manual Startidea
+  themeColor: "#FFFFFF", // blanco — el papel del manual v1.0
   viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${montserrat.variable} ${montserratAlt.variable}`}>
+    <html lang="es" className={`${inter.variable} ${montserratAlt.variable} ${montserrat.variable}`}>
       <head>
         <style>{floatingSurfacePriorityCss()}</style>
         {/* Umami: solo `dns-prefetch`, NO `preconnect`.

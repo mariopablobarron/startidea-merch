@@ -889,7 +889,7 @@ export default async function CatalogoPage({
                                   <span
                                     className="rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-bone shadow"
                                     style={{
-                                      background: badgePromo.badgeColor || "#E63E73",
+                                      background: badgePromo.badgeColor || "#C41D51",
                                     }}
                                   >
                                     {getBadgeText(badgePromo)}

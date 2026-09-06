@@ -218,7 +218,7 @@ export default async function ProductDetailPage({
 
   const activePromo = pricing.bannerPromo;
   const promoBadgeText = activePromo ? getBadgeText(activePromo) : null;
-  const promoBadgeColor = activePromo?.badgeColor || "#E63E73";
+  const promoBadgeColor = activePromo?.badgeColor || "#C41D51";
   const originalFromPriceCents = pricing.originalFromPriceCents;
   const finalFromPriceCents = pricing.fromPriceCents;
   const tiers: PriceTier[] | undefined = pricing.clientTiers;
