@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getMarkingBase } from "@/lib/marking-base-cache";
 import { mensajeErrorPublico } from "@/lib/mensaje-error-publico";
 import { rateLimit } from "@/lib/rate-limit";
+import { acquireInFlight } from "@/lib/in-flight-limit";
 import { resolveProductBySlug } from "@/lib/product-slug-resolver";
 
 export const runtime = "nodejs";
@@ -33,6 +34,33 @@ export async function POST(req: Request) {
   const rl = rateLimit(req, { key: "mockup-generate", max: 15, windowMs: 60_000 });
   if (!rl.ok) return rl.response;
 
+  // El comentario de arriba decía "mismo guard que search/semantic", pero solo
+  // estaba la mitad: `rateLimit` cuenta POR IP, y 15/min desde N IPs distintas
+  // apilan N decodificaciones de sharp a la vez. El tope que falta es el
+  // GLOBAL. Se pide antes de parsear el multipart a propósito: el propio
+  // `formData()` ya materializa hasta 5 MB en memoria, así que esa parte
+  // también es coste que hay que acotar.
+  const slot = acquireInFlight({
+    key: "mockup-generate",
+    max: 3,
+    retryAfterSeconds: 15,
+    message: "Se están generando otros mockups ahora mismo. Inténtalo en unos segundos.",
+  });
+  if (!slot.ok) return slot.response;
+
+  try {
+    return await generarMockup(req);
+  } finally {
+    slot.release();
+  }
+}
+
+/**
+ * El cuerpo del handler, aparte para que el cerrojo de arriba pueda envolverlo
+ * en un solo `try/finally`: tiene una docena de `return` tempranos y meterlos
+ * todos dentro del bloque a mano era la forma segura de olvidarse de uno.
+ */
+async function generarMockup(req: Request): Promise<NextResponse> {
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: "multipart/form-data esperado" }, { status: 400 });
 
