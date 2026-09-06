@@ -1,0 +1,39 @@
+name: Vigilancia de unidades del feed
+
+# Comprueba a diario que el catálogo no ha vuelto a servir el stock dividido
+# por mil ni las áreas de marcaje divididas por diez.
+#
+# La comprobación existía desde el incidente —`scripts/audit-feed-units.ts`—
+# pero solo corría si alguien entraba por SSH al VPS y la tecleaba, así que en
+# la práctica no corría nunca. Aquí corre sola y avisa a admins cuando aparece
+# el primer valor con la escala rota.
+#
+# El informe completo queda en el log de este workflow: la acción `cron-trigger`
+# imprime el cuerpo de la respuesta, que lleva los recuentos y hasta 25 ejemplos
+# de cada síntoma. Para verlo no hace falta consola contra producción.
+
+on:
+  schedule:
+    # 05:25 UTC. Fuera de :00 (los digests), :17 (money smoke) y :47 (barrido
+    # anti-fuga). Los syncs de proveedor son manuales, así que no hay ventana
+    # que perseguir: lo que se vigila es el estado en el que quedó la BD.
+    - cron: "25 5 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: feed-units-watchdog
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Disparar vigilancia de unidades del feed
+        uses: ./.github/actions/cron-trigger
+        with:
+          name: feed-units-watchdog
+          url: https://merchandising.startidea.es/api/cron/feed-units-watchdog
+          secret: ${{ secrets.MERCH_CRON_SECRET }}
+          accept: "200"

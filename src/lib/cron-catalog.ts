@@ -149,6 +149,23 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Vigila productos activos con técnica pero sin tarifa (cotización manual) y alerta si supera umbral",
   },
   {
+    name: "feed-units-watchdog",
+    endpointPath: "/api/cron/feed-units-watchdog",
+    method: "POST",
+    // En GitHub Actions y no en el crontab del VPS a propósito: la comprobación
+    // que sustituye llevaba meses sin hacerse justamente porque hacía falta
+    // entrar por SSH. El workflow vive en el repo, se programa solo y deja el
+    // informe entero en su log — `cron-trigger` imprime el cuerpo—, así que
+    // leerlo no exige consola contra producción.
+    // Minuto 25: libre entre las dos vigilancias del VPS de su misma familia
+    // (`tariff-coverage-watchdog` 05:30 UTC y `supplier-ref-en-descripcion`
+    // 05:40 UTC) y fuera de :00, :17 y :47, que ya tienen inquilino.
+    schedule: "diario 05:25 UTC (GitHub Actions)",
+    scheduleCron: "25 5 * * *",
+    frequencyHours: 24,
+    description: "Vigila que el catálogo no vuelva a servir el stock ÷1.000 ni las áreas de marcaje ÷10",
+  },
+  {
     name: "supplier-ref-en-descripcion",
     endpointPath: "/api/cron/supplier-ref-en-descripcion",
     method: "POST",
