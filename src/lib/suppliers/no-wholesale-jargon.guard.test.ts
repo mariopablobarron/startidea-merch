@@ -51,6 +51,11 @@ function seed(): SeedItem[] {
   return JSON.parse(readFileSync(join(process.cwd(), "src/data/adivin-seed.json"), "utf8"));
 }
 
+/** La misma captura, con la referencia de proveedor sin ambigüedad. */
+function importData(): { supplierRef: string; adivinRef?: string; name: string }[] {
+  return JSON.parse(readFileSync(join(process.cwd(), "src/data/adivin-import-data.json"), "utf8"));
+}
+
 describe("guard · jerga de mayorista en el catálogo de gran formato", () => {
   it("el seed en crudo SÍ trae la jerga (si no, este guard no prueba nada)", () => {
     // Anti-falso-verde: el día que alguien limpie el seed a mano, este test
@@ -96,37 +101,61 @@ describe("guard · jerga de mayorista en el catálogo de gran formato", () => {
     }
   });
 
+  /**
+   * Lo que acaba en la ficha. Reproduce el import: si hay descripción propia
+   * se publica tal cual —el saneador NO se le aplica, borra frases legítimas—;
+   * si no la hay, se publica la de origen saneada con sus medidas detrás.
+   *
+   * Los tests de longitud miran ESTO y no el campo en crudo: lo que importa
+   * no es lo que está escrito en el seed sino lo que lee el cliente.
+   */
+  function publicada(it: SeedItem): string {
+    if (it.descripcion) return it.descripcion;
+    return sanitizeSupplierText(it.shortDescription) ?? "";
+  }
+
   it("todos los productos tienen descripción escrita por nosotros", () => {
     // Lo que sustituye al aviso que había aquí. Durante un tiempo este bloque
     // afirmaba lo contrario —que la mediana de la descripción no llegaba a 60
     // caracteres— para dejar constancia de que el filtrado había dejado el
     // catálogo en un renglón por ficha. Ya están escritas; ahora el guard
     // sirve para que no se pierdan ni vuelvan a ser un renglón.
-    const sin = seed().filter((it) => !it.descripcion || it.descripcion.trim().length === 0);
+    const sin = seed().filter((it) => publicada(it).trim().length === 0);
     expect(sin.map((it) => `${it.supplierRef} · ${it.name}`)).toEqual([]);
   });
 
   it("y no son un renglón: ninguna baja de 80 caracteres", () => {
     const cortas = seed()
-      .filter((it) => (it.descripcion ?? "").length < 80)
-      .map((it) => `${it.supplierRef} · ${it.name} → ${(it.descripcion ?? "").length}`);
+      .filter((it) => publicada(it).length < 80)
+      .map((it) => `${it.supplierRef} · ${it.name} → ${publicada(it).length}`);
     expect(
       cortas,
       `Descripciones que se han quedado en un renglón:\n${cortas.join("\n")}`,
     ).toEqual([]);
   });
 
-  it("la descripción propia no repite el argumentario de origen", () => {
-    // Escribirlas mirando el texto del proveedor es lo natural; copiar una
-    // frase suya, el accidente. Si la nuestra contiene la de origen entera,
-    // no se ha escrito: se ha pegado.
+  it("la descripción propia no arrastra el texto del catálogo de origen", () => {
+    // Escribirlas mirando el texto del proveedor es lo natural; pegar una
+    // frase suya, el accidente.
+    //
+    // La primera versión de este test comparaba con `toBe` —igualdad exacta—
+    // y no podía fallar nunca: el prefijo más largo del origen mide 50
+    // caracteres y el test de al lado exige 80 como mínimo. Lo que sí puede
+    // pasar es que la frase de origen esté DENTRO de la nuestra, así que es
+    // eso lo que se mira.
+    //
+    // Por debajo de 20 caracteres no se mira, y es a propósito: seis fichas
+    // arrancan con cosas como «Bases para carpas», que en una descripción
+    // sobre bases de carpa aparece por escribir en español, no por pegar.
+    // Los prefijos que delatan un pegado son los largos —el mayor mide 50—,
+    // y esos sí se miran.
     for (const it of seed()) {
-      const origen = (it.shortDescription ?? "").split("✓")[0].trim();
+      const origen = (it.shortDescription ?? "").split("✓")[0].trim().replace(/[.·\s]+$/, "");
       if (origen.length < 20) continue;
       expect(
-        it.descripcion,
-        `${it.supplierRef}: la descripción propia es la del catálogo de origen`,
-      ).not.toBe(origen);
+        it.descripcion?.includes(origen) ? `${it.supplierRef}: «${origen}»` : null,
+        `Descripción propia que contiene, literal, la del catálogo de origen`,
+      ).toBeNull();
     }
   });
 });
@@ -135,10 +164,11 @@ describe("guard · referencias del catálogo de gran formato", () => {
   // El import hace upsert por (supplier, supplierRef): dos filas con la misma
   // referencia son un solo producto y el resto se queda fuera de la tienda.
   //
-  // Estas dos parejas comparten referencia en la captura y hay que resolverlas
-  // en el origen, no aquí: la referencia es la que se usa para PEDIR la pieza
-  // al proveedor, así que inventarle una haría llegar la equivocada.
-  const COLISIONES_CONOCIDAS = new Set(["32", "550"]);
+  // Pasaba con dos parejas —«Base Deluxe 4kg» / «con ruedas» y «Cubo
+  // Publicitario» / «Estructura»—, que compartían el número corto del catálogo
+  // de origen. La referencia buena de cada una estaba capturada desde el
+  // principio en `adivin-import-data.json`, que trae las 60 sin repetir; se ha
+  // traído de ahí. Este guard existe para que no vuelva a colarse una.
 
   it("no hay filas repetidas (misma referencia y mismo nombre)", () => {
     const vistas = new Set<string>();
@@ -158,27 +188,29 @@ describe("guard · referencias del catálogo de gran formato", () => {
       porRef.get(it.supplierRef)!.add(it.name);
     }
     const nuevas = [...porRef.entries()]
-      .filter(([ref, nombres]) => nombres.size > 1 && !COLISIONES_CONOCIDAS.has(ref))
+      .filter(([, nombres]) => nombres.size > 1)
       .map(([ref, nombres]) => `${ref} → ${[...nombres].join(" / ")}`);
     expect(
       nuevas,
       `Referencias compartidas por productos distintos. El segundo NO llega a ` +
-        `la tienda; hay que capturar su referencia propia:\n${nuevas.join("\n")}`,
+        `la tienda. Su referencia propia suele estar ya en ` +
+        `src/data/adivin-import-data.json:\n${nuevas.join("\n")}`,
     ).toEqual([]);
   });
 
-  it("y las conocidas siguen ahí (si se arreglan, hay que quitarlas de la lista)", () => {
-    const porRef = new Map<string, Set<string>>();
-    for (const it of seed()) {
-      if (!porRef.has(it.supplierRef)) porRef.set(it.supplierRef, new Set());
-      porRef.get(it.supplierRef)!.add(it.name);
+  it("cada producto del seed tiene su referencia en adivin-import-data.json", () => {
+    // Los dos ficheros describen el mismo catálogo: el seed es el que importa
+    // y `adivin-import-data.json` el que trae las referencias sin ambigüedad.
+    // Si se descuelgan, la próxima colisión no tendrá de dónde resolverse.
+    const conocidas = new Set<string>();
+    for (const i of importData()) {
+      conocidas.add(i.supplierRef);
+      if (i.adivinRef) conocidas.add(i.adivinRef);
     }
-    for (const ref of COLISIONES_CONOCIDAS) {
-      expect(
-        porRef.get(ref)?.size ?? 0,
-        `La colisión de la ref ${ref} ya no existe: bórrala de COLISIONES_CONOCIDAS`,
-      ).toBeGreaterThan(1);
-    }
+    const huerfanas = seed()
+      .filter((it) => !conocidas.has(it.supplierRef))
+      .map((it) => `${it.supplierRef} · ${it.name}`);
+    expect(huerfanas).toEqual([]);
   });
 });
 
