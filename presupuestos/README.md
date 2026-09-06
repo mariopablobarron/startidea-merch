@@ -9,10 +9,34 @@ Plantilla y utilidad de render para los presupuestos de merchandising.
 | `plantilla-presupuesto-startidea.html` | Plantilla maestra. 3 páginas A4. No se edita para un cliente: se copia. |
 | `generar-pdf.sh` | Render a PDF con Chromium headless. Avisa si queda algún marcador sin sustituir. |
 | `calcular-precios.py` | Aplica el margen, cuadra los totales y saca las filas ya maquetadas. |
+| `montar-presupuesto.py` | Monta el documento entero: calcula y rellena la plantilla de una vez. |
 | `assets/logo-startidea.png` | Logotipo oficial, tal cual (sin recomponer ni invertir). |
 | `assets/fonts/` | Montserrat e Inter embebidas, para que el PDF salga igual siempre y sin red. |
 
 ## Cómo se hace un presupuesto
+
+El camino corto, de los costes al PDF sin teclear ningún importe:
+
+```bash
+./montar-presupuesto.py pedido-acme.json -o presupuesto-acme.html
+./generar-pdf.sh presupuesto-acme.html Presupuesto_Acme_Startidea.pdf
+```
+
+`montar-presupuesto.py` para si falta cualquier dato obligatorio, diciendo cuál
+y para qué hacía falta, y **no escribe el archivo si queda algún marcador sin
+sustituir**. Admite cualquier número de líneas (no solo tres) y avisa si faltan
+la foto del producto o la imagen de la zona de marcaje.
+
+Dos cosas que hace por debajo y conviene saber:
+
+- **Borra los comentarios de la plantilla.** Son notas internas —reglas de
+  proveedor, margen, cómo duplicar bloques— y no tienen por qué viajar en un
+  archivo que puede acabar en manos del cliente.
+- **Reancla las rutas de `assets/`** al directorio de la plantilla. Si el HTML
+  se monta en otra carpeta, sin esto se rompen el logotipo y, sin avisar, las
+  tipografías: el PDF saldría con otra letra y nadie lo notaría.
+
+El camino largo, si prefieres maquetar a mano:
 
 ```bash
 # 1. con los costes ya sacados del portal, calcular precios y totales
