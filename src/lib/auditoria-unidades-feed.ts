@@ -20,6 +20,13 @@
  *     que el precio de mil unidades cotiza desde la primera.
  *
  * Ninguno de los tres se arregla aquí: esto cuenta, no toca nada.
+ *
+ * Los tres dan MUESTRA, no solo recuento. Saber que hay «3 tramos
+ * implausibles» sin saber de qué productos obliga a abrir una consola contra
+ * producción — que es exactamente lo que el watchdog vino a quitar de en
+ * medio. El tramo es además el síntoma que cuesta dinero solo: un tramo que
+ * arranca en 5 en vez de en 5.000 aplica el precio de cinco mil unidades desde
+ * la quinta, y eso sale por la puerta dentro de un presupuesto.
  */
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { AREA_MARCAJE_MINIMA_MM, STOCK_MINIMO_PLAUSIBLE } from "@/lib/suppliers/feed-units";
@@ -33,6 +40,20 @@ type MuestraStock = {
   producto: string;
   sku: string;
   stockQty: number;
+};
+
+/**
+ * Sin `unitPriceCents` a propósito: ese es el COSTE neto de proveedor. Para
+ * ver que una cantidad tiene la escala rota basta la cantidad, y este informe
+ * acaba impreso en el log de GitHub Actions por el cron. El coste al que
+ * compramos no viaja a un log por comodidad de lectura.
+ */
+type MuestraTramo = {
+  supplier: string;
+  internalRef: string | null;
+  producto: string;
+  sku: string;
+  minQty: number;
 };
 
 type MuestraArea = {
@@ -59,7 +80,7 @@ export type AuditoriaUnidadesFeed = {
     tramosImplausibles: number;
     total: number;
   };
-  muestras: { stock: MuestraStock[]; area: MuestraArea[] };
+  muestras: { stock: MuestraStock[]; area: MuestraArea[]; tramos: MuestraTramo[] };
 };
 
 /** Variantes vivas con un stock que no puede ser cierto. */
@@ -67,6 +88,14 @@ const dondeStockImplausible: Prisma.ProductVariantWhereInput = {
   stockQty: { gt: 0, lt: STOCK_MINIMO_PLAUSIBLE },
   product: { active: true },
 };
+
+/**
+ * Un tramo que arranca entre 2 y 9. Ojo: `minQty: 1` NO entra, y no puede
+ * entrar — es el tramo base legítimo de todo producto, así que un «1.000»
+ * leído como 1 es indistinguible de lo normal. Lo que se caza aquí son sus
+ * hermanos: 2.000 → 2, 5.000 → 5.
+ */
+const dondeTramoImplausible: Prisma.PriceTierWhereInput = { minQty: { gt: 1, lt: 10 } };
 
 /** Un área con CUALQUIER lado por debajo del mínimo imprimible. */
 const dondeAreaImplausible: Prisma.MarkingPositionWhereInput = {
@@ -87,12 +116,13 @@ export async function auditarUnidadesFeed(
     tramosImplausibles,
     muestraStock,
     muestraArea,
+    muestraTramos,
   ] = await Promise.all([
     prisma.productVariant.count({ where: { product: { active: true } } }),
     prisma.markingPosition.count(),
     prisma.productVariant.count({ where: dondeStockImplausible }),
     prisma.markingPosition.count({ where: dondeAreaImplausible }),
-    prisma.priceTier.count({ where: { minQty: { gt: 1, lt: 10 } } }),
+    prisma.priceTier.count({ where: dondeTramoImplausible }),
     prisma.productVariant.findMany({
       where: dondeStockImplausible,
       select: {
@@ -111,6 +141,20 @@ export async function auditarUnidadesFeed(
         maxHeightMm: true,
         product: { select: { internalRef: true, name: true, supplier: true } },
       },
+      take: EJEMPLOS,
+    }),
+    prisma.priceTier.findMany({
+      where: dondeTramoImplausible,
+      select: {
+        minQty: true,
+        variant: {
+          select: {
+            sku: true,
+            product: { select: { internalRef: true, name: true, supplier: true } },
+          },
+        },
+      },
+      orderBy: { minQty: "asc" },
       take: EJEMPLOS,
     }),
   ]);
@@ -143,6 +187,13 @@ export async function auditarUnidadesFeed(
         positionId: p.positionId,
         maxWidthMm: p.maxWidthMm,
         maxHeightMm: p.maxHeightMm,
+      })),
+      tramos: muestraTramos.map((t) => ({
+        supplier: t.variant.product.supplier,
+        internalRef: t.variant.product.internalRef,
+        producto: t.variant.product.name,
+        sku: t.variant.sku,
+        minQty: t.minQty,
       })),
     },
   };
