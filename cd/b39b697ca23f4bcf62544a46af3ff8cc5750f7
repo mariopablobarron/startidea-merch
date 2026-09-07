@@ -1,0 +1,35 @@
+package.json
+  s_b7bd309465e9b5::t_2fd7bf1be41c50 24-25
+scripts/audit-jerga-mayorista-bd.ts
+  s_b7bd309465e9b5::t_328643ebf1faf1 1-78
+scripts/deploy.sh
+  s_f4711e85a048a0::t_ad638dc7502a96 257-284
+src/lib/audit-jerga-mayorista.test.ts
+  s_b7bd309465e9b5::t_343b0f35e8ebdd 1-107
+src/lib/audit-jerga-mayorista.ts
+  s_b7bd309465e9b5::t_f1e5d2c1402d60 1-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "cdb39b697ca23f4bcf62544a46af3ff8cc5750f7",
+  "prompts": {},
+  "sessions": {
+    "s_b7bd309465e9b5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0fedcf0b-b9f6-4dd8-b405-077c19a92ddc",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    },
+    "s_f4711e85a048a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9d4e850d-81af-4a6b-ae85-74f7cede3270",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
