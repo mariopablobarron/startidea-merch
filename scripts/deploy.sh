@@ -216,15 +216,31 @@ AUDIT_ROUTES=(
   "/catalogo/camiseta-adulto-runner"
   "/promociones"
   "/comparar"
+  # Canarios de Ádivin: tres de las 59 fichas que el 06-sep publicaban el
+  # argumentario mayorista. Las rutas de arriba son todas de otros proveedores,
+  # así que este audit habría dado OK —y lo dio— con la fuga viva. Un guard que
+  # solo mira donde nunca pasó nada no vigila nada.
+  "/catalogo/pared-completa-a-doble-cara-3x19m"
+  "/catalogo/base-para-carpa"
+  "/catalogo/bandera-con-palo"
 )
 AUDIT_PATTERN='(\.midocean\.com|\.xindao\.(com|eu)|\.publicatalogue\.com|cifrashop\.com|\.makito\.(com|es)|/catalogo/(cif-|mak-|mk-)|\\?"(primarySku|variantSku)\\?"[[:space:]]*:|\\"sku\\"[[:space:]]*:|\b(ar|mo|cx|mk)[0-9]{3,5}\b|\b[0-9]{4,6}-(XXS|XS|S|M|L|XL|XXL|XXXL|[3-8]XL)-[A-Z]{2}\b)'
 AUDIT_PUBLIC_SKU_SED='s/\\"sku\\"[[:space:]]*:[[:space:]]*\\"STM-[A-Z0-9-]+\\"//g'
+# Segundo canario: el ARGUMENTARIO mayorista. El patrón de arriba vigila
+# IDENTIFICADORES del proveedor (dominios, refs, SKUs); esta es otra fuga
+# distinta —decirle al cliente final que el precio lleva "30% de margen" y que
+# el producto es "exclusivamente para rotulistas"— y ningún identificador la
+# delata. Mismo criterio que `sanitizeSupplierText` en el código.
+AUDIT_WHOLESALE_PATTERN='(exclusivamente[[:space:]]+para[[:space:]]+(los[[:space:]]+)?(rotulista|revendedor|distribuidor)|rotulistas?[[:space:]]+y[[:space:]]+distribuidores?|[0-9]{1,3}[[:space:]]*%[[:space:]]*de[[:space:]]+margen|margen[[:space:]]+(comercial|para[[:space:]]+(el|los)[[:space:]]+(distribuidor|revendedor)))'
 for route_path in "${AUDIT_ROUTES[@]}"; do
   if ! AUDIT_HTML=$(curl -fsS --max-time 15 "$BASE$route_path"); then
     fail "audit anti-fuga: no se pudo leer $route_path"
   fi
   if printf '%s' "$AUDIT_HTML" | sed -E "$AUDIT_PUBLIC_SKU_SED" | grep -Eiq "$AUDIT_PATTERN"; then
     fail "audit anti-fuga: canario proveedor detectado en $route_path (valor oculto)"
+  fi
+  if printf '%s' "$AUDIT_HTML" | grep -Eiq "$AUDIT_WHOLESALE_PATTERN"; then
+    fail "audit anti-fuga: argumentario mayorista detectado en $route_path (valor oculto)"
   fi
 done
 unset AUDIT_HTML

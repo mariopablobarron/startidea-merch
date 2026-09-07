@@ -56,3 +56,50 @@ describe("canarios públicos anti-SKU", () => {
     ).toBe(false);
   });
 });
+
+/**
+ * El audit del deploy tiene un SEGUNDO canario desde el 07-sep-2026: el
+ * argumentario mayorista. El primero vigila identificadores de proveedor y por
+ * eso dio OK el 06-sep a las 23:28 mientras 59 fichas ACTIVAS publicaban
+ * «Exclusivamente para Rotulistas y Distribuidores … 【30% de margen】».
+ *
+ * Este bloque prueba el patrón shell REAL leído de scripts/deploy.sh —no una
+ * copia— por mutación: tiene que cazar la frase del proveedor y tiene que
+ * dejar pasar el castellano legítimo del comercio.
+ */
+describe("canario público anti-argumentario mayorista", () => {
+  const deploy = readFileSync(join(process.cwd(), "scripts/deploy.sh"), "utf8");
+  const pattern = deploy.match(/AUDIT_WHOLESALE_PATTERN='([^']+)'/)?.[1];
+
+  const shellLeaks = (input: string) =>
+    spawnSync("grep", ["-Eiq", pattern!], { input }).status === 0;
+
+  it("el patrón sigue existiendo en scripts/deploy.sh", () => {
+    expect(pattern).toBeTruthy();
+  });
+
+  it.each([
+    "✓ Exclusivamente para Rotulistas y Distribuidores ✓ 100% Online",
+    "Fabricación y entrega en 24h【30% de margen】Envío gratis.",
+    "producto exclusivamente para distribuidores del sector",
+    "deja un margen comercial interesante",
+    "30 % de margen para el revendedor",
+  ])("caza la frase mayorista %s", (fixture) => {
+    expect(shellLeaks(fixture)).toBe(true);
+  });
+
+  it.each([
+    "Bolígrafo de aluminio con clip metálico y tinta azul.",
+    "Carpa plegable 3x3 m con estructura de acero.",
+    "Margen de personalización: 2 cm alrededor del logotipo.",
+    "Envío gratis a partir de 300 € y entrega en 24 h.",
+  ])("deja pasar el texto legítimo %s", (fixture) => {
+    expect(shellLeaks(fixture)).toBe(false);
+  });
+
+  it("las fichas afectadas están entre las rutas auditadas", () => {
+    // Sin esto el patrón sería correcto y el audit seguiría sin mirar donde
+    // pasó: las 8 rutas originales eran todas de otros proveedores.
+    expect(deploy).toContain('"/catalogo/pared-completa-a-doble-cara-3x19m"');
+  });
+});
