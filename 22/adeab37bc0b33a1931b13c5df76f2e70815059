@@ -1,0 +1,25 @@
+scripts/deploy.sh
+  s_ecfe08c94e9cdb::t_a4ae6c0a37256e 219-225,229-234,242-244
+src/app/api/cron/search-reindex/route.test.ts
+  s_ecfe08c94e9cdb::t_4af1340a300ef6 1-76
+src/app/api/cron/search-reindex/route.ts
+  s_ecfe08c94e9cdb::t_47c1f7947a2807 1-55
+src/lib/public-supplier-leak-patterns.test.ts
+  s_ecfe08c94e9cdb::t_20a617e3f9c506 59-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "22adeab37bc0b33a1931b13c5df76f2e70815059",
+  "prompts": {},
+  "sessions": {
+    "s_ecfe08c94e9cdb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c508bf6b-e3d0-4dfd-a7a2-0c7358346803",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
