@@ -281,6 +281,8 @@ describe("argumentario mayorista sin el adverbio (07-sep-2026)", () => {
     "Paredes con puerta para carpa ✓ Exclusiva para Rotulistas y Distribuidores ✓ 100% Online",
     "Lona ✓ Exclusivas para mayoristas del sector ✓ 100% Online",
     "Soporte ✓ Exclusivo para revendedores ✓ 100% Online",
+    // La errata REAL del feed: «par» por «para», en una ficha activa.
+    "Base para coche. Soporte para Fly Banners ✓ Exclusivamente par Distribuidores",
   ])("borra la frase de %s", (fixture) => {
     const limpio = sanitizeSupplierText(fixture) ?? "";
     expect(limpio.toLowerCase()).not.toMatch(/exclusiv/);
@@ -293,6 +295,7 @@ describe("argumentario mayorista sin el adverbio (07-sep-2026)", () => {
     for (const ok of [
       "Estuche exclusivo para amantes del vino, con sacacorchos eléctrico.",
       "Soporte exclusivo para su publicidad en ferias.",
+      "Par de chanclas de diseño exclusivo, suela de corcho natural.",
       "Diseñado exclusivamente para ofrecer una total compatibilidad.",
     ]) {
       expect(sanitizeSupplierText(ok)).toBe(ok);

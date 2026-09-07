@@ -63,7 +63,12 @@ const MAYORISTA_RES: RegExp[] = [
   // El sustantivo del canal es obligatorio a propósito: medido contra la BD,
   // «exclusivo para amantes del vino» y «exclusivo para su publicidad» son
   // texto legítimo de ficha y no deben caer.
-  /\bexclusiv(?:amente|[oa]s?)\s+para\s+(?:los\s+)?(?:profesionales|distribuidores?|mayoristas?|revendedores?|rotulistas?(?:\s+y\s+distribuidores?)?)[^.·✓|]{0,30}/gi,
+  //
+  // `para?` acepta la ERRATA del proveedor: una ficha activa publicaba
+  // «✓ Exclusivamente par Distribuidores», y con `para` exacto se salvaba. No
+  // abre la puerta a falsos positivos porque el sustantivo del canal sigue
+  // siendo obligatorio: «Par de chanclas de diseño exclusivo» no cae.
+  /\bexclusiv(?:amente|[oa]s?)\s+para?\s+(?:los\s+)?(?:profesionales|distribuidores?|mayoristas?|revendedores?|rotulistas?(?:\s+y\s+distribuidores?)?)[^.·✓|]{0,30}/gi,
   // "Exclusivamente para Rotulistas y Distribuidores" y variantes
   /\b(?:exclusivamente\s+)?(?:para\s+)?rotulistas?(?:\s+y\s+distribuidores?)?/gi,
   /\b(?:solo|sólo)\s+(?:para\s+)?(?:distribuidores?|mayoristas?|profesionales\s+del\s+sector)/gi,

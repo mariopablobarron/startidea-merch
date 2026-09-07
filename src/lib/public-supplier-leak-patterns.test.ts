@@ -85,6 +85,7 @@ describe("canario público anti-argumentario mayorista", () => {
     "Pack Fly Banner Surf ✓ Exclusivo para Distribuidores ✓ 100% Online",
     "Mástiles Institucionales ✓ Exclusivos para Distribuidores ✓ 100% Online",
     "Lona ✓ Exclusivas para mayoristas ✓ 100% Online",
+    "Base para coche ✓ Exclusivamente par Distribuidores",
     "Fabricación y entrega en 24h【30% de margen】Envío gratis.",
     "producto exclusivamente para distribuidores del sector",
     "deja un margen comercial interesante",
@@ -100,6 +101,7 @@ describe("canario público anti-argumentario mayorista", () => {
     "Envío gratis a partir de 300 € y entrega en 24 h.",
     "Estuche exclusivo para amantes del vino con sacacorchos.",
     "Soporte exclusivo para su publicidad en ferias.",
+    "Par de chanclas de diseño exclusivo con suela de corcho.",
   ])("deja pasar el texto legítimo %s", (fixture) => {
     expect(shellLeaks(fixture)).toBe(false);
   });
