@@ -80,6 +80,11 @@ describe("canario público anti-argumentario mayorista", () => {
 
   it.each([
     "✓ Exclusivamente para Rotulistas y Distribuidores ✓ 100% Online",
+    // 07-sep-2026: la MISMA fuga sin el adverbio, viva en seis fichas ACTIVAS
+    // mientras este canario —que exigía «exclusivamente»— daba OK.
+    "Pack Fly Banner Surf ✓ Exclusivo para Distribuidores ✓ 100% Online",
+    "Mástiles Institucionales ✓ Exclusivos para Distribuidores ✓ 100% Online",
+    "Lona ✓ Exclusivas para mayoristas ✓ 100% Online",
     "Fabricación y entrega en 24h【30% de margen】Envío gratis.",
     "producto exclusivamente para distribuidores del sector",
     "deja un margen comercial interesante",
@@ -93,6 +98,8 @@ describe("canario público anti-argumentario mayorista", () => {
     "Carpa plegable 3x3 m con estructura de acero.",
     "Margen de personalización: 2 cm alrededor del logotipo.",
     "Envío gratis a partir de 300 € y entrega en 24 h.",
+    "Estuche exclusivo para amantes del vino con sacacorchos.",
+    "Soporte exclusivo para su publicidad en ferias.",
   ])("deja pasar el texto legítimo %s", (fixture) => {
     expect(shellLeaks(fixture)).toBe(false);
   });
@@ -101,5 +108,9 @@ describe("canario público anti-argumentario mayorista", () => {
     // Sin esto el patrón sería correcto y el audit seguiría sin mirar donde
     // pasó: las 8 rutas originales eran todas de otros proveedores.
     expect(deploy).toContain('"/catalogo/pared-completa-a-doble-cara-3x19m"');
+    // Y dos de las seis de la variante sin adverbio: las tres rutas de Ádivin
+    // añadidas el 07-sep por la mañana llevaban todas «Exclusivamente», así
+    // que tampoco habrían visto esta.
+    expect(deploy).toContain('"/catalogo/fly-banner-surf-pack-completo"');
   });
 });

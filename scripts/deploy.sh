@@ -223,6 +223,11 @@ AUDIT_ROUTES=(
   "/catalogo/pared-completa-a-doble-cara-3x19m"
   "/catalogo/base-para-carpa"
   "/catalogo/bandera-con-palo"
+  # Y dos de las seis fichas que el 07-sep publicaban la MISMA fuga con otra
+  # redacción —«✓ Exclusivo para Distribuidores», sin el adverbio—, que el
+  # patrón de ese día dejaba pasar entera.
+  "/catalogo/fly-banner-surf-pack-completo"
+  "/catalogo/mastil-institucional-de-aluminio-8-metros"
 )
 AUDIT_PATTERN='(\.midocean\.com|\.xindao\.(com|eu)|\.publicatalogue\.com|cifrashop\.com|\.makito\.(com|es)|/catalogo/(cif-|mak-|mk-)|\\?"(primarySku|variantSku)\\?"[[:space:]]*:|\\"sku\\"[[:space:]]*:|\b(ar|mo|cx|mk)[0-9]{3,5}\b|\b[0-9]{4,6}-(XXS|XS|S|M|L|XL|XXL|XXXL|[3-8]XL)-[A-Z]{2}\b)'
 AUDIT_PUBLIC_SKU_SED='s/\\"sku\\"[[:space:]]*:[[:space:]]*\\"STM-[A-Z0-9-]+\\"//g'
@@ -231,7 +236,7 @@ AUDIT_PUBLIC_SKU_SED='s/\\"sku\\"[[:space:]]*:[[:space:]]*\\"STM-[A-Z0-9-]+\\"//
 # distinta —decirle al cliente final que el precio lleva "30% de margen" y que
 # el producto es "exclusivamente para rotulistas"— y ningún identificador la
 # delata. Mismo criterio que `sanitizeSupplierText` en el código.
-AUDIT_WHOLESALE_PATTERN='(exclusivamente[[:space:]]+para[[:space:]]+(los[[:space:]]+)?(rotulista|revendedor|distribuidor)|rotulistas?[[:space:]]+y[[:space:]]+distribuidores?|[0-9]{1,3}[[:space:]]*%[[:space:]]*de[[:space:]]+margen|margen[[:space:]]+(comercial|para[[:space:]]+(el|los)[[:space:]]+(distribuidor|revendedor)))'
+AUDIT_WHOLESALE_PATTERN='(exclusiv(amente|os?|as?)[[:space:]]+para[[:space:]]+(los[[:space:]]+)?(rotulista|revendedor|distribuidor|mayorista)|rotulistas?[[:space:]]+y[[:space:]]+distribuidores?|[0-9]{1,3}[[:space:]]*%[[:space:]]*de[[:space:]]+margen|margen[[:space:]]+(comercial|para[[:space:]]+(el|los)[[:space:]]+(distribuidor|revendedor)))'
 for route_path in "${AUDIT_ROUTES[@]}"; do
   if ! AUDIT_HTML=$(curl -fsS --max-time 15 "$BASE$route_path"); then
     fail "audit anti-fuga: no se pudo leer $route_path"

@@ -54,9 +54,18 @@ const MAYORISTA_RES: RegExp[] = [
   /[【(\[]?\s*\d{1,3}\s*%\s*de\s*margen\s*[】)\]]?/gi,
   // "margen comercial del 30 %", "margen para el distribuidor"
   /\bmargen(?:\s+comercial)?(?:\s+(?:del?|para)\s+[^.·✓|]{0,40})?/gi,
+  // «Exclusivamente para Distribuidores», pero también la forma FLEXIONADA sin
+  // -mente: el 07-sep-2026 seis fichas ACTIVAS publicaban «✓ Exclusivo para
+  // Distribuidores» / «✓ Exclusivos para Distribuidores» / «✓ Exclusiva para
+  // Rotulistas y Distribuidores» en su meta description indexable, y este
+  // patrón —que exigía el adverbio— las dejaba pasar enteras.
+  //
+  // El sustantivo del canal es obligatorio a propósito: medido contra la BD,
+  // «exclusivo para amantes del vino» y «exclusivo para su publicidad» son
+  // texto legítimo de ficha y no deben caer.
+  /\bexclusiv(?:amente|[oa]s?)\s+para\s+(?:los\s+)?(?:profesionales|distribuidores?|mayoristas?|revendedores?|rotulistas?(?:\s+y\s+distribuidores?)?)[^.·✓|]{0,30}/gi,
   // "Exclusivamente para Rotulistas y Distribuidores" y variantes
   /\b(?:exclusivamente\s+)?(?:para\s+)?rotulistas?(?:\s+y\s+distribuidores?)?/gi,
-  /\bexclusivamente\s+para\s+(?:profesionales|distribuidores?|mayoristas?)[^.·✓|]{0,30}/gi,
   /\b(?:solo|sólo)\s+(?:para\s+)?(?:distribuidores?|mayoristas?|profesionales\s+del\s+sector)/gi,
   // Precio/tarifa que no es la del cliente final
   /\bpvp\s+(?:recomendado|sugerido)/gi,

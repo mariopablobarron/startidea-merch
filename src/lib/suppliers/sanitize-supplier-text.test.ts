@@ -262,3 +262,44 @@ describe("lo que dejaba a medias el borrado", () => {
     expect(sanitizeSupplierText("Roll-up. A... B.")).toBe("Roll-up. A... B.");
   });
 });
+
+/**
+ * La misma fuga, otra redacción. El 07-sep-2026, HORAS después de cerrar
+ * «Exclusivamente para Rotulistas y Distribuidores» (`bf3145f`), seis fichas
+ * ACTIVAS seguían publicando en su meta description indexable la forma
+ * FLEXIONADA sin adverbio: «✓ Exclusivo para Distribuidores». El patrón exigía
+ * «exclusivamente» y las dejaba pasar enteras.
+ *
+ * Los fixtures tóxicos son el texto REAL de esas fichas, leído de producción;
+ * los legítimos son texto real de otras fichas del catálogo que NO debe caer
+ * (medido contra la BD: 0 fichas con «exclusivo para profesionales»).
+ */
+describe("argumentario mayorista sin el adverbio (07-sep-2026)", () => {
+  it.each([
+    "Pack Fly Banner Surf personalizado *Doble Cara* ✓ Exclusivo para Distribuidores ✓ 100% Online",
+    "Mástiles Institucionales de aluminio plegables ✓ Exclusivos para Distribuidores ✓ 100% Online",
+    "Paredes con puerta para carpa ✓ Exclusiva para Rotulistas y Distribuidores ✓ 100% Online",
+    "Lona ✓ Exclusivas para mayoristas del sector ✓ 100% Online",
+    "Soporte ✓ Exclusivo para revendedores ✓ 100% Online",
+  ])("borra la frase de %s", (fixture) => {
+    const limpio = sanitizeSupplierText(fixture) ?? "";
+    expect(limpio.toLowerCase()).not.toMatch(/exclusiv/);
+    expect(limpio.toLowerCase()).not.toMatch(/distribuidor|revendedor|rotulista|mayorista/);
+    // Y se lleva la frase, no el producto: lo que describe la ficha sigue ahí.
+    expect(limpio).toContain(fixture.split(" ")[0]);
+  });
+
+  it("no toca el castellano legítimo de una ficha", () => {
+    for (const ok of [
+      "Estuche exclusivo para amantes del vino, con sacacorchos eléctrico.",
+      "Soporte exclusivo para su publicidad en ferias.",
+      "Diseñado exclusivamente para ofrecer una total compatibilidad.",
+    ]) {
+      expect(sanitizeSupplierText(ok)).toBe(ok);
+    }
+  });
+
+  it("lo declara fuga, para que reviente el import y no se limpie en silencio", () => {
+    expect(supplierJargonHits("✓ Exclusivo para Distribuidores")).not.toHaveLength(0);
+  });
+});
