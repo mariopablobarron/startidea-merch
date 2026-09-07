@@ -192,13 +192,25 @@ export default function AdminDashboardPage() {
           </div>
         </header>
 
-        <DailyWorkPanel
-          data={data}
-          loading={loading}
-          error={error}
-          loginRequired={!usingCookie && !secret}
-          onRetry={() => setRefreshVersion((value) => value + 1)}
-        />
+        <DailyWorkPanel />
+
+        {/* El trabajo del día lo pinta el panel de arriba, que pide sus propios
+            datos. Esto es solo para las cifras de abajo: si fallan, se dice —
+            antes el aviso viajaba dentro del panel y al separarlos se habría
+            quedado mudo. */}
+        {error && !data && (
+          <div role="alert" className="mb-8 rounded-3xl border border-accent-deep/20 bg-accent-wash p-5 text-accent-deep">
+            <p>{error}</p>
+            <button
+              type="button"
+              onClick={() => setRefreshVersion((value) => value + 1)}
+              disabled={loading}
+              className="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl border border-line bg-bone px-4 py-3 text-base font-medium text-ink transition-colors duration-150 hover:border-ink/40 active:bg-line disabled:cursor-wait disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-deep"
+            >
+              {loading ? "Actualizando…" : "Reintentar"}
+            </button>
+          </div>
+        )}
 
         {data && (
           <>
