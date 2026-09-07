@@ -21,7 +21,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "scripts:audit-precios": "bun scripts/audit-precios-catalogo.ts"
+    "scripts:audit-precios": "bun scripts/audit-precios-catalogo.ts",
+    "scripts:audit-jerga": "bun scripts/audit-jerga-mayorista-bd.ts"
   },
   "dependencies": {
     "@elevenlabs/react": "^1.6.0",

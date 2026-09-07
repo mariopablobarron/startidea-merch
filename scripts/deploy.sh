@@ -254,6 +254,34 @@ done
 unset AUDIT_HTML
 log "audit público anti-fuga: OK"
 
+# Sonda del ÍNDICE DE BÚSQUEDA. El audit de arriba lee HTML de páginas; el
+# buscador guarda su PROPIA copia del texto en Meilisearch, así que el 07-sep la
+# fuga siguió viva en el autocompletado horas después de estar limpia la ficha:
+# «rotulista» devolvía 8 resultados con las 59 fichas ya saneadas. Ninguna
+# comprobación sobre el HTML podía verlo.
+#
+# Dos consultas, y hacen falta las dos:
+#   · «rotulista» tiene que dar 0. Medido el 07-sep tras el reindex: 0 exacto.
+#   · «camiseta» tiene que dar >0. Sin esto, un Meili caído devuelve 0 a todo y
+#     la sonda de arriba daría OK por el motivo contrario al que buscamos.
+#
+# ⚠️ No usar «distribuidor» como sonda: da 2 resultados por la tolerancia a
+# erratas del buscador SIN que ninguna ficha lleve la palabra (comprobado contra
+# la BD). Rompería todos los deploys por un falso positivo.
+log "sonda del índice de búsqueda"
+probe_hits() { # $1 = término → nº de resultados, o "err"
+  local body
+  body=$(curl -fsS --max-time 15 "$BASE/api/search/suggest?q=$1") || { echo "err"; return; }
+  printf '%s' "$body" | grep -o '"slug":' | wc -l | tr -d ' '
+}
+PROBE_VIVO=$(probe_hits "camiseta")
+[ "$PROBE_VIVO" = "err" ] && fail "sonda índice: /api/search/suggest no responde"
+[ "$PROBE_VIVO" -eq 0 ] && fail "sonda índice: «camiseta» devuelve 0 — el buscador no está sirviendo, no se puede concluir nada sobre la fuga"
+PROBE_FUGA=$(probe_hits "rotulista")
+[ "$PROBE_FUGA" = "err" ] && fail "sonda índice: /api/search/suggest no responde"
+[ "$PROBE_FUGA" -ne 0 ] && fail "sonda índice: «rotulista» devuelve $PROBE_FUGA resultados — argumentario mayorista vivo en el índice. Reindexar: POST /api/cron/search-reindex"
+log "sonda del índice: OK (buscador vivo con $PROBE_VIVO resultados; «rotulista» 0)"
+
 # Verifica rutas críticas adicionales (sin retry — ya sabemos que el / responde).
 # Aceptamos 200 (público), 302 (redirect login), 401 (necesita auth) como OK.
 log "healthcheck rutas adicionales"
