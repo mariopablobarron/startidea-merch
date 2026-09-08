@@ -77,10 +77,28 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Run semgrep
         # Solo bloquea PRs si encuentra ERROR/WARNING. INFO suele ser heurístico.
-        run: semgrep scan --config=auto --exclude=node_modules --exclude=.next --severity=ERROR --severity=WARNING --error
-        env:
-          # Si en el futuro conectas Semgrep Cloud: añadir secret SEMGREP_APP_TOKEN
-          SEMGREP_RULES: p/owasp-top-ten p/nextjs p/typescript p/react p/javascript
+        #
+        # `--config` EXPLÍCITO, no `auto` (2026-09-08). Con `auto` semgrep le
+        # pide al registro qué reglas tocan para este proyecto en CADA
+        # ejecución, y el conjunto se mueve solo: 260 reglas el 31-ago, 495 el
+        # 7-sep. Eso hace que el push y el schedule puedan discrepar sobre el
+        # MISMO commit — un rojo que aparece sin que nadie haya tocado nada, y
+        # un verde que no prueba lo mismo que el verde de ayer.
+        #
+        # Los cinco packs son los que ya declaraba `SEMGREP_RULES`, que aquí no
+        # hacía nada: esa variable la lee `semgrep ci`, no `semgrep scan`, así
+        # que lo que se ejecutaba de verdad era `auto` a secas. Con esto el
+        # CONJUNTO es fijo; el contenido de cada pack sigue viniendo del
+        # registro (fijarlo del todo exigiría vendorizar las reglas en el repo).
+        run: >-
+          semgrep scan
+          --config=p/owasp-top-ten
+          --config=p/nextjs
+          --config=p/typescript
+          --config=p/react
+          --config=p/javascript
+          --exclude=node_modules --exclude=.next
+          --severity=ERROR --severity=WARNING --error
 
   knip:
     name: knip · código muerto

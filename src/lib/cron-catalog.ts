@@ -199,6 +199,27 @@ export const CRON_CATALOG: CronEntry[] = [
     description: "Vigila fichas activas cuyo sync automático ya no refresca (siguen a la venta con precio y stock viejos)",
   },
   {
+    name: "jerga-mayorista-watchdog",
+    endpointPath: "/api/cron/jerga-mayorista-watchdog",
+    method: "POST",
+    // Programada el 2026-09-08 junto con su línea del crontab del VPS
+    // (`audit-crons-vps.sh` compara las dos: cambiar solo una rompe la
+    // auditoría). Hueco a las 08:20 locales, elegido leyendo el crontab real:
+    // los minutos :00 y :30 de esa hora tienen 19 y 3 inquilinos, y el :20
+    // estaba libre. Va detrás de la familia de vigilancias diarias que avisan
+    // en flanco de subida — `tariff-coverage-watchdog` (07:30),
+    // `supplier-ref-en-descripcion` (07:40) y `catalog-freshness-watchdog`
+    // (07:50) —, con los tres syncs de proveedor cerrados hace horas.
+    // Diario y no mensual, como se anotó al abrir la tarea: esta fuga ha
+    // reaparecido cinco veces por puertas distintas y un mes de ventana es
+    // demasiado, mientras que el coste es la misma consulta que ya hace su
+    // vecina sobre las mismas fichas activas.
+    schedule: "diario 08:20 local VPS = 06:20 UTC",
+    scheduleCron: "20 8 * * *",
+    frequencyHours: 24,
+    description: "Vigila por descubrimiento que ninguna ficha activa publique el argumentario mayorista",
+  },
+  {
     name: "auto-proposal",
     endpointPath: "/api/cron/auto-proposal",
     method: "POST",
