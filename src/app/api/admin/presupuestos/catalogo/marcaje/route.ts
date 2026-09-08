@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/admin-session";
-import { requireAdminSecret } from "@/lib/auth";
+import { requireRole } from "@/lib/admin-auth";
 import { quoteMarkingNet } from "@/lib/marking-quote";
 import { pickTier } from "@/lib/pricing";
 import {
@@ -27,7 +27,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   if (!(await isAdmin())) {
-    const auth = requireAdminSecret(req);
+    const auth = await requireRole(req, "COMERCIAL");
     if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
   }
 
