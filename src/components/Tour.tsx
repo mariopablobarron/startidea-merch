@@ -200,7 +200,7 @@ export function Tour() {
             type="button"
             onClick={close}
             data-modal-initial-focus
-            className="text-xs text-ink/40 hover:text-accent"
+            className="tap-target-44 relative text-xs text-ink/40 hover:text-accent"
             aria-label="Cerrar tour"
           >
             ✕

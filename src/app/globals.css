@@ -39,3 +39,35 @@ body {
   animation: marquee 40s linear infinite;
   width: max-content;
 }
+
+/*
+  Área táctil de 44×44 sin tocar el aspecto.
+
+  Los botones ✕ de cerrar del sitio miden entre 12 y 36 px (el de Tour.tsx es
+  solo el glifo). WCAG 2.5.8 pide 24 px y la guía táctil de iOS/Android 44, y
+  el resto del sitio ya usa `min-h-[44px]` en los controles de formulario. Pero
+  agrandar el círculo visible a 44 px cambiaría el diseño de cinco popups: el
+  fondo `bg-bone/80` y el borde del botón se verían como una pastilla enorme
+  sobre la esquina.
+
+  Por eso el área crece por un pseudo-elemento centrado sobre el botón, no por
+  su caja: se pulsa en 44×44 y se ve igual que antes. `content` vacío y sin
+  fondo, así que no pinta nada; hereda el `border-radius` para que el foco
+  visible del navegador no se descuadre en los que son redondos.
+
+  La utilidad NO declara `position`: hacerlo pisaría el `absolute` de los
+  botones de esquina, porque esta hoja va después de `@tailwind utilities` y
+  ganaría por orden. El pseudo-elemento necesita un ancestro posicionado, así
+  que cada botón lleva además `relative` o el `absolute` que ya tenía — y el
+  guard de `botones-cierre-44px.guard.test.ts` lo exige.
+*/
+.tap-target-44::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border-radius: inherit;
+}

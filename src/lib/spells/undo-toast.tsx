@@ -160,7 +160,7 @@ export function UndoToastHost({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={handleDismiss}
               aria-label="Cerrar"
-              className="rounded-full p-1 text-bone/50 hover:bg-bone/10 hover:text-bone"
+              className="tap-target-44 relative rounded-full p-1 text-bone/50 hover:bg-bone/10 hover:text-bone"
             >
               ✕
             </button>

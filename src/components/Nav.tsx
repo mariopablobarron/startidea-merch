@@ -219,7 +219,7 @@ export function Nav() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink hover:border-accent"
+                className="tap-target-44 relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink hover:border-accent"
                 aria-label="Cerrar"
               >
                 ✕

@@ -500,7 +500,7 @@ function PromotionForm({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1 text-ink/50 hover:bg-bone-soft hover:text-ink"
+            className="tap-target-44 relative rounded-full p-1 text-ink/50 hover:bg-bone-soft hover:text-ink"
             aria-label="Cerrar"
           >
             ✕

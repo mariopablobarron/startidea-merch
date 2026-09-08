@@ -177,7 +177,7 @@ export function EmailCapturePopup({
           onClick={dismiss}
           data-modal-initial-focus
           aria-label="Cerrar"
-          className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-bone/80 text-ink/60 transition hover:bg-bone hover:text-ink"
+          className="tap-target-44 absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-bone/80 text-ink/60 transition hover:bg-bone hover:text-ink"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18" />

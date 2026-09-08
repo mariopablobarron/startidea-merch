@@ -1036,7 +1036,7 @@ function VoiceAgentInner() {
             type="button"
             onClick={() => snoozeNudge(24)}
             aria-label="Cerrar invitación"
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-ink/40 hover:bg-bone-soft hover:text-ink"
+            className="tap-target-44 absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-ink/40 hover:bg-bone-soft hover:text-ink"
           >
             ✕
           </button>
