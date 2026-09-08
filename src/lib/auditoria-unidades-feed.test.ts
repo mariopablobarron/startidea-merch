@@ -15,12 +15,13 @@ const variantFindMany = vi.fn();
 const posCount = vi.fn();
 const posFindMany = vi.fn();
 const tierCount = vi.fn();
+const tierFindMany = vi.fn();
 
 function prismaFalso() {
   return {
     productVariant: { count: variantCount, findMany: variantFindMany },
     markingPosition: { count: posCount, findMany: posFindMany },
-    priceTier: { count: tierCount },
+    priceTier: { count: tierCount, findMany: tierFindMany },
   } as unknown as Parameters<typeof auditarUnidadesFeed>[0];
 }
 
@@ -33,6 +34,7 @@ beforeEach(() => {
   tierCount.mockResolvedValue(0);
   variantFindMany.mockResolvedValue([]);
   posFindMany.mockResolvedValue([]);
+  tierFindMany.mockResolvedValue([]);
 });
 
 describe("auditarUnidadesFeed", () => {
@@ -83,6 +85,7 @@ describe("auditarUnidadesFeed", () => {
     await auditarUnidadesFeed(prismaFalso());
     expect(variantFindMany.mock.calls[0][0].take).toBe(EJEMPLOS);
     expect(posFindMany.mock.calls[0][0].take).toBe(EJEMPLOS);
+    expect(tierFindMany.mock.calls[0][0].take).toBe(EJEMPLOS);
   });
 
   it("publica los umbrales que ha usado, para que el informe sea interpretable", async () => {
@@ -109,5 +112,41 @@ describe("auditarUnidadesFeed", () => {
       sku: "SKU-1",
       stockQty: 3,
     });
+  });
+
+  it("el tramo también dice de qué producto es, no solo cuántos hay", async () => {
+    // Un recuento sin muestra obliga a abrir una consola contra producción
+    // para saber qué mirar, que es lo que el watchdog vino a quitar de en medio.
+    tierFindMany.mockResolvedValue([
+      {
+        minQty: 5,
+        variant: {
+          sku: "SKU-9",
+          product: { internalRef: "STM-000009", name: "BOLSA Y", supplier: "midocean" },
+        },
+      },
+    ]);
+    const a = await auditarUnidadesFeed(prismaFalso());
+    expect(a.muestras.tramos[0]).toEqual({
+      supplier: "midocean",
+      internalRef: "STM-000009",
+      producto: "BOLSA Y",
+      sku: "SKU-9",
+      minQty: 5,
+    });
+  });
+
+  it("la muestra de tramos usa el MISMO filtro que el recuento", async () => {
+    await auditarUnidadesFeed(prismaFalso());
+    expect(tierFindMany.mock.calls[0][0].where).toEqual(tierCount.mock.calls[0][0].where);
+  });
+
+  it("la muestra de tramos no lleva el coste de proveedor", async () => {
+    // El informe acaba impreso en el log de GitHub Actions. Para ver que una
+    // CANTIDAD tiene la escala rota basta la cantidad.
+    await auditarUnidadesFeed(prismaFalso());
+    const seleccion = tierFindMany.mock.calls[0][0].select;
+    expect(seleccion).not.toHaveProperty("unitPriceCents");
+    expect(JSON.stringify(seleccion)).not.toMatch(/unitPrice|Cents/);
   });
 });

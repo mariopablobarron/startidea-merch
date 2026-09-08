@@ -51,6 +51,11 @@ async function main() {
     }
 
     log(`\n  tramos de precio con minQty entre 2 y 9: ${a.hallazgos.tramosImplausibles}`);
+    for (const t of a.muestras.tramos) {
+      log(
+        `    ${(t.internalRef ?? "—").padEnd(12)} ${t.producto.slice(0, 40).padEnd(40)} desde ${String(t.minQty).padStart(4)} uds`,
+      );
+    }
 
     log(
       a.hallazgos.total === 0
