@@ -1,0 +1,23 @@
+.github/workflows/security-audit.yml
+  s_20c5686e8189f5::t_6299f1229b805a 80-101
+src/app/api/cron/jerga-mayorista-watchdog/route.ts
+  s_20c5686e8189f5::t_bac4bf42ca78ec 1-121
+src/lib/cron-catalog.ts
+  s_20c5686e8189f5::t_ee45691f9773db 201-221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "325dfd08c3925d1e6287f6649e9457744abdabd9",
+  "prompts": {},
+  "sessions": {
+    "s_20c5686e8189f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e1fb1cb8-e2d8-4c54-87c2-a10854a10d61",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
