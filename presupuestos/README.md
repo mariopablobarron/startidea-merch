@@ -76,6 +76,36 @@ siga siendo autocontenido.
 Si la imagen no lleva Chromium, «Descargar PDF» responde 503 explicándolo y
 «Ver documento» sigue funcionando.
 
+## Desde la base de datos
+
+Para no teclear el pedido a mano cuando el producto ya está en el catálogo:
+
+```bash
+# sin --tecnica: lista las técnicas del producto, tarificadas a esa cantidad
+bun scripts/cotizar-desde-bd.ts --ref STM-000123 --cantidad 500
+
+# con --tecnica: escribe el pedido.json listo para montar
+bun scripts/cotizar-desde-bd.ts --ref STM-000123 --cantidad 500 --tecnica MK_P1 \
+    --numero PRE-2026-0031 --cliente "Ayuntamiento de Granada" --cif P1808700A \
+    --direccion "Plaza del Carmen s/n, 18009 Granada" -o presupuestos/pedido.json
+./montar-presupuesto.py pedido.json -o presupuesto.html && ./generar-pdf.sh
+```
+
+Saca **coste al tramo, marcaje y cliché** con las mismas funciones que usa el
+panel — no calcula nada por su cuenta — y deja las tres líneas con `coste_unit`
+para que `calcular-precios.py` ponga el PVP a la regla del encargo. Si el panel
+tiene otro margen para esa familia, lo dice en un aviso pero no lo aplica: esa
+decisión es de quien firma.
+
+Necesita `DATABASE_URL` con el rol de **solo lectura** `claude_lectura`. Antes
+de leer un solo precio comprueba que ese rol **no** puede ver `CartQuote` ni
+`AdminSetting`; si puede, se para. Y no emite nada que nombre al proveedor: el
+JSON pasa por la misma lista de fugas que vigila la web.
+
+Dos cosas que sigue sin cubrir: el coste es **el del último sync**, no el del
+portal ahora mismo (confírmalo antes de emitir un pedido grande), y el gran
+formato va a PVP recomendado del portal, que hay que pasar a mano.
+
 ## De dónde salen los precios
 
 De los portales de proveedor con las cuentas de Startidea, **nunca estimados y nunca
