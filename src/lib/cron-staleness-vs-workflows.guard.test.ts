@@ -95,7 +95,18 @@ describe("estimateFrequencyHours", () => {
     ["35 3 * * *", 24],
     ["0 6 * * 1", 7 * 24],
     ["0 9 1 * *", 30 * 24],
-  ])("%s → %i h", (expr, hours) => {
+    // El campo de MINUTOS cuando la hora es `*`: estos tres son crons vivos del
+    // catálogo (webhook-retry y auto-proposal cada 15 min,
+    // send-scheduled-broadcasts cada 5) y hasta el 2026-09-09 los tres se
+    // daban como horarios.
+    ["*/15 * * * *", 0.25],
+    ["*/5 * * * *", 1 / 12],
+    ["* * * * *", 1 / 60],
+    // El paso de minutos NO manda cuando la hora ya limita el disparo: el hueco
+    // más largo lo sigue marcando la hora.
+    ["*/15 */6 * * *", 6],
+    ["*/15 3 * * *", 24],
+  ])("%s → %s h", (expr, hours) => {
     expect(estimateFrequencyHours(expr)).toBe(hours);
   });
 
@@ -103,6 +114,13 @@ describe("estimateFrequencyHours", () => {
     expect(estimateFrequencyHours("no soy un cron")).toBeNull();
     expect(estimateFrequencyHours("0 0 * *")).toBeNull();
     expect(estimateFrequencyHours("0 */0 * * *")).toBeNull();
+    expect(estimateFrequencyHours("*/0 * * * *")).toBeNull();
+    expect(estimateFrequencyHours("*/90 * * * *")).toBeNull();
+    // Listas y rangos de minutos: no se interpretan, y decirlo es mejor que
+    // devolver un número inventado (así nacieron las falsas alarmas que este
+    // módulo arrastra).
+    expect(estimateFrequencyHours("0,30 * * * *")).toBeNull();
+    expect(estimateFrequencyHours("0-15 * * * *")).toBeNull();
   });
 });
 
