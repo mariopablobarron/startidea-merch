@@ -2,10 +2,12 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
+  EXPECTED_HOURS_OVERRIDE,
   estimateFrequencyHours,
   expectedHoursFor,
   thresholdWindowFor,
 } from "@/lib/cron-staleness";
+import { findCron } from "@/lib/cron-catalog";
 
 /**
  * GUARD: el umbral de silencio de cada cron contra su `schedule:` REAL.
@@ -24,9 +26,17 @@ import {
  * real (`cifra-sync` parado 3 días con el coste de 2.513 productos congelado).
  *
  * Este test lee los workflows de verdad y falla si el umbral no encaja con la
- * frecuencia que declara su `cron:`. Alcance: solo los crons disparados por
- * GitHub Actions vía la action `cron-trigger`. Los del crontab del VPS no son
- * legibles desde aquí; su frecuencia vive en `CRON_CATALOG.frequencyHours`.
+ * frecuencia que declara su `cron:`.
+ *
+ * El crontab del VPS no es legible desde aquí, así que su mitad se contrasta
+ * contra `CRON_CATALOG.scheduleCron`, que es donde vive esa frecuencia. Sin esa
+ * segunda mitad el guard tenía un punto ciego que ya se abrió una vez: el
+ * 2026-09-01 `metric-snapshot` y `product-view-rollup` se mudaron de GitHub
+ * Actions al crontab del VPS, sus workflows se quedaron sin `schedule:` — y con
+ * ello **se cayeron del recorrido de este guard sin que nada se pusiera rojo**.
+ * Sus umbrales siguieron ahí, ya sin contrastar contra nada, y sus comentarios
+ * siguieron citando un `cron:` que hacía días que no existía. Mudar el
+ * disparador de un cron no puede apagar en silencio su vigilancia.
  */
 
 const WORKFLOWS_DIR = join(process.cwd(), ".github", "workflows");
@@ -93,5 +103,56 @@ describe("estimateFrequencyHours", () => {
     expect(estimateFrequencyHours("no soy un cron")).toBeNull();
     expect(estimateFrequencyHours("0 0 * *")).toBeNull();
     expect(estimateFrequencyHours("0 */0 * * *")).toBeNull();
+  });
+});
+
+/**
+ * La otra mitad: los overrides que NINGÚN workflow programado cubre.
+ *
+ * Se recorren los propios overrides —no una lista escrita a mano de cuáles
+ * mirar— porque el fallo que esto vigila es justamente que una entrada deje de
+ * estar cubierta sin que nadie lo note. Un override sin `cron:` en Actions y
+ * sin `scheduleCron` en el catálogo es un umbral que no se contrasta con nada:
+ * eso es el rojo, no un detalle de estilo.
+ */
+describe("umbral de silencio vs catálogo (los crons del crontab del VPS)", () => {
+  const cubiertosPorActions = new Set(collectScheduledTriggers().map((t) => t.name));
+  const huerfanos = Object.keys(EXPECTED_HOURS_OVERRIDE).filter(
+    (name) => !cubiertosPorActions.has(name),
+  );
+
+  it.each(huerfanos)(
+    "%s tiene un umbral coherente con el scheduleCron de su entrada de catálogo",
+    (name) => {
+      const cat = findCron(name);
+      expect(
+        cat,
+        `${name}: tiene EXPECTED_HOURS_OVERRIDE pero ningún workflow programado ` +
+          `ni entrada en CRON_CATALOG — su umbral no se contrasta contra nada. ` +
+          `Si el cron se mudó al crontab del VPS, dale su entrada de catálogo ` +
+          `con el scheduleCron real; si ya no existe, quita el override.`,
+      ).not.toBeNull();
+
+      const freq = estimateFrequencyHours(cat!.scheduleCron ?? "");
+      expect(
+        freq,
+        `${name}: scheduleCron ${JSON.stringify(cat!.scheduleCron)} no es una ` +
+          `expresión cron interpretable, así que su umbral queda sin contrastar.`,
+      ).not.toBeNull();
+
+      const threshold = expectedHoursFor(name);
+      const { min, max } = thresholdWindowFor(freq!);
+      expect(
+        threshold,
+        `${name}: umbral ${threshold}h para un cron de ~${freq}h ` +
+          `(${cat!.scheduleCron}). Debe estar entre ${Math.round(min)}h y ` +
+          `${Math.round(max)}h — ajusta EXPECTED_HOURS_OVERRIDE["${name}"].`,
+      ).toBeGreaterThanOrEqual(min);
+      expect(threshold).toBeLessThanOrEqual(max);
+    },
+  );
+
+  it("hay algún huérfano que mirar (si esto falla, esta mitad dejó de vigilar)", () => {
+    expect(huerfanos.length).toBeGreaterThan(0);
   });
 });

@@ -12,20 +12,33 @@ import { findCron } from "@/lib/cron-catalog";
  *   - un cron de alta frecuencia (webhook-retry, cada 15 min) tardaba 30h en
  *     detectarse muerto.
  *
- * Los overrides quedan solo para crons que NO viven en CRON_CATALOG (los de
- * GitHub Actions: se trackean vía wrapCronHandler pero no están en el catálogo).
- * Cada valor va contrastado contra el `schedule:` REAL de su workflow en
- * `.github/workflows/` — un umbral inventado produce falsas alarmas eternas
- * (ver el caso de `metric-snapshot` más abajo).
+ * Los overrides nacieron para crons que NO vivían en CRON_CATALOG (los de
+ * GitHub Actions: se trackean vía wrapCronHandler). Desde que el 2026-09-01 se
+ * catalogaron los nueve que faltaban, varios de estos overrides **tapan** a su
+ * entrada de catálogo, y se dejan a propósito: añadir catálogo no debe mover
+ * ningún umbral de alerta como efecto colateral.
+ *
+ * Cada valor va contrastado contra el disparador REAL de su cron, que ya no es
+ * el mismo para todos: el `schedule:` de su workflow en `.github/workflows/`
+ * para los de Actions, y el `scheduleCron` del catálogo para los que se han
+ * mudado al crontab del VPS. Las dos mitades las vigila
+ * `cron-staleness-vs-workflows.guard.test.ts`; un umbral inventado produce
+ * falsas alarmas eternas (ver el caso de `metric-snapshot` más abajo).
  */
 export const EXPECTED_HOURS_OVERRIDE: Record<string, number> = {
-  // metric-snapshot.yml → `35 3 * * *` = DIARIO (el comentario anterior decía
-  // "cada hora" y ponía 2h: un cron diario quedaba marcado como parado ~22h de
-  // cada 24, o sea casi siempre. Era el mayor generador de ruido del watchdog).
-  "metric-snapshot": 30, // metric-snapshot.yml → `35 3 * * *` diario
+  // DIARIO (el comentario anterior decía "cada hora" y ponía 2h: un cron diario
+  // quedaba marcado como parado ~22h de cada 24, o sea casi siempre. Era el
+  // mayor generador de ruido del watchdog).
+  //
+  // Ya NO lo dispara `metric-snapshot.yml`: el 2026-09-01 se mudó al crontab
+  // del VPS (`50 6 * * *`) y su workflow se quedó solo con `workflow_dispatch`.
+  // La fuente contra la que se contrasta este 30 es hoy el `scheduleCron` de su
+  // entrada en CRON_CATALOG, no el `cron:` del .yml — que ya no existe.
+  "metric-snapshot": 30, // CRON_CATALOG → `50 6 * * *` diario (crontab del VPS)
   "ai-usage-alert": 30, // ai-usage-alert.yml → `0 10 * * *` diario
   "auto-resolve-errors": 30, // auto-resolve-errors.yml → `15 4 * * *` diario
-  "product-view-rollup": 30, // product-view-rollup.yml → `30 3 * * *` diario
+  // Mudado también al crontab del VPS el 2026-09-01, igual que metric-snapshot.
+  "product-view-rollup": 30, // CRON_CATALOG → `40 6 * * *` diario (crontab del VPS)
   "insights-digest": 8 * 24, // insights-digest.yml → `0 8 * * 1` semanal
   "insights-digest-monthly": 35 * 24, // insights-digest-monthly.yml → `0 9 1 * *` mensual
   // competitor-watch.yml → `0 6 * * 1` SEMANAL. Sin esta entrada caía a
