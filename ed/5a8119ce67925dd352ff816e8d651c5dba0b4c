@@ -1,0 +1,21 @@
+src/lib/cron-staleness-vs-workflows.guard.test.ts
+  s_e9c948417ecf81::t_9917c477fea0bb 98-109,117-123
+src/lib/cron-staleness.ts
+  s_e9c948417ecf81::t_7bdf419126578d 74,85-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "ed5a8119ce67925dd352ff816e8d651c5dba0b4c",
+  "prompts": {},
+  "sessions": {
+    "s_e9c948417ecf81": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "577ffbc1-4234-4106-a75f-a364f0889b40",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
