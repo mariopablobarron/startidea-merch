@@ -512,6 +512,38 @@ export const CRON_CATALOG: CronEntry[] = [
     description:
       "Compara PVP y marcaje con los de la competencia y propone subir o bajar respetando el suelo de coste",
   },
+  {
+    name: "search-reindex",
+    endpointPath: "/api/cron/search-reindex",
+    method: "POST",
+    // NO está programado, y es a propósito: el índice de Meilisearch guarda
+    // copia del texto ya saneado, así que hay que reindexar A MANO después de
+    // cada cambio del saneador (~21 s, 9.759 documentos). Faltaba en este
+    // catálogo, y esa ausencia no era inocua: sin entrada, silenceWatchability()
+    // lo daba por vigilable, caía a DEFAULT_HOURS (30 h) y el watchdog avisaba
+    // de que llevaba un día "parado" — un aviso que nadie puede cerrar porque
+    // no hay nada que arrancar. Pasó de verdad el 2026-09-09 a las 14:54 UTC,
+    // y el aviso se trunca a 280 caracteres: cada falsa alarma empuja fuera a
+    // una de verdad. Si algún día se programa, poner aquí su expresión real.
+    schedule: "sin disparador (manual tras cada cambio del saneador)",
+    scheduleCron: "—",
+    frequencyHours: 24,
+    description: "Reconstruye el índice de búsqueda de productos en Meilisearch",
+  },
+  {
+    name: "hub-intake-outbox",
+    endpointPath: "/api/cron/hub-intake-outbox",
+    method: "POST",
+    // Mismo caso que search-reindex: se trackea con wrapCronHandler, no lo
+    // dispara nada (ni crontab del VPS ni workflow) y sin entrada de catálogo
+    // se vigilaba por silencio contra un umbral inventado. Un fallo de una
+    // ejecución manual SÍ sigue avisando: lo que se deja de vigilar es el
+    // silencio, no los errores.
+    schedule: "sin disparador (solo manual)",
+    scheduleCron: "—",
+    frequencyHours: 24,
+    description: "Vacía la bandeja de salida del intake del HUB",
+  },
 ];
 
 export function findCron(name: string): CronEntry | null {
