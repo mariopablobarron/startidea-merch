@@ -1,0 +1,21 @@
+src/lib/cron-catalog-cubre-rutas.guard.test.ts
+  s_b0f54e1a6074e1::t_ae0d2ba6f42115 1-79
+src/lib/cron-catalog.ts
+  s_b0f54e1a6074e1::t_65cac14a52cddc 515-546
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4bf58e3b510d390de60dea976ecde35fe35bf42e",
+  "prompts": {},
+  "sessions": {
+    "s_b0f54e1a6074e1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f6694f0b-ff5b-4602-aff9-ea37ce6fba86",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
