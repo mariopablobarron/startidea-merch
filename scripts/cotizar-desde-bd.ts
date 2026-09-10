@@ -27,6 +27,8 @@ import { costeAlTramo } from "@/lib/presupuesto-catalogo";
 import {
   comprobarRolDeLectura,
   construirPedido,
+  hayBandera,
+  leerArgumento,
   leerMargenesPorVista,
   posicionesPorTecnica,
   type DatosPedido,
@@ -36,12 +38,8 @@ import {
 
 // ── argv ─────────────────────────────────────────────────────────────────────
 
-function arg(nombre: string, porDefecto?: string): string | undefined {
-  const i = process.argv.indexOf(`--${nombre}`);
-  if (i === -1 || i + 1 >= process.argv.length) return porDefecto;
-  return process.argv[i + 1];
-}
-const flag = (nombre: string) => process.argv.includes(`--${nombre}`);
+const arg = (nombre: string, porDefecto?: string) => leerArgumento(process.argv, nombre, porDefecto);
+const flag = (nombre: string) => hayBandera(process.argv, nombre);
 
 function exigir(nombre: string): string {
   const v = arg(nombre);
@@ -88,6 +86,12 @@ async function main() {
   }
 
   // 0) Antes de leer nada: ¿el rol ve lo que no debe?
+  //    La comprobación PROVOCA a propósito cuatro «permission denied», y Prisma
+  //    los pinta en rojo aunque sean el resultado bueno. Se avisa antes para que
+  //    nadie los lea como una avería: si el rol está bien puesto, salen los
+  //    cuatro y el script sigue. Silenciar el log de Prisma taparía errores de
+  //    verdad, así que se explica en vez de esconderlo.
+  console.error("Comprobando el rol de lectura: los cuatro «permission denied» que siguen son lo ESPERADO.");
   const rol = await comprobarRolDeLectura(prisma);
   if (!rol.ok) {
     console.error(`PARADO · ${rol.motivo}`);
@@ -233,7 +237,7 @@ async function main() {
     cantidad,
     tecnica: codigoTecnica,
     tintas,
-    formato: arg("formato", "Vector (PDF, AI o SVG) con textos trazados")!,
+    formato: arg("formato", "Vectorial (.ai, .eps o .pdf) con los textos trazados")!,
     incluye: arg("incluye", "Producto y marcaje según la especificación de esta ficha")!,
     capacidad: arg("capacidad") ?? null,
     nota: arg("nota") ?? null,

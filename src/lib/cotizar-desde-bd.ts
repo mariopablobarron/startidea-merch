@@ -321,7 +321,7 @@ export async function comprobarRolDeLectura(db: {
       ok: false,
       motivo:
         `El rol puede leer ${visibles.join(", ")}. Eso no es el acceso de solo catálogo que se pactó: ` +
-        `revisa el GRANT (acceso-lectura-claude.sql) antes de seguir.`,
+        `revisa el GRANT (docs/acceso-lectura-claude.sql) antes de seguir.`,
     };
   }
   return { ok: true };
@@ -339,4 +339,29 @@ export async function leerMargenesPorVista(db: {
   } catch {
     return null;
   }
+}
+
+// ── argv ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Busca el valor de una opción en argv, aceptando `--nombre` y `-nombre`.
+ *
+ * Las dos formas porque la cabecera del script documenta `-o fichero.json` y
+ * durante el ensayo del 09-sep se vio que solo se leía `--o`: el fichero no se
+ * escribía y el pedido salía por pantalla SIN decir nada. Un fallo mudo, que es
+ * el peor: parece que ha ido bien y el JSON se pierde en el scroll.
+ *
+ * Pura y exportada para poder probarla sin montar un argv de verdad.
+ */
+export function leerArgumento(argv: readonly string[], nombre: string, porDefecto?: string): string | undefined {
+  for (const forma of [`--${nombre}`, `-${nombre}`]) {
+    const i = argv.indexOf(forma);
+    if (i !== -1 && i + 1 < argv.length) return argv[i + 1];
+  }
+  return porDefecto;
+}
+
+/** ¿Está presente la bandera? Acepta `--nombre` y `-nombre`, como `leerArgumento`. */
+export function hayBandera(argv: readonly string[], nombre: string): boolean {
+  return argv.includes(`--${nombre}`) || argv.includes(`-${nombre}`);
 }

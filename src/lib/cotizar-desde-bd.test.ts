@@ -3,6 +3,8 @@ import {
   comprobarRolDeLectura,
   construirPedido,
   familiasDe,
+  hayBandera,
+  leerArgumento,
   posicionesPorTecnica,
   type DatosPedido,
   type MarcajeCotizado,
@@ -147,5 +149,36 @@ describe("comprobarRolDeLectura", () => {
   it("PARA si el rol puede leer AdminSetting (el secreto del webhook vive ahí)", async () => {
     const r = await comprobarRolDeLectura(dbQue(['"AdminSetting"']));
     expect(r.ok).toBe(false);
+  });
+});
+
+describe("leerArgumento / hayBandera", () => {
+  const argv = ["bun", "cotizar.ts", "--ref", "STM-000123", "--cantidad", "500", "-o", "salida.json", "--sin-foto"];
+
+  it("lee la forma larga", () => {
+    expect(leerArgumento(argv, "ref")).toBe("STM-000123");
+    expect(leerArgumento(argv, "cantidad")).toBe("500");
+  });
+
+  // El fallo real del 09-sep: la cabecera del script documenta `-o fichero`,
+  // pero solo se leía `--o`, así que el pedido salía por pantalla y el fichero
+  // no se escribía, SIN error. Que no vuelva.
+  it("lee la forma corta que documenta la cabecera («-o»)", () => {
+    expect(leerArgumento(argv, "o")).toBe("salida.json");
+  });
+
+  it("devuelve el valor por defecto cuando la opción no está", () => {
+    expect(leerArgumento(argv, "tecnica")).toBeUndefined();
+    expect(leerArgumento(argv, "tintas", "1")).toBe("1");
+  });
+
+  it("no se traga el final de argv como valor", () => {
+    expect(leerArgumento(["bun", "cotizar.ts", "--ref"], "ref", "nada")).toBe("nada");
+  });
+
+  it("reconoce banderas en las dos formas", () => {
+    expect(hayBandera(argv, "sin-foto")).toBe(true);
+    expect(hayBandera(["bun", "x", "-sin-foto"], "sin-foto")).toBe(true);
+    expect(hayBandera(argv, "verbose")).toBe(false);
   });
 });
