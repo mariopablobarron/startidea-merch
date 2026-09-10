@@ -71,19 +71,32 @@ export const EXPECTED_HOURS_OVERRIDE: Record<string, number> = {
 export function estimateFrequencyHours(expr: string): number | null {
   const parts = expr.trim().split(/\s+/);
   if (parts.length !== 5) return null;
-  const [, hour, dom, , dow] = parts;
+  const [minute, hour, dom, , dow] = parts;
 
   if (dom !== "*") return 30 * 24; // día fijo del mes → mensual
   if (dow !== "*") return 7 * 24; // día fijo de la semana → semanal
 
-  if (hour === "*") return 1;
   const everyN = /^\*\/(\d+)$/.exec(hour);
   if (everyN) {
     const n = Number(everyN[1]);
     return n > 0 && n <= 24 ? n : null;
   }
   if (/^\d+$/.test(hour)) return 24; // hora fija, todos los días
-  return null;
+  if (hour !== "*") return null;
+
+  // `hour === "*"`: se dispara TODAS las horas, así que el hueco más largo
+  // entre dos ejecuciones lo marca el campo de MINUTOS — que hasta ahora no se
+  // miraba. `*/15 * * * *` (webhook-retry, auto-proposal) se daba como horario
+  // y `*/5 * * * *` también: un factor 4 y un factor 12 de error en la
+  // frecuencia declarada de tres crons del catálogo.
+  const minuteEveryN = /^\*\/(\d+)$/.exec(minute);
+  if (minuteEveryN) {
+    const n = Number(minuteEveryN[1]);
+    return n > 0 && n <= 59 ? n / 60 : null;
+  }
+  if (minute === "*") return 1 / 60; // cada minuto
+  if (/^\d+$/.test(minute)) return 1; // minuto fijo de cada hora → horario
+  return null; // listas y rangos (`0,30`, `0-15`): no se interpretan
 }
 
 /**
