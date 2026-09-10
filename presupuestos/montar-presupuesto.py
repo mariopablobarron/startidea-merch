@@ -70,6 +70,22 @@ def esc(x) -> str:
     return html.escape(str(x), quote=True)
 
 
+def opcional(dic, ruta, por_defecto=""):
+    """Como `exigir`, pero sin parar: null, "" y ausente valen todos lo mismo.
+
+    Existe porque `.get(clave, defecto)` NO cubre el caso que de verdad llega:
+    el defecto solo se aplica si FALTA la clave, y `cotizar-desde-bd.ts` emite
+    los campos opcionales como `null` explícito. Con `.get` eso devolvía None y
+    la plantilla imprimía la palabra «None» en un papel que ve el cliente.
+    """
+    cur = dic
+    for k in ruta.split("."):
+        if not isinstance(cur, dict) or k not in cur:
+            return por_defecto
+        cur = cur[k]
+    return por_defecto if cur in ("", None) else cur
+
+
 def exigir(dic, ruta, donde):
     """Saca dic[a][b]… o para con un mensaje que dice qué falta."""
     cur, recorrido = dic, []
@@ -151,6 +167,13 @@ def montar(pedido: dict, plantilla: str):
         s = s.replace('<div class="ph foto">Zona de marcaje<br>con cotas</div>',
                       celda_imagen(ficha["zona"], "Zona de marcaje", "foto", ""), 1)
 
+    # 2 bis) contacto del cliente: si no lo hay, fuera la línea entera y su
+    #        <br>. Sustituir por "" a secas dejaba un renglón vacío al final
+    #        del bloque, y el <br> se veía como un hueco sin motivo.
+    if not opcional(pedido, "cliente.contacto"):
+        s = re.sub(r'<br>\s*\n\s*<mark class="todo">\{\{CLIENTE_CONTACTO\}\}</mark>',
+                   "", s, count=1)
+
     # 3) nota técnica: si no hay salvedad que contar, fuera el bloque entero
     if pedido.get("nota"):
         s = s.replace("{{NOTA_TECNICA}}", esc(pedido["nota"]))
@@ -164,7 +187,7 @@ def montar(pedido: dict, plantilla: str):
         "CLIENTE_NOMBRE": exigir(pedido, "cliente.nombre", "el bloque de cliente"),
         "CLIENTE_CIF": exigir(pedido, "cliente.cif", "el bloque de cliente"),
         "CLIENTE_DIRECCION": exigir(pedido, "cliente.direccion", "el bloque de cliente"),
-        "CLIENTE_CONTACTO": pedido.get("cliente", {}).get("contacto", ""),
+        "CLIENTE_CONTACTO": opcional(pedido, "cliente.contacto"),
         "PLAZO_MIN": exigir(pedido, "plazo.min", "el plazo de producción"),
         "PLAZO_MAX": exigir(pedido, "plazo.max", "el plazo de producción"),
         "BASE": c.eur(base), "IVA": c.eur(iva), "TOTAL": c.eur(total),
@@ -172,7 +195,7 @@ def montar(pedido: dict, plantilla: str):
         "F1_REF": exigir(pedido, "ficha.ref", "la ficha técnica"),
         "F1_MEDIDAS": exigir(pedido, "ficha.medidas", "la ficha técnica"),
         "F1_MATERIALES": exigir(pedido, "ficha.materiales", "la ficha técnica"),
-        "F1_CAPACIDAD": ficha.get("capacidad", "—"),
+        "F1_CAPACIDAD": opcional(pedido, "ficha.capacidad", "—"),
         "F1_INCLUYE": exigir(pedido, "ficha.incluye", "la ficha técnica"),
         "M_TECNICA": exigir(pedido, "marcaje.tecnica", "la ficha de marcaje"),
         "M_TINTAS": exigir(pedido, "marcaje.tintas", "la ficha de marcaje"),
