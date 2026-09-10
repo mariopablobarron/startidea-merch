@@ -1,0 +1,29 @@
+src/lib/descripcion-publica.guard.test.ts
+  s_5e8150d8dcb937::t_63495a0b0ff82b 117-151
+src/lib/guards-con-cobertura-propia.guard.test.ts
+  s_5e8150d8dcb937::t_03e6b99bf762cd 1-120
+src/lib/product-name-public.guard.test.ts
+  s_5e8150d8dcb937::t_78bfa821efe16e 39-49
+src/lib/public-api-surfaces.guard.test.ts
+  s_5e8150d8dcb937::t_42efbe52acfbc3 78-92
+src/lib/secreto-sin-fallback-literal.guard.test.ts
+  s_5e8150d8dcb937::t_f42354e267b532 77-81
+src/lib/suppliers/feed-units.guard.test.ts
+  s_5e8150d8dcb937::t_a9f0f3deb151fe 83-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "96418c0a9de14a012035aabd3c99456002cccd65",
+  "prompts": {},
+  "sessions": {
+    "s_5e8150d8dcb937": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee3144f0-b8b5-49c7-be82-2781f9ac7bfa",
+        "model": "claude-opus-5"
+      },
+      "human_author": "mariopablobarron <mariopablobarron@users.noreply.github.com>"
+    }
+  }
+}
