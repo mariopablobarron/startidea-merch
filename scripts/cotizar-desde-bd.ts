@@ -237,7 +237,7 @@ async function main() {
     cantidad,
     tecnica: codigoTecnica,
     tintas,
-    formato: arg("formato", "Vector (PDF, AI o SVG) con textos trazados")!,
+    formato: arg("formato", "Vectorial (.ai, .eps o .pdf) con los textos trazados")!,
     incluye: arg("incluye", "Producto y marcaje según la especificación de esta ficha")!,
     capacidad: arg("capacidad") ?? null,
     nota: arg("nota") ?? null,

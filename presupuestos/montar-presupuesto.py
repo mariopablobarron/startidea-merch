@@ -35,7 +35,7 @@ El JSON extiende el de `calcular-precios.py` con los datos del documento:
       "marcaje": {
         "tecnica":  "Serigrafía",  "tintas":  "2 tintas planas",
         "posicion": "Frontal, centrada", "area": "150 × 70 mm",
-        "formato":  "Vectorial .ai o .pdf"
+        "formato":  "Vectorial (.ai, .eps o .pdf) con los textos trazados"
       },
       "nota": "El vaso es translúcido, por lo que una tinta blanca no cubre…"
     }
