@@ -74,8 +74,11 @@ describe("guard · ningún secreto cae a un literal del código", () => {
 
   /**
    * Un guard que deja de encontrar sitios pasa en verde para siempre: es el
-   * modo de fallo silencioso de todo guard estático. Los otros cinco del repo
-   * llevan esta misma comprobación.
+   * modo de fallo silencioso de todo guard estático. Que todo guard por
+   * descubrimiento del repo la lleve lo impone
+   * `guards-con-cobertura-propia.guard.test.ts` — antes lo decía este
+   * comentario y no era cierto: el 10-sep-2026 tres guards descubrían sin
+   * ninguna comprobación de cobertura.
    */
   it("el guard sigue mirando código de verdad (cobertura propia)", () => {
     expect(ficheros.length).toBeGreaterThan(300);
