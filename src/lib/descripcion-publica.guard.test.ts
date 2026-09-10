@@ -114,3 +114,38 @@ describe("frontera de salida de la descripción de proveedor", () => {
     expect(descripcionPublica(null)).toBe("");
   });
 });
+
+/**
+ * Cobertura propia. Este guard recorre el árbol de superficies públicas: si
+ * `SUPERFICIES` deja de resolver (un renombrado de `app/`), o si las
+ * exclusiones se amplían de más, el recorrido se queda vacío y el `toEqual([])`
+ * de arriba pasa para siempre — con la fuga viva, que es exactamente como
+ * llegó a producción el argumentario mayorista. Medido el 10-sep-2026:
+ * 140 ficheros recorridos, 8 de ellos con un campo descriptivo del proveedor.
+ */
+describe("el guard sigue mirando superficies de verdad (cobertura propia)", () => {
+  const recorridas = SUPERFICIES.flatMap((s) =>
+    ficherosDe(join(RAIZ, s))
+      .map((r) => r.slice(RAIZ.length))
+      .filter((rel) => !EXCLUIDOS.some((e) => rel.includes(e))),
+  );
+
+  it("recorre el árbol público entero, no un puñado de ficheros", () => {
+    expect(recorridas.length).toBeGreaterThan(80);
+  });
+
+  it("la ficha de producto —donde se publicó la fuga— está dentro", () => {
+    expect(recorridas.some((r) => r.includes("app/catalogo/[slug]/page.tsx"))).toBe(true);
+  });
+
+  it("sigue habiendo campos descriptivos del proveedor que vigilar", () => {
+    const conCampos = SUPERFICIES.flatMap((s) =>
+      ficherosDe(join(RAIZ, s)).filter((r) => {
+        const rel = r.slice(RAIZ.length);
+        if (EXCLUIDOS.some((e) => rel.includes(e))) return false;
+        return CAMPOS.test(readFileSync(r, "utf8"));
+      }),
+    );
+    expect(conCampos.length).toBeGreaterThan(2);
+  });
+});

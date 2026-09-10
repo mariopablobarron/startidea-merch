@@ -75,6 +75,21 @@ describe("catálogo de APIs públicas", () => {
   it("cada exclusión trae un motivo de verdad, no un hueco", () => {
     for (const e of PUBLIC_API_EXCLUIDAS) expect(e.motivo.trim().length, e.ruta).toBeGreaterThan(20);
   });
+
+  /**
+   * Cobertura propia. Un colapso TOTAL del recorrido ya lo caza «no se declara
+   * nada que ya no exista» (las 15 declaradas pasarían a fantasmas), pero esa
+   * red es indirecta y solo tapa ese extremo: si el descubrimiento se
+   * empequeñece sin llegar a cero —una exclusión de más, un cambio en el
+   * nombre del fichero de ruta— lo que se pierde son las APIs NUEVAS que nadie
+   * ha declarado todavía, que es justo lo que el primer `it` existe para cazar,
+   * y ahí no salta nada. Esto lo dice explícito.
+   * Medido el 10-sep-2026: 288 ficheros de ruta, 15 APIs públicas con GET.
+   */
+  it("el guard sigue encontrando el árbol de rutas (cobertura propia)", () => {
+    expect(ficherosDeRuta().length).toBeGreaterThan(150);
+    expect(apisPublicasConGet().length).toBeGreaterThan(7);
+  });
 });
 
 describe("rutaApiDesdeFichero", () => {

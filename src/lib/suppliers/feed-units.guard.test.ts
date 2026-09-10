@@ -80,3 +80,30 @@ describe("guard · el stock se escribe desde el parser de cantidades", () => {
     expect(malas, malas.join("\n")).toEqual([]);
   });
 });
+
+/**
+ * Cobertura propia: sin esto, los dos guards de arriba pasan en verde el día
+ * que dejen de encontrar dónde mirar. `fuentes()` se queda vacío si alguien
+ * mueve o renombra `src/lib/suppliers`, y ni un `for` sin vueltas ni un
+ * `filter` sin coincidencias fallan nunca — el guard seguiría "verde" sin
+ * vigilar nada. Los umbrales van por debajo de lo medido el 10-sep-2026
+ * (25 fuentes · 3 parsers · 5 asignaciones de stockQty) para que un cambio
+ * normal no los toque y un colapso sí.
+ */
+describe("guard · el guard sigue mirando código de verdad", () => {
+  it("encuentra las fuentes de proveedor", () => {
+    expect(fuentes().length).toBeGreaterThan(12);
+  });
+
+  it("sigue habiendo parsers de XML que vigilar", () => {
+    const parsers = fuentes().flatMap(({ src }) => src.match(/new XMLParser\(\{[^}]*\}\)/g) ?? []);
+    expect(parsers.length).toBeGreaterThan(0);
+  });
+
+  it("sigue habiendo asignaciones de stockQty que vigilar", () => {
+    const lineas = fuentes().flatMap(({ src }) =>
+      src.split("\n").filter((l) => /stockQty\s*:/.test(l)),
+    );
+    expect(lineas.length).toBeGreaterThan(2);
+  });
+});

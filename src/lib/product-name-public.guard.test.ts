@@ -36,6 +36,17 @@ const PUBLIC_NAME_SURFACES = [
 ] as const;
 
 describe("guard: nombres públicos sin HTML heredado", () => {
+  /**
+   * Cobertura propia. Esta lista es blanca —enumera a mano las superficies— y
+   * todo el guard vive dentro de un `for` sobre ella: vaciarla no rompe nada,
+   * genera cero `it()` y el fichero pasa entero en verde. El suelo no convierte
+   * la lista en descubrimiento (eso es trabajo aparte, anotado en el backlog),
+   * pero sí impide que se apague en silencio. Medido el 10-sep-2026: 26.
+   */
+  it("la lista de superficies no se ha vaciado (cobertura propia)", () => {
+    expect(PUBLIC_NAME_SURFACES.length).toBeGreaterThan(20);
+  });
+
   for (const [file, minimumUses] of PUBLIC_NAME_SURFACES) {
     it(`${file} resuelve los nombres con publicProductName`, () => {
       const src = read(file);
