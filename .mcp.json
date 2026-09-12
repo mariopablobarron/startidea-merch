@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "getalink": {
+      "type": "http",
+      "url": "https://mcp.getalink.com/mcp",
+      "headers": {
+        "X-Api-Key": "${GETALINK_API_KEY:-}"
+      }
+    }
+  }
+}
